@@ -1,0 +1,56 @@
+### IDE / OS
+.DS_Store
+.idea/*
+!.idea/.gitignore
+!.idea/AndroidProjectSystem.xml
+!.idea/migrations.xml
+!.idea/misc.xml
+!.idea/vcs.xml
+!.idea/runConfigurations.xml
+!.idea/runConfigurations/
+!.idea/runConfigurations/*.xml
+*.iml
+*.ipr
+*.iws
+.worktrees/
+.apk_decs/*
+!.apk_decs/README.txt
+.workspace/*
+!.workspace/README.txt
+
+### Android / Gradle
+**/.gradle/
+**/build/
+local.properties
+**/.externalNativeBuild/
+**/.cxx/
+**/.kotlin/
+captures/
+
+*.apk
+*.aab
+*.ap_
+*.dex
+
+### Python
+**/__pycache__/*
+
+### Node / TypeScript
+**/node_modules/
+**/dist/
+**/coverage/
+*.tsbuildinfo
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+.env
+.env.local
+.env.*.local
+
+### JADX
+*.kotlin_builtins
+
+openhook.zip

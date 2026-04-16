@@ -1,0 +1,8 @@
+{
+  "applicationId": "com.todo.app",
+  "targetHookPackage": "a.b.c",
+  "projectRootName": "todo",
+  "appName": "My Todo App",
+  "xposedDesc": "This is a template module",
+  "basePackage": "com.todo.base.dir"
+}
