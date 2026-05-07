@@ -21,6 +21,18 @@ object BreenoConfigProvider : BaseConfigProvider() {
     val dataCenterClass: String?
         get() = getString("classes.data_center") ?: getString("data_center_class")
 
+    val operationFactoryClass: String?
+        get() = getString("classes.operation_factory")
+
+    val directiveClass: String?
+        get() = getString("classes.directive")
+
+    val cleanOperationClass: String
+        get() = getString("classes.clean_operation") ?: "CleanOperation"
+
+    val doNothingOperationClass: String?
+        get() = getString("classes.do_nothing_operation")
+
     val feedbackInfoClass: String?
         get() = getString("classes.feedback_info")
 
@@ -34,6 +46,9 @@ object BreenoConfigProvider : BaseConfigProvider() {
     val dataCenterUpdateMessageMethod: String?
         get() = getString("accessors.data_center.update_message")
             ?: getString("data_center_method_g1")
+
+    val operationFactoryCreateMethod: String?
+        get() = getString("accessors.operation_factory.create")
 
     val beanGetChatTypeMethod: String
         get() = getString("accessors.bean.get_chat_type") ?: "getChatType"
@@ -52,6 +67,9 @@ object BreenoConfigProvider : BaseConfigProvider() {
 
     val beanGetContentMethod: String
         get() = getString("accessors.bean.get_content") ?: "getContent"
+
+    val directiveGetRoomIdMethod: String
+        get() = getString("accessors.directive.get_room_id") ?: "getRoomId"
 
     val beanSetContentMethod: String
         get() = getString("accessors.bean.set_content") ?: "setContent"
@@ -114,6 +132,12 @@ object BreenoConfigProvider : BaseConfigProvider() {
 
     val feedbackUpvoteFlagEnabled: Boolean
         get() = getBoolean("runtime.feedback_defaults.upvote_flag") ?: true
+
+    val takeoverKeywords: List<String> // TODO Move to Local Settings
+        get() {
+            val list = getList("runtime.takeover.keywords") ?: return emptyList()
+            return list.mapNotNull { it.jsonPrimitive.contentOrNull }
+        }
 
     val mockBeanLocalDataUnit: List<Pair<String, Any>>
         get() = readConfigPairs(

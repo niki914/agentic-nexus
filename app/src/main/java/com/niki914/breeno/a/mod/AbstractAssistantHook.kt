@@ -6,45 +6,93 @@ import kotlinx.coroutines.CoroutineScope
 
 /**
  * 抽象语音助手 Hook 基类，规范核心生命周期与功能职责
- *
- * TODO 新对话是否纳入标准
  */
 abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook {
+    protected var turnState: ConversationTurnState = ConversationTurnState()
 
-    override fun onHook(lpparam: XC_LoadPackage.LoadPackageParam) {
-        // 1. 屏蔽官方的原生技能卡片（或放行自定义卡片）
-        blockNativeSkill(lpparam)
-
-        // 2. 监听用户输入，并在捕获到输入时进行大模型请求
-        interceptInput(lpparam) { query ->
-            // 将捕获到的输入交给统一的 LLMController 处理
-            dispatchQueryToLLM(query)
+    final override fun onHook(lpparam: XC_LoadPackage.LoadPackageParam) {
+        onBeforeInstallHooks(lpparam)
+        installSessionHooks(lpparam)
+        installResponseHooks(lpparam)
+        installInputHooks(lpparam) { roomId, query ->
+            handleCapturedQuery(roomId, query)
         }
     }
 
-    /**
-     * 屏蔽原生技能逻辑
-     */
-    protected abstract fun blockNativeSkill(lpparam: XC_LoadPackage.LoadPackageParam)
+    protected open fun onBeforeInstallHooks(lpparam: XC_LoadPackage.LoadPackageParam) = Unit
+
+    private fun handleCapturedQuery(roomId: String, query: String) {
+        val nextTurnState = turnState.nextTurn(
+            roomId = roomId,
+            query = query,
+            mode = if (shouldTakeOver(query)) {
+                TurnMode.NativeTakeover
+            } else {
+                TurnMode.InjectedLLM
+            }
+        )
+        turnState = nextTurnState
+        onTurnStateChanged(nextTurnState)
+
+        if (nextTurnState.mode == TurnMode.NativeTakeover) {
+            onTakeoverTriggered(
+                turnId = nextTurnState.turnId,
+                roomId = roomId,
+                query = query
+            )
+            return
+        }
+
+        dispatchQueryToLLM(
+            turnId = nextTurnState.turnId,
+            roomId = roomId,
+            query = query
+        )
+    }
+
+    protected open fun onTurnStateChanged(state: ConversationTurnState) = Unit
+
+    protected open fun shouldTakeOver(query: String): Boolean = false
+
+    protected open fun onTakeoverTriggered(turnId: Long, roomId: String, query: String) = Unit
+
+    protected open fun onSessionReset(roomId: String = "") {
+        if (turnState.roomId.isNotBlank()) {
+            ConversationJournal.clearRoom(turnState.roomId)
+        }
+        turnState = turnState.resetForRoom(roomId)
+    }
+
+    protected abstract fun installSessionHooks(lpparam: XC_LoadPackage.LoadPackageParam)
+
+    protected abstract fun installResponseHooks(lpparam: XC_LoadPackage.LoadPackageParam)
 
     /**
      * 监听输入逻辑，当捕获到用户输入时，调用 [onInput] 回调
      */
-    protected abstract fun interceptInput(
+    protected abstract fun installInputHooks(
         lpparam: XC_LoadPackage.LoadPackageParam,
-        onInput: (String) -> Unit
+        onInput: (roomId: String, query: String) -> Unit
     )
 
     /**
      * 将查询分发给 LLM SDK
      */
-    protected abstract fun dispatchQueryToLLM(query: String)
+    protected abstract fun dispatchQueryToLLM(turnId: Long, roomId: String, query: String)
 
     /**
      * 渲染流式返回的大模型文本卡片
+     * @param turnId 当前轮次 ID
+     * @param roomId 当前会话 roomId
      * @param chunk 累加后的流式文本块
      * @param isFirst 是否为第一片
      * @param isFinal 是否为最后一片
      */
-    protected abstract fun renderStreamCard(chunk: String, isFirst: Boolean, isFinal: Boolean)
+    protected abstract fun renderStreamCard(
+        turnId: Long,
+        roomId: String,
+        chunk: String,
+        isFirst: Boolean,
+        isFinal: Boolean
+    )
 }
