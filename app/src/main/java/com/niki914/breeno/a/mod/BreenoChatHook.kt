@@ -14,7 +14,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     // 缓存状态
     private var dataCenterInstance: Any? = null
     private var currentRoomId: String = ""
-    private var turnCount: Int = 0 // TODO 改为通知 chat 去 cancel 旧的以及重置聊天状态。这个值本身的意义不大，主要是用这个 hook 来做监听
+    private var turnCount: Int = 0 // 仅用于当前 WIP 阶段的调试展示，后续由 room hook 直接接管取消与清历史
     private var viewBeanClass: Class<*>? = null
 
     // 生成当次唯一的 record id，供大模型卡片流式推流使用
@@ -44,11 +44,11 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
 
     private fun hookRoomIdManager(lpparam: XC_LoadPackage.LoadPackageParam) {
         val roomIdManagerClass = BreenoConfigProvider.roomIdManagerClass ?: return
-        val roomIdManagerMethodP = BreenoConfigProvider.roomIdManagerMethodP ?: return
+        val createRoomMethod = BreenoConfigProvider.roomIdManagerCreateRoomMethod ?: return
 
         lpparam.hookMethod(
             className = roomIdManagerClass,
-            methodName = roomIdManagerMethodP,
+            methodName = createRoomMethod,
             String::class.java, String::class.java,
             after = { param ->
                 xlog("[$name] 新对话已创建! roomMode=${param.args[0]}, src=${param.args[1]}")
@@ -59,37 +59,50 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
 
     override fun blockNativeSkill(lpparam: XC_LoadPackage.LoadPackageParam) {
         val dataCenterClassName = BreenoConfigProvider.dataCenterClass ?: return
-        val dataCenterMethodR = BreenoConfigProvider.dataCenterMethodR ?: return
+        val dataCenterInsertMessageMethod =
+            BreenoConfigProvider.dataCenterInsertMessageMethod ?: return
         val beanClass = viewBeanClass ?: return
 
         val typeAnswer = BreenoConfigProvider.typeAnswer ?: return
-        val allowedSkillTypes = BreenoConfigProvider.allowedSkillTypes
-        val myMockFlagKey =
-            BreenoConfigProvider.mockBeanLocalDataUnit.find { it.second == true }?.first
-                ?: "MY_MOCK_FLAG"
+        val answerSkillPolicyMode = BreenoConfigProvider.answerSkillPolicyMode
+        val answerSkillTypes = BreenoConfigProvider.answerSkillPolicyTypes
+        val myMockFlagKey = BreenoConfigProvider.selfInjectedMockFlagKey
+        val getChatTypeMethod = BreenoConfigProvider.beanGetChatTypeMethod
+        val getSkillTypeMethod = BreenoConfigProvider.beanGetSkillTypeMethod
+        val getClientLocalDataMethod = BreenoConfigProvider.beanGetClientLocalDataMethod
 
         lpparam.hookMethod(
             className = dataCenterClassName,
-            methodName = dataCenterMethodR,
+            methodName = dataCenterInsertMessageMethod,
             beanClass,
             before = before@{ param ->
                 val bean = param.args[0]
-                val chatType = bean.call<Int>("getChatType") ?: return@before // TODO 是否上云
+                val chatType = bean.call<Int>(getChatTypeMethod) ?: return@before
 
                 if (chatType == typeAnswer) {
-                    val skillType = bean.call<String>("getSkillType") // TODO 是否上云
-                    val isMyMock = bean.call<Any>("getClientLocalData", myMockFlagKey) != null
+                    val skillType = bean.call<String>(getSkillTypeMethod)
+                    val isMyMock =
+                        bean.call<Any>(getClientLocalDataMethod, myMockFlagKey) != null
 
                     if (isMyMock) {
                         xlog("[$name] 放行自定义注入卡片")
                         return@before
                     }
 
-                    // 白名单逻辑：如果不包含在允许列表中，则默认拦截
-                    if (skillType == null || !allowedSkillTypes.contains(skillType)) {
-                        xlog("[$name] 拦截非白名单技能卡片: skillType=$skillType")
-                        param.result = null
-                        return@before
+                    when (answerSkillPolicyMode) {
+                        "off" -> return@before
+                        "block_all" -> {
+                            xlog("[$name] 拦截官方技能卡片: mode=block_all, skillType=$skillType")
+                            param.result = null
+                            return@before
+                        }
+                        else -> {
+                            if (skillType == null || !answerSkillTypes.contains(skillType)) {
+                                xlog("[$name] 拦截非白名单技能卡片: skillType=$skillType")
+                                param.result = null
+                                return@before
+                            }
+                        }
                     }
 
                     xlog("[$name] 放行白名单技能卡片: skillType=$skillType")
@@ -103,16 +116,20 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         onInput: (String) -> Unit
     ) {
         val dataCenterClassName = BreenoConfigProvider.dataCenterClass ?: return
-        val dataCenterMethodR = BreenoConfigProvider.dataCenterMethodR ?: return
+        val dataCenterInsertMessageMethod =
+            BreenoConfigProvider.dataCenterInsertMessageMethod ?: return
         val beanClass = viewBeanClass ?: return
 
         val typeQuery = BreenoConfigProvider.typeQuery ?: return
+        val getChatTypeMethod = BreenoConfigProvider.beanGetChatTypeMethod
+        val getRoomIdMethod = BreenoConfigProvider.beanGetRoomIdMethod
+        val getContentMethod = BreenoConfigProvider.beanGetContentMethod
 
-        // 注意：这里由于也是 hook dataCenterMethodR，实际运行中会对同一个方法进行两次 hook (链式调用)。
+        // 注意：这里由于也是 hook insertMessage，实际运行中会对同一个方法进行两次 hook (链式调用)。
         // 这是 Xposed 完全允许的，并且做到了业务逻辑解耦。
         lpparam.hookMethod(
             className = dataCenterClassName,
-            methodName = dataCenterMethodR,
+            methodName = dataCenterInsertMessageMethod,
             beanClass,
             before = before@{ param ->
                 val bean = param.args[0]
@@ -121,12 +138,12 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
                     xlog("[$name] DataCenter 实例已缓存")
                 }
 
-                val chatType = bean.call<Int>("getChatType") ?: return@before
-                val roomId = bean.call<String>("getRoomId") ?: ""
+                val chatType = bean.call<Int>(getChatTypeMethod) ?: return@before
+                val roomId = bean.call<String>(getRoomIdMethod) ?: ""
                 currentRoomId = roomId
 
                 if (chatType == typeQuery) {
-                    val query = bean.call<String>("getContent")
+                    val query = bean.call<String>(getContentMethod)
                     xlog("[$name] 捕获用户输入: $query (roomId=$roomId)")
 
                     if (!query.isNullOrBlank()) {
@@ -150,52 +167,62 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     override fun renderStreamCard(chunk: String, isFirst: Boolean, isFinal: Boolean) {
         xlog("[$name] renderStreamCard called: isFirst=$isFirst, isFinal=$isFinal, chunk length=${chunk.length}")
         val beanClass = viewBeanClass ?: return
-        val dataCenterMethodR = BreenoConfigProvider.dataCenterMethodR ?: return
-        val dataCenterMethodG1 = BreenoConfigProvider.dataCenterMethodG1 ?: return
+        val dataCenterInsertMessageMethod =
+            BreenoConfigProvider.dataCenterInsertMessageMethod ?: return
+        val dataCenterUpdateMessageMethod =
+            BreenoConfigProvider.dataCenterUpdateMessageMethod ?: return
 
         val mockBeanMethodsUnit = BreenoConfigProvider.mockBeanMethodsUnit
         val mockBeanLocalDataUnit = BreenoConfigProvider.mockBeanLocalDataUnit
         val typeAnswer = BreenoConfigProvider.typeAnswer ?: return
+        val hideFeedbackViewLocalDataKey = BreenoConfigProvider.hideFeedbackViewLocalDataKey
+        val setChatTypeMethod = BreenoConfigProvider.beanSetChatTypeMethod
+        val setRoomIdMethod = BreenoConfigProvider.beanSetRoomIdMethod
+        val setRecordIdMethod = BreenoConfigProvider.beanSetRecordIdMethod
+        val setContentMethod = BreenoConfigProvider.beanSetContentMethod
+        val setFinalMethod = BreenoConfigProvider.beanSetFinalMethod
+        val setFirstSliceMethod = BreenoConfigProvider.beanSetFirstSliceMethod
+        val addClientLocalDataMethod = BreenoConfigProvider.beanAddClientLocalDataMethod
 
         if (isFirst || currentMockBean == null) {
             currentMockBean = beanClass.newInstance() // TODO 用 openhook 去看官方的 bean 实例会有哪些字段
-            currentMockBean?.call<Unit>("setChatType", typeAnswer)
-            currentMockBean?.call<Unit>("setRoomId", currentRoomId)
-            currentMockBean?.call<Unit>("setRecordId", currentMockRecordId)
+            currentMockBean?.call<Unit>(setChatTypeMethod, typeAnswer)
+            currentMockBean?.call<Unit>(setRoomIdMethod, currentRoomId)
+            currentMockBean?.call<Unit>(setRecordIdMethod, currentMockRecordId)
 
             mockBeanMethodsUnit.forEach { (methodName, value) ->
                 currentMockBean?.call<Unit>(methodName, value)
             }
             mockBeanLocalDataUnit.forEach { (key, value) ->
                 xlog("[$name] 正在注入 mockBeanLocalDataUnit: key=$key, value=$value")
-                currentMockBean?.call<Unit>("addClientLocalData", key, value)
+                currentMockBean?.call<Unit>(addClientLocalDataMethod, key, value)
             }
         }
 
         val mockBean = currentMockBean ?: return
 
-        mockBean.call<Unit>("setContent", chunk)
-        mockBean.call<Unit>("setFinal", isFinal)
-        mockBean.call<Unit>("setFirstSlice", isFirst)
+        mockBean.call<Unit>(setContentMethod, chunk)
+        mockBean.call<Unit>(setFinalMethod, isFinal)
+        mockBean.call<Unit>(setFirstSliceMethod, isFirst)
         mockBeanMethodsUnit.filter { it.first == "setHasTextPrintAnimPlayed" }
             .forEach { (methodName, value) ->
                 mockBean.call<Unit>(methodName, value)
             }
 
         if (isFirst) {
-            dataCenterInstance?.call<Unit>(dataCenterMethodR, mockBean)
+            dataCenterInstance?.call<Unit>(dataCenterInsertMessageMethod, mockBean)
         } else {
-            dataCenterInstance?.call<Unit>(dataCenterMethodG1, mockBean, false)
+            dataCenterInstance?.call<Unit>(dataCenterUpdateMessageMethod, mockBean, false)
         }
 
         if (isFinal) {
-            mockBeanLocalDataUnit.firstOrNull { (key, _) -> key == "bean_client_key_hide_feedback_view" }
+            mockBeanLocalDataUnit.firstOrNull { (key, _) -> key == hideFeedbackViewLocalDataKey }
                 ?.let {
                     // 在最后恢复原本不该在推流中保留的标识
                     val bool = (it.second as? Boolean) ?: true
-                    mockBean.call<Unit>("addClientLocalData", it.first, !bool)
+                    mockBean.call<Unit>(addClientLocalDataMethod, it.first, !bool)
                 }
-            dataCenterInstance?.call<Unit>(dataCenterMethodG1, mockBean, false)
+            dataCenterInstance?.call<Unit>(dataCenterUpdateMessageMethod, mockBean, false)
             currentMockBean = null // 清空缓存
         }
     }

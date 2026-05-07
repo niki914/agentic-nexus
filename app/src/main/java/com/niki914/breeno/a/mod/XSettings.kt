@@ -20,25 +20,63 @@ fun getConfig(packageName: String, versionCode: Long): String {
         return """
                     {
                         "package_name": "com.heytap.speechassist",
+                        "config_version": 2,
                         "config": {
-                            "room_id_manager_class": "com.heytap.speechassist.aichat.AIChatRoomIdManager",
-                            "room_id_manager_method_p": "p",
-                            "view_bean_class": "com.heytap.speechassist.aichat.bean.AIChatViewBean",
-                            "type_query_value": 1,
-                            "type_answer_value": 2,
-                            "data_center_class": "com.heytap.speechassist.aichat.AIChatDataCenter",
-                            "data_center_method_r": "r",
-                            "data_center_method_g1": "g1",
-                            "mock_bean_methods_unit": [
-                                ["setSkillType", "MyAI.StreamTextCard"],
-                                ["setMsPerChar", 25],
-                                ["setHasTextPrintAnimPlayed", false]
-                            ],
-                            "mock_bean_local_data_unit": [
-                                ["MY_MOCK_FLAG", true],
-                                ["bean_client_key_hide_feedback_view", true]
-                            ],
-                            "allowed_skill_types": []
+                            "classes": {
+                                "room_id_manager": "com.heytap.speechassist.aichat.AIChatRoomIdManager",
+                                "view_bean": "com.heytap.speechassist.aichat.bean.AIChatViewBean",
+                                "data_center": "com.heytap.speechassist.aichat.AIChatDataCenter"
+                            },
+                            "accessors": {
+                                "room_id_manager": {
+                                    "create_room": "p"
+                                },
+                                "bean": {
+                                    "get_chat_type": "getChatType",
+                                    "set_chat_type": "setChatType",
+                                    "get_skill_type": "getSkillType",
+                                    "get_room_id": "getRoomId",
+                                    "set_room_id": "setRoomId",
+                                    "get_content": "getContent",
+                                    "set_content": "setContent",
+                                    "set_record_id": "setRecordId",
+                                    "set_final": "setFinal",
+                                    "set_first_slice": "setFirstSlice",
+                                    "add_client_local_data": "addClientLocalData",
+                                    "get_client_local_data": "getClientLocalData"
+                                },
+                                "data_center": {
+                                    "insert_message": "r",
+                                    "update_message": "g1"
+                                }
+                            },
+                            "schema": {
+                                "chat_type": {
+                                    "query": 1,
+                                    "answer": 2
+                                },
+                                "mock_flags": {
+                                    "self_injected": "MY_MOCK_FLAG",
+                                    "hide_feedback_view": "bean_client_key_hide_feedback_view"
+                                }
+                            },
+                            "runtime": {
+                                "answer_skill_policy": {
+                                    "mode": "whitelist",
+                                    "types": []
+                                },
+                                "mock_defaults": {
+                                    "bean_methods": {
+                                        "setSkillType": "MyAI.StreamTextCard",
+                                        "setMsPerChar": 25,
+                                        "setHasTextPrintAnimPlayed": false
+                                    },
+                                    "local_data": {
+                                        "MY_MOCK_FLAG": true,
+                                        "bean_client_key_hide_feedback_view": true
+                                    }
+                                }
+                            }
                         }
                     }
                 """.trimIndent()

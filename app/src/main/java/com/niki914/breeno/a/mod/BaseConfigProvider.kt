@@ -2,16 +2,33 @@ package com.niki914.breeno.a.mod
 
 import com.niki914.breeno.h.util.KVProvider
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * 抽象的配置提供者基类，用于规范各个语音助手的配置包装器
  */
 abstract class BaseConfigProvider {
-    fun getString(key: String) = runBlocking { KVProvider.getString(key) }
+    private fun getElement(path: String): JsonElement? = runBlocking {
+        var current: JsonElement? = KVProvider.await()[path.substringBefore(".")]
+        path.substringAfter(".", "").takeIf { it.isNotEmpty() }?.split(".")?.forEach { key ->
+            current = (current as? JsonObject)?.get(key)
+        }
+        current
+    }
 
-    fun getBoolean(key: String) = runBlocking { KVProvider.getBoolean(key) }
+    fun getString(path: String) = getElement(path)?.jsonPrimitive?.contentOrNull
 
-    fun getInt(key: String) = runBlocking { KVProvider.getInt(key) }
+    fun getBoolean(path: String) = getElement(path)?.jsonPrimitive?.booleanOrNull
 
-    fun getList(key: String) = runBlocking { KVProvider.getList(key) }
+    fun getInt(path: String) = getElement(path)?.jsonPrimitive?.intOrNull
+
+    fun getList(path: String) = (getElement(path) as? JsonArray)?.toList()
+
+    fun getObject(path: String) = getElement(path) as? JsonObject
 }
