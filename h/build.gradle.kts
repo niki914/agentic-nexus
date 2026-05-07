@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "${BASE_PACKAGE}.h"
+    namespace = "com.niki914.breeno.h"
     compileSdk = 36
 
     defaultConfig {

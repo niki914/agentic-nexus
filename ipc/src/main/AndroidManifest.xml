@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
         <provider
-            android:name="${BASE_PACKAGE}.ipc.SettingsContentProvider"
-            android:authorities="${PROJECT_ROOT_NAME}.ipc.provider"
+            android:name="com.niki914.breeno.ipc.SettingsContentProvider"
+            android:authorities="breeno_openai_reborn.ipc.provider"
             android:exported="true" />
     </application>
 </manifest>
