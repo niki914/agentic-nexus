@@ -39,8 +39,8 @@ class Entrance : IXposed() {
                 xlog("LocalSettings is null: ${params.packageName}")
             } else {
                 KVProvider.provide(settings.props)
-                onSettingsFetched(params)
             }
+            onSettingsFetched(params)
         }
     }
 
@@ -51,7 +51,8 @@ class Entrance : IXposed() {
                 Runtime(
                     scope = scope,
                     hooks = listOf(
-                        ActivityHook()
+                        ActivityHook(),
+                        BreenoChatHook(scope)
                     )
                 )
             }
