@@ -15,8 +15,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -37,23 +35,16 @@ class Entrance : IXposed() {
             val ctx = ContextProvider.await()
             xlog("Entrance: context initialized: $ctx")
 
-            // 模拟从服务端获取带有路由包名和 Config 的 JSON
-            // 实际上此处你可以传入 ctx 获取到的 versionCode，这里伪造为 127400
-            val mockJsonStr = getConfig(params.packageName, 127400)
+            val localSettings = ctx.getLocalSettings()
+            val mockJsonObj = localSettings?.props
+            val targetPkg = mockJsonObj?.get("package_name")?.jsonPrimitive?.contentOrNull
+            val configObj = mockJsonObj?.get("config")?.jsonObject
 
-            try {
-                val jsonObj = Json.decodeFromString<JsonObject>(mockJsonStr)
-                val targetPkg = jsonObj["package_name"]?.jsonPrimitive?.contentOrNull
-                val configObj = jsonObj["config"]?.jsonObject
-
-                if (configObj != null) {
-                    KVProvider.provide(configObj)
-                    onSettingsFetched(params, targetPkg)
-                } else {
-                    xlog("No config found for package: ${params.packageName}")
-                }
-            } catch (e: Throwable) {
-                xlog("Failed to parse config: ${e.message}")
+            if (configObj != null) {
+                KVProvider.provide(configObj)
+                onSettingsFetched(params, targetPkg)
+            } else {
+                xlog("No mock config found for package: ${params.packageName}")
             }
         }
     }

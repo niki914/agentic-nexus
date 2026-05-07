@@ -89,23 +89,25 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
                         return@before
                     }
 
-                    when (answerSkillPolicyMode) {
-                        "off" -> return@before
-                        "block_all" -> {
-                            xlog("[$name] 拦截官方技能卡片: mode=block_all, skillType=$skillType")
+                    val inList = skillType != null && answerSkillTypes.contains(skillType)
+
+                    when {
+                        answerSkillPolicyMode == "blacklist" && inList -> {
+                            xlog("[$name] 拦截黑名单技能卡片: skillType=$skillType")
                             param.result = null
                             return@before
                         }
+
+                        answerSkillPolicyMode == "whitelist" && !inList -> {
+                            xlog("[$name] 拦截非白名单技能卡片: skillType=$skillType")
+                            param.result = null
+                            return@before
+                        }
+
                         else -> {
-                            if (skillType == null || !answerSkillTypes.contains(skillType)) {
-                                xlog("[$name] 拦截非白名单技能卡片: skillType=$skillType")
-                                param.result = null
-                                return@before
-                            }
+                            xlog("[$name] 放行技能卡片: skillType=$skillType")
                         }
                     }
-
-                    xlog("[$name] 放行白名单技能卡片: skillType=$skillType")
                 }
             }
         )
@@ -139,7 +141,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
                 }
 
                 val chatType = bean.call<Int>(getChatTypeMethod) ?: return@before
-                val roomId = bean.call<String>(getRoomIdMethod) ?: ""
+                val roomId = bean.call<String>(getRoomIdMethod) ?: return@before
                 currentRoomId = roomId
 
                 if (chatType == typeQuery) {

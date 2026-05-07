@@ -6,16 +6,17 @@ import com.niki914.breeno.ipc.XConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
-// 伪造的服务端下发接口
-fun getConfig(packageName: String, versionCode: Long): String {
+private fun getMockConfig(packageName: String, versionCode: Long): String {
     if (packageName == "com.heytap.speechassist") {
         return """
                     {
@@ -84,6 +85,19 @@ fun getConfig(packageName: String, versionCode: Long): String {
     return "{}"
 }
 
+private fun buildMockSettings(packageName: String, versionCode: Long): XSettings {
+    val mockJson = runCatching {
+        json.decodeFromString<JsonObject>(getMockConfig(packageName, versionCode))
+    }.getOrElse {
+        xlog("buildMockSettings failed: ${it.stackTraceToString()}")
+        JsonObject(emptyMap())
+    }
+
+    return XSettings(
+        JsonObject(mockJson)
+    )
+}
+
 fun Context.getLocalSettings(): XSettings? = try {
     XConfig.get(this).toXSettings().also {
         xlog("LocalSettings received: $it")
@@ -94,9 +108,12 @@ fun Context.getLocalSettings(): XSettings? = try {
 }
 
 suspend fun Context.refreshLocalSettings() = withContext(Dispatchers.IO) {
-    val json = fetchXSettingsSync() ?: return@withContext
-    XConfig.updateFromServerJson(this@refreshLocalSettings, json)
-    xlog("LocalSettings refreshed: $json")
+    val settings = buildMockSettings(
+        packageName = "com.heytap.speechassist",
+        versionCode = 127400
+    )
+    XConfig.updateFromServerJson(this@refreshLocalSettings, settings.props.toString())
+    xlog("LocalSettings refreshed: ${settings.props}")
 }
 
 data class XSettings(
@@ -111,6 +128,12 @@ data class XSettings(
 
     fun getInt(key: String, default: Int = 0) =
         props[key]?.jsonPrimitive?.intOrNull ?: default
+
+    fun getObject(key: String): JsonObject? =
+        props[key]?.jsonObject
+
+    fun getElement(key: String): JsonElement? =
+        props[key]
 }
 
 private val json = Json { ignoreUnknownKeys = true }

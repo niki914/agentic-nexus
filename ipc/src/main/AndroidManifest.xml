@@ -3,7 +3,7 @@
     <application>
         <provider
             android:name="com.niki914.breeno.ipc.SettingsContentProvider"
-            android:authorities="breeno_openai_reborn.ipc.provider"
+            android:authorities="com.niki914.breeno.ipc.provider"
             android:exported="true" />
     </application>
 </manifest>
