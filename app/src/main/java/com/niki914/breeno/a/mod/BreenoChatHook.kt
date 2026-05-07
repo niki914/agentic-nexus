@@ -5,7 +5,6 @@ import com.niki914.breeno.h.util.call
 import com.niki914.breeno.h.util.findClass
 import com.niki914.breeno.h.util.hookMethod
 import com.niki914.breeno.h.util.xlog
-import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,80 +25,90 @@ class BreenoChatHook(private val scope: CoroutineScope) : Hook {
     override fun onHook(lpparam: XC_LoadPackage.LoadPackageParam) {
         xlog("BreenoChatHook installing...")
 
-        // 1. 生命周期管控：监听新对话创建
-        lpparam.hookMethod(
-            className = "com.heytap.speechassist.aichat.AIChatRoomIdManager",
-            methodName = "p",
-            String::class.java, String::class.java,
-            after = { param ->
-                xlog("[BreenoChatHook] 新对话已创建! roomMode=${param.args[0]}, src=${param.args[1]}")
-                // 重置对话轮数
-                turnCount = 0
-                // TODO: 在这里清空大模型历史对话上下文
-                // MyLLMContextManager.clearHistory()
+        scope.launch {
+            val roomIdManagerClass = BreenoConfigProvider.getRoomIdManagerClass() ?: return@launch
+            val roomIdManagerMethodP = BreenoConfigProvider.getRoomIdManagerMethodP() ?: return@launch
+
+            val viewBeanClassName = BreenoConfigProvider.getViewBeanClass() ?: return@launch
+            val typeQuery = BreenoConfigProvider.getTypeQueryValue() ?: return@launch
+            val typeAnswer = BreenoConfigProvider.getTypeAnswerValue() ?: return@launch
+
+            val dataCenterClassName = BreenoConfigProvider.getDataCenterClass() ?: return@launch
+            val dataCenterMethodR = BreenoConfigProvider.getDataCenterMethodR() ?: return@launch
+
+            try {
+                lpparam.hookMethod(
+                    className = roomIdManagerClass,
+                    methodName = roomIdManagerMethodP,
+                    String::class.java, String::class.java,
+                    after = { param ->
+                        xlog("[BreenoChatHook] 新对话已创建! roomMode=${param.args[0]}, src=${param.args[1]}")
+                        turnCount = 0
+                    }
+                )
+            } catch (e: Throwable) {
+                xlog("[BreenoChatHook] Hook RoomIdManager failed: ${e.message}")
             }
-        )
 
-        // 2. 数据流上帝控制台：拦截与注入
-        val viewBeanClass = lpparam.findClass("com.heytap.speechassist.aichat.bean.AIChatViewBean")
-        val typeQuery = XposedHelpers.getStaticIntField(viewBeanClass, "TYPE_QUERY")
-        val typeAnswer = XposedHelpers.getStaticIntField(viewBeanClass, "TYPE_ANSWER")
+            val myMockFlagKey = BreenoConfigProvider.getMockBeanLocalDataUnit().find { it.second == true }?.first ?: "MY_MOCK_FLAG"
+            val blockedSkillTypes = BreenoConfigProvider.getBlockedSkillTypes()
+            try {
+                val viewBeanClass = lpparam.findClass(viewBeanClassName)
 
-        lpparam.hookMethod(
-            className = "com.heytap.speechassist.aichat.AIChatDataCenter",
-            methodName = "r",
-            viewBeanClass,
-            before = before@ { param ->
-                val bean = param.args[0]
-                if (dataCenterInstance == null) {
-                    dataCenterInstance = param.thisObject
-                    xlog("[BreenoChatHook] DataCenter 实例已缓存")
-                }
+                lpparam.hookMethod(
+                    className = dataCenterClassName,
+                    methodName = dataCenterMethodR,
+                    viewBeanClass,
+                    before = before@ { param ->
+                        val bean = param.args[0]
+                        if (dataCenterInstance == null) {
+                            dataCenterInstance = param.thisObject
+                            xlog("[BreenoChatHook] DataCenter 实例已缓存")
+                        }
 
-                val chatType = bean.call<Int>("getChatType") ?: return@before
-                val roomId = bean.call<String>("getRoomId") ?: ""
-                currentRoomId = roomId // 更新最新的 roomId
+                        val chatType = bean.call<Int>("getChatType") ?: return@before
+                        val roomId = bean.call<String>("getRoomId") ?: ""
+                        currentRoomId = roomId
 
-                if (chatType == typeQuery) {
-                    val query = bean.call<String>("getContent")
-                    xlog("[BreenoChatHook] 捕获用户输入: $query (roomId=$roomId)")
-                    
-                    // 拦截到了输入，增加对话轮数并触发我们的 MVP Mock 流
-                    if (!query.isNullOrBlank()) {
-                        turnCount++
-                        triggerMockStream(roomId, viewBeanClass)
+                        if (chatType == typeQuery) {
+                            val query = bean.call<String>("getContent")
+                            xlog("[BreenoChatHook] 捕获用户输入: $query (roomId=$roomId)")
+                            
+                            if (!query.isNullOrBlank()) {
+                                turnCount++
+                                triggerMockStream(roomId, viewBeanClass)
+                            }
+                            return@before
+                        }
+
+                        if (chatType == typeAnswer) {
+                            val skillType = bean.call<String>("getSkillType")
+                            val isMyMock = bean.call<Any>("getClientLocalData", myMockFlagKey) != null
+
+                            if (isMyMock) {
+                                xlog("[BreenoChatHook] 放行自定义注入卡片")
+                                return@before
+                            }
+
+                            if (skillType != null && blockedSkillTypes.contains(skillType)) {
+                                xlog("[BreenoChatHook] 拦截命中黑名单技能卡片: skillType=$skillType")
+                                param.result = null
+                                return@before
+                            }
+
+                            xlog("[BreenoChatHook] 放行未知/非黑名单技能卡片: skillType=$skillType")
+                        }
                     }
-                    return@before
-                }
-
-                if (chatType == typeAnswer) {
-                    val skillType = bean.call<String>("getSkillType")
-                    val isMyMock = bean.call<Any>("getClientLocalData", "MY_MOCK_FLAG") != null
-
-                    // 自己注入的数据，绝对放行
-                    if (isMyMock) {
-                        xlog("[BreenoChatHook] 放行自定义注入卡片")
-                        return@before
-                    }
-
-                    // 放行原生垂直领域技能 (例如闹钟 Countdown, 天气 Weather 等)
-                    if (skillType != null && skillType != "MyAI.StreamTextCard") {
-                        xlog("[BreenoChatHook] 放行原生技能卡片: $skillType")
-                        return@before
-                    }
-
-                    // 否则，这大概率是官方的废话、闲聊或者大模型回复，静默掐断！
-                    xlog("[BreenoChatHook] 拦截官方卡片: skillType=$skillType")
-                    param.result = null 
-                }
+                )
+            } catch (e: Throwable) {
+                xlog("[BreenoChatHook] Hook DataCenter failed: ${e.message}")
             }
-        )
+        }
     }
 
     // MVP 模拟打字机流式响应
     private fun triggerMockStream(roomId: String, beanClass: Class<*>) {
         scope.launch(Dispatchers.IO) {
-            // 稍等一会，模拟网络延迟
             delay(500)
             
             val mockData = listOf(
@@ -109,51 +118,54 @@ class BreenoChatHook(private val scope: CoroutineScope) : Hook {
             )
             val accumulator = StringBuilder()
             
-            // 实例化一个新的 Bean 用于承载整条流式回答
+            val dataCenterMethodR = BreenoConfigProvider.getDataCenterMethodR() ?: return@launch
+            val dataCenterMethodG1 = BreenoConfigProvider.getDataCenterMethodG1() ?: return@launch
+            
+            val mockBeanMethodsUnit = BreenoConfigProvider.getMockBeanMethodsUnit()
+            val mockBeanLocalDataUnit = BreenoConfigProvider.getMockBeanLocalDataUnit()
+            val typeAnswer = BreenoConfigProvider.getTypeAnswerValue() ?: return@launch
+            
             val mockBean = beanClass.newInstance()
-            val typeAnswer = XposedHelpers.getStaticIntField(beanClass, "TYPE_ANSWER")
             val uniqueRecordId = "mock_record_${roomId}_${System.currentTimeMillis()}"
             
-            // 基础属性初始化
             mockBean.call<Unit>("setChatType", typeAnswer)
             mockBean.call<Unit>("setRoomId", roomId)
             mockBean.call<Unit>("setRecordId", uniqueRecordId) 
-            mockBean.call<Unit>("addClientLocalData", "MY_MOCK_FLAG", true)
-            // 极其关键的修复：必须伪装成官方的流式卡片类型，否则 UI 拒绝播放打字机动画！
-            mockBean.call<Unit>("setSkillType", "MyAI.StreamTextCard")
-            // 强制显示底部反馈按钮（复制/点赞）
-            mockBean.call<Unit>("addClientLocalData", "bean_client_key_hide_feedback_view", true)
-            // 修复打字机动画：设置打字速度，并将播放标记设为 false，通知 UI 播放动画
-            mockBean.call<Unit>("setMsPerChar", 50)
-            mockBean.call<Unit>("setHasTextPrintAnimPlayed", false)
+            
+            mockBeanMethodsUnit.forEach { (methodName, value) ->
+                mockBean.call<Unit>(methodName, value)
+            }
+            mockBeanLocalDataUnit.forEach { (key, value) ->
+                mockBean.call<Unit>("addClientLocalData", key, value)
+            }
 
             mockData.forEachIndexed { index, segment ->
                 accumulator.append(segment)
                 val isFinal = (index == mockData.size - 1)
                 val isFirst = (index == 0)
 
-                // 更新状态
                 mockBean.call<Unit>("setContent", accumulator.toString())
                 mockBean.call<Unit>("setFinal", isFinal)
                 mockBean.call<Unit>("setFirstSlice", isFirst)
-                // 极其关键：每次推流都必须重置动画锁，告诉 UI 有新字来了，赶紧播动画！
-                mockBean.call<Unit>("setHasTextPrintAnimPlayed", false)
-                
-                if (isFirst) {
-                    // 第一帧：调用 r() 方法，把气泡【添加】到列表中
-                    dataCenterInstance?.call<Unit>("r", mockBean)
-                } else {
-                    // 后续帧：调用 g1() 方法，只【通知 UI 刷新】已存在的这个气泡
-                    // public final void g1(AIChatViewBean bean, boolean z11)
-                    dataCenterInstance?.call<Unit>("g1", mockBean, false)
+                mockBeanMethodsUnit.filter { it.first == "setHasTextPrintAnimPlayed" }.forEach { (methodName, value) ->
+                    mockBean.call<Unit>(methodName, value)
                 }
                 
-                // 模拟打字机推流间隔
+                if (isFirst) {
+                    dataCenterInstance?.call<Unit>(dataCenterMethodR, mockBean)
+                } else {
+                    dataCenterInstance?.call<Unit>(dataCenterMethodG1, mockBean, false)
+                }
+                
                 delay(150)
             }
-            // 强制显示底部反馈按钮（复制/点赞/分享）
-            mockBean.call<Unit>("addClientLocalData", "bean_client_key_hide_feedback_view", false)
-            dataCenterInstance?.call<Unit>("g1", mockBean, false)
+            mockBeanLocalDataUnit.forEach { (key, value) ->
+                // 在最后恢复原本不该在推流中保留的标识
+                if (key == "bean_client_key_hide_feedback_view" && value is Boolean) {
+                    mockBean.call<Unit>("addClientLocalData", key, !value)
+                }
+            }
+            dataCenterInstance?.call<Unit>(dataCenterMethodG1, mockBean, false)
         }
     }
 }

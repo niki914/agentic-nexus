@@ -36,7 +36,34 @@ class Entrance : IXposed() {
             val settings = ctx.getLocalSettings()
             xlog("Entrance: context initialized: $ctx")
             if (settings == null) {
-                xlog("LocalSettings is null: ${params.packageName}")
+                xlog("LocalSettings is null: ${params.packageName}, using mock json")
+                val mockJson = """
+                    {
+                        "room_id_manager_class": "com.heytap.speechassist.aichat.AIChatRoomIdManager",
+                        "room_id_manager_method_p": "p",
+                        "view_bean_class": "com.heytap.speechassist.aichat.bean.AIChatViewBean",
+                        "type_query_value": 1,
+                        "type_answer_value": 2,
+                        "data_center_class": "com.heytap.speechassist.aichat.AIChatDataCenter",
+                        "data_center_method_r": "r",
+                        "data_center_method_g1": "g1",
+                        "mock_bean_methods_unit": [
+                            ["setSkillType", "MyAI.StreamTextCard"],
+                            ["setMsPerChar", 50],
+                            ["setHasTextPrintAnimPlayed", false]
+                        ],
+                        "mock_bean_local_data_unit": [
+                            ["MY_MOCK_FLAG", true],
+                            ["bean_client_key_hide_feedback_view", true]
+                        ],
+                        "blocked_skill_types": [
+                            "MyAI.StreamTextCard",
+                            "MyAI.TextCard",
+                            "MyAI.RichTextCard"
+                        ]
+                    }
+                """.trimIndent()
+                KVProvider.provide(mockJson.toXSettings().props)
             } else {
                 KVProvider.provide(settings.props)
             }
