@@ -199,6 +199,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
                 xlog("[$name] 正在注入 mockBeanLocalDataUnit: key=$key, value=$value")
                 currentMockBean?.call<Unit>(addClientLocalDataMethod, key, value)
             }
+            currentMockBean?.let(BreenoFeedbackAssembler::attachIfNeeded)
         }
 
         val mockBean = currentMockBean ?: return

@@ -26,7 +26,9 @@ private fun getMockConfig(packageName: String, versionCode: Long): String {
                             "classes": {
                                 "room_id_manager": "com.heytap.speechassist.aichat.AIChatRoomIdManager",
                                 "view_bean": "com.heytap.speechassist.aichat.bean.AIChatViewBean",
-                                "data_center": "com.heytap.speechassist.aichat.AIChatDataCenter"
+                                "data_center": "com.heytap.speechassist.aichat.AIChatDataCenter",
+                                "feedback_info": "com.heytap.speech.engine.protocol.directive.tracking.BreenoFeedback",
+                                "footer_info": "com.heytap.speech.engine.protocol.directive.tracking.FooterInfo"
                             },
                             "accessors": {
                                 "room_id_manager": {
@@ -43,8 +45,16 @@ private fun getMockConfig(packageName: String, versionCode: Long): String {
                                     "set_record_id": "setRecordId",
                                     "set_final": "setFinal",
                                     "set_first_slice": "setFirstSlice",
+                                    "set_feedback_info": "setFeedBackInfo",
                                     "add_client_local_data": "addClientLocalData",
                                     "get_client_local_data": "getClientLocalData"
+                                },
+                                "feedback": {
+                                    "set_footer_info": "setFooterInfo"
+                                },
+                                "footer_info": {
+                                    "set_copy_flag": "setCopyFlag",
+                                    "set_upvote_flag": "setUpvoteFlag"
                                 },
                                 "data_center": {
                                     "insert_message": "r",
@@ -66,14 +76,27 @@ private fun getMockConfig(packageName: String, versionCode: Long): String {
                                     "mode": "whitelist",
                                     "types": []
                                 },
+                                "feedback_defaults": {
+                                    "copy_flag": true,
+                                    "upvote_flag": true
+                                },
                                 "mock_defaults": {
                                     "bean_methods": {
                                         "setSkillType": "MyAI.StreamTextCard",
+                                        "setInputType": 1,
+                                        "setBasicContextView": true,
+                                        "setModeType": -1,
+                                        "setShowStatement": true,
+                                        "setStatement": "> Powered By niki914",
+                                        "setShowTTSPlayIcon": false,
                                         "setMsPerChar": 25,
                                         "setHasTextPrintAnimPlayed": false
                                     },
                                     "local_data": {
                                         "MY_MOCK_FLAG": true,
+                                        "fromcui": true,
+                                        "resultStart": true,
+                                        "key_dash_line": true,
                                         "bean_client_key_hide_feedback_view": true
                                     }
                                 }

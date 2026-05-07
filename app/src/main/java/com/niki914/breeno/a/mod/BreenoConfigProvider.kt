@@ -21,6 +21,12 @@ object BreenoConfigProvider : BaseConfigProvider() {
     val dataCenterClass: String?
         get() = getString("classes.data_center") ?: getString("data_center_class")
 
+    val feedbackInfoClass: String?
+        get() = getString("classes.feedback_info")
+
+    val footerInfoClass: String?
+        get() = getString("classes.footer_info")
+
     val dataCenterInsertMessageMethod: String?
         get() = getString("accessors.data_center.insert_message")
             ?: getString("data_center_method_r")
@@ -65,6 +71,18 @@ object BreenoConfigProvider : BaseConfigProvider() {
     val beanGetClientLocalDataMethod: String
         get() = getString("accessors.bean.get_client_local_data") ?: "getClientLocalData"
 
+    val beanSetFeedbackInfoMethod: String
+        get() = getString("accessors.bean.set_feedback_info") ?: "setFeedBackInfo"
+
+    val feedbackSetFooterInfoMethod: String
+        get() = getString("accessors.feedback.set_footer_info") ?: "setFooterInfo"
+
+    val footerInfoSetCopyFlagMethod: String
+        get() = getString("accessors.footer_info.set_copy_flag") ?: "setCopyFlag"
+
+    val footerInfoSetUpvoteFlagMethod: String
+        get() = getString("accessors.footer_info.set_upvote_flag") ?: "setUpvoteFlag"
+
     val typeQuery: Int?
         get() = getInt("schema.chat_type.query") ?: getInt("type_query_value")
 
@@ -90,6 +108,12 @@ object BreenoConfigProvider : BaseConfigProvider() {
                 ?: return emptyList()
             return list.mapNotNull { it.jsonPrimitive.contentOrNull }
         }
+
+    val feedbackCopyFlagEnabled: Boolean
+        get() = getBoolean("runtime.feedback_defaults.copy_flag") ?: true
+
+    val feedbackUpvoteFlagEnabled: Boolean
+        get() = getBoolean("runtime.feedback_defaults.upvote_flag") ?: true
 
     val mockBeanLocalDataUnit: List<Pair<String, Any>>
         get() = readConfigPairs(
