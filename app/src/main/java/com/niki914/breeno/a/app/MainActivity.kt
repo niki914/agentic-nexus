@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
 //            requestPermission(Manifest.permission.POST_NOTIFICATIONS)
 //        }
 
-        // TODO Use dynamic glass~
+        // TODO Use liquid glass~
 
         setContent {
             BaseTheme { // 应用动态颜色主题
@@ -39,6 +39,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        lifecycleScope.launch(Dispatchers.IO) { refreshLocalSettings() }
+        lifecycleScope.launch(Dispatchers.IO) {
+            val targetPkg = "com.heytap.speechassist"
+            val versionCode = com.niki914.breeno.h.util.RootUtils.getPackageVersionCode(targetPkg)
+            if (versionCode != null) {
+                refreshLocalSettings(targetPkg, versionCode)
+            } else {
+                com.niki914.breeno.h.util.xlog("RootUtils: Failed to get version code for $targetPkg via su")
+            }
+        }
     }
 }

@@ -17,106 +17,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
-private fun getMockConfig(packageName: String, versionCode: Long): String {
-    if (packageName == "com.heytap.speechassist") {
-        return """
-                    {
-                        "package_name": "com.heytap.speechassist",
-                        "config_version": 2,
-                        "config": {
-                            "classes": {
-                                "room_id_manager": "com.heytap.speechassist.aichat.AIChatRoomIdManager",
-                                "view_bean": "com.heytap.speechassist.aichat.bean.AIChatViewBean",
-                                "data_center": "com.heytap.speechassist.aichat.AIChatDataCenter",
-                                "feedback_info": "com.heytap.speech.engine.protocol.directive.tracking.BreenoFeedback",
-                                "footer_info": "com.heytap.speech.engine.protocol.directive.tracking.FooterInfo"
-                            },
-                            "accessors": {
-                                "room_id_manager": {
-                                    "create_room": "p"
-                                },
-                                "bean": {
-                                    "get_chat_type": "getChatType",
-                                    "set_chat_type": "setChatType",
-                                    "get_skill_type": "getSkillType",
-                                    "get_room_id": "getRoomId",
-                                    "set_room_id": "setRoomId",
-                                    "get_content": "getContent",
-                                    "set_content": "setContent",
-                                    "set_record_id": "setRecordId",
-                                    "set_final": "setFinal",
-                                    "set_first_slice": "setFirstSlice",
-                                    "set_feedback_info": "setFeedBackInfo",
-                                    "add_client_local_data": "addClientLocalData",
-                                    "get_client_local_data": "getClientLocalData"
-                                },
-                                "feedback": {
-                                    "set_footer_info": "setFooterInfo"
-                                },
-                                "footer_info": {
-                                    "set_copy_flag": "setCopyFlag",
-                                    "set_upvote_flag": "setUpvoteFlag"
-                                },
-                                "data_center": {
-                                    "insert_message": "r",
-                                    "update_message": "g1"
-                                }
-                            },
-                            "schema": {
-                                "chat_type": {
-                                    "query": 1,
-                                    "answer": 2
-                                },
-                                "mock_flags": {
-                                    "self_injected": "MY_MOCK_FLAG",
-                                    "hide_feedback_view": "bean_client_key_hide_feedback_view"
-                                }
-                            },
-                            "runtime": {
-                                "answer_skill_policy": {
-                                    "mode": "whitelist",
-                                    "types": []
-                                },
-                                "feedback_defaults": {
-                                    "copy_flag": true,
-                                    "upvote_flag": true
-                                },
-                                "mock_defaults": {
-                                    "bean_methods": {
-                                        "setSkillType": "MyAI.StreamTextCard",
-                                        "setBasicContextView": true,
-                                        "setModeType": -1,
-                                        "setShowStatement": true,
-                                        "setStatement": "> Powered By niki914",
-                                        "setShowTTSPlayIcon": false,
-                                        "setMsPerChar": 25,
-                                        "setHasTextPrintAnimPlayed": false
-                                    },
-                                    "local_data": {
-                                        "MY_MOCK_FLAG": true,
-                                        "fromcui": true,
-                                        "resultStart": true,
-                                        "key_dash_line": true,
-                                        "bean_client_key_hide_feedback_view": true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                """.trimIndent()
-    }
-    return "{}"
-}
-
-private fun buildMockSettings(packageName: String, versionCode: Long): XSettings {
-    val mockJson = xTry {
-        json.decodeFromString<JsonObject>(getMockConfig(packageName, versionCode))
-    } ?: JsonObject(emptyMap())
-
-    return XSettings(
-        JsonObject(mockJson)
-    )
-}
 
 fun Context.getLocalSettings(): XSettings? = xTry("getLocalSettings") {
     XConfig.get(this).toXSettings().also {
@@ -124,19 +24,30 @@ fun Context.getLocalSettings(): XSettings? = xTry("getLocalSettings") {
     }
 }
 
-suspend fun Context.refreshLocalSettings() = withContext(Dispatchers.IO) {
-    val remoteJson = fetchXSettingsSync()
+suspend fun Context.refreshLocalSettings(packageName: String, versionCode: Long) = withContext(Dispatchers.IO) {
+    val remoteJson = fetchXSettingsSync(packageName, versionCode)
     if (remoteJson != null) {
         XConfig.updateFromServerJson(this@refreshLocalSettings, remoteJson)
-        xlog("LocalSettings refreshed from remote: $remoteJson")
+        xlog("LocalSettings refreshed from remote for $packageName ($versionCode): $remoteJson")
     } else {
-        xlog("LocalSettings refresh failed: remote JSON is null")
+        xlog("LocalSettings refresh failed for $packageName ($versionCode): remote JSON is null")
     }
 }
 
 data class XSettings(
     val props: JsonObject // 支持自由键值对
 ) {
+    companion object {
+        fun buildUrl(packageName: String, versionCode: Long): String {
+            // 保持与 server.py 目录结构一致: {packageName}/{versionCode}/config.json
+            // 注意：packageName 里的点号在 URL 中是正常的，但建议在 server 端对应目录名
+            val host = "127.0.0.1:8788"
+            // 简单处理：如果是 com.heytap.speechassist，对应目录名为 breeno
+            val alias = if (packageName == "com.heytap.speechassist") "breeno" else packageName
+            return "http://$host/$alias/$versionCode/config.json"
+        }
+    }
+    // ... 保持其他方法不变
     // 封装便捷的取值方法，抹平读取 JsonElement 时繁琐的 .jsonPrimitive 强转
     fun getString(key: String, default: String = "") =
         props[key]?.jsonPrimitive?.contentOrNull ?: default
@@ -164,15 +75,16 @@ fun String.toXSettings(): XSettings {
     } ?: XSettings(JsonObject(emptyMap()))
 }
 
-fun fetchXSettingsSync(): String? {
+fun fetchXSettingsSync(packageName: String, versionCode: Long): String? {
     val client = OkHttpClient()
+    val url = XSettings.buildUrl(packageName, versionCode)
     val request = Request.Builder()
-        .url(Entrance.SETTINGS_URL)
+        .url(url)
         .build()
     return xTry {
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful || response.body == null) {
-                xlog("fetchXSettingsSync failed: code: ${response.code}, body: ${response.body?.string()}")
+                xlog("fetchXSettingsSync failed for $url: code: ${response.code}")
                 return@xTry null
             }
             response.body?.string()

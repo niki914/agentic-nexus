@@ -22,7 +22,6 @@ import kotlinx.serialization.json.jsonPrimitive
 @Keep
 class Entrance : IXposed() {
     companion object {
-        const val SETTINGS_URL = "http://127.0.0.1:8788/breeno/127400/config.json"
         private val scope by lazy { CoroutineScope(Dispatchers.Default + SupervisorJob()) }
     }
 
