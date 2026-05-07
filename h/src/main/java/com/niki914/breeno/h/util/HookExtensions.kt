@@ -5,8 +5,8 @@ import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
 
-fun XC_LoadPackage.LoadPackageParam.findClass(name: String): Class<*> =
-    XposedHelpers.findClass(name, this.classLoader)
+fun XC_LoadPackage.LoadPackageParam.findClass(name: String): Class<*>? =
+    xTry(name) { XposedHelpers.findClass(name, this.classLoader) }
 
 fun XC_LoadPackage.LoadPackageParam.hookMethod(
     className: String,
@@ -16,38 +16,22 @@ fun XC_LoadPackage.LoadPackageParam.hookMethod(
     after: (XC_MethodHook.MethodHookParam) -> Unit = {},
     onError: ((Throwable?) -> Unit)? = null
 ) {
-    try {
-        val clazz = findClass(className)
+    val hookName = "$className#$methodName"
+    xTry(hookName, onError) {
+        val clazz = findClass(className) ?: return@xTry
         val hookParams = arrayOf(*params, object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam) {
-                runCatching { before(param) }
-                    .onFailure {
-                        xlogHookFailed("$className#$methodName", it)
-                        inspectClass(className)
-                        onError?.invoke(it)
-                    }
+                xTry(hookName, onError) { before(param) }
             }
 
             override fun afterHookedMethod(param: MethodHookParam) {
-                runCatching { after(param) }
-                    .onFailure {
-                        xlogHookFailed("$className#$methodName", it)
-                        inspectClass(className)
-                        onError?.invoke(it)
-                    }
+                xTry(hookName, onError) { after(param) }
             }
         })
         XposedHelpers.findAndHookMethod(clazz, methodName, *hookParams)
-    } catch (t: Throwable) {
-        xlogHookFailed("$className#$methodName", t)
-        inspectClass(className)
-        onError?.invoke(t)
     }
 }
 
-/**
- * Helper for constructor hooks.
- */
 fun XC_LoadPackage.LoadPackageParam.hookConstructor(
     className: String,
     vararg params: Any?,
@@ -55,32 +39,19 @@ fun XC_LoadPackage.LoadPackageParam.hookConstructor(
     after: (XC_MethodHook.MethodHookParam) -> Unit = {},
     onError: ((Throwable?) -> Unit)? = null
 ) {
-    try {
-        val clazz = findClass(className)
+    val hookName = "$className#CONSTRUCTOR"
+    xTry(hookName, onError) {
+        val clazz = findClass(className) ?: return@xTry
         val hookParams = arrayOf(*params, object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam) {
-                runCatching { before(param) }
-                    .onFailure {
-                        xlogHookFailed("$className#CONSTRUCTOR", it)
-                        inspectClass(className)
-                        onError?.invoke(it)
-                    }
+                xTry(hookName, onError) { before(param) }
             }
 
             override fun afterHookedMethod(param: MethodHookParam) {
-                runCatching { after(param) }
-                    .onFailure {
-                        xlogHookFailed("$className#CONSTRUCTOR", it)
-                        inspectClass(className)
-                        onError?.invoke(it)
-                    }
+                xTry(hookName, onError) { after(param) }
             }
         })
         XposedHelpers.findAndHookConstructor(clazz, *hookParams)
-    } catch (t: Throwable) {
-        xlogHookFailed("$className#CONSTRUCTOR", t)
-        inspectClass(className)
-        onError?.invoke(t)
     }
 }
 
@@ -89,14 +60,14 @@ fun hookKey(
     className: String,
     methodName: String,
     paramTypes: List<Class<*>>
-): String {
-    return "$stage:$className#$methodName(${paramTypes.joinToString(",") { it.name }})"
-}
+): String = xTry("hookKey:$className#$methodName") {
+    "$stage:$className#$methodName(${paramTypes.joinToString(",") { it.name }})"
+} ?: ""
 
 fun constructorHookKey(
     stage: String,
     className: String,
     paramTypes: List<Class<*>>
-): String {
-    return "$stage:$className#CONSTRUCTOR(${paramTypes.joinToString(",") { it.name }})"
-}
+): String = xTry("constructorHookKey:$className") {
+    "$stage:$className#CONSTRUCTOR(${paramTypes.joinToString(",") { it.name }})"
+} ?: ""

@@ -42,7 +42,7 @@ fun Class<*>.inspect(): String {
 
 fun XC_LoadPackage.LoadPackageParam.inspectClass(className: String) {
     runCatching {
-        val clazz = findClass(className)
+        val clazz = findClass(className)!!
         xlog(clazz.inspect())
     }.onFailure {
         xlog("Inspect failed for $className: ${it.message}")

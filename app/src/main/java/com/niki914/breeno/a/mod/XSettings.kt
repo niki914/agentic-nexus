@@ -1,6 +1,7 @@
 package com.niki914.breeno.a.mod
 
 import android.content.Context
+import com.niki914.breeno.h.util.xTry
 import com.niki914.breeno.h.util.xlog
 import com.niki914.breeno.ipc.XConfig
 import kotlinx.coroutines.Dispatchers
@@ -109,25 +110,19 @@ private fun getMockConfig(packageName: String, versionCode: Long): String {
 }
 
 private fun buildMockSettings(packageName: String, versionCode: Long): XSettings {
-    val mockJson = runCatching {
+    val mockJson = xTry {
         json.decodeFromString<JsonObject>(getMockConfig(packageName, versionCode))
-    }.getOrElse {
-        xlog("buildMockSettings failed: ${it.stackTraceToString()}")
-        JsonObject(emptyMap())
-    }
+    } ?: JsonObject(emptyMap())
 
     return XSettings(
         JsonObject(mockJson)
     )
 }
 
-fun Context.getLocalSettings(): XSettings? = try {
+fun Context.getLocalSettings(): XSettings? = xTry("getLocalSettings") {
     XConfig.get(this).toXSettings().also {
         xlog("LocalSettings received: $it")
     }
-} catch (t: Throwable) {
-    xlog("LocalSettings received failed: ${t.stackTraceToString()}")
-    null
 }
 
 suspend fun Context.refreshLocalSettings() = withContext(Dispatchers.IO) {
@@ -164,11 +159,9 @@ private val json = Json { ignoreUnknownKeys = true }
 fun String.toXSettings(): XSettings {
     if (this.isBlank()) return XSettings(JsonObject(emptyMap()))
 
-    return runCatching {
+    return xTry {
         XSettings(json.decodeFromString<JsonObject>(this))
-    }.onFailure {
-        xlog("toXSettings failed: ${it.stackTraceToString()}")
-    }.getOrDefault(XSettings(JsonObject(emptyMap())))
+    } ?: XSettings(JsonObject(emptyMap()))
 }
 
 fun fetchXSettingsSync(): String? {
@@ -176,13 +169,13 @@ fun fetchXSettingsSync(): String? {
     val request = Request.Builder()
         .url(Entrance.SETTINGS_URL)
         .build()
-    return runCatching {
+    return xTry {
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful || response.body == null) {
                 xlog("fetchXSettingsSync failed: code: ${response.code}, body: ${response.body?.string()}")
-                return null
+                return@xTry null
             }
-            return response.body?.string()
+            response.body?.string()
         }
-    }.getOrNull()
+    }
 }

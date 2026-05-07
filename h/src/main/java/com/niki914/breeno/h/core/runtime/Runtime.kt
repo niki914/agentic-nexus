@@ -1,5 +1,6 @@
 package com.niki914.breeno.h.core.runtime
 
+import com.niki914.breeno.h.util.xTry
 import com.niki914.breeno.h.util.xtlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
@@ -31,32 +32,22 @@ class Runtime(
 
         // 1. Execute synchronous hooks immediately on the current (main) thread
         syncHooks.forEach { hook ->
-            runCatching { hook.onHook(params) }.onFailure { t ->
-                xtlog(TAG, "Sync hook [${hook.javaClass.simpleName}] failed: ${t.message}")
-            }
+            xTry { hook.onHook(params) }
         }
 
         // 2. Execute asynchronous hooks requiring DexKit scanning in a background coroutine
         if (dexkitHooks.isNotEmpty()) {
             scope.launch {
-                runCatching {
+                xTry {
                     val ms = measureTimeMillis {
                         System.loadLibrary("dexkit")
                         DexKitBridge.create(params.appInfo.sourceDir).use { bridge ->
                             dexkitHooks.forEach { hook ->
-                                runCatching { hook.onHookWithDexkit(params, bridge) }
-                                    .onFailure { t ->
-                                        xtlog(
-                                            TAG,
-                                            "DexKit hook [${hook.javaClass.simpleName}] failed: ${t.message}"
-                                        )
-                                    }
+                                xTry("Runtime#attaching: ${hook.name}") { hook.onHookWithDexkit(params, bridge) }
                             }
                         }
                     }
                     xtlog(TAG, "DexKit scanner finished in ${ms}ms")
-                }.onFailure { t ->
-                    xtlog(TAG, "DexKit initialization failed: ${t.message}")
                 }
             }
         }

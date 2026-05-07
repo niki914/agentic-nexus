@@ -1,7 +1,7 @@
 package com.niki914.breeno.a.mod
 
 import com.niki914.breeno.h.util.call
-import com.niki914.breeno.h.util.xlog
+import com.niki914.breeno.h.util.xTry
 
 object BreenoFeedbackAssembler {
     fun attachIfNeeded(bean: Any) {
@@ -22,10 +22,8 @@ object BreenoFeedbackAssembler {
         bean.call<Unit>(beanSetFeedbackInfoMethod, feedback)
     }
 
-    private fun instantiate(className: String, classLoader: ClassLoader?): Any? = runCatching {
+    private fun instantiate(className: String, classLoader: ClassLoader?): Any? = xTry {
         val clazz = Class.forName(className, false, classLoader)
         clazz.getDeclaredConstructor().newInstance()
-    }.onFailure {
-        xlog("[BreenoFeedbackAssembler] instantiate failed: $className, ${it.message}")
-    }.getOrNull()
+    }
 }

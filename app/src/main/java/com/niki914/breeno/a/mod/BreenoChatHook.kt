@@ -26,13 +26,8 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     override fun onHook(lpparam: XC_LoadPackage.LoadPackageParam) {
         xlog("[$name] installing...")
         // 预先缓存 ViewBeanClass
-        val className = BreenoConfigProvider.viewBeanClass
-        if (className != null) {
-            try {
-                viewBeanClass = lpparam.findClass(className)
-            } catch (e: Throwable) {
-                xlog("[$name] findClass viewBeanClass failed: ${e.message}")
-            }
+        BreenoConfigProvider.viewBeanClass?.let {
+            viewBeanClass = lpparam.findClass(it)
         }
 
         // 调用父类的生命周期
