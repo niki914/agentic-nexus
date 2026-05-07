@@ -9,8 +9,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
-import com.niki914.breeno.cb.BaseTheme
 import com.niki914.breeno.a.mod.refreshLocalSettings
+import com.niki914.breeno.cb.BaseTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -24,6 +24,8 @@ class MainActivity : ComponentActivity() {
 //        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
 //            requestPermission(Manifest.permission.POST_NOTIFICATIONS)
 //        }
+
+        // TODO Use dynamic glass~
 
         setContent {
             BaseTheme { // 应用动态颜色主题
