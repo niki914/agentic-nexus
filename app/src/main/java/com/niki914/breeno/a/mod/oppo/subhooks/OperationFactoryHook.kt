@@ -22,8 +22,8 @@ class OperationFactoryHook(
         val directiveClassName = BreenoConfigProvider.directiveClass ?: return
         val doNothingOperationClass = BreenoConfigProvider.doNothingOperationClass ?: return
         val directiveClass = lpparam.findClass(directiveClassName)
-        val getDirectiveRoomIdMethod = BreenoConfigProvider.directiveGetRoomIdMethod
-        val cleanOperationClass = BreenoConfigProvider.cleanOperationClass
+        val getDirectiveRoomIdMethod = BreenoConfigProvider.directiveGetRoomIdMethod ?: return
+        val cleanOperationClass = BreenoConfigProvider.cleanOperationClass ?: return
 
         val createMethodParams = BreenoConfigProvider.operationFactoryCreateMethodParams
         val params = if (createMethodParams != null) {

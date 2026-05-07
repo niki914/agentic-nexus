@@ -148,14 +148,14 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         val mockBeanMethodsUnit = BreenoConfigProvider.mockBeanMethodsUnit
         val mockBeanLocalDataUnit = BreenoConfigProvider.mockBeanLocalDataUnit
         val typeAnswer = BreenoConfigProvider.typeAnswer ?: return
-        val hideFeedbackViewLocalDataKey = BreenoConfigProvider.hideFeedbackViewLocalDataKey
-        val setChatTypeMethod = BreenoConfigProvider.beanSetChatTypeMethod
-        val setRoomIdMethod = BreenoConfigProvider.beanSetRoomIdMethod
-        val setRecordIdMethod = BreenoConfigProvider.beanSetRecordIdMethod
-        val setContentMethod = BreenoConfigProvider.beanSetContentMethod
-        val setFinalMethod = BreenoConfigProvider.beanSetFinalMethod
-        val setFirstSliceMethod = BreenoConfigProvider.beanSetFirstSliceMethod
-        val addClientLocalDataMethod = BreenoConfigProvider.beanAddClientLocalDataMethod
+        val hideFeedbackViewLocalDataKey = BreenoConfigProvider.hideFeedbackViewLocalDataKey ?: return
+        val setChatTypeMethod = BreenoConfigProvider.beanSetChatTypeMethod ?: return
+        val setRoomIdMethod = BreenoConfigProvider.beanSetRoomIdMethod ?: return
+        val setRecordIdMethod = BreenoConfigProvider.beanSetRecordIdMethod ?: return
+        val setContentMethod = BreenoConfigProvider.beanSetContentMethod ?: return
+        val setFinalMethod = BreenoConfigProvider.beanSetFinalMethod ?: return
+        val setFirstSliceMethod = BreenoConfigProvider.beanSetFirstSliceMethod ?: return
+        val addClientLocalDataMethod = BreenoConfigProvider.beanAddClientLocalDataMethod ?: return
 
         val renderSession = obtainRenderSession(turnId, roomId)
         if (isFirst || renderSession.bean == null) {

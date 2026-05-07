@@ -7,10 +7,10 @@ object BreenoFeedbackAssembler {
     fun attachIfNeeded(bean: Any) {
         val feedbackClassName = BreenoConfigProvider.feedbackInfoClass ?: return
         val footerClassName = BreenoConfigProvider.footerInfoClass ?: return
-        val beanSetFeedbackInfoMethod = BreenoConfigProvider.beanSetFeedbackInfoMethod
-        val feedbackSetFooterInfoMethod = BreenoConfigProvider.feedbackSetFooterInfoMethod
-        val footerSetCopyFlagMethod = BreenoConfigProvider.footerInfoSetCopyFlagMethod
-        val footerSetUpvoteFlagMethod = BreenoConfigProvider.footerInfoSetUpvoteFlagMethod
+        val beanSetFeedbackInfoMethod = BreenoConfigProvider.beanSetFeedbackInfoMethod ?: return
+        val feedbackSetFooterInfoMethod = BreenoConfigProvider.feedbackSetFooterInfoMethod ?: return
+        val footerSetCopyFlagMethod = BreenoConfigProvider.footerInfoSetCopyFlagMethod ?: return
+        val footerSetUpvoteFlagMethod = BreenoConfigProvider.footerInfoSetUpvoteFlagMethod ?: return
 
         val classLoader = bean.javaClass.classLoader
         val feedback = instantiate(feedbackClassName, classLoader) ?: return

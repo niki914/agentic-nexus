@@ -22,9 +22,9 @@ class InputHook(
         val beanClass = viewBeanClassProvider() ?: return
 
         val typeQuery = BreenoConfigProvider.typeQuery ?: return
-        val getChatTypeMethod = BreenoConfigProvider.beanGetChatTypeMethod
-        val getRoomIdMethod = BreenoConfigProvider.beanGetRoomIdMethod
-        val getContentMethod = BreenoConfigProvider.beanGetContentMethod
+        val getChatTypeMethod = BreenoConfigProvider.beanGetChatTypeMethod ?: return
+        val getRoomIdMethod = BreenoConfigProvider.beanGetRoomIdMethod ?: return
+        val getContentMethod = BreenoConfigProvider.beanGetContentMethod ?: return
 
         val insertMessageMethodParams = BreenoConfigProvider.dataCenterInsertMessageMethodParams
         val params = if (insertMessageMethodParams != null) {

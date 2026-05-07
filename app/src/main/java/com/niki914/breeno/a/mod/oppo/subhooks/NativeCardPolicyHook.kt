@@ -23,10 +23,10 @@ class NativeCardPolicyHook(
         val beanClass = viewBeanClassProvider() ?: return
 
         val typeAnswer = BreenoConfigProvider.typeAnswer ?: return
-        val myMockFlagKey = BreenoConfigProvider.selfInjectedMockFlagKey
-        val getChatTypeMethod = BreenoConfigProvider.beanGetChatTypeMethod
-        val getRoomIdMethod = BreenoConfigProvider.beanGetRoomIdMethod
-        val getClientLocalDataMethod = BreenoConfigProvider.beanGetClientLocalDataMethod
+        val myMockFlagKey = BreenoConfigProvider.selfInjectedMockFlagKey ?: return
+        val getChatTypeMethod = BreenoConfigProvider.beanGetChatTypeMethod ?: return
+        val getRoomIdMethod = BreenoConfigProvider.beanGetRoomIdMethod ?: return
+        val getClientLocalDataMethod = BreenoConfigProvider.beanGetClientLocalDataMethod ?: return
 
         val insertMessageMethodParams = BreenoConfigProvider.dataCenterInsertMessageMethodParams
         val params = if (insertMessageMethodParams != null) {
