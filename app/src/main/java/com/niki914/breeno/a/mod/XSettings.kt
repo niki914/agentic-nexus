@@ -84,7 +84,6 @@ private fun getMockConfig(packageName: String, versionCode: Long): String {
                                 "mock_defaults": {
                                     "bean_methods": {
                                         "setSkillType": "MyAI.StreamTextCard",
-                                        "setInputType": 1,
                                         "setBasicContextView": true,
                                         "setModeType": -1,
                                         "setShowStatement": true,
@@ -126,12 +125,13 @@ fun Context.getLocalSettings(): XSettings? = xTry("getLocalSettings") {
 }
 
 suspend fun Context.refreshLocalSettings() = withContext(Dispatchers.IO) {
-    val settings = buildMockSettings(
-        packageName = "com.heytap.speechassist",
-        versionCode = 127400
-    )
-    XConfig.updateFromServerJson(this@refreshLocalSettings, settings.props.toString())
-    xlog("LocalSettings refreshed: ${settings.props}")
+    val remoteJson = fetchXSettingsSync()
+    if (remoteJson != null) {
+        XConfig.updateFromServerJson(this@refreshLocalSettings, remoteJson)
+        xlog("LocalSettings refreshed from remote: $remoteJson")
+    } else {
+        xlog("LocalSettings refresh failed: remote JSON is null")
+    }
 }
 
 data class XSettings(
