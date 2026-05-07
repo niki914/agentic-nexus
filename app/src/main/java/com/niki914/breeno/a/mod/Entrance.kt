@@ -10,6 +10,7 @@ import com.niki914.breeno.h.util.ContextProvider
 import com.niki914.breeno.h.util.HookSideLoader
 import com.niki914.breeno.h.util.KVProvider
 import com.niki914.breeno.h.util.xlog
+import com.niki914.breeno.a.mod.oppo.BreenoChatHook
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
