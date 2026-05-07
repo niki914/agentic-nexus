@@ -3,6 +3,7 @@ package com.niki914.breeno.a.mod.oppo.subhooks
 import com.niki914.breeno.a.mod.BreenoConfigProvider
 import com.niki914.breeno.h.core.runtime.Hook
 import com.niki914.breeno.h.util.hookMethod
+import com.niki914.breeno.h.util.resolveParamTypes
 import com.niki914.breeno.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
@@ -14,12 +15,18 @@ class RoomIdManagerHook(
     override fun onHook(lpparam: XC_LoadPackage.LoadPackageParam) {
         val roomIdManagerClass = BreenoConfigProvider.roomIdManagerClass ?: return
         val createRoomMethod = BreenoConfigProvider.roomIdManagerCreateRoomMethod ?: return
+        val createRoomMethodParams = BreenoConfigProvider.roomIdManagerCreateRoomMethodParams
+
+        val params = if (createRoomMethodParams != null) {
+            resolveParamTypes(createRoomMethodParams, lpparam) ?: return
+        } else {
+            arrayOf(String::class.java, String::class.java)
+        }
 
         lpparam.hookMethod(
             className = roomIdManagerClass,
             methodName = createRoomMethod,
-            String::class.java,
-            String::class.java,
+            *params,
             after = { param ->
                 val newRoomId = param.result as? String ?: ""
                 xlog(

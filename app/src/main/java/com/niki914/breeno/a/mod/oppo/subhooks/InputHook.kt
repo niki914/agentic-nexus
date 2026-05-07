@@ -4,6 +4,7 @@ import com.niki914.breeno.a.mod.BreenoConfigProvider
 import com.niki914.breeno.h.core.runtime.Hook
 import com.niki914.breeno.h.util.call
 import com.niki914.breeno.h.util.hookMethod
+import com.niki914.breeno.h.util.resolveParamTypes
 import com.niki914.breeno.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
@@ -25,10 +26,17 @@ class InputHook(
         val getRoomIdMethod = BreenoConfigProvider.beanGetRoomIdMethod
         val getContentMethod = BreenoConfigProvider.beanGetContentMethod
 
+        val insertMessageMethodParams = BreenoConfigProvider.dataCenterInsertMessageMethodParams
+        val params = if (insertMessageMethodParams != null) {
+            resolveParamTypes(insertMessageMethodParams, lpparam) ?: return
+        } else {
+            arrayOf(beanClass)
+        }
+
         lpparam.hookMethod(
             className = dataCenterClassName,
             methodName = dataCenterInsertMessageMethod,
-            beanClass,
+            *params,
             before = before@{ param ->
                 val bean = param.args[0]
                 onDataCenterInstanceResolved(param.thisObject)

@@ -12,8 +12,16 @@ object BreenoConfigProvider : BaseConfigProvider() {
         get() = getString("classes.room_id_manager") ?: getString("room_id_manager_class")
 
     val roomIdManagerCreateRoomMethod: String?
-        get() = getString("accessors.room_id_manager.create_room")
+        get() = getString("accessors.room_id_manager.create_room.method_name")
+            ?: getString("accessors.room_id_manager.create_room")
             ?: getString("room_id_manager_method_p")
+
+    val roomIdManagerCreateRoomMethodParams: List<String>?
+        get() {
+            val list = getList("accessors.room_id_manager.create_room.param_types")
+                ?: getList("accessors.room_id_manager.create_room_params")
+            return list?.mapNotNull { it.jsonPrimitive.contentOrNull }
+        }
 
     val viewBeanClass: String?
         get() = getString("classes.view_bean") ?: getString("view_bean_class")
@@ -40,15 +48,31 @@ object BreenoConfigProvider : BaseConfigProvider() {
         get() = getString("classes.footer_info")
 
     val dataCenterInsertMessageMethod: String?
-        get() = getString("accessors.data_center.insert_message")
+        get() = getString("accessors.data_center.insert_message.method_name")
+            ?: getString("accessors.data_center.insert_message")
             ?: getString("data_center_method_r")
+
+    val dataCenterInsertMessageMethodParams: List<String>?
+        get() {
+            val list = getList("accessors.data_center.insert_message.param_types")
+                ?: getList("accessors.data_center.insert_message_params")
+            return list?.mapNotNull { it.jsonPrimitive.contentOrNull }
+        }
 
     val dataCenterUpdateMessageMethod: String?
         get() = getString("accessors.data_center.update_message")
             ?: getString("data_center_method_g1")
 
     val operationFactoryCreateMethod: String?
-        get() = getString("accessors.operation_factory.create")
+        get() = getString("accessors.operation_factory.create.method_name")
+            ?: getString("accessors.operation_factory.create")
+
+    val operationFactoryCreateMethodParams: List<String>?
+        get() {
+            val list = getList("accessors.operation_factory.create.param_types")
+                ?: getList("accessors.operation_factory.create_params")
+            return list?.mapNotNull { it.jsonPrimitive.contentOrNull }
+        }
 
     val beanGetChatTypeMethod: String
         get() = getString("accessors.bean.get_chat_type") ?: "getChatType"

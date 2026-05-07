@@ -7,6 +7,7 @@ import com.niki914.breeno.h.core.runtime.Hook
 import com.niki914.breeno.h.util.call
 import com.niki914.breeno.h.util.findClass
 import com.niki914.breeno.h.util.hookMethod
+import com.niki914.breeno.h.util.resolveParamTypes
 import com.niki914.breeno.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
@@ -24,10 +25,17 @@ class OperationFactoryHook(
         val getDirectiveRoomIdMethod = BreenoConfigProvider.directiveGetRoomIdMethod
         val cleanOperationClass = BreenoConfigProvider.cleanOperationClass
 
+        val createMethodParams = BreenoConfigProvider.operationFactoryCreateMethodParams
+        val params = if (createMethodParams != null) {
+            resolveParamTypes(createMethodParams, lpparam) ?: return
+        } else {
+            arrayOf(directiveClass)
+        }
+
         lpparam.hookMethod(
             className = factoryClass,
             methodName = createMethod,
-            directiveClass,
+            *params,
             after = after@{ param ->
                 val directive = param.args[0]
                 val roomId = directive.call<String>(getDirectiveRoomIdMethod)
