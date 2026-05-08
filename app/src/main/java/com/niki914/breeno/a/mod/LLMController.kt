@@ -32,7 +32,7 @@ object LLMController {
                     override fun onConfigInvalid() {
                     }
 
-                    override fun onStarted() {
+                    override fun onStarted() { //  TODO 调整 SDK 语义：是请求开始开始首字？
                     }
 
                     override fun onUpdated() {
@@ -44,6 +44,7 @@ object LLMController {
                             is AIContent.Text -> {
                                 val delta = aiContent.content
                                 accumulator.append(delta)
+                                if (isFirstChunk && delta.isEmpty()) return
                                 onChunk(accumulator.toString(), isFirstChunk, false)
                                 isFirstChunk = false
                             }
