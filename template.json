@@ -1,8 +1,0 @@
-{ 
-   "applicationId": "com.niki914.breeno.agentic", 
-   "targetHookPackage": "com.heytap.speechassist", 
-   "projectRootName": "breeno_openai_reborn", 
-   "appName": "小布换源", 
-   "xposedDesc": "允许 ColorOS 小布助手换源自定义大模型供应商", 
-   "basePackage": "com.niki914.breeno" 
-}
