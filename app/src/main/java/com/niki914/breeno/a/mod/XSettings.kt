@@ -18,25 +18,31 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 
 
-fun Context.getLocalSettings(): XSettings? = xTry("getLocalSettings") {
-    XConfig.get(this).toXSettings().also {
-        xlog("LocalSettings received: $it")
-    }
+fun Context.getCachedSettings(): XSettings.WebSettings = (xTry("getCachedSettings") {
+    val jsonStr = XConfig.get(this)
+    if (jsonStr.isBlank()) return@xTry XSettings.WebSettings(JsonObject(emptyMap()))
+    XSettings.WebSettings(json.decodeFromString<JsonObject>(jsonStr))
+} ?: XSettings.WebSettings(JsonObject(emptyMap()))).also {
+    xlog("LocalSettings received: $it")
 }
 
-suspend fun Context.refreshLocalSettings(packageName: String, versionCode: Long) = withContext(Dispatchers.IO) {
-    val remoteJson = fetchXSettingsSync(packageName, versionCode)
+suspend fun Context.refreshWebSettings(packageName: String, versionCode: Long) = withContext(Dispatchers.IO) {
+    val remoteJson = fetchWebSettingsSync(packageName, versionCode)
     if (remoteJson != null) {
-        XConfig.updateFromServerJson(this@refreshLocalSettings, remoteJson)
+        XConfig.updateFromServerJson(this@refreshWebSettings, remoteJson)
         xlog("LocalSettings refreshed from remote for $packageName ($versionCode): $remoteJson")
     } else {
         xlog("LocalSettings refresh failed for $packageName ($versionCode): remote JSON is null")
     }
 }
 
-data class XSettings(
+sealed class XSettings(
     val props: JsonObject // 支持自由键值对
 ) {
+    class WebSettings(props: JsonObject) : XSettings(props)
+
+    class LocalSettings(props: JsonObject) : XSettings(props)
+
     companion object {
         fun buildUrl(packageName: String, versionCode: Long): String {
             // 保持与 server.py 目录结构一致: {packageName}/{versionCode}/config.json
@@ -67,15 +73,7 @@ data class XSettings(
 
 private val json = Json { ignoreUnknownKeys = true }
 
-fun String.toXSettings(): XSettings {
-    if (this.isBlank()) return XSettings(JsonObject(emptyMap()))
-
-    return xTry {
-        XSettings(json.decodeFromString<JsonObject>(this))
-    } ?: XSettings(JsonObject(emptyMap()))
-}
-
-fun fetchXSettingsSync(packageName: String, versionCode: Long): String? {
+fun fetchWebSettingsSync(packageName: String, versionCode: Long): String? {
     val client = OkHttpClient()
     val url = XSettings.buildUrl(packageName, versionCode)
     val request = Request.Builder()
@@ -84,7 +82,7 @@ fun fetchXSettingsSync(packageName: String, versionCode: Long): String? {
     return xTry {
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful || response.body == null) {
-                xlog("fetchXSettingsSync failed for $url: code: ${response.code}")
+                xlog("fetchWebSettingsSync failed for $url: code: ${response.code}")
                 return@xTry null
             }
             response.body?.string()

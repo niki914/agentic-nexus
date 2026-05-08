@@ -40,10 +40,10 @@ class Entrance : IXposed() {
             val ctx = ContextProvider.await()
             xlog("Entrance: context initialized: $ctx")
 
-            val localSettings = ctx.getLocalSettings()
-            val mockJsonObj = localSettings?.props
-            val targetPkg = mockJsonObj?.get("package_name")?.jsonPrimitive?.contentOrNull
-            val configObj = mockJsonObj?.get("config")?.jsonObject
+            val webSettings = ctx.getCachedSettings()
+            val mockJsonObj = webSettings.props
+            val targetPkg = mockJsonObj["package_name"]?.jsonPrimitive?.contentOrNull
+            val configObj = mockJsonObj["config"]?.jsonObject
 
             if (configObj != null) {
                 KVProvider.provide(configObj)

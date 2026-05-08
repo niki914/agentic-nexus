@@ -9,7 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
-import com.niki914.breeno.a.mod.refreshLocalSettings
+import com.niki914.breeno.a.mod.refreshWebSettings
 import com.niki914.breeno.cb.BaseTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
             val targetPkg = "com.heytap.speechassist"
             val versionCode = com.niki914.breeno.h.util.RootUtils.getPackageVersionCode(targetPkg)
             if (versionCode != null) {
-                refreshLocalSettings(targetPkg, versionCode)
+                refreshWebSettings(targetPkg, versionCode)
             } else {
                 com.niki914.breeno.h.util.xlog("RootUtils: Failed to get version code for $targetPkg via su")
             }
