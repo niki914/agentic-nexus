@@ -1,16 +1,19 @@
 package com.niki914.breeno.a.mod
 
+import com.niki914.s3ss10n.ChatSession
+import com.niki914.s3ss10n.chat.AIContent
+import com.niki914.s3ss10n.chat.protocol.ToolCall
+import com.niki914.s3ss10n.chat.protocol.beans.Message
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * 模拟统一的大模型 SDK 调度中心
+ * 统一的大模型 SDK 调度中心
  */
 object LLMController {
     /**
-     * 模拟请求流式返回
+     * 请求流式返回
      * @param query 用户的输入
      * @param scope 协程作用域
      * @param onChunk 收到数据块的回调，参数分别为: chunkText, isFirst, isFinal
@@ -21,23 +24,61 @@ object LLMController {
         onChunk: (String, Boolean, Boolean) -> Unit
     ) {
         scope.launch(Dispatchers.IO) {
-            delay(500) // 模拟网络延迟
+            val session = ChatSession().apply {
+                callback = object : ChatSession.Callback {
+                    private val accumulator = java.lang.StringBuilder()
+                    private var isFirstChunk = true
 
-            val mockData = listOf(
-                "你好！", "我是由", " OpenHook ", "强力驱动的", "自定义", "大模型助手！\n\n",
-                "我拦截了官方的回复，", "并且使用了", "最优雅的", "领域模型注入方案。", "你说了: ", query
-            )
+                    override fun onConfigInvalid() {
+                    }
 
-            val accumulator = StringBuilder()
+                    override fun onStarted() {
+                    }
 
-            mockData.forEachIndexed { index, segment ->
-                accumulator.append(segment)
-                val isFirst = (index == 0)
-                val isFinal = (index == mockData.size - 1)
+                    override fun onUpdated() {
+                    }
 
-                onChunk(accumulator.toString(), isFirst, isFinal)
-                delay(150)
+                    override fun onContent(aiContent: AIContent) {
+                        when (aiContent) {
+                            is AIContent.Else -> {}
+                            is AIContent.Text -> {
+                                val delta = aiContent.content
+                                accumulator.append(delta)
+                                onChunk(accumulator.toString(), isFirstChunk, false)
+                                isFirstChunk = false
+                            }
+                        }
+                    }
+
+                    override fun onError(message: String, cause: Throwable?) {
+                        accumulator.append("\n[Error: $message]")
+                        onChunk(accumulator.toString(), isFirstChunk, true)
+                    }
+
+                    override suspend fun onToolCall(toolCall: ToolCall): Message.Tool {
+                        return Message.Tool(
+                            toolCallId = toolCall.id ?: "tool_call_id",
+                            name = toolCall.function?.name ?: "tool_name",
+                            content = "{}"
+                        )
+                    }
+
+                    override fun onCompleted(isSuccess: Boolean, cause: Throwable?) {
+                        onChunk(accumulator.toString(), isFirstChunk, true)
+                    }
+                }
             }
+
+            session.updateConfig {
+                // 使用 Entrance 中配置的 URL 等参数，此处按要求写死或引用 Entrance 常量
+                baseUrl = Entrance.LLM_BASE_URL
+                apiKey = Entrance.LLM_API_KEY
+                modelName = Entrance.LLM_MODEL_NAME
+                prompt = "You are a helpful assistant."
+            }
+
+//            session.preConnect()
+            session.sendMessage(query)
         }
     }
 }

@@ -66,6 +66,9 @@ dependencies {
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
+    // s3ss10n
+    implementation("com.github.niki914:s3ss10n:1.0")
+
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     // Radius
@@ -99,7 +102,7 @@ fun getAdbPath(): String {
 // 注册 adb reverse 任务
 val adbReverse = tasks.register("adbReverse") {
     group = "custom"
-    description = "Execute adb reverse for port 8788"
+    description = "Execute adb reverse for port 8788 and 1234"
     
     doLast {
         val adbPath = getAdbPath()
@@ -107,6 +110,10 @@ val adbReverse = tasks.register("adbReverse") {
         try {
             project.exec {
                 commandLine(adbPath, "reverse", "tcp:8788", "tcp:8788")
+                isIgnoreExitValue = true
+            }
+            project.exec {
+                commandLine(adbPath, "reverse", "tcp:1234", "tcp:1234")
                 isIgnoreExitValue = true
             }
             println("ADB reverse successful.")
