@@ -67,7 +67,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // s3ss10n
-    implementation("com.github.niki914:s3ss10n:1.0")
+    implementation("com.github.niki914:S3ss10n:1.9.9a0")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
