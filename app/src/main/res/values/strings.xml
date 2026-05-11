@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">小布换源</string>
-    <string name="xposed_desc">允许 ColorOS 小布助手换源自定义大模型供应商</string>
+    <string name="app_name">Nexus</string>
+    <string name="xposed_desc">允许系统级语音助手换源自定义大模型供应商\n\n现支持: ColorOS 小布</string>
 </resources>

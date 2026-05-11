@@ -1,7 +1,7 @@
 # AX Contract
 
 <project>
-breeno_openai_reborn 是一个 Android Xposed 模块。它在 [ColorOS 小布助手|...]进程中注入自定义 LLM 响应，替换原生 AI 回答。
+Nexus 是一个 Android Xposed 模块。它在 [ColorOS 小布助手|...]进程中注入自定义 LLM 响应，替换原生 AI 回答。
 </project>
 
 <modules>

@@ -7,9 +7,9 @@
     <application
         android:name="com.niki914.breeno.a.app.App"
         android:allowBackup="true"
-        android:icon="@null"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@null"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppDefault"
         android:usesCleartextTraffic="true"
@@ -50,7 +50,6 @@
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity-alias>
     </application>

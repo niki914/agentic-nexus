@@ -29,7 +29,7 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "breeno_openai_reborn"
+rootProject.name = "Nexus"
 include(":app")
 include(":h")
 include(":composebase")

@@ -12,7 +12,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.niki914.breeno.agentic"
+        applicationId = "com.niki914.nexus.agentic"
         minSdk = 26
         targetSdk = 34
         versionName = "1.0.0"
