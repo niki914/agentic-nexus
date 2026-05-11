@@ -1,5 +1,3 @@
-import java.io.ByteArrayOutputStream
-
 plugins {
     id("com.android.application") version "8.11.0"
     id("org.jetbrains.kotlin.android") version "2.2.0"
@@ -59,28 +57,25 @@ dependencies {
     implementation(project(":composebase"))
     implementation(project(":h"))
     implementation(project(":ipc"))
+
+    // Android root
     compileOnly("de.robv.android.xposed:api:82")
     implementation("org.luckypray:dexkit:2.1.0")
-    implementation("androidx.annotation:annotation:1.7.0")
 
-
+    // LLM & networking
+    implementation("com.github.niki914:S3ss10n:2.0.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-
-    // s3ss10n
-    implementation("com.github.niki914:S3ss10n:1.9.9a0")
-
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
-    // Radius
+    // Third-party UI
     implementation("com.github.Kyant0:Capsule:2.1.0")
-
-    // Navigation
-    implementation("androidx.navigation:navigation-compose:2.7.7")
 
     // Material & AndroidX
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.annotation:annotation:1.9.1")
     implementation("androidx.activity:activity-compose:1.4.0")
+    implementation("androidx.annotation:annotation:1.7.0")
+    implementation("androidx.navigation:navigation-compose:2.7.7")
 
     // Compose
     implementation("androidx.compose.material3:material3:1.3.2")
