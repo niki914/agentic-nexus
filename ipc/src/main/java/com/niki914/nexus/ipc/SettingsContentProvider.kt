@@ -7,21 +7,24 @@ import android.net.Uri
 import android.os.Bundle
 
 class SettingsContentProvider : ContentProvider() {
+
     companion object {
-        const val METHOD_GET_CONFIG = "get_config"
-        const val KEY_CONFIG_JSON = "config_json"
+        const val METHOD_GET_CONFIG = XIpcContract.METHOD_GET_CONFIG
+        const val KEY_CONFIG_JSON = XIpcContract.KEY_CONFIG_JSON
     }
 
     override fun onCreate(): Boolean = true
 
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
-        if (method == METHOD_GET_CONFIG) {
-            val json = ConfigPersistence.readConfig(context ?: return null)
-            return Bundle().apply {
-                putString(KEY_CONFIG_JSON, json)
-            }
+        val appContext = context ?: return null
+        if (!XCallerValidator.isAllowed(appContext, callingPackage)) {
+            return null
         }
-        return super.call(method, arg, extras)
+        return XProviderDispatcher.dispatch(
+            context = appContext,
+            method = method,
+            extras = extras
+        ) ?: super.call(method, arg, extras)
     }
 
     override fun query(uri: Uri, p1: Array<out String>?, p2: String?, p3: Array<out String>?, p4: String?): Cursor? = null
