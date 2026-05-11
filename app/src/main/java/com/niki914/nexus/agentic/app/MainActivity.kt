@@ -9,10 +9,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
-import com.niki914.nexus.agentic.mod.refreshWebSettings
+import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.cb.BaseTheme
+import com.niki914.nexus.h.util.RootUtils
+import com.niki914.nexus.h.util.xlog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.niki914.nexus.ipc.XValues
 
 class MainActivity : ComponentActivity() {
 
@@ -40,12 +43,16 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         lifecycleScope.launch(Dispatchers.IO) {
-            val targetPkg = "com.heytap.speechassist"
-            val versionCode = com.niki914.nexus.h.util.RootUtils.getPackageVersionCode(targetPkg)
+            val targetPkg = XValues.appList.firstOrNull()
+            if (targetPkg == null) {
+                xlog("MainActivity: XValues.appList is empty")
+                return@launch
+            }
+            val versionCode = RootUtils.getPackageVersionCode(targetPkg)
             if (versionCode != null) {
-                refreshWebSettings(targetPkg, versionCode)
+                XService.refreshWebSettings(this@MainActivity, targetPkg, versionCode)
             } else {
-                com.niki914.nexus.h.util.xlog("RootUtils: Failed to get version code for $targetPkg via su")
+                xlog("RootUtils: Failed to get version code for $targetPkg via su")
             }
         }
     }
