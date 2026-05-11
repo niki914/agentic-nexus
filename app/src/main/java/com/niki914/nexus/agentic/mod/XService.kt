@@ -118,8 +118,7 @@ object XService {
 
     private fun buildWebSettingsUrl(packageName: String, versionCode: Long): String {
         val host = "127.0.0.1:8788"
-        val alias = if (packageName == "com.heytap.speechassist") "breeno" else packageName
-        return "http://$host/$alias/$versionCode/config.json"
+        return "http://$host/$packageName/$versionCode/config.json"
     }
 }
 
