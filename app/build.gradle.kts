@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.niki914.breeno.a.app"
+    namespace = "com.niki914.nexus.agentic"
     compileSdk = 36
 
     defaultConfig {

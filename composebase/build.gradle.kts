@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.niki914.breeno.cb"
+    namespace = "com.niki914.nexus.cb"
     compileSdk = 36
 
     defaultConfig {

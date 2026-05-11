@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.niki914.breeno.breeno_openai_reborn.ipc"
+    namespace = "com.niki914.nexus.ipc"
     compileSdk = 36
 
     defaultConfig {
