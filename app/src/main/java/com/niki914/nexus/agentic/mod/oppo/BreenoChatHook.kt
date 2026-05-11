@@ -18,6 +18,9 @@ import com.niki914.nexus.h.util.findClass
 import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.LinkedHashMap
 
 class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
@@ -26,9 +29,11 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
 
     private var dataCenterInstance: Any? = null
     private var viewBeanClass: Class<*>? = null
-    private val stateLock = Any()
+    private val stateMutex = Mutex()
     private val roomTurnStates = LinkedHashMap<String, ConversationTurnState>()
     private val renderSessions = LinkedHashMap<Long, StreamRenderSession>()
+    @Volatile
+    private var roomTurnStateSnapshot: Map<String, ConversationTurnState> = emptyMap()
 
     private data class StreamRenderSession(
         val turnId: Long,
@@ -44,25 +49,28 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         }
     }
 
-    override fun onTurnStateChanged(state: ConversationTurnState) {
-        synchronized(stateLock) {
+    override suspend fun onTurnStateChanged(state: ConversationTurnState) {
+        stateMutex.withLock {
             roomTurnStates[state.roomId] = state
             if (state.mode == TurnMode.NativeTakeover) {
                 renderSessions.remove(state.turnId)
             }
+            roomTurnStateSnapshot = roomTurnStates.toMap()
         }
     }
 
-    override fun onSessionReset(roomId: String) {
+    override suspend fun onSessionReset(roomId: String) {
         val previousRoomId = turnState.roomId
         super.onSessionReset(roomId)
-        synchronized(stateLock) {
+        LLMController.resetConversation()
+        stateMutex.withLock {
             if (previousRoomId.isNotBlank()) {
                 roomTurnStates.remove(previousRoomId)
             }
             renderSessions.entries.removeAll { (_, session) ->
                 session.roomId == previousRoomId || (roomId.isNotBlank() && session.roomId == roomId)
             }
+            roomTurnStateSnapshot = roomTurnStates.toMap()
         }
     }
 
@@ -72,7 +80,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         }
     }
 
-    override fun onTakeoverTriggered(turnId: Long, roomId: String, query: String) {
+    override suspend fun onTakeoverTriggered(turnId: Long, roomId: String, query: String) {
         ConversationJournal.appendHiddenSummary(
             HiddenTurnSummary(
                 turnId = turnId,
@@ -85,7 +93,11 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
 
     override fun installSessionHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
         RoomIdManagerHook(
-            onSessionReset = { roomId -> onSessionReset(roomId) }
+            onSessionReset = { roomId ->
+                scope.launch {
+                    onSessionReset(roomId)
+                }
+            }
         ).onHook(lpparam)
     }
 
@@ -116,13 +128,13 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         ).onHook(lpparam)
     }
 
-    override fun dispatchQueryToLLM(turnId: Long, roomId: String, query: String) {
+    override suspend fun dispatchQueryToLLM(turnId: Long, roomId: String, query: String) {
         LLMController.requestStream(query, scope) { chunk, isFirst, isFinal ->
             renderStreamCard(turnId, roomId, chunk, isFirst, isFinal)
         }
     }
 
-    override fun renderStreamCard(
+    override suspend fun renderStreamCard(
         turnId: Long,
         roomId: String,
         chunk: String,
@@ -202,12 +214,11 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         }
     }
 
-    private fun resolveTurnState(roomId: String?): ConversationTurnState? = synchronized(stateLock) {
-        roomId?.takeIf { it.isNotBlank() }?.let(roomTurnStates::get)
-    }
+    private fun resolveTurnState(roomId: String?): ConversationTurnState? =
+        roomId?.takeIf { it.isNotBlank() }?.let(roomTurnStateSnapshot::get)
 
-    private fun obtainRenderSession(turnId: Long, roomId: String): StreamRenderSession =
-        synchronized(stateLock) {
+    private suspend fun obtainRenderSession(turnId: Long, roomId: String): StreamRenderSession =
+        stateMutex.withLock {
             renderSessions.getOrPut(turnId) {
                 StreamRenderSession(
                     turnId = turnId,
@@ -217,8 +228,8 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
             }
         }
 
-    private fun removeRenderSession(turnId: Long) {
-        synchronized(stateLock) {
+    private suspend fun removeRenderSession(turnId: Long) {
+        stateMutex.withLock {
             renderSessions.remove(turnId)
         }
     }

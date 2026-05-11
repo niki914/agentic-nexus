@@ -3,6 +3,7 @@ package com.niki914.nexus.agentic.mod
 import com.niki914.nexus.h.core.runtime.Hook
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 /**
  * 抽象语音助手 Hook 基类，规范核心生命周期与功能职责
@@ -15,13 +16,15 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
         installSessionHooks(lpparam)
         installResponseHooks(lpparam)
         installInputHooks(lpparam) { roomId, query ->
-            handleCapturedQuery(roomId, query)
+            scope.launch {
+                handleCapturedQuery(roomId, query)
+            }
         }
     }
 
     protected open fun onBeforeInstallHooks(lpparam: XC_LoadPackage.LoadPackageParam) = Unit
 
-    private fun handleCapturedQuery(roomId: String, query: String) {
+    private suspend fun handleCapturedQuery(roomId: String, query: String) {
         val nextTurnState = turnState.nextTurn(
             roomId = roomId,
             query = query,
@@ -50,13 +53,13 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
         )
     }
 
-    protected open fun onTurnStateChanged(state: ConversationTurnState) = Unit
+    protected open suspend fun onTurnStateChanged(state: ConversationTurnState) = Unit
 
     protected open fun shouldTakeOver(query: String): Boolean = false
 
-    protected open fun onTakeoverTriggered(turnId: Long, roomId: String, query: String) = Unit
+    protected open suspend fun onTakeoverTriggered(turnId: Long, roomId: String, query: String) = Unit
 
-    protected open fun onSessionReset(roomId: String = "") {
+    protected open suspend fun onSessionReset(roomId: String = "") {
         if (turnState.roomId.isNotBlank()) {
             ConversationJournal.clearRoom(turnState.roomId)
         }
@@ -78,7 +81,7 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
     /**
      * 将查询分发给 LLM SDK
      */
-    protected abstract fun dispatchQueryToLLM(turnId: Long, roomId: String, query: String)
+    protected abstract suspend fun dispatchQueryToLLM(turnId: Long, roomId: String, query: String)
 
     /**
      * 渲染流式返回的大模型文本卡片
@@ -88,7 +91,7 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
      * @param isFirst 是否为第一片
      * @param isFinal 是否为最后一片
      */
-    protected abstract fun renderStreamCard(
+    protected abstract suspend fun renderStreamCard(
         turnId: Long,
         roomId: String,
         chunk: String,

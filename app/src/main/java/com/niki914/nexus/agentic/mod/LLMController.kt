@@ -5,17 +5,10 @@ import com.niki914.s3ss10n.SessionEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 object LLMController {
     private var session: Session? = null
-    private var sessionConfig: SessionConfig? = null
-
-    private data class SessionConfig(
-        val endpoint: String,
-        val apiKey: String,
-        val model: String,
-        val prompt: String
-    )
 
     /**
      * 请求流式返回
@@ -26,38 +19,37 @@ object LLMController {
     fun requestStream(
         query: String,
         scope: CoroutineScope,
-        onChunk: (String, Boolean, Boolean) -> Unit
+        onChunk: suspend (String, Boolean, Boolean) -> Unit
     ) {
         scope.launch(Dispatchers.IO) {
             val localSettings = HookLocalSettings.refreshFromHookContext()
-            val config = SessionConfig(
-                endpoint = localSettings.endpoint,
-                apiKey = localSettings.apiKey,
-                model = localSettings.model,
-                prompt = localSettings.prompt.ifBlank { "You are a helpful assistant." }
-            )
-            val s = obtainSession(config)
-
+            val s = obtainSession()
+            s.update {
+                endpoint = localSettings.endpoint // TODO 配置检查与快速失败
+                apiKey = localSettings.apiKey
+                model = localSettings.model
+                systemPrompt = localSettings.prompt.ifBlank { "You are a helpful assistant." }
+            }
             val sb = StringBuilder()
-            s.send(query) { event ->
+            s.send(query) { event -> // EXTERNAL TODO: S3ss10m callback --> suspend
                 when (event) {
                     is SessionEvent.RoundStarted -> {
-                        onChunk("", true, false)
+                        runBlocking { onChunk("", true, false) } // EXTERNAL TODO: S3ss10m callback --> suspend
                     }
 
-                    is SessionEvent.TextDelta -> {
+                    is SessionEvent.TextDelta -> { // TODO 字数测速
                         val delta = event.delta
                         sb.append(delta)
-                        onChunk(sb.toString(), false, false)
+                        runBlocking { onChunk(sb.toString(), false, false) }
                     }
 
                     is SessionEvent.RoundCompleted -> {
-                        onChunk(sb.toString(), false, true)
+                        runBlocking { onChunk(sb.toString(), false, true) }
                     }
 
                     is SessionEvent.Error -> {
                         sb.append("\n[Error: ${event.message}]")
-                        onChunk(sb.toString(), false, true)
+                        runBlocking { onChunk(sb.toString(), false, true) }
                     }
 
                     is SessionEvent.ToolFailed -> {}
@@ -68,19 +60,10 @@ object LLMController {
         }
     }
 
-    private suspend fun obtainSession(config: SessionConfig): Session {
-        val existing = session
-        if (existing != null && sessionConfig == config) {
-            return existing
-        }
-        return Session.open {
-            endpoint = config.endpoint
-            apiKey = config.apiKey
-            model = config.model
-            systemPrompt = config.prompt
-        }.also {
-            session = it
-            sessionConfig = config
-        }
+    private suspend fun obtainSession(): Session =
+        session ?: Session.open {}.also { session = it }
+
+    suspend fun resetConversation() {
+        session?.resetConversation()
     }
 }
