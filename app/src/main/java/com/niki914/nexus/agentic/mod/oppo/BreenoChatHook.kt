@@ -6,6 +6,7 @@ import com.niki914.nexus.agentic.mod.BreenoFeedbackAssembler
 import com.niki914.nexus.agentic.mod.ConversationJournal
 import com.niki914.nexus.agentic.mod.ConversationTurnState
 import com.niki914.nexus.agentic.mod.HiddenTurnSummary
+import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.mod.LLMController
 import com.niki914.nexus.agentic.mod.TurnMode
 import com.niki914.nexus.agentic.mod.oppo.subhooks.InputHook
@@ -66,7 +67,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     }
 
     override fun shouldTakeOver(query: String): Boolean {
-        return BreenoConfigProvider.takeoverKeywords.any { keyword ->
+        return HookLocalSettings.current().takeoverKeywords.any { keyword ->
             keyword.isNotBlank() && query.contains(keyword)
         }
     }

@@ -1,7 +1,8 @@
 package a0.a0.a0.a0.a0.a0
 
 import androidx.annotation.Keep
-import com.niki914.nexus.agentic.mod.getCachedSettings
+import com.niki914.nexus.agentic.mod.HookLocalSettings
+import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.agentic.mod.oppo.BreenoChatHook
 import com.niki914.nexus.h.IXposed
 import com.niki914.nexus.h.core.runtime.Hook
@@ -12,28 +13,21 @@ import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.nexus.h.util.HookSideLoader
 import com.niki914.nexus.h.util.KVProvider
 import com.niki914.nexus.h.util.xlog
+import com.niki914.nexus.ipc.XValues
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 @Keep
 class Entrance : IXposed() {
     companion object {
         private val scope by lazy { CoroutineScope(Dispatchers.Default + SupervisorJob()) }
-
-        // LLM Configuration
-        const val LLM_BASE_URL = "https://api.deepseek.com/v1/chat/completions" // TODO Local Settings
-        const val LLM_API_KEY = "sk-xxx"
-        const val LLM_MODEL_NAME = "deepseek-v4-flash"
     }
 
     override fun getTarget() =
-        Target.filter("com.heytap.speechassist")
+        Target.filter(*XValues.appList.toTypedArray())
 
     override fun onLoad(params: XC_LoadPackage.LoadPackageParam) {
         HookSideLoader.load(scope, ContextHook(), params)
@@ -41,10 +35,10 @@ class Entrance : IXposed() {
             val ctx = ContextProvider.await()
             xlog("Entrance: context initialized: $ctx")
 
-            val webSettings = ctx.getCachedSettings()
-            val mockJsonObj = webSettings.props
-            val targetPkg = mockJsonObj["package_name"]?.jsonPrimitive?.contentOrNull
-            val configObj = mockJsonObj["config"]?.jsonObject
+            HookLocalSettings.update(ctx)
+            val webSettings = XService.getWebSettings(ctx)
+            val targetPkg = webSettings.packageName.takeIf { it.isNotBlank() }
+            val configObj = webSettings.config
 
             if (configObj != null) {
                 KVProvider.provide(configObj)
@@ -57,9 +51,11 @@ class Entrance : IXposed() {
 
     private fun onSettingsFetched(params: XC_LoadPackage.LoadPackageParam, targetPkg: String?) {
         // 根据 targetPkg 进行映射和 Hook 路由
-        val hookInstance: Hook? = when (targetPkg) {
-            "com.heytap.speechassist" -> BreenoChatHook(scope)
-            // "com.miui.voiceassist" -> XiaoAiChatHook(scope) // 未来扩展
+        val hookInstance: Hook? = when {
+            targetPkg == params.packageName && params.packageName in XValues.appList -> {
+                BreenoChatHook(scope)
+            }
+            // params.packageName in XValues.appList -> XiaoAiChatHook(scope) // 未来扩展
             else -> null
         }
 

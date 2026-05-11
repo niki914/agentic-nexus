@@ -1,6 +1,5 @@
 package com.niki914.nexus.agentic.mod
 
-import a0.a0.a0.a0.a0.a0.Entrance
 import com.niki914.s3ss10n.Session
 import com.niki914.s3ss10n.SessionEvent
 import kotlinx.coroutines.CoroutineScope
@@ -9,6 +8,14 @@ import kotlinx.coroutines.launch
 
 object LLMController {
     private var session: Session? = null
+    private var sessionConfig: SessionConfig? = null
+
+    private data class SessionConfig(
+        val endpoint: String,
+        val apiKey: String,
+        val model: String,
+        val prompt: String
+    )
 
     /**
      * 请求流式返回
@@ -22,12 +29,14 @@ object LLMController {
         onChunk: (String, Boolean, Boolean) -> Unit
     ) {
         scope.launch(Dispatchers.IO) {
-            val s = session ?: Session.open { // TODO 疑似线程不安全
-                endpoint = Entrance.LLM_BASE_URL
-                apiKey = Entrance.LLM_API_KEY
-                model = Entrance.LLM_MODEL_NAME
-                systemPrompt = "You are a helpful assistant."
-            }.also { session = it }
+            val localSettings = HookLocalSettings.refreshFromHookContext()
+            val config = SessionConfig(
+                endpoint = localSettings.endpoint,
+                apiKey = localSettings.apiKey,
+                model = localSettings.model,
+                prompt = localSettings.prompt.ifBlank { "You are a helpful assistant." }
+            )
+            val s = obtainSession(config)
 
             val sb = StringBuilder()
             s.send(query) { event ->
@@ -56,6 +65,22 @@ object LLMController {
                     is SessionEvent.ToolSucceeded -> {}
                 }
             }
+        }
+    }
+
+    private suspend fun obtainSession(config: SessionConfig): Session {
+        val existing = session
+        if (existing != null && sessionConfig == config) {
+            return existing
+        }
+        return Session.open {
+            endpoint = config.endpoint
+            apiKey = config.apiKey
+            model = config.model
+            systemPrompt = config.prompt
+        }.also {
+            session = it
+            sessionConfig = config
         }
     }
 }

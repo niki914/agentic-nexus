@@ -131,12 +131,6 @@ object BreenoConfigProvider : BaseConfigProvider() {
     val feedbackUpvoteFlagEnabled: Boolean
         get() = getBoolean("runtime.feedback_defaults.upvote_flag") ?: true
 
-    val takeoverKeywords: List<String> // TODO Move to Local Settings
-        get() {
-            val list = getList("runtime.takeover.keywords") ?: return emptyList()
-            return list.mapNotNull { it.jsonPrimitive.contentOrNull }
-        }
-
     val mockBeanLocalDataUnit: List<Pair<String, Any>>
         get() = readConfigPairs(
             objectPath = "runtime.mock_defaults.local_data",
