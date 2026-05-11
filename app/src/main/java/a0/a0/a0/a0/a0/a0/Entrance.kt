@@ -27,9 +27,9 @@ class Entrance : IXposed() {
         private val scope by lazy { CoroutineScope(Dispatchers.Default + SupervisorJob()) }
 
         // LLM Configuration
-        const val LLM_BASE_URL = "http://127.0.0.1:1234/v1/chat/completions" // TODO Local Settings
-        const val LLM_API_KEY = "sk-qwerqwer"
-        const val LLM_MODEL_NAME = "google/gemma-4-e4b"
+        const val LLM_BASE_URL = "https://api.deepseek.com/v1/chat/completions" // TODO Local Settings
+        const val LLM_API_KEY = "sk-xxx"
+        const val LLM_MODEL_NAME = "deepseek-v4-flash"
     }
 
     override fun getTarget() =
