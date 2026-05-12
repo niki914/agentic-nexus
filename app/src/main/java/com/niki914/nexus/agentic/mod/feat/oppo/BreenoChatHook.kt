@@ -19,7 +19,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.util.LinkedHashMap
 
 class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
 
@@ -27,11 +26,8 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
 
     private var dataCenterInstance: Any? = null
     private var viewBeanClass: Class<*>? = null
-    private val stateMutex = Mutex()
-    private val roomTurnStates = LinkedHashMap<String, ConversationTurnState>()
-    private val renderSessions = LinkedHashMap<Long, StreamRenderSession>()
-    @Volatile
-    private var roomTurnStateSnapshot: Map<String, ConversationTurnState> = emptyMap()
+    private val renderSessionMutex = Mutex()
+    private var currentRenderSession: StreamRenderSession? = null
 
     private data class StreamRenderSession(
         val turnId: Long,
@@ -48,12 +44,8 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     }
 
     override suspend fun onTurnStateChanged(state: ConversationTurnState) {
-        stateMutex.withLock {
-            roomTurnStates[state.roomId] = state
-            if (state.mode == TurnMode.NativeTakeover) {
-                renderSessions.remove(state.turnId)
-            }
-            roomTurnStateSnapshot = roomTurnStates.toMap()
+        if (state.mode == TurnMode.NativeTakeover) {
+            clearRenderSession(state.turnId)
         }
     }
 
@@ -61,15 +53,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         val previousRoomId = turnState.roomId
         super.onSessionReset(roomId)
         LLMController.resetConversation()
-        stateMutex.withLock {
-            if (previousRoomId.isNotBlank()) {
-                roomTurnStates.remove(previousRoomId)
-            }
-            renderSessions.entries.removeAll { (_, session) ->
-                session.roomId == previousRoomId || (roomId.isNotBlank() && session.roomId == roomId)
-            }
-            roomTurnStateSnapshot = roomTurnStates.toMap()
-        }
+        clearRenderSessionByRoom(previousRoomId, roomId)
     }
 
     override fun shouldTakeOver(query: String): Boolean {
@@ -106,7 +90,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         ).onHook(lpparam)
 
         OperationFactoryHook(
-            resolveTurnState = { roomId -> resolveTurnState(roomId) }
+            resolveTurnState = { turnState }
         ).onHook(lpparam)
     }
 
@@ -144,7 +128,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         val activeTurn = resolveTurnState(roomId)
         if (activeTurn?.turnId != turnId || activeTurn.mode != TurnMode.InjectedLLM) {
             if (isFinal) {
-                removeRenderSession(turnId)
+                clearRenderSession(turnId)
             }
             xlog(
                 "[$name] 丢弃非当前注入轮次的渲染片段: roomId=$roomId, turnId=$turnId, activeTurn=${activeTurn?.turnId}, mode=${activeTurn?.mode}"
@@ -210,29 +194,39 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
                     mockBean.call<Unit>(addClientLocalDataMethod, it.first, !bool)
                 }
             dataCenterInstance?.call<Unit>(dataCenterUpdateMessageMethod, mockBean, false)
-            removeRenderSession(turnId)
+            clearRenderSession(turnId)
         }
     }
 
     private fun resolveTurnState(roomId: String?): ConversationTurnState? =
-        roomId?.takeIf { it.isNotBlank() }?.let { resolvedRoomId ->
-            roomTurnStateSnapshot[resolvedRoomId]
-        }
+        roomId
+            ?.takeIf { it.isNotBlank() }
+            ?.takeIf { it == turnState.roomId }
+            ?.let { turnState }
 
     private suspend fun obtainRenderSession(turnId: Long, roomId: String): StreamRenderSession =
-        stateMutex.withLock {
-            renderSessions.getOrPut(turnId) {
-                StreamRenderSession(
-                    turnId = turnId,
-                    roomId = roomId,
-                    recordId = "mock_record_${roomId}_${turnId}"
-                )
-            }
+        renderSessionMutex.withLock {
+            currentRenderSession?.takeIf { it.turnId == turnId } ?: StreamRenderSession(
+                turnId = turnId,
+                roomId = roomId,
+                recordId = "mock_record_${roomId}_${turnId}"
+            ).also { currentRenderSession = it }
         }
 
-    private suspend fun removeRenderSession(turnId: Long) {
-        stateMutex.withLock {
-            renderSessions.remove(turnId)
+    private suspend fun clearRenderSession(turnId: Long) {
+        renderSessionMutex.withLock {
+            if (currentRenderSession?.turnId == turnId) {
+                currentRenderSession = null
+            }
+        }
+    }
+
+    private suspend fun clearRenderSessionByRoom(previousRoomId: String, roomId: String) {
+        renderSessionMutex.withLock {
+            val session = currentRenderSession ?: return@withLock
+            if (session.roomId == previousRoomId || (roomId.isNotBlank() && session.roomId == roomId)) {
+                currentRenderSession = null
+            }
         }
     }
 }

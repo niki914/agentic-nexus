@@ -4,7 +4,6 @@ import com.niki914.nexus.agentic.mod.feat.oppo.BreenoConfigProvider
 import com.niki914.nexus.agentic.chat.ConversationTurnState
 import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.h.core.runtime.Hook
-import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.findClass
 import com.niki914.nexus.h.util.hookMethod
 import com.niki914.nexus.h.util.resolveParamTypes
@@ -12,7 +11,7 @@ import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
 class OperationFactoryHook(
-    private val resolveTurnState: (String?) -> ConversationTurnState?
+    private val resolveTurnState: () -> ConversationTurnState
 ) : Hook {
     override val name: String = "OperationFactoryHook"
 
@@ -22,7 +21,6 @@ class OperationFactoryHook(
         val directiveClassName = BreenoConfigProvider.directiveClass ?: return
         val doNothingOperationClass = BreenoConfigProvider.doNothingOperationClass ?: return
         val directiveClass = lpparam.findClass(directiveClassName)
-        val getDirectiveRoomIdMethod = BreenoConfigProvider.directiveGetRoomIdMethod ?: return
         val cleanOperationClass = BreenoConfigProvider.cleanOperationClass ?: return
 
         val createMethodParams = BreenoConfigProvider.operationFactoryCreateMethodParams
@@ -37,24 +35,13 @@ class OperationFactoryHook(
             methodName = createMethod,
             *params,
             after = after@{ param ->
-                val directive = param.args[0]
-                val roomId = directive.call<String>(getDirectiveRoomIdMethod)
-                if (roomId.isNullOrBlank()) {
-                    xlog("[$name] Operation directive 缺失 roomId，保守放行原生 Operation，不回退全局 turnState")
-                    return@after
-                }
-
-                when (resolveTurnState(roomId)?.mode) {
+                when (resolveTurnState().mode) {
                     TurnMode.NativeTakeover -> {
-                        xlog("[$name] takeover 模式，放行原生 Operation: roomId=$roomId")
+                        xlog("[$name] takeover 模式，放行原生 Operation")
                         return@after
                     }
 
                     TurnMode.InjectedLLM -> Unit
-                    null -> {
-                        xlog("[$name] 未命中 room 级轮次状态，保守放行原生 Operation: roomId=$roomId")
-                        return@after
-                    }
                 }
 
                 val result = param.result ?: return@after
@@ -69,7 +56,7 @@ class OperationFactoryHook(
                 val replacement = Class.forName(doNothingOperationClass, false, classLoader)
                     .getDeclaredConstructor()
                     .newInstance()
-                xlog("[$name] 注入模式，CleanOperation -> DoNothingOperation: roomId=$roomId")
+                xlog("[$name] 注入模式，CleanOperation -> DoNothingOperation")
                 param.result = replacement
             }
         )

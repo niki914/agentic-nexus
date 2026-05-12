@@ -81,9 +81,6 @@ object BreenoConfigProvider : BaseConfigProvider() {
     val beanGetContentMethod: String?
         get() = getString("accessors.bean.get_content")
 
-    val directiveGetRoomIdMethod: String?
-        get() = getString("accessors.directive.get_room_id")
-
     val beanSetContentMethod: String?
         get() = getString("accessors.bean.set_content")
 

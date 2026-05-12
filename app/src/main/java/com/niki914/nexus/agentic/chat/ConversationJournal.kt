@@ -1,22 +1,21 @@
 package com.niki914.nexus.agentic.chat
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
 object ConversationJournal {
-    private val lock = Any()
+    private val mutex = Mutex()
     private val hiddenSummaries = mutableListOf<HiddenTurnSummary>()
 
-    fun appendHiddenSummary(summary: HiddenTurnSummary) {
-        synchronized(lock) {
+    suspend fun appendHiddenSummary(summary: HiddenTurnSummary) {
+        mutex.withLock {
             hiddenSummaries += summary
         }
     }
 
-    fun clearRoom(roomId: String) {
-        synchronized(lock) {
+    suspend fun clearRoom(roomId: String) {
+        mutex.withLock {
             hiddenSummaries.removeAll { it.roomId == roomId }
         }
-    }
-
-    fun snapshot(): List<HiddenTurnSummary> = synchronized(lock) {
-        hiddenSummaries.toList()
     }
 }
