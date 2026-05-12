@@ -8,7 +8,7 @@ internal object ConfigPersistence {
 
     private const val WEB_SETTINGS_FILE_NAME = "config.json"
     private const val LOCAL_SETTINGS_PREFS = "x_service_local_settings"
-    private const val LOCAL_SETTINGS_KEY = "local_settings_json"
+    private val LOCAL_SETTINGS_KEY = IpcContract.Field.LOCAL_SETTINGS_JSON.wireName
 
     fun writeWebSettings(context: Context, json: String) {
         val file = File(context.filesDir, WEB_SETTINGS_FILE_NAME)
@@ -21,7 +21,7 @@ internal object ConfigPersistence {
     }
 
     fun writeLocalSettings(context: Context, json: String) {
-        context.getSharedPreferences(LOCAL_SETTINGS_PREFS, Context.MODE_PRIVATE).edit {
+        context.getSharedPreferences(LOCAL_SETTINGS_PREFS, Context.MODE_PRIVATE).edit(commit = true) {
             putString(LOCAL_SETTINGS_KEY, json)
         }
     }

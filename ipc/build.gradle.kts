@@ -22,5 +22,6 @@ android {
 
 dependencies {
     implementation("androidx.annotation:annotation:1.9.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("com.google.android.material:material:1.12.0")
 }

@@ -8,11 +8,6 @@ import android.os.Bundle
 
 class SettingsContentProvider : ContentProvider() {
 
-    companion object {
-        const val METHOD_GET_CONFIG = XIpcContract.METHOD_GET_CONFIG
-        const val KEY_CONFIG_JSON = XIpcContract.KEY_CONFIG_JSON
-    }
-
     override fun onCreate(): Boolean = true
 
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
@@ -20,9 +15,11 @@ class SettingsContentProvider : ContentProvider() {
         if (!XCallerValidator.isAllowed(appContext, callingPackage)) {
             return null
         }
+        val resolvedMethod = IpcContract.Method.fromWire(method)
+            ?: return super.call(method, arg, extras)
         return XProviderDispatcher.dispatch(
             context = appContext,
-            method = method,
+            method = resolvedMethod,
             extras = extras
         ) ?: super.call(method, arg, extras)
     }

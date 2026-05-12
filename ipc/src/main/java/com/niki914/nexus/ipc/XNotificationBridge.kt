@@ -26,8 +26,10 @@ internal object XNotificationBridge {
         content: String,
         uri: String?
     ) {
-        fun checkPermission() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        if (checkPermission()) return
+        fun hasPermission(): Boolean {
+            return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        }
+        if (!hasPermission()) return
         ensureNotificationChannel(context)
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -38,7 +40,9 @@ internal object XNotificationBridge {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setAutoCancel(true)
 
-        createContentIntent(context, uri)?.let(builder::setContentIntent)
+        createContentIntent(context, uri)?.let { contentIntent ->
+            builder.setContentIntent(contentIntent)
+        }
         NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build())
     }
 

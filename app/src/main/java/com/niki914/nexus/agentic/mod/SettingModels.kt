@@ -77,7 +77,4 @@ internal fun parseJsonObject(jsonString: String?): JsonObject {
     } ?: JsonObject(emptyMap())
 }
 
-internal const val LOCAL_SETTINGS_PREFS = "x_service_local_settings"
-internal const val LOCAL_SETTINGS_KEY = "local_settings_json"
-
 private val json = Json { ignoreUnknownKeys = true }

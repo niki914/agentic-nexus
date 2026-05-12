@@ -2,11 +2,9 @@ package com.niki914.nexus.agentic.mod
 
 import android.app.Application
 import android.content.Context
-import androidx.core.content.edit
 import com.niki914.nexus.h.util.xTry
 import com.niki914.nexus.h.util.xlog
-import com.niki914.nexus.ipc.XConfig
-import com.niki914.nexus.ipc.XValues
+import com.niki914.nexus.ipc.XIpcBridge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -22,7 +20,7 @@ object XService {
         withContext(Dispatchers.IO) {
             val remoteJson = fetchWebSettingsSync(packageName, versionCode)
             if (remoteJson != null) {
-                XConfig.updateFromServerJson(context, remoteJson)
+                XSettingsRepository.writeWebSettingsJson(context, remoteJson)
                 xlog("WebSettings refreshed for $packageName ($versionCode)")
             } else {
                 xlog("WebSettings refresh failed for $packageName ($versionCode): remote JSON is null")
@@ -33,7 +31,7 @@ object XService {
     fun getWebSettings(context: Context): WebSettings {
         rememberContext(context)
         return (xTry("XService.getWebSettings") {
-            WebSettings(parseJsonObject(XConfig.get(context)))
+            XSettingsRepository.readWebSettings(context)
         } ?: WebSettings()).also {
             xlog("WebSettings received: $it")
         }
@@ -41,21 +39,15 @@ object XService {
 
     fun getLocalSettings(context: Context): LocalSettings {
         rememberContext(context)
-        return if (shouldUseProviderForLocalSettings(context)) {
-            LocalSettings(parseJsonObject(XConfig.getLocalSettings(context)))
-        } else {
-            readLocalSettingsDirect(context)
+        return XSettingsRepository.readLocalSettings(context).also {
+            xlog("LocalSettings received: $it")
         }
     }
 
     fun putLocalSettings(context: Context, settings: LocalSettings) {
         rememberContext(context)
-        if (shouldUseProviderForLocalSettings(context)) {
-            XConfig.putLocalSettings(context, settings.props.toString())
-            xlog("LocalSettings updated via provider: ${settings.props}")
-        } else {
-            writeLocalSettingsDirect(context, settings)
-        }
+        XSettingsRepository.writeLocalSettings(context, settings)
+        xlog("LocalSettings updated: ${settings.props}")
     }
 
     fun postNotification(
@@ -68,36 +60,11 @@ object XService {
             xlog("XService.postNotification skipped: no cached context")
             return
         }
-        XConfig.postNotification(context, title, content, uri)
+        XIpcBridge.postNotification(context, title, content, uri)
     }
 
     private fun rememberContext(context: Context) {
         cachedContext = context.applicationContext as Application
-    }
-
-    private fun shouldUseProviderForLocalSettings(context: Context): Boolean {
-        return context.packageName in XValues.appList
-    }
-
-    private fun readLocalSettingsDirect(context: Context): LocalSettings {
-        return LocalSettings(
-            parseJsonObject(
-                context
-                    .getSharedPreferences(LOCAL_SETTINGS_PREFS, Context.MODE_PRIVATE)
-                    .getString(LOCAL_SETTINGS_KEY, null)
-            )
-        ).also {
-            xlog("LocalSettings received via direct prefs: $it")
-        }
-    }
-
-    private fun writeLocalSettingsDirect(context: Context, settings: LocalSettings) {
-        context
-            .getSharedPreferences(LOCAL_SETTINGS_PREFS, Context.MODE_PRIVATE)
-            .edit {
-                putString(LOCAL_SETTINGS_KEY, settings.props.toString())
-            }
-        xlog("LocalSettings updated via direct prefs: ${settings.props}")
     }
 
     private fun fetchWebSettingsSync(packageName: String, versionCode: Long): String? {

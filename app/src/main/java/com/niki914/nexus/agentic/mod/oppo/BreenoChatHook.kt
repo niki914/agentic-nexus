@@ -217,7 +217,9 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     }
 
     private fun resolveTurnState(roomId: String?): ConversationTurnState? =
-        roomId?.takeIf { it.isNotBlank() }?.let(roomTurnStateSnapshot::get)
+        roomId?.takeIf { it.isNotBlank() }?.let { resolvedRoomId ->
+            roomTurnStateSnapshot[resolvedRoomId]
+        }
 
     private suspend fun obtainRenderSession(turnId: Long, roomId: String): StreamRenderSession =
         stateMutex.withLock {

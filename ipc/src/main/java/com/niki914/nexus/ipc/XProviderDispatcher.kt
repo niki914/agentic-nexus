@@ -2,69 +2,127 @@ package com.niki914.nexus.ipc
 
 import android.content.Context
 import android.os.Bundle
+import kotlinx.coroutines.runBlocking
 
 internal object XProviderDispatcher {
 
     fun dispatch(
         context: Context,
-        method: String,
+        method: IpcContract.Method,
         extras: Bundle?
     ): Bundle? {
         return when (method) {
-            XIpcContract.METHOD_GET_CONFIG,
-            XIpcContract.METHOD_GET_WEB_SETTINGS -> bundleOf(
-                XIpcContract.KEY_CONFIG_JSON to ConfigPersistence.readWebSettings(context),
-                XIpcContract.KEY_WEB_SETTINGS_JSON to ConfigPersistence.readWebSettings(context)
+            IpcContract.Method.GET_CONFIG,
+            IpcContract.Method.GET_WEB_SETTINGS -> respondWithStore(
+                context = context,
+                store = IpcContract.Store.WEB_SETTINGS
             )
 
-            XIpcContract.METHOD_PUT_WEB_SETTINGS -> {
-                val json = extras?.getString(XIpcContract.KEY_WEB_SETTINGS_JSON)
-                    ?: extras?.getString(XIpcContract.KEY_CONFIG_JSON)
+            IpcContract.Method.PUT_WEB_SETTINGS -> {
+                val json = extras?.readString(IpcContract.Store.WEB_SETTINGS.payloadField)
+                    ?: IpcContract.Store.WEB_SETTINGS.legacyPayloadField?.let { field ->
+                        extras?.readString(field)
+                    }
                     ?: return null
-                ConfigPersistence.writeWebSettings(context, json)
-                bundleOf(
-                    XIpcContract.KEY_SUCCESS to true,
-                    XIpcContract.KEY_WEB_SETTINGS_JSON to json,
-                    XIpcContract.KEY_CONFIG_JSON to json
+                respondWithWrittenStore(
+                    context = context,
+                    store = IpcContract.Store.WEB_SETTINGS,
+                    json = json
                 )
             }
 
-            XIpcContract.METHOD_GET_LOCAL_SETTINGS -> bundleOf(
-                XIpcContract.KEY_LOCAL_SETTINGS_JSON to ConfigPersistence.readLocalSettings(context)
-            )
-
-            XIpcContract.METHOD_PUT_LOCAL_SETTINGS -> {
-                val json = extras?.getString(XIpcContract.KEY_LOCAL_SETTINGS_JSON)
-                    ?: return null
-                ConfigPersistence.writeLocalSettings(context, json)
-                bundleOf(
-                    XIpcContract.KEY_SUCCESS to true,
-                    XIpcContract.KEY_LOCAL_SETTINGS_JSON to json
+            IpcContract.Method.MUTATE_WEB_SETTINGS -> {
+                respondWithMutatedStore(
+                    context = context,
+                    store = IpcContract.Store.WEB_SETTINGS,
+                    extras = extras
                 )
             }
 
-            XIpcContract.METHOD_POST_NOTIFICATION -> {
-                val title = extras?.getString(XIpcContract.KEY_TITLE).orEmpty()
-                val content = extras?.getString(XIpcContract.KEY_CONTENT).orEmpty()
-                val uri = extras?.getString(XIpcContract.KEY_URI)
+            IpcContract.Method.GET_LOCAL_SETTINGS -> respondWithStore(
+                context = context,
+                store = IpcContract.Store.LOCAL_SETTINGS
+            )
+
+            IpcContract.Method.PUT_LOCAL_SETTINGS -> {
+                val json = extras?.readString(IpcContract.Store.LOCAL_SETTINGS.payloadField)
+                    ?: return null
+                respondWithWrittenStore(
+                    context = context,
+                    store = IpcContract.Store.LOCAL_SETTINGS,
+                    json = json
+                )
+            }
+
+            IpcContract.Method.MUTATE_LOCAL_SETTINGS -> {
+                respondWithMutatedStore(
+                    context = context,
+                    store = IpcContract.Store.LOCAL_SETTINGS,
+                    extras = extras
+                )
+            }
+
+            IpcContract.Method.POST_NOTIFICATION -> {
+                val title = extras?.readString(IpcContract.Field.TITLE).orEmpty()
+                val content = extras?.readString(IpcContract.Field.CONTENT).orEmpty()
+                val uri = extras?.readString(IpcContract.Field.URI)
                 XNotificationBridge.post(context, title, content, uri)
-                bundleOf(XIpcContract.KEY_SUCCESS to true)
+                ipcBundleOf(IpcContract.Field.SUCCESS to true)
             }
-
-            else -> null
         }
     }
 
-    private fun bundleOf(vararg pairs: Pair<String, Any?>): Bundle {
-        return Bundle().apply {
-            pairs.forEach { (key, value) ->
-                when (value) {
-                    null -> putString(key, null)
-                    is String -> putString(key, value)
-                    is Boolean -> putBoolean(key, value)
-                    else -> error("Unsupported bundle type for key=$key")
-                }
-            }
+    private fun respondWithStore(
+        context: Context,
+        store: IpcContract.Store
+    ): Bundle {
+        val json = runBlocking {
+            XIpcStoreRepository.readJson(context, store)
         }
+        return storeResponse(store, json)
+    }
+
+    private fun respondWithWrittenStore(
+        context: Context,
+        store: IpcContract.Store,
+        json: String
+    ): Bundle {
+        val updatedJson = runBlocking {
+            XIpcStoreRepository.writeJson(context, store, json)
+        }
+        return storeResponse(store, updatedJson)
+    }
+
+    private fun respondWithMutatedStore(
+        context: Context,
+        store: IpcContract.Store,
+        extras: Bundle?
+    ): Bundle? {
+        val path = extras?.readString(IpcContract.Field.PATH)
+            ?.takeIf(String::isNotBlank)
+            ?: return null
+        val valueJson = extras.readString(IpcContract.Field.VALUE_JSON)
+            ?: return null
+        val updatedJson = runBlocking {
+            XIpcStoreRepository.mutateJson(
+                context = context,
+                store = store,
+                path = path,
+                valueJson = valueJson
+            )
+        }
+        return storeResponse(store, updatedJson)
+    }
+
+    private fun storeResponse(
+        store: IpcContract.Store,
+        json: String
+    ): Bundle {
+        val pairs = buildList {
+            add(IpcContract.Field.SUCCESS to true)
+            add(store.payloadField to json)
+            store.legacyPayloadField?.let { add(it to json) }
+        }
+        return ipcBundleOf(*pairs.toTypedArray())
     }
 }
