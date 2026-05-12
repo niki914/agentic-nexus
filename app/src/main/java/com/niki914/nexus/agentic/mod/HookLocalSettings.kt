@@ -8,7 +8,7 @@ object HookLocalSettings {
     @Volatile
     private var cached = LocalSettings()
 
-    fun update(context: Context): LocalSettings {
+    suspend fun update(context: Context): LocalSettings {
         return XService.getLocalSettings(context).also { cached = it }
     }
 

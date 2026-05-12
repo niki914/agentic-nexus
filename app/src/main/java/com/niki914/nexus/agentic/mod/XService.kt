@@ -16,7 +16,7 @@ object XService {
         withContext(Dispatchers.IO) {
             val remoteJson = fetchWebSettingsSync(packageName, versionCode)
             if (remoteJson != null) {
-                writeWebSettingsJson(context, remoteJson)
+                XIpcBridge.writeWebSettingsJson(context, remoteJson)
                 xlog("WebSettings refreshed for $packageName ($versionCode)")
             } else {
                 xlog("WebSettings refresh failed for $packageName ($versionCode): remote JSON is null")
@@ -24,22 +24,18 @@ object XService {
         }
     }
 
-    fun getWebSettings(context: Context): WebSettings {
-        return (xTry("XService.getWebSettings") {
-            readWebSettings(context)
-        } ?: WebSettings()).also {
-            xlog("WebSettings received: $it")
-        }
+    suspend fun getWebSettings(context: Context): WebSettings {
+        return WebSettings(parseJsonObject(XIpcBridge.readWebSettingsJson(context)))
     }
 
-    fun getLocalSettings(context: Context): LocalSettings {
-        return readLocalSettings(context).also {
+    suspend fun getLocalSettings(context: Context): LocalSettings {
+        return LocalSettings(parseJsonObject(XIpcBridge.readLocalSettingsJson(context))).also {
             xlog("LocalSettings received: $it")
         }
     }
 
-    fun putLocalSettings(context: Context, settings: LocalSettings) {
-        writeLocalSettings(context, settings)
+    suspend fun putLocalSettings(context: Context, settings: LocalSettings) {
+        XIpcBridge.writeLocalSettingsJson(context, settings.props.toString())
         xlog("LocalSettings updated: ${settings.props}")
     }
 
@@ -50,22 +46,6 @@ object XService {
     ) {
         val context = ContextProvider.await()
         XIpcBridge.postNotification(context, title, content, uri)
-    }
-
-    private fun readWebSettings(context: Context): WebSettings {
-        return WebSettings(parseJsonObject(XIpcBridge.readWebSettingsJson(context)))
-    }
-
-    private fun writeWebSettingsJson(context: Context, json: String) {
-        XIpcBridge.writeWebSettingsJson(context, json)
-    }
-
-    private fun readLocalSettings(context: Context): LocalSettings {
-        return LocalSettings(parseJsonObject(XIpcBridge.readLocalSettingsJson(context)))
-    }
-
-    private fun writeLocalSettings(context: Context, settings: LocalSettings) {
-        XIpcBridge.writeLocalSettingsJson(context, settings.props.toString())
     }
 }
 

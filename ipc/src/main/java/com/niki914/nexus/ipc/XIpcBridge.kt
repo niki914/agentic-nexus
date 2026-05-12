@@ -2,9 +2,10 @@ package com.niki914.nexus.ipc
 
 import android.content.Context
 import android.os.Bundle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -42,113 +43,116 @@ object XIpcBridge {
     private var cachedWebSettingsJson: String? = null
     private val webSettingsCacheMutex = Mutex()
 
-    fun readWebSettingsJson(context: Context): String {
+    suspend fun readWebSettingsJson(context: Context): String {
         return readJson(context, IpcContract.Store.WEB_SETTINGS)
     }
 
-    fun writeWebSettingsJson(context: Context, json: String) {
+    suspend fun writeWebSettingsJson(context: Context, json: String) {
         writeJson(context, IpcContract.Store.WEB_SETTINGS, json)
     }
 
-    fun writeWebSetting(context: Context, key: String, value: Any?) {
+    suspend fun writeWebSetting(context: Context, key: String, value: Any?) {
         mutateSetting(context, IpcContract.Store.WEB_SETTINGS, key, value)
     }
 
-    fun readLocalSettingsJson(context: Context): String {
+    suspend fun readLocalSettingsJson(context: Context): String {
         return readJson(context, IpcContract.Store.LOCAL_SETTINGS)
     }
 
-    fun writeLocalSettingsJson(context: Context, json: String) {
+    suspend fun writeLocalSettingsJson(context: Context, json: String) {
         writeJson(context, IpcContract.Store.LOCAL_SETTINGS, json)
     }
 
-    fun writeLocalSetting(context: Context, key: String, value: Any?) {
+    suspend fun writeLocalSetting(context: Context, key: String, value: Any?) {
         mutateSetting(context, IpcContract.Store.LOCAL_SETTINGS, key, value)
     }
 
-    fun readJson(
+    suspend fun readJson(
         context: Context,
         store: IpcContract.Store
     ): String {
         if (store == IpcContract.Store.WEB_SETTINGS) {
             cachedWebSettingsJson?.let { return it }
-            return runBlocking {
-                webSettingsCacheMutex.withLock {
-                    cachedWebSettingsJson ?: readStoreJsonUncached(context, store).also {
-                        cachedWebSettingsJson = it
-                    }
+            return webSettingsCacheMutex.withLock {
+                cachedWebSettingsJson ?: readStoreJsonUncached(context, store).also {
+                    cachedWebSettingsJson = it
                 }
             }
         }
         return readStoreJsonUncached(context, store)
     }
 
-    fun writeJson(
+    suspend fun writeJson(
         context: Context,
         store: IpcContract.Store,
         json: String
     ) {
         if (isHostContext(context)) {
-            writeJsonViaProvider(
-                context = context,
-                store = store,
-                json = json
-            )
-        } else {
-            runBlocking {
-                XIpcStoreRepository.writeJson(context, store, json)
+            withContext(Dispatchers.IO) {
+                writeJsonViaProvider(
+                    context = context,
+                    store = store,
+                    json = json
+                )
             }
+        } else {
+            XIpcStoreRepository.writeJson(context, store, json)
         }
         updateWebCacheIfNeeded(store, json)
     }
 
-    fun mutateSetting(
+    suspend fun mutateSetting(
         context: Context,
         store: IpcContract.Store,
         key: String,
         value: Any?
     ): String {
+        val valueJson = serializeValue(value)
         val updatedJson = if (isHostContext(context)) {
-            mutateJsonViaProvider(
-                context = context,
-                store = store,
-                key = key,
-                valueJson = serializeValue(value)
-            )
-        } else {
-            runBlocking {
-                XIpcStoreRepository.mutateJson(
+            withContext(Dispatchers.IO) {
+                mutateJsonViaProvider(
                     context = context,
                     store = store,
-                    path = key,
-                    valueJson = serializeValue(value)
+                    key = key,
+                    valueJson = valueJson
                 )
             }
+        } else {
+            XIpcStoreRepository.mutateJson(
+                context = context,
+                store = store,
+                path = key,
+                valueJson = valueJson
+            )
         }
         updateWebCacheIfNeeded(store, updatedJson)
         return updatedJson
     }
 
-    fun postNotification(
+    suspend fun postNotification(
         context: Context,
         title: String,
         content: String,
         uri: String?
     ): Boolean {
         return if (isHostContext(context)) {
-            val bundle = callProvider(
-                context = context,
-                method = IpcContract.Method.POST_NOTIFICATION,
-                extras = ipcBundleOf(
-                    IpcContract.Field.TITLE to title,
-                    IpcContract.Field.CONTENT to content,
-                    IpcContract.Field.URI to uri
+            val bundle = withContext(Dispatchers.IO) {
+                callProvider(
+                    context = context,
+                    method = IpcContract.Method.POST_NOTIFICATION,
+                    extras = ipcBundleOf(
+                        IpcContract.Field.TITLE to title,
+                        IpcContract.Field.CONTENT to content,
+                        IpcContract.Field.URI to uri
+                    )
                 )
-            )
+            }
             bundle?.readBoolean(IpcContract.Field.SUCCESS) == true
         } else {
-            XNotificationBridge.post(context, title, content, uri)
-            true
+            withContext(Dispatchers.IO) {
+                XNotificationBridge.post(context, title, content, uri)
+                true
+            }
         }
     }
 
@@ -156,16 +160,16 @@ object XIpcBridge {
         return context.packageName in XValues.appList
     }
 
-    private fun readStoreJsonUncached(
+    private suspend fun readStoreJsonUncached(
         context: Context,
         store: IpcContract.Store
     ): String {
         return if (isHostContext(context)) {
-            readJsonViaProvider(context, store)
-        } else {
-            runBlocking {
-                XIpcStoreRepository.readJson(context, store)
+            withContext(Dispatchers.IO) {
+                readJsonViaProvider(context, store)
             }
+        } else {
+            XIpcStoreRepository.readJson(context, store)
         }
     }
 
