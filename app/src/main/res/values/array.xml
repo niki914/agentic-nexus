@@ -2,5 +2,6 @@
 <resources>
     <string-array name="module_scope">
         <item>com.heytap.speechassist</item>
+        <item>com.miui.voiceassist</item>
     </string-array>
 </resources>

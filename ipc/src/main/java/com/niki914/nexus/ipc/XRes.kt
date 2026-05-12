@@ -9,7 +9,8 @@ object XValues {
 
     val myPackageName = "com.niki914.nexus.agentic"
     val appList: List<String> = listOf(
-        "com.heytap.speechassist"
+        "com.heytap.speechassist",
+        "com.miui.voiceassist"
     )
 
     enum class AppType { Me, Host, Unknown }
