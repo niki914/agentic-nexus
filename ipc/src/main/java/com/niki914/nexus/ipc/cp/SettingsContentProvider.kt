@@ -1,10 +1,11 @@
-package com.niki914.nexus.ipc
+package com.niki914.nexus.ipc.cp
 
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
+import com.niki914.nexus.ipc.IpcContract
 
 class SettingsContentProvider : ContentProvider() {
 
@@ -12,9 +13,22 @@ class SettingsContentProvider : ContentProvider() {
 
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
         val appContext = context ?: return null
-        if (!XCallerValidator.isAllowed(appContext, callingPackage)) {
-            return null
+        
+        val callingUid = android.os.Binder.getCallingUid()
+        if (callingUid != android.os.Process.myUid()) {
+            val callerPackages = appContext.packageManager.getPackagesForUid(callingUid) ?: emptyArray()
+            val callingPkg = callingPackage
+            if (callingPkg != null) {
+                if (callingPkg !in com.niki914.nexus.ipc.XValues.appList || callingPkg !in callerPackages) {
+                    return null
+                }
+            } else {
+                if (callerPackages.none { it in com.niki914.nexus.ipc.XValues.appList }) {
+                    return null
+                }
+            }
         }
+
         val resolvedMethod = IpcContract.Method.fromWire(method)
             ?: return super.call(method, arg, extras)
         return XProviderDispatcher.dispatch(

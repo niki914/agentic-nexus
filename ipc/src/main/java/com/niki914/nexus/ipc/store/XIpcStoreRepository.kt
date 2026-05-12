@@ -1,6 +1,7 @@
-package com.niki914.nexus.ipc
+package com.niki914.nexus.ipc.store
 
 import android.content.Context
+import com.niki914.nexus.ipc.IpcContract
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray

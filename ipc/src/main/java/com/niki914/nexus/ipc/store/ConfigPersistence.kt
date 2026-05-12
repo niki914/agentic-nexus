@@ -1,7 +1,8 @@
-package com.niki914.nexus.ipc
+package com.niki914.nexus.ipc.store
 
 import android.content.Context
 import androidx.core.content.edit
+import com.niki914.nexus.ipc.IpcContract
 import java.io.File
 
 internal object ConfigPersistence {

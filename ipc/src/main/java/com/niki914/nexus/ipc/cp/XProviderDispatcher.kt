@@ -1,7 +1,12 @@
-package com.niki914.nexus.ipc
+package com.niki914.nexus.ipc.cp
 
 import android.content.Context
 import android.os.Bundle
+import com.niki914.nexus.ipc.IpcContract
+import com.niki914.nexus.ipc.XNotificationBridge
+import com.niki914.nexus.ipc.ipcBundleOf
+import com.niki914.nexus.ipc.readString
+import com.niki914.nexus.ipc.store.XIpcStoreRepository
 import kotlinx.coroutines.runBlocking
 
 internal object XProviderDispatcher {

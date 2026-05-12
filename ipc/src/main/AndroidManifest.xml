@@ -4,7 +4,7 @@
 
     <application>
         <provider
-            android:name="com.niki914.nexus.ipc.SettingsContentProvider"
+            android:name="com.niki914.nexus.ipc.cp.SettingsContentProvider"
             android:authorities="com.niki914.nexus.ipc.provider"
             android:exported="true" />
     </application>

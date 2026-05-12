@@ -1,19 +1,23 @@
 package com.niki914.nexus.ipc
 
+import android.content.Context
 import android.os.Bundle
 import android.net.Uri
 import androidx.core.net.toUri
 
 object XValues {
+
+    val myPackageName = "com.niki914.nexus.agentic"
     val appList: List<String> = listOf(
         "com.heytap.speechassist"
     )
 
-    internal fun allowedCallerPackages(hostPackage: String): Set<String> {
-        return buildSet {
-            add(hostPackage)
-            addAll(appList)
-        }
+    enum class AppType { Me, Host, Unknown }
+
+    fun getAppTypeOf(context: Context): AppType {
+        if (context.packageName in appList) return AppType.Host
+        if (context.packageName == myPackageName) return AppType.Me
+        return AppType.Unknown
     }
 }
 

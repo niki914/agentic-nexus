@@ -2,6 +2,7 @@ package com.niki914.nexus.ipc
 
 import android.content.Context
 import android.os.Bundle
+import com.niki914.nexus.ipc.store.XIpcStoreRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -87,7 +88,7 @@ object XIpcBridge {
         store: IpcContract.Store,
         json: String
     ) {
-        if (isHostContext(context)) {
+        if (shouldUseProvider(context)) {
             withContext(Dispatchers.IO) {
                 writeJsonViaProvider(
                     context = context,
@@ -108,7 +109,7 @@ object XIpcBridge {
         value: Any?
     ): String {
         val valueJson = serializeValue(value)
-        val updatedJson = if (isHostContext(context)) {
+        val updatedJson = if (shouldUseProvider(context)) {
             withContext(Dispatchers.IO) {
                 mutateJsonViaProvider(
                     context = context,
@@ -135,7 +136,7 @@ object XIpcBridge {
         content: String,
         uri: String?
     ): Boolean {
-        return if (isHostContext(context)) {
+        return if (shouldUseProvider(context)) {
             val bundle = withContext(Dispatchers.IO) {
                 callProvider(
                     context = context,
@@ -156,15 +157,11 @@ object XIpcBridge {
         }
     }
 
-    private fun isHostContext(context: Context): Boolean {
-        return context.packageName in XValues.appList
-    }
-
     private suspend fun readStoreJsonUncached(
         context: Context,
         store: IpcContract.Store
     ): String {
-        return if (isHostContext(context)) {
+        return if (shouldUseProvider(context)) {
             withContext(Dispatchers.IO) {
                 readJsonViaProvider(context, store)
             }
@@ -240,6 +237,16 @@ object XIpcBridge {
     ) {
         if (store == IpcContract.Store.WEB_SETTINGS) {
             cachedWebSettingsJson = json
+        }
+    }
+
+    private fun shouldUseProvider(context: Context): Boolean {
+        return when (XValues.getAppTypeOf(context)) {
+            XValues.AppType.Host -> true
+            XValues.AppType.Me -> false
+            XValues.AppType.Unknown -> throw IllegalStateException(
+                "XIpcBridge does not support package=${context.packageName}"
+            )
         }
     }
 
