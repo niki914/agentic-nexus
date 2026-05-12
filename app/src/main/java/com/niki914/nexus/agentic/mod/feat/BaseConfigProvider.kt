@@ -1,4 +1,4 @@
-package com.niki914.nexus.agentic.mod
+package com.niki914.nexus.agentic.mod.feat
 
 import com.niki914.nexus.h.util.KVProvider
 import com.niki914.nexus.h.util.xlog

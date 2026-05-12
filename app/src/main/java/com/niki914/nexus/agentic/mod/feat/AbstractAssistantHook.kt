@@ -1,5 +1,8 @@
-package com.niki914.nexus.agentic.mod
+package com.niki914.nexus.agentic.mod.feat
 
+import com.niki914.nexus.agentic.chat.ConversationJournal
+import com.niki914.nexus.agentic.chat.ConversationTurnState
+import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.h.core.runtime.Hook
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope

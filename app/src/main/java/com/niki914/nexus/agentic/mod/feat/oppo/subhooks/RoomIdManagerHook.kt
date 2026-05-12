@@ -1,6 +1,6 @@
-package com.niki914.nexus.agentic.mod.oppo.subhooks
+package com.niki914.nexus.agentic.mod.feat.oppo.subhooks
 
-import com.niki914.nexus.agentic.mod.BreenoConfigProvider
+import com.niki914.nexus.agentic.mod.feat.oppo.BreenoConfigProvider
 import com.niki914.nexus.h.core.runtime.Hook
 import com.niki914.nexus.h.util.hookMethod
 import com.niki914.nexus.h.util.resolveParamTypes

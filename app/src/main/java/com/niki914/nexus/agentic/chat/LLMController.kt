@@ -1,5 +1,6 @@
-package com.niki914.nexus.agentic.mod
+package com.niki914.nexus.agentic.chat
 
+import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.s3ss10n.Session
 import com.niki914.s3ss10n.SessionEvent
 import kotlinx.coroutines.CoroutineScope

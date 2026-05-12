@@ -3,7 +3,7 @@ package a0.a0.a0.a0.a0.a0
 import androidx.annotation.Keep
 import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.mod.XService
-import com.niki914.nexus.agentic.mod.oppo.BreenoChatHook
+import com.niki914.nexus.agentic.mod.feat.oppo.BreenoChatHook
 import com.niki914.nexus.h.IXposed
 import com.niki914.nexus.h.core.runtime.Hook
 import com.niki914.nexus.h.core.runtime.Runtime

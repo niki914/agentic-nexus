@@ -1,4 +1,4 @@
-package com.niki914.nexus.agentic.mod
+package com.niki914.nexus.agentic.chat
 
 object ConversationJournal {
     private val lock = Any()

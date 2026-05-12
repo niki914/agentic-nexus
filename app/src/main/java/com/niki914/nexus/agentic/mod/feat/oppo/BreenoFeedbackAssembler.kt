@@ -1,4 +1,4 @@
-package com.niki914.nexus.agentic.mod
+package com.niki914.nexus.agentic.mod.feat.oppo
 
 import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.xTry

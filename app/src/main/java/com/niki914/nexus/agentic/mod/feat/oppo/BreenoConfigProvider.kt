@@ -1,5 +1,6 @@
-package com.niki914.nexus.agentic.mod
+package com.niki914.nexus.agentic.mod.feat.oppo
 
+import com.niki914.nexus.agentic.mod.feat.BaseConfigProvider
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.booleanOrNull
