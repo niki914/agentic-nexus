@@ -5,6 +5,7 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.JsonArray
 
 /**
  * Remote settings!
@@ -25,7 +26,7 @@ object KVProvider : XProvider<Map<String, JsonElement>>() {
     
     suspend fun getList(key: String): List<JsonElement>? {
         return await()[key]?.let {
-            if (it is kotlinx.serialization.json.JsonArray) it.toList() else null
+            if (it is JsonArray) it.toList() else null
         }
     }
 }

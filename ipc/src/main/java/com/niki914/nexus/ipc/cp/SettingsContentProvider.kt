@@ -5,7 +5,10 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
+import android.os.Binder
+import android.os.Process
 import com.niki914.nexus.ipc.IpcContract
+import com.niki914.nexus.ipc.XValues
 
 class SettingsContentProvider : ContentProvider() {
 
@@ -14,16 +17,16 @@ class SettingsContentProvider : ContentProvider() {
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
         val appContext = context ?: return null
         
-        val callingUid = android.os.Binder.getCallingUid()
-        if (callingUid != android.os.Process.myUid()) {
+        val callingUid = Binder.getCallingUid()
+        if (callingUid != Process.myUid()) {
             val callerPackages = appContext.packageManager.getPackagesForUid(callingUid) ?: emptyArray()
             val callingPkg = callingPackage
             if (callingPkg != null) {
-                if (callingPkg !in com.niki914.nexus.ipc.XValues.appList || callingPkg !in callerPackages) {
+                if (callingPkg !in XValues.appList || callingPkg !in callerPackages) {
                     return null
                 }
             } else {
-                if (callerPackages.none { it in com.niki914.nexus.ipc.XValues.appList }) {
+                if (callerPackages.none { it in XValues.appList }) {
                     return null
                 }
             }
