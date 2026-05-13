@@ -10,6 +10,8 @@ import kotlinx.coroutines.launch
 
 /**
  * 抽象语音助手 Hook 基类，规范核心生命周期与功能职责
+ *
+ * TODO 统一所有业务下的 subhooks、云 config、AbstractAssistantHook 方法命名
  */
 abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook {
     protected var turnState: ConversationTurnState = ConversationTurnState()

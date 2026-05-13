@@ -21,11 +21,20 @@ class InputHook(
     )
 
     override fun onHook(lpparam: XC_LoadPackage.LoadPackageParam) {
-        val operationManagerClass = XiaoaiConfigProvider.operationManagerClass ?: return
-        val setQueryInfoMethodName = XiaoaiConfigProvider.setQueryInfoMethodName ?: return
-        val setQueryInfoMethodParams = XiaoaiConfigProvider.setQueryInfoMethodParams ?: return
-        val dialogIdArgIndex = XiaoaiConfigProvider.setQueryInfoDialogIdArgIndex ?: return
-        val queryArgIndex = XiaoaiConfigProvider.setQueryInfoQueryArgIndex ?: return
+        if (!XiaoaiConfigProvider.captureInputEnabled) {
+            xlog("[$name] action[capture_input] 已禁用，跳过安装")
+            return
+        }
+        val operationManagerClass = XiaoaiConfigProvider.captureInputOwnerClass ?: return
+        val setQueryInfoMethodName = XiaoaiConfigProvider.captureInputMethodName ?: return
+        val setQueryInfoMethodParams = XiaoaiConfigProvider.captureInputMethodParams ?: return
+        val dialogIdArgIndex = XiaoaiConfigProvider.captureInputDialogIdArgIndex ?: return
+        val queryArgIndex = XiaoaiConfigProvider.captureInputQueryArgIndex ?: return
+        val hookTiming = XiaoaiConfigProvider.captureInputHookTiming
+        if (hookTiming != null && hookTiming != "before") {
+            xlog("[$name] action[capture_input] 暂不支持 hook_timing=$hookTiming，跳过安装")
+            return
+        }
         val paramTypes = resolveParamTypes(setQueryInfoMethodParams, lpparam) ?: return
 
         lpparam.hookMethod(
