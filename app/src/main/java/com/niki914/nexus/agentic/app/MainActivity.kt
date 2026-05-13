@@ -51,11 +51,24 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         lifecycleScope.launch(Dispatchers.IO) {
-            val targetPkg = XValues.appList.firstOrNull()
+            val osFamily = RootUtils.getOsFamily()
+            val preferredPkg = when (osFamily) {
+                RootUtils.OsFamily.ColorOS -> "com.heytap.speechassist" // TODO 硬编码不优雅，后续统一到一个新的枚举类，统一各个需要用到包名的地方
+                RootUtils.OsFamily.HyperOS -> "com.miui.voiceassist"
+                RootUtils.OsFamily.Unknown -> null
+            }
+            val candidatePkgs = buildList {
+                if (preferredPkg != null) add(preferredPkg)
+                addAll(XValues.appList.filter { it != preferredPkg })
+            }
+            val targetPkg = candidatePkgs.firstOrNull { pkg ->
+                RootUtils.getPackageVersionCode(pkg) != null
+            }
             if (targetPkg == null) {
-                xlog("MainActivity: XValues.appList is empty")
+                xlog("MainActivity: no supported host found, osFamily=$osFamily")
                 return@launch
             }
+            xlog("MainActivity: osFamily=$osFamily targetPkg=$targetPkg")
             val versionCode = RootUtils.getPackageVersionCode(targetPkg)
             if (versionCode != null) {
                 XService.refreshWebSettings(this@MainActivity, targetPkg, versionCode)

@@ -3,6 +3,7 @@ package a0.a0.a0.a0.a0.a0
 import androidx.annotation.Keep
 import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.mod.XService
+import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiChatHook
 import com.niki914.nexus.agentic.mod.feat.oppo.BreenoChatHook
 import com.niki914.nexus.h.IXposed
 import com.niki914.nexus.h.core.runtime.Hook
@@ -52,10 +53,9 @@ class Entrance : IXposed() {
     private fun onSettingsFetched(params: XC_LoadPackage.LoadPackageParam, targetPkg: String?) {
         // 根据 targetPkg 进行映射和 Hook 路由
         val hookInstance: Hook? = when {
-            targetPkg == params.packageName && params.packageName in XValues.appList -> {
-                BreenoChatHook(scope)
-            }
-            // params.packageName in XValues.appList -> XiaoAiChatHook(scope) // 未来扩展
+            targetPkg != params.packageName -> null
+            params.packageName == "com.heytap.speechassist" -> BreenoChatHook(scope)
+            params.packageName == "com.miui.voiceassist" -> XiaoaiChatHook(scope)
             else -> null
         }
 
