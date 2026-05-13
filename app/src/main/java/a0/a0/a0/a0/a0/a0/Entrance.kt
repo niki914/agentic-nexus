@@ -12,7 +12,6 @@ import com.niki914.nexus.h.core.runtime.RuntimeBootstrap
 import com.niki914.nexus.h.util.ContextHook
 import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.nexus.h.util.HookSideLoader
-import com.niki914.nexus.h.util.KVProvider
 import com.niki914.nexus.h.util.xlog
 import com.niki914.nexus.ipc.HostApp
 import com.niki914.nexus.ipc.XValues
@@ -38,12 +37,11 @@ class Entrance : IXposed() {
             xlog("Entrance: context initialized: $ctx")
 
             HookLocalSettings.update(ctx)
-            val webSettings = XService.getWebSettings(ctx) // TODO XService 与 KVProvider 职责有点重合，考虑重构
+            val webSettings = XService.getWebSettings(ctx)
             val targetPkg = webSettings.packageName.takeIf { it.isNotBlank() }
             val configObj = webSettings.config
 
             if (configObj != null) {
-                KVProvider.provide(configObj)
                 onSettingsFetched(params, targetPkg)
             } else {
                 xlog("No mock config found for package: ${params.packageName}")

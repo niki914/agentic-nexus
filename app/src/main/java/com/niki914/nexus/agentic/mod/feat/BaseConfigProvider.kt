@@ -1,6 +1,7 @@
 package com.niki914.nexus.agentic.mod.feat
 
-import com.niki914.nexus.h.util.KVProvider
+import com.niki914.nexus.agentic.mod.XService
+import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.nexus.h.util.xlog
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
@@ -16,7 +17,8 @@ import kotlinx.serialization.json.jsonPrimitive
  */
 abstract class BaseConfigProvider {
     private fun getElement(path: String): JsonElement? = runBlocking {
-        var current: JsonElement? = KVProvider.await()[path.substringBefore(".")]
+        val config = XService.getWebSettings(ContextProvider.await()).config
+        var current: JsonElement? = config?.get(path.substringBefore("."))
         path.substringAfter(".", "").takeIf { it.isNotEmpty() }?.split(".")?.forEach { key ->
             current = (current as? JsonObject)?.get(key)
         }
