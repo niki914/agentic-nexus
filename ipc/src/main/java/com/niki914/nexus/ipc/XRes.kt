@@ -5,13 +5,25 @@ import android.os.Bundle
 import android.net.Uri
 import androidx.core.net.toUri
 
+enum class HostApp(val packageName: String) {
+    Breeno("com.heytap.speechassist"),
+    XiaoAi("com.miui.voiceassist");
+
+    companion object {
+        fun fromPackageName(packageName: String?): HostApp? {
+            return entries.firstOrNull { it.packageName == packageName }
+        }
+
+        val packageNames: List<String>
+            get() = entries.map(HostApp::packageName)
+    }
+}
+
 object XValues {
 
     val myPackageName = "com.niki914.nexus.agentic"
-    val appList: List<String> = listOf(
-        "com.heytap.speechassist",
-        "com.miui.voiceassist"
-    )
+    val appList: List<String>
+        get() = HostApp.packageNames
 
     enum class AppType { Me, Host, Unknown }
 

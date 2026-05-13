@@ -18,6 +18,7 @@ import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.cb.BaseTheme
 import com.niki914.nexus.h.util.RootUtils
 import com.niki914.nexus.h.util.xlog
+import com.niki914.nexus.ipc.HostApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.niki914.nexus.ipc.XValues
@@ -52,11 +53,7 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         lifecycleScope.launch(Dispatchers.IO) {
             val osFamily = RootUtils.getOsFamily()
-            val preferredPkg = when (osFamily) {
-                RootUtils.OsFamily.ColorOS -> "com.heytap.speechassist" // TODO 硬编码不优雅，后续统一到一个新的枚举类，统一各个需要用到包名的地方
-                RootUtils.OsFamily.HyperOS -> "com.miui.voiceassist"
-                RootUtils.OsFamily.Unknown -> null
-            }
+            val preferredPkg = preferredHostAppFor(osFamily)?.packageName
             val candidatePkgs = buildList {
                 if (preferredPkg != null) add(preferredPkg)
                 addAll(XValues.appList.filter { it != preferredPkg })
@@ -85,5 +82,13 @@ class MainActivity : ComponentActivity() {
         fun checkPermission() = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         if (checkPermission()) return
         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    private fun preferredHostAppFor(osFamily: RootUtils.OsFamily): HostApp? {
+        return when (osFamily) {
+            RootUtils.OsFamily.ColorOS -> HostApp.Breeno
+            RootUtils.OsFamily.HyperOS -> HostApp.XiaoAi
+            RootUtils.OsFamily.Unknown -> null
+        }
     }
 }

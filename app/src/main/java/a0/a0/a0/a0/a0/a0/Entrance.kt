@@ -14,6 +14,7 @@ import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.nexus.h.util.HookSideLoader
 import com.niki914.nexus.h.util.KVProvider
 import com.niki914.nexus.h.util.xlog
+import com.niki914.nexus.ipc.HostApp
 import com.niki914.nexus.ipc.XValues
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
@@ -52,10 +53,11 @@ class Entrance : IXposed() {
 
     private fun onSettingsFetched(params: XC_LoadPackage.LoadPackageParam, targetPkg: String?) {
         // 根据 targetPkg 进行映射和 Hook 路由
+        val hostApp = HostApp.fromPackageName(params.packageName)
         val hookInstance: Hook? = when {
             targetPkg != params.packageName -> null
-            params.packageName == "com.heytap.speechassist" -> BreenoChatHook(scope)
-            params.packageName == "com.miui.voiceassist" -> XiaoaiChatHook(scope)
+            hostApp == HostApp.Breeno -> BreenoChatHook(scope)
+            hostApp == HostApp.XiaoAi -> XiaoaiChatHook(scope)
             else -> null
         }
 
