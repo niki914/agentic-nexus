@@ -9,6 +9,8 @@ import kotlinx.serialization.json.JsonArray
 
 /**
  * Remote settings!
+ *
+ * TODO: XService
  */
 object KVProvider : XProvider<Map<String, JsonElement>>() {
 

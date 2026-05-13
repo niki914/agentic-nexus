@@ -36,7 +36,7 @@ class Entrance : IXposed() {
             xlog("Entrance: context initialized: $ctx")
 
             HookLocalSettings.update(ctx)
-            val webSettings = XService.getWebSettings(ctx)
+            val webSettings = XService.getWebSettings(ctx) // TODO XService 与 KVProvider 职责有点重合，考虑重构
             val targetPkg = webSettings.packageName.takeIf { it.isNotBlank() }
             val configObj = webSettings.config
 
