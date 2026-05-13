@@ -38,7 +38,7 @@ class Entrance : IXposed() {
 
             HookLocalSettings.update(ctx)
             val webSettings = XService.getWebSettings(ctx)
-            val targetPkg = webSettings.packageName.takeIf { it.isNotBlank() }
+            val targetPkg = params.packageName
             val configObj = webSettings.config
 
             if (configObj != null) {

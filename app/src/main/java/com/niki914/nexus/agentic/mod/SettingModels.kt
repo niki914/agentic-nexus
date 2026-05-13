@@ -41,9 +41,6 @@ abstract class XSettings(
 }
 
 class WebSettings(props: JsonObject = JsonObject(emptyMap())) : XSettings(props) {
-    val packageName: String // TODO remove 反正可以直接用 lpparam 拿到
-        get() = getString("package_name")
-
     val config: JsonObject?
         get() = getObject("config")
 }
