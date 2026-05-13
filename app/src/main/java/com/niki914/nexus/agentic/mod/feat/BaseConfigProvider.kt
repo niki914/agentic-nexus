@@ -15,7 +15,7 @@ import kotlinx.serialization.json.jsonPrimitive
 /**
  * 抽象的配置提供者基类，用于规范各个语音助手的配置包装器
  */
-abstract class BaseConfigProvider {
+abstract class BaseConfigProvider { // TODO Dataclass to describe a hook spot
     private fun getElement(path: String): JsonElement? = runBlocking { // TODO 修改下游的读参方式，最好 suspend
         val config = XService.getWebSettings(ContextProvider.await()).config
         var current: JsonElement? = config?.get(path.substringBefore("."))

@@ -30,7 +30,7 @@ class App : Application() {
                             "endpoint" to JsonPrimitive("https://api.deepseek.com/v1/chat/completions"),
                             "api_key" to JsonPrimitive("sk-9961090b5ca3483681fd9f2912d30dc5"),
                             "model" to JsonPrimitive("deepseek-v4-flash"),
-                            "prompt" to JsonPrimitive("You are a helpful assistant."),
+                            "prompt" to JsonPrimitive("You are a helpful assistant created by niki914. Your identity is 'Nexus'"),
                             "proxy" to JsonPrimitive(""),
                             "takeover_keywords" to JsonArray(
                                 emptyList()
