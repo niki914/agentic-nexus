@@ -9,7 +9,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 object BreenoConfigProvider : BaseConfigProvider() {
-    val roomIdManagerClass: String?
+    val roomIdManagerClass: String? // TODO 修改读参方式，最好 suspend
         get() = getString("classes.room_id_manager")
 
     val roomIdManagerCreateRoomMethod: String?
