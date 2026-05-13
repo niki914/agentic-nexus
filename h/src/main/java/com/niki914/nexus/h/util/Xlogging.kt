@@ -10,7 +10,7 @@ internal fun xlogHookFailed(name: String, t: Throwable?) {
 fun xtlog(tag: String, msg: String) = xlog("[$tag] $msg")
 
 fun xlog(msg: String) = try {
-    Log.e("Xlog", msg)
+    Log.e("nexus-x-log", msg)
 } catch (_: Throwable) {
-    System.err.println("[xlog] $msg")
+    System.err.println("[nexus-x-log] $msg")
 }
