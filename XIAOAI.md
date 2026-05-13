@@ -2,12 +2,13 @@
 
 ## 目标
 
-- 目标不是盯住 TTS 播报本身。
-- TTS/播放器日志目前只作为锚点，用来确认小爱内部的回答播放生命周期。
-- 真正目标是找到一个类似 Breeno 那边 `DataCenter` / `ViewModel` / 会话状态中心的东西，能同时拿到：
+- 构建一个可按 `BreenoChatHook` 模式实现的小爱模块。
+- 核心能力是同时掌握：
   - 用户输入
-  - 小爱的回答增量或分帧更新
-  - room/session/record 之类的关联 id
+  - 同一轮回答的流式指令序列
+  - `dialogId` 级关联关系
+  - 原生正文与原生 TTS 的拦截面
+  - 自定义回答的最终注入面
 
 ## 已确认路径
 
@@ -18,142 +19,150 @@
 - Manifest：`/Users/local/repo/android/personal/openhook/.workspace/breeno_openai_reborn/.apk_decs/com_miui_voiceassist_apk/resources/AndroidManifest.xml`
 - 原始提取 APK 路径：`/Users/local/repo/android/personal/openhook/.apk_decs/extracted_apps/com_miui_voiceassist.apk`
 
-## 做过的无用功
+## 核心运行时边界
 
-- 先前把 hook 点放在一个很窄的 UI 回调上：
-  - `com.xiaomi.voiceassistant.ConversationFragment$d#onSendClick(java.lang.String,java.lang.String)`
-  - label: `super_xiaoai_input_probe`
-  - 运行时验证时间窗：`23:20~23:21`
-  - 结果：`rule_fired=false`
-  - 结论：这个点太窄，不适合第一轮探测
-- 后续改成更外层的统一查询分发入口：
-  - `q20.h0#startQuery(q20.h0$c)`
-  - label: `super_xiaoai_query_sender_probe`
-  - 这是广度优先的方向，但当时还没拿到有效 openhook 命中证据
-- 教训：
-  - 不能先死盯“发送按钮回调”
-  - 第一轮应优先找更稳的分发层、状态中心、数据中心，而不是 UI 末梢
-
-## 已确认的日志锚点
-
-这些日志和语音助手行为时机 100% 对得上，说明它们有追踪价值：
-
-- `stop state = 0`
-- `stop state = -1`
-- `setVolume see ExoPlayCall volume = 1.0`
-- `onStart`
-- `onComplete`
-- `Release ... [AndroidXMedia3/1.8.0] ...`
-
-## 这些日志在源码里的落点
-
-- `o20.i#stop()`
-  - 源码里是 `"stop state = " + this.f92093c.getState()`
-  - 所以 `0/-1` 不是硬编码常量，而是运行时状态值
-- `o20.i#setVolume(float)`
-  - 源码里是 `"setVolume see ExoPlayCall volume = " + f12`
-- `o20.i$b#onStart()`
-  - 直接打 `"onStart"`
-- `o20.i$d#onComplete()`
-  - 直接打 `"onComplete"`
-- `uw.m`
-  - 是 `o20.i` 下游的状态机包装层，负责维护和流转播放状态
-- `com.xiaomi.ai.ttsplayer.player.exo.ExoBytesImpl`
-  - 更底层的 Exo/Media3 播放实现，`onPlaybackStateChanged` 会映射到 `onStart/onComplete`
-- `Release ... [AndroidXMedia3/1.8.0] ...`
-  - 大概率不是业务代码自己打的，而是 Media3/ExoPlayer 库内部 release 日志
-
-## 当前能站住脚的 TTS/播报链路
-
-目前最像“小爱回答播报生命周期”的链路：
-
-- `cb0.n9#c0(g90.l)`
-  - 从 `SpeechSynthesizer.Speak.url` 往下走
-- `o20.e#startPlay(String,kz.b)`
-  - 业务侧开始播报任务的入口
-- `yo.u`
-  - 工厂，创建具体播放器实现
-- `o20.i`
-  - Exo 包装播放器，打出目前已确认的几条关键日志
-- `uw.m`
-  - 状态机包装
-- `com.xiaomi.ai.ttsplayer.player.exo.ExoBytesImpl`
-  - 底层 Exo/Media3 实现
-- `r00.g`
-  - 更接近助手侧生命周期消费层，会接住 `onPlayBegin/onRealPlayBegin/onPlayFinish`
-
-## 当前判断
-
-- 这条链路更像“回答播报控制链”，不是“用户输入 + 回答流式分帧数据中心”
-- 它有价值，但价值在于：
-  - 作为稳定锚点
-  - 借助播报生命周期往上回溯业务层
-  - 找到谁在持有 query/session/record/answer 状态
-- 它本身不是最终目标
-
-## 已运行时证实的关键点
-
-- `com.xiaomi.voiceassistant.instruction.base.OperationManager#setQueryInfo(java.lang.String,java.lang.String,org.json.JSONObject)`
-  - 当前最稳的输入态入口。
-  - 运行时已确认能稳定拿到：
+- 输入态边界：
+  - `com.xiaomi.voiceassistant.instruction.base.OperationManager#setQueryInfo(java.lang.String,java.lang.String,org.json.JSONObject)`
+  - 运行时可稳定拿到：
     - `dialogId`
     - `query`
-    - `extraInfo`（当前样本里为 `null`）
-  - 这个点不像 UI 发送按钮，更像会话 query 状态写入点。
-- `com.xiaomi.voiceassistant.instruction.card.TemplateReactNativeCard#p1(org.json.JSONObject)`
-  - 当前最有价值的回答同步/注入候选点。
-  - 运行时已确认会收到近似平坦的 JSON：
+    - `extraInfo`
+- 统一流式入口：
+  - `com.xiaomi.voiceassistant.instruction.base.OperationManager#onFlowableInstruction(com.xiaomi.ai.api.common.Instruction,boolean)`
+  - 同一轮回答内的正文流、TTS 流、附件、建议、元信息都在这里汇聚。
+- 回答同步落卡边界：
+  - `com.xiaomi.voiceassistant.instruction.card.TemplateReactNativeCard#p1(org.json.JSONObject)`
+  - 运行时可看到：
     - `totalText`
     - `isLlmContentDisplayComplete`
     - `isIllegalContent`
-  - 当前样本显示它至少覆盖：
-    - 文本内容写入
-    - 完成态翻转
-  - 这说明小爱这一路回答卡并不是先落到一个早期 POJO/Bean，再统一渲染；更像是前面经过 `Instruction/Operation/JSON` 链路，最后在卡片同步口压成接近平坦的结果结构。
 
-## 当前最值得继续盯的类
+## 统一时序样本
 
-- `com.xiaomi.voiceassistant.instruction.base.OperationManager`
-  - 当前最稳的 query/session 侧状态入口。
-  - `setQueryInfo(...)` 已被运行时证实。
-- `com.xiaomi.voiceassistant.instruction.card.TemplateReactNativeCard`
-  - 当前最稳的回答同步/注入候选。
-  - `p1(JSONObject)` 已被运行时证实。
-- `com.xiaomi.voiceassistant.instruction.card.stream.c`
-  - 当前最值得继续往下追的 native 文本落卡层。
-  - `updateText(String)`、`replaceTotalText(String)` 这类点仍然有价值，但还没有拿到这一路的运行时命中证据。
-- `com.xiaomi.voiceassistant.instruction.card.stream.c$d`
-  - 当前最像 Breeno 那种“字段较平坦”的本地 model。
-  - 需要继续确认 `TemplateReactNativeCard.p1(JSONObject)` 之后，值是否会继续灌入这个 model。
+同一 `dialogId=837168ef6c94f8ebbae7cbd220f841d` 下观测到的完整主序列：
 
-## 当前不应高优先级继续投入的点
+```text
+Nlp.ExpectStream
+-> Template.Query
+-> Template.LLMLoadingCard
+-> Template.ResultOperationInfo
+-> Template.FrontendPage
+-> Nlp.UpdateStreamProperties
+-> Template.ToastStream
+-> SpeechSynthesizer.Speak
+-> Template.Attachment
+-> Template.ToastStream
+-> SpeechSynthesizer.SpeakStream
+-> Template.ToastStream
+-> Template.ToastStream
+-> SpeechSynthesizer.SpeakStream
+-> Template.ToastStream
+-> Template.ToastStream
+-> Template.ToastStream
+-> SpeechSynthesizer.SpeakStream
+-> Suggestion.ShowContextSuggestions
+-> SpeechSynthesizer.SpeakStream
+```
 
-- `com.xiaomi.voiceassistant.ConversationFragment$d#onSendClick(java.lang.String,java.lang.String)`
-  - 太窄，已验证无命中价值。
-- 播放器/TTS 链路本身
-  - 只适合作为稳定锚点，不是最终注入面。
-- `com.xiaomi.voiceassistant.mainui.flowableresult.g$c#onFlowableInstruction(com.xiaomi.ai.api.common.Instruction,boolean)`
-  - 静态上合理，但当前这轮真实回答路径没有命中。
-  - 说明它不是最通用的首选 probe，至少这次回答更偏 `TemplateReactNativeCard` 这条回流链。
+这条样本说明：
 
-## 后续搜索方向
+- `OperationManager#onFlowableInstruction(...)` 是统一主入口。
+- 正文回答从第一个 `Template.ToastStream` 开始进入主干。
+- `SpeechSynthesizer.Speak` 与 `SpeechSynthesizer.SpeakStream` 在同一入口下和正文流交错下发。
+- `Template.Attachment` 与 `Suggestion.ShowContextSuggestions` 是同轮回答的伴随指令。
+- `Template.LLMLoadingCard`、`Template.ResultOperationInfo`、`Template.FrontendPage`、`Nlp.UpdateStreamProperties` 属于正文前的元信息与壳层配置。
 
-- 不再继续扩大播放器 hook 面。
-- 优先把 `OperationManager#setQueryInfo(...)` 和 `TemplateReactNativeCard#p1(JSONObject)` 作为一前一后的核心边界：
-  - 前者负责拿输入态的 `dialogId/query`
-  - 后者负责拿回答侧的 `totalText/完成态`
-- 继续静态确认 `TemplateReactNativeCard#p1(JSONObject)` 之后是否会落到：
-  - `com.xiaomi.voiceassistant.instruction.card.stream.c$d`
-  - `com.xiaomi.voiceassistant.instruction.card.stream.c#updateText(java.lang.String)`
-- 如果目标是做最小注入，优先考虑：
-  - 直接在 `TemplateReactNativeCard#p1(JSONObject)` 这一层构造最小 JSON
-  - 或继续下钻到 `c$d` / `c#updateText(...)`，寻找更像 Breeno 平坦 bean 的字段级注入面
+## 已确认的高价值 model
 
-## 现阶段结论
+- `Template.Query`
+  - 类型：`com.xiaomi.ai.api.Template$Query`
+  - 高价值字段：
+    - `getText`
+  - 当前样本值：
+    - `queryText=介绍自己`
+- `Template.ToastStream`
+  - 类型：`com.xiaomi.ai.api.Template$ToastStream`
+  - 高价值字段：
+    - `getMarkdownText`
+  - 当前样本值：
+    - `toastFirst=我是小爱同`
+    - `toastLast=。`
+  - 当前样本计数：
+    - `count=7`
+- `Template.FrontendPage`
+  - 类型：`com.xiaomi.ai.api.Template$FrontendPage`
+  - 高价值字段：
+    - `getInstructions`
+  - 当前样本值：
+    - `frontendInstructionsType=lv.a`
+- `Template.ResultOperationInfo`
+  - 类型：`com.xiaomi.ai.api.Template$ResultOperationInfo`
+  - 当前样本里是回答卡底部操作区配置载体。
+- `Nlp.UpdateStreamProperties`
+  - 类型：`com.xiaomi.ai.api.Nlp$UpdateStreamProperties`
+  - 高价值字段：
+    - `isSimplySpeak`
+- `SpeechSynthesizer.Speak`
+  - 类型：`com.xiaomi.ai.api.SpeechSynthesizer$Speak`
+  - 属于原生 TTS 启动指令。
+- `SpeechSynthesizer.SpeakStream`
+  - 类型：`com.xiaomi.ai.api.SpeechSynthesizer$SpeakStream`
+  - 属于原生 TTS 流式补充分片指令。
+- `Template.Attachment`
+  - 类型：`com.xiaomi.ai.api.Template$Attachment`
+  - 属于回答伴随资源载体。
+- `Suggestion.ShowContextSuggestions`
+  - 类型：`com.xiaomi.ai.api.Suggestion$ShowContextSuggestions`
+  - 属于尾部建议指令。
 
-- 小爱内部确实存在一条可追踪的播报链路，但它的价值主要是稳定锚点，不是最终目标。
-- 当前最理想的两个点已经收敛出来：
-  - `OperationManager#setQueryInfo(...)`
-  - `TemplateReactNativeCard#p1(JSONObject)`
-- 前者解决“用户输入和 dialogId 在哪里落下”；后者解决“回答文本和完成态在哪里同步”。
-- 这两个点组合起来，已经比继续深挖播放器链、发送按钮链、或单纯追 `flowableresult` 更有现实价值。
+## 当前架构判断
+
+- 小爱当前最稳定的主链是：
+
+```text
+OperationManager#setQueryInfo(dialogId, query, extraInfo)
+-> OperationManager#onFlowableInstruction(dialogId, instruction, isOffline)
+-> 下游 Operation / Card / TTS / Suggestion 消费
+-> TemplateReactNativeCard#p1(JSONObject)
+```
+
+- `OperationManager` 已经同时承担：
+  - 输入态写入
+  - 统一流式分发
+  - `dialogId` 级会话关联
+- `TemplateReactNativeCard#p1(JSONObject)` 是落卡同步面，不是最上游主入口。
+- 播放器链是下游消费链，适合作为锚点，不适合作为核心状态边界。
+
+## 面向模块实现的直接结论
+
+- 小爱版模块应围绕 `dialogId` 建状态机。
+- 最合理的三层边界是：
+  - 输入边界：`OperationManager#setQueryInfo(...)`
+  - 响应边界：`OperationManager#onFlowableInstruction(...)`
+  - 注入边界：`cb0.eb#A0(Instruction)` 或等价 operation 调用点
+- 最小接管策略应优先覆盖：
+  - `Template.ToastStream`
+  - `SpeechSynthesizer.Speak`
+  - `SpeechSynthesizer.SpeakStream`
+- 可以先放行的伴随指令：
+  - `Template.Query`
+  - `Template.LLMLoadingCard`
+  - `Template.ResultOperationInfo`
+  - `Template.FrontendPage`
+  - `Nlp.UpdateStreamProperties`
+  - `Template.Attachment`
+  - `Suggestion.ShowContextSuggestions`
+
+## 当前实现建议
+
+- 输入捕获继续使用 `OperationManager#setQueryInfo(...)`。
+- 统一摘要探针长期保留在 `OperationManager#onFlowableInstruction(...)`。
+- 原生正文与原生 TTS 的拦截优先放在统一流入口层完成。
+- 自定义回答注入继续围绕 `cb0.eb#A0(Instruction)` 这一类 operation 执行点确认最终目标。
+- `TemplateReactNativeCard#p1(JSONObject)` 保留为观察落卡同步结果的辅助边界。
+
+## 低优先级方向
+
+- 发送按钮一类 UI 末梢回调。
+- 播放器底层实现链本身。
+- 仅围绕某个具体卡片类继续深挖字段级注入面。

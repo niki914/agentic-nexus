@@ -153,6 +153,6 @@ tasks.configureEach {
     // 只要是执行安装或者构建，就尝试运行这两个任务
     if (name.startsWith("install") || name.startsWith("assemble")) {
         dependsOn(adbReverse)
-        dependsOn(startServer)
+//        dependsOn(startServer)
     }
 }
