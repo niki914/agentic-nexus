@@ -1,7 +1,16 @@
 package com.niki914.nexus.agentic.mod.feat.hyper
 
+import com.niki914.nexus.agentic.chat.LLMController
+import com.niki914.nexus.agentic.chat.TurnMode
+import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.mod.feat.AbstractAssistantHook
-import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.InputHook
+import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeTextStreamHook
+import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeTtsPlaybackHook
+import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeTtsStreamHook
+import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.CaptureInputHook
+import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.CaptureResponseTargetHook
+import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.RenderTextStreamCardHook
+import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
 
@@ -10,18 +19,57 @@ class XiaoaiChatHook(
 ) : AbstractAssistantHook(scope) {
     override val name: String = "XiaoaiChatHook"
 
+    private val responseTargetStore = ResponseTargetStore()
+    private val injectedInstructionRegistry = InjectedInstructionRegistry()
+    private var renderTextStreamCardHook: RenderTextStreamCardHook? = null
+
     override fun installSessionHooks(lpparam: XC_LoadPackage.LoadPackageParam) = Unit
 
-    override fun installResponseHooks(lpparam: XC_LoadPackage.LoadPackageParam) = Unit
+    override fun installResponseHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
+        CaptureResponseTargetHook(
+            responseTargetStore = responseTargetStore
+        ).onHook(lpparam)
+
+        BlockNativeTextStreamHook(
+            injectedInstructionRegistry = injectedInstructionRegistry,
+            resolveTurnState = { dialogId -> resolveTurnState(dialogId) }
+        ).onHook(lpparam)
+
+        BlockNativeTtsStreamHook(
+            injectedInstructionRegistry = injectedInstructionRegistry,
+            resolveTurnState = { dialogId -> resolveTurnState(dialogId) }
+        ).onHook(lpparam)
+
+        BlockNativeTtsPlaybackHook(
+            resolveTurnState = { dialogId -> resolveTurnState(dialogId) }
+        ).onHook(lpparam)
+
+        renderTextStreamCardHook = RenderTextStreamCardHook(
+            responseTargetStore = responseTargetStore,
+            injectedInstructionRegistry = injectedInstructionRegistry
+        ).also { it.onHook(lpparam) }
+    }
 
     override fun installInputHooks(
         lpparam: XC_LoadPackage.LoadPackageParam,
         onInput: (roomId: String, query: String) -> Unit
     ) {
-        InputHook(onInput = onInput).onHook(lpparam)
+        CaptureInputHook(onInput = onInput).onHook(lpparam)
     }
 
-    override suspend fun dispatchQueryToLLM(turnId: Long, roomId: String, query: String) = Unit
+    override fun shouldTakeOver(query: String): Boolean {
+        return HookLocalSettings.current().takeoverKeywords.any { keyword ->
+            keyword.isNotBlank() && query.contains(keyword)
+        }
+    }
+
+    override suspend fun dispatchQueryToLLM(turnId: Long, roomId: String, query: String) {
+        LLMController.send(query, scope) { chunk, pos ->
+            val isFirst = pos == LLMController.Pos.First
+            val isFinal = pos == LLMController.Pos.Final
+            renderStreamCard(turnId, roomId, chunk, isFirst, isFinal)
+        }
+    }
 
     override suspend fun renderStreamCard(
         turnId: Long,
@@ -29,5 +77,26 @@ class XiaoaiChatHook(
         chunk: String,
         isFirst: Boolean,
         isFinal: Boolean
-    ) = Unit
+    ) {
+        val activeTurn = resolveTurnState(roomId)
+        if (activeTurn?.turnId != turnId || activeTurn.mode != TurnMode.InjectedLLM) {
+            xlog(
+                "[$name] 丢弃非当前注入轮次的文字流渲染: dialogId=$roomId, turnId=$turnId, activeTurn=${activeTurn?.turnId}, mode=${activeTurn?.mode}"
+            )
+            return
+        }
+        renderTextStreamCardHook?.render(
+            turnId = turnId,
+            dialogId = roomId,
+            chunk = chunk,
+            isFirst = isFirst,
+            isFinal = isFinal
+        )
+    }
+
+    private fun resolveTurnState(dialogId: String?) =
+        dialogId
+            ?.takeIf { it.isNotBlank() }
+            ?.takeIf { it == turnState.roomId }
+            ?.let { turnState }
 }

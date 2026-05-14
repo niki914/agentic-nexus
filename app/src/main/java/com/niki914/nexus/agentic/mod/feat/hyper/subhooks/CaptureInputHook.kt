@@ -7,10 +7,10 @@ import com.niki914.nexus.h.util.resolveParamTypes
 import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
-class InputHook(
+class CaptureInputHook(
     private val onInput: (dialogId: String, query: String) -> Unit
 ) : Hook {
-    override val name: String = "XiaoaiInputHook"
+    override val name: String = "XiaoaiCaptureInputHook"
 
     private val duplicateLock = Any()
     private var lastDeliveredInput: CapturedInput? = null
@@ -21,10 +21,6 @@ class InputHook(
     )
 
     override fun onHook(lpparam: XC_LoadPackage.LoadPackageParam) {
-        if (!XiaoaiConfigProvider.captureInputEnabled) {
-            xlog("[$name] action[capture_input] 已禁用，跳过安装")
-            return
-        }
         val operationManagerClass = XiaoaiConfigProvider.captureInputOwnerClass ?: return
         val setQueryInfoMethodName = XiaoaiConfigProvider.captureInputMethodName ?: return
         val setQueryInfoMethodParams = XiaoaiConfigProvider.captureInputMethodParams ?: return
