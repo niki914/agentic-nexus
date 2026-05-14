@@ -3,6 +3,7 @@ package com.niki914.nexus.agentic.mod.feat.hyper
 import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.agentic.mod.feat.AbstractAssistantHook
+import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.CandidatePointProbeHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.InputHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.InstructionStreamHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.OperationManagerDialogSummaryHook
@@ -35,7 +36,8 @@ class XiaoaiChatHook(
     override fun installSessionHooks(lpparam: XC_LoadPackage.LoadPackageParam) = Unit
 
     override fun installResponseHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
-        OperationManagerDialogSummaryHook().onHook(lpparam)
+//        OperationManagerDialogSummaryHook().onHook(lpparam)
+        CandidatePointProbeHook().onHook(lpparam)
 //        InstructionStreamHook(
 //            onOperationObserved = { operation, dialogId, _, _ ->
 //                val shouldReplay = synchronized(stateLock) {
