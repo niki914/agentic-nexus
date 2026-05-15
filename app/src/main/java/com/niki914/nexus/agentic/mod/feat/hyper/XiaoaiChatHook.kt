@@ -9,12 +9,11 @@ import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeTtsPlaybackH
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeTtsStreamHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.CaptureInputHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.CaptureResponseTargetHook
-import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.ResetSessionHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.RenderTextStreamCardHook
+import com.niki914.nexus.h.util.hookMethod
 import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 class XiaoaiChatHook(
     scope: CoroutineScope
@@ -36,13 +35,18 @@ class XiaoaiChatHook(
     }
 
     override fun installSessionHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
-        ResetSessionHook(
-            onSessionReset = {
-                scope.launch {
-                    onSessionReset("")
-                }
-            }
-        ).onHook(lpparam)
+        XiaoaiConfigProvider.floatWindowTargetActivityClass?.let { // TODO 即使很少代码但也应提取到subhook
+            installTargetActivityResumeTracker(lpparam, it)
+        }
+        val floatClass = XiaoaiConfigProvider.floatWindowOwnerClass
+        val detachMethod = XiaoaiConfigProvider.floatWindowDetachMethodName
+        if (floatClass != null && detachMethod != null) {
+            lpparam.hookMethod(
+                className = floatClass,
+                methodName = detachMethod,
+                before = { onFloatDetach() }
+            )
+        }
     }
 
     override fun installResponseHooks(lpparam: XC_LoadPackage.LoadPackageParam) {

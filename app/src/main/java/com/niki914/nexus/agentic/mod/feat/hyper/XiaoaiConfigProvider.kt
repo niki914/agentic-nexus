@@ -1,7 +1,6 @@
 package com.niki914.nexus.agentic.mod.feat.hyper
 
 import com.niki914.nexus.agentic.mod.feat.BaseConfigProvider
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -25,21 +24,14 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
     val captureInputQueryArgIndex: Int?
         get() = getInt("actions.capture_input.business.query_arg_index")
 
-    val resetSessionAction: JsonObject?
-        get() = getObject("actions.reset_session")
-
-    val resetSessionOwnerClass: String?
+    val floatWindowOwnerClass: String?
         get() = getString("actions.reset_session.target.owner_class")
 
-    val resetSessionMethodName: String?
+    val floatWindowDetachMethodName: String?
         get() = getString("actions.reset_session.target.method_name")
 
-    val resetSessionMethodParams: List<String>?
-        get() = getList("actions.reset_session.target.param_types")
-            ?.mapNotNull { it.jsonPrimitive.contentOrNull }
-
-    val resetSessionHookTiming: String?
-        get() = getString("actions.reset_session.target.hook_timing")
+    val floatWindowTargetActivityClass: String?
+        get() = getString("actions.reset_session.business.target_activity_class")
 
     val captureResponseTargetOwnerClass: String?
         get() = getString("actions.capture_response_target.target.owner_class")

@@ -1,9 +1,13 @@
 package com.niki914.nexus.agentic.mod.feat
 
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import com.niki914.nexus.agentic.chat.ConversationJournal
 import com.niki914.nexus.agentic.chat.ConversationTurnState
 import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.h.core.runtime.Hook
+import com.niki914.nexus.h.util.hookMethod
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -15,6 +19,35 @@ import kotlinx.coroutines.launch
  */
 abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook {
     protected var turnState: ConversationTurnState = ConversationTurnState()
+
+    private var floatDetachElapsed: Long = 0
+    private var targetActivityResumeElapsed: Long = 0
+    private val floatResetHandler = Handler(Looper.getMainLooper())
+    private var pendingFloatResetCheck: Runnable? = null
+
+    protected fun installTargetActivityResumeTracker(
+        lpparam: XC_LoadPackage.LoadPackageParam,
+        targetActivityClass: String
+    ) {
+        lpparam.hookMethod(
+            className = targetActivityClass,
+            methodName = "onResume",
+            after = { targetActivityResumeElapsed = SystemClock.elapsedRealtime() }
+        )
+    }
+
+    protected fun onFloatDetach() {
+        floatDetachElapsed = SystemClock.elapsedRealtime()
+        pendingFloatResetCheck?.let { floatResetHandler.removeCallbacks(it) }
+
+        val check = Runnable {
+            if (targetActivityResumeElapsed < floatDetachElapsed) {
+                scope.launch { onSessionReset("") }
+            }
+        }
+        pendingFloatResetCheck = check
+        floatResetHandler.postDelayed(check, 700)
+    }
 
     final override fun onHook(lpparam: XC_LoadPackage.LoadPackageParam) {
         onBeforeInstallHooks(lpparam)
