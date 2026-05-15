@@ -13,7 +13,10 @@ import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.RenderTextStreamCardHoo
 import com.niki914.nexus.h.util.hookMethod
 import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.shareIn
 
 class XiaoaiChatHook(
     scope: CoroutineScope
@@ -24,10 +27,14 @@ class XiaoaiChatHook(
     private val injectedInstructionRegistry = InjectedInstructionRegistry()
     private var renderTextStreamCardHook: RenderTextStreamCardHook? = null
 
+    private var targetReady = CompletableDeferred<Unit>()
+
     override suspend fun onSessionReset(roomId: String) {
         val previousDialogId = turnState.roomId
         super.onSessionReset(roomId)
         LLMController.resetConversation()
+        targetReady.cancel()
+        targetReady = CompletableDeferred()
         if (previousDialogId.isNotBlank()) {
             responseTargetStore.clear(previousDialogId)
         }
@@ -35,7 +42,7 @@ class XiaoaiChatHook(
     }
 
     override fun installSessionHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
-        XiaoaiConfigProvider.floatWindowTargetActivityClass?.let { // TODO 即使很少代码但也应提取到subhook
+        XiaoaiConfigProvider.floatWindowTargetActivityClass?.let {
             installTargetActivityResumeTracker(lpparam, it)
         }
         val floatClass = XiaoaiConfigProvider.floatWindowOwnerClass
@@ -51,7 +58,8 @@ class XiaoaiChatHook(
 
     override fun installResponseHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
         CaptureResponseTargetHook(
-            responseTargetStore = responseTargetStore
+            responseTargetStore = responseTargetStore,
+            onCaptured = { targetReady.complete(Unit) }
         ).onHook(lpparam)
 
         BlockNativeTextStreamHook(
@@ -88,7 +96,15 @@ class XiaoaiChatHook(
     }
 
     override suspend fun dispatchQueryToLLM(turnId: Long, roomId: String, query: String) {
-        LLMController.send(query, scope) { chunk, pos ->
+        targetReady.cancel()
+        targetReady = CompletableDeferred()
+
+        val sharedFlow = LLMController.stream(query)
+            .shareIn(scope, SharingStarted.Eagerly, replay = Int.MAX_VALUE)
+
+        targetReady.await()
+
+        sharedFlow.collect { (chunk, pos) ->
             val isFirst = pos == LLMController.Pos.First
             val isFinal = pos == LLMController.Pos.Final
             renderStreamCard(turnId, roomId, chunk, isFirst, isFinal)
@@ -102,13 +118,13 @@ class XiaoaiChatHook(
         isFirst: Boolean,
         isFinal: Boolean
     ) {
-        val activeTurn = resolveTurnState(roomId)
-        if (activeTurn?.turnId != turnId || activeTurn.mode != TurnMode.InjectedLLM) {
+        if (!isActiveTurn(turnId, roomId)) {
             xlog(
-                "[$name] 丢弃非当前注入轮次的文字流渲染: dialogId=$roomId, turnId=$turnId, activeTurn=${activeTurn?.turnId}, mode=${activeTurn?.mode}"
+                "[$name] 丢弃非当前注入轮次的文字流渲染: dialogId=$roomId, turnId=$turnId, activeTurn=${resolveTurnState(roomId)?.turnId}, mode=${resolveTurnState(roomId)?.mode}"
             )
             return
         }
+
         renderTextStreamCardHook?.render(
             turnId = turnId,
             dialogId = roomId,
@@ -116,6 +132,11 @@ class XiaoaiChatHook(
             isFirst = isFirst,
             isFinal = isFinal
         )
+    }
+
+    private fun isActiveTurn(turnId: Long, roomId: String): Boolean {
+        val activeTurn = resolveTurnState(roomId)
+        return activeTurn?.turnId == turnId && activeTurn.mode == TurnMode.InjectedLLM
     }
 
     private fun resolveTurnState(dialogId: String?) =

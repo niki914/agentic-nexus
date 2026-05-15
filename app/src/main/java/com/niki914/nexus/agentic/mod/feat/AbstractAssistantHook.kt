@@ -11,6 +11,7 @@ import com.niki914.nexus.h.util.hookMethod
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 /**
  * 抽象语音助手 Hook 基类，规范核心生命周期与功能职责
@@ -41,7 +42,8 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
         pendingFloatResetCheck?.let { floatResetHandler.removeCallbacks(it) }
 
         val check = Runnable {
-            if (targetActivityResumeElapsed < floatDetachElapsed) {
+            val abs = abs(targetActivityResumeElapsed - floatDetachElapsed)
+            if (abs > 700) {
                 scope.launch { onSessionReset("") }
             }
         }

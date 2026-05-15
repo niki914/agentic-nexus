@@ -111,11 +111,12 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     }
 
     override suspend fun dispatchQueryToLLM(turnId: Long, roomId: String, query: String) {
-        LLMController.send(query, scope) { chunk, pos ->
-            val isFirst = pos == LLMController.Pos.First
-            val isFinal = pos == LLMController.Pos.Final
-            renderStreamCard(turnId, roomId, chunk, isFirst, isFinal)
-        }
+        TODO()
+//        LLMController.send(query, scope) { chunk, pos ->
+//            val isFirst = pos == LLMController.Pos.First
+//            val isFinal = pos == LLMController.Pos.Final
+//            renderStreamCard(turnId, roomId, chunk, isFirst, isFinal)
+//        }
     }
 
     override suspend fun renderStreamCard(

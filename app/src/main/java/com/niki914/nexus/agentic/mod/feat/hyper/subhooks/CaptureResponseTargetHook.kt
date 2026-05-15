@@ -10,7 +10,8 @@ import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
 class CaptureResponseTargetHook(
-    private val responseTargetStore: ResponseTargetStore
+    private val responseTargetStore: ResponseTargetStore,
+    private val onCaptured: () -> Unit = {}
 ) : Hook {
     override val name: String = "XiaoaiCaptureResponseTargetHook"
 
@@ -36,6 +37,7 @@ class CaptureResponseTargetHook(
                     return@before
                 }
                 responseTargetStore.put(dialogId, param.thisObject)
+                onCaptured()
             }
         )
     }
