@@ -9,6 +9,7 @@ import com.niki914.nexus.h.IXposed
 import com.niki914.nexus.h.core.runtime.Hook
 import com.niki914.nexus.h.core.runtime.Runtime
 import com.niki914.nexus.h.core.runtime.RuntimeBootstrap
+import com.niki914.nexus.h.util.ActivityHook
 import com.niki914.nexus.h.util.ContextHook
 import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.nexus.h.util.HookSideLoader
@@ -32,6 +33,7 @@ class Entrance : IXposed() {
 
     override fun onLoad(params: XC_LoadPackage.LoadPackageParam) {
         HookSideLoader.load(scope, ContextHook(), params)
+        HookSideLoader.load(scope, ActivityHook(), params)
         scope.launch(Dispatchers.IO) {
             val ctx = ContextProvider.await()
             xlog("Entrance: context initialized: $ctx")
