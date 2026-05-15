@@ -66,8 +66,8 @@ private fun fetchWebSettingsSync(packageName: String, versionCode: Long): String
 }
 
 private fun buildWebSettingsUrl(packageName: String, versionCode: Long): String {
-//    val host = "127.0.0.1:8788"
-    val host = "10.85.9.38:8788"
+    val host = "127.0.0.1:8788"
+//    val host = "10.85.9.38:8788"
     return "http://$host/$packageName/$versionCode/config.json"
 }
 

@@ -68,6 +68,7 @@ class MainActivity : ComponentActivity() {
             xlog("MainActivity: osFamily=$osFamily targetPkg=$targetPkg")
             val versionCode = RootUtils.getPackageVersionCode(targetPkg)
             if (versionCode != null) {
+                xlog("currApp=$targetPkg versionCode=$versionCode")
                 XService.refreshWebSettings(this@MainActivity, targetPkg, versionCode)
             } else {
                 xlog("RootUtils: Failed to get version code for $targetPkg via su")

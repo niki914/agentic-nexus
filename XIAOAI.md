@@ -314,6 +314,35 @@ OperationManager#setQueryInfo(dialogId, query, extraInfo)
 
 这一节优先级高于上面的“候选锚点”分析。上面是静态逆向推测，这一节是已经跑过探针后的运行时结论。
 
+### 浮层会话边界补充结论
+
+- 长按电源键唤起的小爱界面，不是常规 `Activity/Fragment` 页面。
+- 运行时诊断里：
+  - 没有命中当前前台 `Activity`
+  - 窗口根视图稳定命中：`com.xiaomi.voiceassistant.mainui.board.FloatViewRootLayout`
+- 同轮样本里观测到的真实窗口链路是：
+
+```text
+FloatViewRootLayout addView
+-> FloatViewRootLayout updateViewLayout
+-> FloatViewRootLayout updateViewLayout
+-> ...
+-> FloatViewRootLayout onDetachedFromWindow
+-> FloatViewRootLayout removeView
+```
+
+- 当前样本里关键窗口参数：
+  - `type=2017`
+  - `title=voice_assist_root`
+- 这说明当前“小爱见面”更接近一个 window-level 浮层 root view，而不是依附某个常规页面生命周期的界面。
+- 因此，`FloatViewRootLayout` 的生命周期已经足够作为 session reset 的判断边界。
+- 当前最值得直接使用的重置事件：
+  - `FloatViewRootLayout#onDetachedFromWindow()`
+  - `WindowManagerGlobal#removeView(FloatViewRootLayout, ...)`
+- 工程上的直接结论：
+  - 不必再强行围绕 `Activity/Fragment` 生命周期找 session reset。
+  - 后续如需实现 `reset_session`，应优先围绕 `FloatViewRootLayout` 的 attach/detach 或 add/remove window 链来做。
+
 ### 已验证主链
 
 在当前版本、当前实测样本里，命中的真实链路是：
