@@ -41,10 +41,14 @@ class CaptureResponseTargetHook(
     }
 
     private fun resolveDialogId(instruction: Any, target: Any?): String? {
-        val dialogIdOptional = instruction.call<Any>("getDialogId")
+        val dialogIdOptional = instruction.call<Any>(
+            XiaoaiConfigProvider.captureResponseTargetInstructionDialogIdGetter
+        )
         val dialogId = dialogIdOptional
-            ?.takeIf { it.call<Boolean>("isPresent") == true }
-            ?.call<String>("get")
+            ?.takeIf {
+                it.call<Boolean>(XiaoaiConfigProvider.captureResponseTargetOptionalHasValueMethod) == true
+            }
+            ?.call<String>(XiaoaiConfigProvider.captureResponseTargetOptionalValueGetter)
         if (!dialogId.isNullOrBlank()) {
             return dialogId
         }

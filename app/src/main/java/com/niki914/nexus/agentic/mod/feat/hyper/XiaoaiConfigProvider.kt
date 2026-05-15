@@ -57,6 +57,18 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
     val captureResponseTargetTargetDialogIdGetter: String?
         get() = getString("actions.capture_response_target.business.target_dialog_id_getter")
 
+    val captureResponseTargetInstructionDialogIdGetter: String
+        get() = getString("actions.capture_response_target.business.instruction_dialog_id_getter")
+            ?: "getDialogId"
+
+    val captureResponseTargetOptionalHasValueMethod: String
+        get() = getString("actions.capture_response_target.business.optional_has_value_method")
+            ?: "isPresent"
+
+    val captureResponseTargetOptionalValueGetter: String
+        get() = getString("actions.capture_response_target.business.optional_value_getter")
+            ?: "get"
+
     val blockNativeTextStreamOwnerClass: String?
         get() = getString("actions.block_native_text_stream.target.owner_class")
 
@@ -76,6 +88,22 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
     val blockNativeTextStreamInstructionFullName: String?
         get() = getString("actions.block_native_text_stream.business.instruction_full_name")
 
+    val blockNativeTextStreamInstructionFullNameGetter: String
+        get() = getString("actions.block_native_text_stream.business.instruction_full_name_getter")
+            ?: "getFullName"
+
+    val blockNativeTextStreamInstructionDialogIdGetter: String
+        get() = getString("actions.block_native_text_stream.business.instruction_dialog_id_getter")
+            ?: "getDialogId"
+
+    val blockNativeTextStreamOptionalHasValueMethod: String
+        get() = getString("actions.block_native_text_stream.business.optional_has_value_method")
+            ?: "isPresent"
+
+    val blockNativeTextStreamOptionalValueGetter: String
+        get() = getString("actions.block_native_text_stream.business.optional_value_getter")
+            ?: "get"
+
     val blockNativeTtsStreamOwnerClass: String?
         get() = getString("actions.block_native_tts_stream.target.owner_class")
 
@@ -94,6 +122,22 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
 
     val blockNativeTtsStreamInstructionFullName: String?
         get() = getString("actions.block_native_tts_stream.business.instruction_full_name")
+
+    val blockNativeTtsStreamInstructionFullNameGetter: String
+        get() = getString("actions.block_native_tts_stream.business.instruction_full_name_getter")
+            ?: "getFullName"
+
+    val blockNativeTtsStreamInstructionDialogIdGetter: String
+        get() = getString("actions.block_native_tts_stream.business.instruction_dialog_id_getter")
+            ?: "getDialogId"
+
+    val blockNativeTtsStreamOptionalHasValueMethod: String
+        get() = getString("actions.block_native_tts_stream.business.optional_has_value_method")
+            ?: "isPresent"
+
+    val blockNativeTtsStreamOptionalValueGetter: String
+        get() = getString("actions.block_native_tts_stream.business.optional_value_getter")
+            ?: "get"
 
     val blockNativeTtsPlaybackOwnerClass: String?
         get() = getString("actions.block_native_tts_playback.target.owner_class")
@@ -129,6 +173,49 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
 
     val renderTextStreamCardInstructionName: String
         get() = getString("actions.render_text_stream_card.business.instruction_name") ?: "ToastStream"
+
+    val renderTextStreamCardInstructionClass: String
+        get() = getString("actions.render_text_stream_card.business.instruction_class")
+            ?: "com.xiaomi.ai.api.common.Instruction"
+
+    val renderTextStreamCardInstructionConstructorParamTypes: List<String>
+        get() = getList("actions.render_text_stream_card.business.instruction_constructor_param_types")
+            ?.mapNotNull { it.jsonPrimitive.contentOrNull }
+            ?: emptyList()
+
+    val renderTextStreamCardInstructionHeaderClass: String
+        get() = getString("actions.render_text_stream_card.business.instruction_header_class")
+            ?: "com.xiaomi.ai.api.common.InstructionHeader"
+
+    val renderTextStreamCardInstructionHeaderConstructorParamTypes: List<String>
+        get() = getList("actions.render_text_stream_card.business.instruction_header_constructor_param_types")
+            ?.mapNotNull { it.jsonPrimitive.contentOrNull }
+            ?: listOf("java.lang.String", "java.lang.String")
+
+    val renderTextStreamCardTextStreamPayloadClass: String
+        get() = getString("actions.render_text_stream_card.business.text_stream_payload_class")
+            ?: "com.xiaomi.ai.api.Template\$ToastStream"
+
+    val renderTextStreamCardTextStreamPayloadConstructorParamTypes: List<String>
+        get() = getList("actions.render_text_stream_card.business.text_stream_payload_constructor_param_types")
+            ?.mapNotNull { it.jsonPrimitive.contentOrNull }
+            ?: listOf("java.lang.String")
+
+    val renderTextStreamCardInstructionHeaderIdSetter: String
+        get() = getString("actions.render_text_stream_card.business.instruction_header_id_setter")
+            ?: "setId"
+
+    val renderTextStreamCardInstructionHeaderDialogIdSetter: String
+        get() = getString("actions.render_text_stream_card.business.instruction_header_dialog_id_setter")
+            ?: "setDialogId"
+
+    val renderTextStreamCardInstructionHeaderSetter: String
+        get() = getString("actions.render_text_stream_card.business.instruction_header_setter")
+            ?: "setHeader"
+
+    val renderTextStreamCardInstructionPayloadSetter: String
+        get() = getString("actions.render_text_stream_card.business.instruction_payload_setter")
+            ?: "setPayload"
 
     val renderTextStreamCardInstructionIdPrefix: String
         get() = getString("actions.render_text_stream_card.business.instruction_id_prefix")
