@@ -28,6 +28,19 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
     val resetSessionAction: JsonObject?
         get() = getObject("actions.reset_session")
 
+    val resetSessionOwnerClass: String?
+        get() = getString("actions.reset_session.target.owner_class")
+
+    val resetSessionMethodName: String?
+        get() = getString("actions.reset_session.target.method_name")
+
+    val resetSessionMethodParams: List<String>?
+        get() = getList("actions.reset_session.target.param_types")
+            ?.mapNotNull { it.jsonPrimitive.contentOrNull }
+
+    val resetSessionHookTiming: String?
+        get() = getString("actions.reset_session.target.hook_timing")
+
     val captureResponseTargetOwnerClass: String?
         get() = getString("actions.capture_response_target.target.owner_class")
 

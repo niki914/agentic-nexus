@@ -10,7 +10,7 @@ import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import java.util.concurrent.atomic.AtomicLong
 
-class RenderTextStreamCardHook(
+class RenderTextStreamCardHook( // TODO 非常不符合预期的一个实现，使用了监视器锁，而且硬编码类名而没有上云，需要整改
     private val responseTargetStore: ResponseTargetStore,
     private val injectedInstructionRegistry: InjectedInstructionRegistry
 ) : Hook {
@@ -113,6 +113,10 @@ class RenderTextStreamCardHook(
     private fun obtainSession(turnId: Long, dialogId: String): XiaoaiRenderSession = synchronized(sessionLock) {
         currentSession?.takeIf { it.turnId == turnId && it.dialogId == dialogId }
             ?: XiaoaiRenderSession(turnId = turnId, dialogId = dialogId).also { currentSession = it }
+    }
+
+    fun reset() = synchronized(sessionLock) {
+        currentSession = null
     }
 
     private fun clearSession(turnId: Long) = synchronized(sessionLock) {

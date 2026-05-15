@@ -9,10 +9,12 @@ import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeTtsPlaybackH
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeTtsStreamHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.CaptureInputHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.CaptureResponseTargetHook
+import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.ResetSessionHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.RenderTextStreamCardHook
 import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 class XiaoaiChatHook(
     scope: CoroutineScope
@@ -23,7 +25,25 @@ class XiaoaiChatHook(
     private val injectedInstructionRegistry = InjectedInstructionRegistry()
     private var renderTextStreamCardHook: RenderTextStreamCardHook? = null
 
-    override fun installSessionHooks(lpparam: XC_LoadPackage.LoadPackageParam) = Unit
+    override suspend fun onSessionReset(roomId: String) {
+        val previousDialogId = turnState.roomId
+        super.onSessionReset(roomId)
+        LLMController.resetConversation()
+        if (previousDialogId.isNotBlank()) {
+            responseTargetStore.clear(previousDialogId)
+        }
+        renderTextStreamCardHook?.reset()
+    }
+
+    override fun installSessionHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
+        ResetSessionHook(
+            onSessionReset = {
+                scope.launch {
+                    onSessionReset("")
+                }
+            }
+        ).onHook(lpparam)
+    }
 
     override fun installResponseHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
         CaptureResponseTargetHook(
