@@ -4,16 +4,15 @@ import com.niki914.nexus.agentic.chat.ConversationTurnState
 import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.agentic.mod.feat.HookTarget
 import com.niki914.nexus.agentic.mod.feat.SubHook
-import com.niki914.nexus.agentic.mod.feat.hyper.InjectedInstructionRegistry
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiConfigProvider
 import com.niki914.nexus.h.util.call
+import com.niki914.nexus.h.util.getTag
 import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
 /** 在 InjectedLLM 模式下拦截原生文字流指令，避免注入文本被原生回复覆盖。 */
 class BlockNativeTextStreamHook(
-    private val injectedInstructionRegistry: InjectedInstructionRegistry,
     private val resolveTurnState: (String?) -> ConversationTurnState?
 ) : SubHook() {
 
@@ -22,7 +21,7 @@ class BlockNativeTextStreamHook(
 
     override fun beforeHook(param: XC_MethodHook.MethodHookParam) {
         val instruction = param.args.firstOrNull() ?: return
-        if (injectedInstructionRegistry.isInjected(instruction)) {
+        if (instruction.getTag<Boolean>(INJECTED_FLAG) == true) {
             return
         }
 

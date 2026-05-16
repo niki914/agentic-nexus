@@ -87,6 +87,14 @@ fun constructorSignature(constructor: Constructor<*>): String = xTry("constructo
     "${constructor.declaringClass.name}($params)"
 } ?: ""
 
+fun Any.setTag(key: String, value: Any?) = xTry("setTag:$key") {
+    XposedHelpers.setAdditionalInstanceField(this, key, value)
+}
+
+inline fun <reified T> Any.getTag(key: String): T? = xTry("getTag:$key") {
+    XposedHelpers.getAdditionalInstanceField(this, key) as? T
+}
+
 private val primitiveTypes = mapOf(
     "boolean" to Boolean::class.javaPrimitiveType!!,
     "byte" to Byte::class.javaPrimitiveType!!,

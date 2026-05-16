@@ -1,18 +1,15 @@
 package com.niki914.nexus.agentic.mod.feat.hyper.subhooks
 
 import com.niki914.nexus.agentic.mod.feat.SubHook
-import com.niki914.nexus.agentic.mod.feat.hyper.InjectedInstructionRegistry
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiConfigProvider
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiRenderSession
 import com.niki914.nexus.h.util.call
+import com.niki914.nexus.h.util.setTag
 import com.niki914.nexus.h.util.xlog
-import de.robv.android.xposed.callbacks.XC_LoadPackage
 import java.util.concurrent.atomic.AtomicLong
 
 /** 将 LLM 流式增量文本构造为宿主 Instruction 并注入响应目标，管理渲染会话生命周期与终帧补片。 */
-class RenderTextStreamCardHook(
-    private val injectedInstructionRegistry: InjectedInstructionRegistry
-) : SubHook() {
+class RenderTextStreamCardHook : SubHook() {
 
     private val instructionCounter = AtomicLong()
     private val sessionLock = Any() // TODO 改用 Mutex
@@ -98,7 +95,7 @@ class RenderTextStreamCardHook(
         header.call<Any>(XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderDialogIdSetter!!, dialogId)
         instruction.call<Unit>(XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderSetter!!, header)
         instruction.call<Unit>(XiaoaiConfigProvider.RenderTextStreamCard.instructionPayloadSetter!!, payload)
-        injectedInstructionRegistry.markInjected(instruction)
+        instruction.setTag(INJECTED_FLAG, true)
         target.call<Unit>(methodName, instruction)
         xlog("[$name] 已注入文字流分片: dialogId=$dialogId, text=$text")
     }

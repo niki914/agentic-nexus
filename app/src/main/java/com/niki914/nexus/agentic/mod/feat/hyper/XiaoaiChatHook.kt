@@ -24,7 +24,6 @@ class XiaoaiChatHook( // TODO NewRoom / 卡片采用白名单模式避免放行�
 ) : AbstractAssistantHook(scope) {
     override val name: String = "XiaoaiChatHook"
 
-    private val injectedInstructionRegistry = InjectedInstructionRegistry()
     private var renderTextStreamCardHook: RenderTextStreamCardHook? = null
 
     @Volatile
@@ -64,12 +63,10 @@ class XiaoaiChatHook( // TODO NewRoom / 卡片采用白名单模式避免放行�
         ).onHook(lpparam)
 
         BlockNativeTextStreamHook(
-            injectedInstructionRegistry = injectedInstructionRegistry,
             resolveTurnState = { dialogId -> resolveTurnState(dialogId) }
         ).onHook(lpparam)
 
         BlockNativeTtsStreamHook(
-            injectedInstructionRegistry = injectedInstructionRegistry,
             resolveTurnState = { dialogId -> resolveTurnState(dialogId) }
         ).onHook(lpparam)
 
@@ -77,9 +74,8 @@ class XiaoaiChatHook( // TODO NewRoom / 卡片采用白名单模式避免放行�
             resolveTurnState = { dialogId -> resolveTurnState(dialogId) }
         ).onHook(lpparam)
 
-        renderTextStreamCardHook = RenderTextStreamCardHook(
-            injectedInstructionRegistry = injectedInstructionRegistry
-        ).also { it.onHook(lpparam) }
+        renderTextStreamCardHook = RenderTextStreamCardHook()
+            .also { it.onHook(lpparam) }
     }
 
     override fun installInputHooks(

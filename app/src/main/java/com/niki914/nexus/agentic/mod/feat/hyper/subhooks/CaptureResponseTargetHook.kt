@@ -3,9 +3,7 @@ package com.niki914.nexus.agentic.mod.feat.hyper.subhooks
 import com.niki914.nexus.agentic.mod.feat.HookTarget
 import com.niki914.nexus.agentic.mod.feat.SubHook
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiConfigProvider
-import com.niki914.nexus.h.util.call
 import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.callbacks.XC_LoadPackage
 
 /** 在宿主创建响应目标时捕获目标对象及其 dialogId，通过回调传给 XiaoaiChatHook 供后续注入。 */
 class CaptureResponseTargetHook(
