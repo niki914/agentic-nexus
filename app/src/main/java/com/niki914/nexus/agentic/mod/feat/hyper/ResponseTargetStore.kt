@@ -2,6 +2,7 @@ package com.niki914.nexus.agentic.mod.feat.hyper
 
 import java.lang.ref.WeakReference
 
+/** 以 dialogId 为键缓存响应目标对象的弱引用，供 CaptureResponseTargetHook 写入、RenderTextStreamCardHook 读取。 */
 class ResponseTargetStore {
     private val lock = Any() // TODO Mutex
     private val targets = linkedMapOf<String, WeakReference<Any>>()

@@ -18,6 +18,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.shareIn
 
+/** XiaoAi 宿主主 Hook，编排全部子 Hook 安装、会话生命周期、关键词接管判定及 LLM 流式渲染管线。 */
 class XiaoaiChatHook( // TODO NewRoom / 卡片采用白名单模式避免放行不正确的卡片
     scope: CoroutineScope
 ) : AbstractAssistantHook(scope) {

@@ -10,6 +10,7 @@ import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import java.util.concurrent.atomic.AtomicLong
 
+/** 将 LLM 流式增量文本构造为宿主 Instruction 并注入响应目标，管理渲染会话生命周期与终帧补片。 */
 class RenderTextStreamCardHook(
     private val responseTargetStore: ResponseTargetStore,
     private val injectedInstructionRegistry: InjectedInstructionRegistry

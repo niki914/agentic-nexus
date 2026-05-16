@@ -7,6 +7,7 @@ import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
+/** 从宿主输入链路捕获用户 query 与 dialogId，含去重逻辑，回调至 handleCapturedQuery。 */
 class CaptureInputHook(
     private val onInput: (dialogId: String, query: String) -> Unit
 ) : SubHook() {

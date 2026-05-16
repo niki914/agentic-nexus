@@ -9,6 +9,7 @@ import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.XC_MethodHook
 
+/** 在 InjectedLLM 模式下拦截原生 TTS 播放调用，阻止注入回复期间的原生语音播报。 */
 class BlockNativeTtsPlaybackHook(
     private val resolveTurnState: (String?) -> ConversationTurnState?
 ) : SubHook() {

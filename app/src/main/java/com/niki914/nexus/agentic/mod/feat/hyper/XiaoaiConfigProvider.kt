@@ -5,6 +5,7 @@ import com.niki914.nexus.agentic.mod.feat.HookTarget
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
+/** XiaoAi 云配置提供者，按 action 路径暴露各 Hook 所需的类名、方法名、参数索引等配置项。 */
 object XiaoaiConfigProvider : BaseConfigProvider() {
 
     object CaptureInput {

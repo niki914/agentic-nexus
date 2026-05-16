@@ -8,6 +8,7 @@ import com.niki914.nexus.h.util.call
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
+/** 在宿主创建响应目标时捕获目标对象及其 dialogId，存入 ResponseTargetStore 供后续注入使用。 */
 class CaptureResponseTargetHook(
     private val responseTargetStore: ResponseTargetStore,
     private val onCaptured: () -> Unit = {}

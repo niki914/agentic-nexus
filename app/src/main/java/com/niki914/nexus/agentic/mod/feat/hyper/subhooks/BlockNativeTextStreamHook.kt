@@ -11,6 +11,7 @@ import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
+/** 在 InjectedLLM 模式下拦截原生文字流指令，避免注入文本被原生回复覆盖。 */
 class BlockNativeTextStreamHook(
     private val injectedInstructionRegistry: InjectedInstructionRegistry,
     private val resolveTurnState: (String?) -> ConversationTurnState?
