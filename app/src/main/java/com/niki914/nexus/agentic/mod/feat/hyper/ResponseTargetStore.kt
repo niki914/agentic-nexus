@@ -3,7 +3,7 @@ package com.niki914.nexus.agentic.mod.feat.hyper
 import java.lang.ref.WeakReference
 
 class ResponseTargetStore {
-    private val lock = Any()
+    private val lock = Any() // TODO Mutex
     private val targets = linkedMapOf<String, WeakReference<Any>>()
 
     fun put(dialogId: String, target: Any) = synchronized(lock) {

@@ -24,9 +24,7 @@ class BlockNativeTtsStreamHook(
         if (injectedInstructionRegistry.isInjected(instruction)) {
             return
         }
-        val fullName = instruction.call<String>(
-            XiaoaiConfigProvider.BlockNativeTtsStream.instructionFullNameGetter
-        )
+        val fullName = instruction.call<String>(XiaoaiConfigProvider.BlockNativeTtsStream.instructionFullNameGetter ?: return)
         val instructionFullName = XiaoaiConfigProvider.BlockNativeTtsStream.instructionFullName ?: return
         if (fullName != instructionFullName) {
             return
@@ -44,21 +42,5 @@ class BlockNativeTtsStreamHook(
 
             null -> Unit
         }
-    }
-
-    private fun resolveDialogId(instruction: Any, target: Any?): String? {
-        val dialogIdOptional = instruction.call<Any>(
-            XiaoaiConfigProvider.BlockNativeTtsStream.instructionDialogIdGetter
-        )
-        val dialogId = dialogIdOptional
-            ?.takeIf {
-                it.call<Boolean>(XiaoaiConfigProvider.BlockNativeTtsStream.optionalHasValueMethod) == true
-            }
-            ?.call<String>(XiaoaiConfigProvider.BlockNativeTtsStream.optionalValueGetter)
-        if (!dialogId.isNullOrBlank()) {
-            return dialogId
-        }
-        val targetDialogIdGetter = XiaoaiConfigProvider.BlockNativeTtsStream.targetDialogIdGetter ?: return null
-        return target?.call<String>(targetDialogIdGetter)
     }
 }

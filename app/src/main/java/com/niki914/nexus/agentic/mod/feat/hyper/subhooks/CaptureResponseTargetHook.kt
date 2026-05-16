@@ -25,20 +25,4 @@ class CaptureResponseTargetHook(
         responseTargetStore.put(dialogId, param.thisObject)
         onCaptured()
     }
-
-    private fun resolveDialogId(instruction: Any, target: Any?): String? {
-        val dialogIdOptional = instruction.call<Any>(
-            XiaoaiConfigProvider.CaptureResponseTarget.instructionDialogIdGetter
-        )
-        val dialogId = dialogIdOptional
-            ?.takeIf {
-                it.call<Boolean>(XiaoaiConfigProvider.CaptureResponseTarget.optionalHasValueMethod) == true
-            }
-            ?.call<String>(XiaoaiConfigProvider.CaptureResponseTarget.optionalValueGetter)
-        if (!dialogId.isNullOrBlank()) {
-            return dialogId
-        }
-        val targetDialogIdGetter = XiaoaiConfigProvider.CaptureResponseTarget.targetDialogIdGetter ?: return null
-        return target?.call<String>(targetDialogIdGetter)
-    }
 }
