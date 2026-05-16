@@ -1,32 +1,25 @@
 package com.niki914.nexus.agentic.mod.feat.hyper.subhooks
 
+import com.niki914.nexus.agentic.mod.feat.SubHook
 import com.niki914.nexus.agentic.mod.feat.hyper.InjectedInstructionRegistry
 import com.niki914.nexus.agentic.mod.feat.hyper.ResponseTargetStore
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiConfigProvider
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiRenderSession
-import com.niki914.nexus.h.core.runtime.Hook
 import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import java.util.concurrent.atomic.AtomicLong
 
-class RenderTextStreamCardHook( // TODO 非常不符合预期的一个实现，使用了监视器锁，而且硬编码类名而没有上云，需要整改
+class RenderTextStreamCardHook(
     private val responseTargetStore: ResponseTargetStore,
     private val injectedInstructionRegistry: InjectedInstructionRegistry
-) : Hook {
-    override val name: String = "XiaoaiRenderTextStreamCardHook"
+) : SubHook() {
 
     private val instructionCounter = AtomicLong()
-    private val sessionLock = Any()
+    private val sessionLock = Any() // TODO 改用 Mutex
     private var currentSession: XiaoaiRenderSession? = null
-    private var renderMethodName: String? = null
-
-    override fun onHook(lpparam: XC_LoadPackage.LoadPackageParam) {
-        val ownerClass = XiaoaiConfigProvider.renderTextStreamCardOwnerClass ?: return
-        val methodName = XiaoaiConfigProvider.renderTextStreamCardMethodName ?: return
-        val methodParams = XiaoaiConfigProvider.renderTextStreamCardMethodParams ?: return
-        renderMethodName = methodName
-        xlog("[$name] 已就绪: target=$ownerClass#$methodName(${methodParams.joinToString()})")
+    private val renderMethodName: String? by lazy {
+        XiaoaiConfigProvider.RenderTextStreamCard.hookTarget?.methodName
     }
 
     fun render(
@@ -69,7 +62,7 @@ class RenderTextStreamCardHook( // TODO 非常不符合预期的一个实现，�
                 target = target,
                 methodName = methodName,
                 dialogId = dialogId,
-                text = XiaoaiConfigProvider.renderTextStreamCardFinalChunkText
+                text = XiaoaiConfigProvider.RenderTextStreamCard.finalChunkText
             )
             clearSession(turnId)
         }
@@ -83,29 +76,29 @@ class RenderTextStreamCardHook( // TODO 非常不符合预期的一个实现，�
     ) {
         val classLoader = target.javaClass.classLoader ?: javaClass.classLoader
         val instruction = newInstance(
-            className = XiaoaiConfigProvider.renderTextStreamCardInstructionClass,
-            constructorParamTypes = XiaoaiConfigProvider.renderTextStreamCardInstructionConstructorParamTypes,
+            className = XiaoaiConfigProvider.RenderTextStreamCard.instructionClass!!,
+            constructorParamTypes = XiaoaiConfigProvider.RenderTextStreamCard.instructionConstructorParamTypes,
             classLoader = classLoader
         )
         val header = newInstance(
-            className = XiaoaiConfigProvider.renderTextStreamCardInstructionHeaderClass,
-            constructorParamTypes = XiaoaiConfigProvider.renderTextStreamCardInstructionHeaderConstructorParamTypes,
+            className = XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderClass!!,
+            constructorParamTypes = XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderConstructorParamTypes,
             classLoader = classLoader,
-            XiaoaiConfigProvider.renderTextStreamCardInstructionNamespace,
-            XiaoaiConfigProvider.renderTextStreamCardInstructionName
+            XiaoaiConfigProvider.RenderTextStreamCard.instructionNamespace,
+            XiaoaiConfigProvider.RenderTextStreamCard.instructionName
         )
         val payload = newInstance(
-            className = XiaoaiConfigProvider.renderTextStreamCardTextStreamPayloadClass,
-            constructorParamTypes = XiaoaiConfigProvider.renderTextStreamCardTextStreamPayloadConstructorParamTypes,
+            className = XiaoaiConfigProvider.RenderTextStreamCard.textStreamPayloadClass!!,
+            constructorParamTypes = XiaoaiConfigProvider.RenderTextStreamCard.textStreamPayloadConstructorParamTypes,
             classLoader = classLoader,
             text
         )
         val instructionId = buildInstructionId()
 
-        header.call<Any>(XiaoaiConfigProvider.renderTextStreamCardInstructionHeaderIdSetter, instructionId)
-        header.call<Any>(XiaoaiConfigProvider.renderTextStreamCardInstructionHeaderDialogIdSetter, dialogId)
-        instruction.call<Unit>(XiaoaiConfigProvider.renderTextStreamCardInstructionHeaderSetter, header)
-        instruction.call<Unit>(XiaoaiConfigProvider.renderTextStreamCardInstructionPayloadSetter, payload)
+        header.call<Any>(XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderIdSetter, instructionId)
+        header.call<Any>(XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderDialogIdSetter, dialogId)
+        instruction.call<Unit>(XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderSetter, header)
+        instruction.call<Unit>(XiaoaiConfigProvider.RenderTextStreamCard.instructionPayloadSetter, payload)
         injectedInstructionRegistry.markInjected(instruction)
         target.call<Unit>(methodName, instruction)
         xlog("[$name] 已注入文字流分片: dialogId=$dialogId, text=$text")
@@ -128,7 +121,7 @@ class RenderTextStreamCardHook( // TODO 非常不符合预期的一个实现，�
 
     private fun buildInstructionId(): String {
         val next = instructionCounter.incrementAndGet()
-        return "${XiaoaiConfigProvider.renderTextStreamCardInstructionIdPrefix}_$next"
+        return "${XiaoaiConfigProvider.RenderTextStreamCard.instructionIdPrefix}_$next"
     }
 
     private fun obtainSession(turnId: Long, dialogId: String): XiaoaiRenderSession = synchronized(sessionLock) {

@@ -28,7 +28,7 @@ class App : Application() {
                     JsonObject(
                         mapOf(
                             "endpoint" to JsonPrimitive("https://api.deepseek.com/v1/chat/completions"),
-                            "api_key" to JsonPrimitive("sk-9961090b5ca3483681fd9f2912d30dc5"),
+                            "api_key" to JsonPrimitive("sk-d9ee945b2c4245ea973c5f49fc448a50"),
                             "model" to JsonPrimitive("deepseek-v4-flash"),
                             "prompt" to JsonPrimitive("You are a helpful assistant created by niki914. Your identity is 'Nexus'"),
                             "proxy" to JsonPrimitive(""),

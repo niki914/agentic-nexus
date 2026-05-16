@@ -18,7 +18,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.shareIn
 
-class XiaoaiChatHook(
+class XiaoaiChatHook( // TODO NewRoom / 卡片采用白名单模式避免放行不正确的卡片
     scope: CoroutineScope
 ) : AbstractAssistantHook(scope) {
     override val name: String = "XiaoaiChatHook"

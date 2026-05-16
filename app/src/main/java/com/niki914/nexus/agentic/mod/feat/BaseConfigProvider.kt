@@ -37,4 +37,21 @@ abstract class BaseConfigProvider { // TODO Dataclass to describe a hook spot
     fun getList(path: String) = (getElement(path) as? JsonArray)?.toList()
 
     fun getObject(path: String) = getElement(path) as? JsonObject
+
+    fun parseHookTarget(path: String): HookTarget? = runCatching {
+        val ownerClass = getString("$path.owner_class") ?: throw onPathNotResolved("$path.owner_class")
+        val methodName = getString("$path.method_name") ?: throw onPathNotResolved("$path.method_name")
+        val methodParams = getList("$path.param_types")
+            ?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: throw onPathNotResolved("$path.param_types")
+        val hookTiming = getString("$path.hook_timing")
+        val hookKind = getString("$path.hook_kind")
+        val returnType = getString("$path.return_type")
+        return HookTarget(ownerClass, methodName, methodParams, hookTiming, hookKind, returnType)
+    }.onFailure {
+        xlog("[BaseConfigProvider] failed to resolved: ${it.message}")
+    }.getOrNull()
+
+    fun onPathNotResolved(path: String): IllegalStateException {
+        return IllegalStateException("path not resolved : $path")
+    }
 }

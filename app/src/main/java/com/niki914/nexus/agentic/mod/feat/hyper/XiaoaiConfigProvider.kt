@@ -1,218 +1,130 @@
 package com.niki914.nexus.agentic.mod.feat.hyper
 
 import com.niki914.nexus.agentic.mod.feat.BaseConfigProvider
+import com.niki914.nexus.agentic.mod.feat.HookTarget
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 object XiaoaiConfigProvider : BaseConfigProvider() {
-    val captureInputOwnerClass: String?
-        get() = getString("actions.capture_input.target.owner_class")
 
-    val captureInputMethodName: String?
-        get() = getString("actions.capture_input.target.method_name")
+    object CaptureInput {
+        val hookTarget: HookTarget?
+            get() = parseHookTarget("actions.capture_input.target")
+        val dialogIdArgIndex: Int?
+            get() = getInt("actions.capture_input.business.dialog_id_arg_index")
+        val queryArgIndex: Int?
+            get() = getInt("actions.capture_input.business.query_arg_index")
+    }
 
-    val captureInputMethodParams: List<String>?
-        get() = getList("actions.capture_input.target.param_types")
-            ?.mapNotNull { it.jsonPrimitive.contentOrNull }
+    object CaptureResponseTarget {
+        val hookTarget: HookTarget?
+            get() = parseHookTarget("actions.capture_response_target.target")
+        val targetDialogIdGetter: String?
+            get() = getString("actions.capture_response_target.business.target_dialog_id_getter")
+        val instructionDialogIdGetter: String?
+            get() = getString("actions.capture_response_target.business.instruction_dialog_id_getter")
 
-    val captureInputHookTiming: String?
-        get() = getString("actions.capture_input.target.hook_timing")
+        val optionalHasValueMethod: String?
+            get() = getString("actions.capture_response_target.business.optional_has_value_method")
+        val optionalValueGetter: String?
+            get() = getString("actions.capture_response_target.business.optional_value_getter")
+    }
 
-    val captureInputDialogIdArgIndex: Int?
-        get() = getInt("actions.capture_input.business.dialog_id_arg_index")
+    object ResetSession {
+        val hookTarget: HookTarget?
+            get() = parseHookTarget("actions.reset_session.target")
+        val targetActivityClass: String?
+            get() = getString("actions.reset_session.business.target_activity_class")
+    }
 
-    val captureInputQueryArgIndex: Int?
-        get() = getInt("actions.capture_input.business.query_arg_index")
+    object BlockNativeTextStream {
+        val hookTarget: HookTarget?
+            get() = parseHookTarget("actions.block_native_text_stream.target")
+        val targetDialogIdGetter: String?
+            get() = getString("actions.block_native_text_stream.business.target_dialog_id_getter")
+        val instructionFullName: String?
+            get() = getString("actions.block_native_text_stream.business.instruction_full_name")
+        val instructionFullNameGetter: String?
+            get() = getString("actions.block_native_text_stream.business.instruction_full_name_getter")
+        val instructionDialogIdGetter: String?
+            get() = getString("actions.block_native_text_stream.business.instruction_dialog_id_getter")
+        val optionalHasValueMethod: String?
+            get() = getString("actions.block_native_text_stream.business.optional_has_value_method")
+        val optionalValueGetter: String?
+            get() = getString("actions.block_native_text_stream.business.optional_value_getter")
+    }
+
+    object BlockNativeTtsStream {
+        val hookTarget: HookTarget?
+            get() = parseHookTarget("actions.block_native_tts_stream.target")
+        val targetDialogIdGetter: String?
+            get() = getString("actions.block_native_tts_stream.business.target_dialog_id_getter")
+        val instructionFullName: String?
+            get() = getString("actions.block_native_tts_stream.business.instruction_full_name")
+        val instructionFullNameGetter: String?
+            get() = getString("actions.block_native_tts_stream.business.instruction_full_name_getter")
+        val instructionDialogIdGetter: String?
+            get() = getString("actions.block_native_tts_stream.business.instruction_dialog_id_getter")
+        val optionalHasValueMethod: String?
+            get() = getString("actions.block_native_tts_stream.business.optional_has_value_method")
+        val optionalValueGetter: String?
+            get() = getString("actions.block_native_tts_stream.business.optional_value_getter")
+    }
+
+    object BlockNativeTtsPlayback {
+        val hookTarget: HookTarget?
+            get() = parseHookTarget("actions.block_native_tts_playback.target")
+        val targetDialogIdGetter: String?
+            get() = getString("actions.block_native_tts_playback.business.target_dialog_id_getter")
+    }
+
+    object RenderTextStreamCard {
+        val hookTarget: HookTarget?
+            get() = parseHookTarget("actions.render_text_stream_card.target")
+        val instructionNamespace: String?
+            get() = getString("actions.render_text_stream_card.business.instruction_namespace")
+        val instructionName: String?
+            get() = getString("actions.render_text_stream_card.business.instruction_name")
+        val instructionClass: String?
+            get() = getString("actions.render_text_stream_card.business.instruction_class")
+        val instructionConstructorParamTypes: List<String>?
+            get() = getList("actions.render_text_stream_card.business.instruction_constructor_param_types")
+                ?.mapNotNull { it.jsonPrimitive.contentOrNull }
+        val instructionHeaderClass: String?
+            get() = getString("actions.render_text_stream_card.business.instruction_header_class")
+        val instructionHeaderConstructorParamTypes: List<String>?
+            get() = getList("actions.render_text_stream_card.business.instruction_header_constructor_param_types")
+                ?.mapNotNull { it.jsonPrimitive.contentOrNull }
+        val textStreamPayloadClass: String?
+            get() = getString("actions.render_text_stream_card.business.text_stream_payload_class")
+        val textStreamPayloadConstructorParamTypes: List<String>?
+            get() = getList("actions.render_text_stream_card.business.text_stream_payload_constructor_param_types")
+                ?.mapNotNull { it.jsonPrimitive.contentOrNull }
+        val instructionHeaderIdSetter: String?
+            get() = getString("actions.render_text_stream_card.business.instruction_header_id_setter")
+        val instructionHeaderDialogIdSetter: String?
+            get() = getString("actions.render_text_stream_card.business.instruction_header_dialog_id_setter")
+        val instructionHeaderSetter: String?
+            get() = getString("actions.render_text_stream_card.business.instruction_header_setter")
+        val instructionPayloadSetter: String?
+            get() = getString("actions.render_text_stream_card.business.instruction_payload_setter")
+        val instructionIdPrefix: String?
+            get() = getString("actions.render_text_stream_card.business.instruction_id_prefix")
+        val finalChunkText: String?
+            get() = getString("actions.render_text_stream_card.business.final_chunk_text")
+    }
+
+    object RenderTts {
+        val hookTarget: HookTarget?
+            get() = parseHookTarget("actions.render_tts.target")
+    }
 
     val floatWindowOwnerClass: String?
-        get() = getString("actions.reset_session.target.owner_class")
+        get() = ResetSession.hookTarget?.ownerClass
 
     val floatWindowDetachMethodName: String?
-        get() = getString("actions.reset_session.target.method_name")
+        get() = ResetSession.hookTarget?.methodName
 
     val floatWindowTargetActivityClass: String?
-        get() = getString("actions.reset_session.business.target_activity_class")
-
-    val captureResponseTargetOwnerClass: String?
-        get() = getString("actions.capture_response_target.target.owner_class")
-
-    val captureResponseTargetMethodName: String?
-        get() = getString("actions.capture_response_target.target.method_name")
-
-    val captureResponseTargetMethodParams: List<String>?
-        get() = getList("actions.capture_response_target.target.param_types")
-            ?.mapNotNull { it.jsonPrimitive.contentOrNull }
-
-    val captureResponseTargetHookTiming: String?
-        get() = getString("actions.capture_response_target.target.hook_timing")
-
-    val captureResponseTargetTargetDialogIdGetter: String?
-        get() = getString("actions.capture_response_target.business.target_dialog_id_getter")
-
-    val captureResponseTargetInstructionDialogIdGetter: String
-        get() = getString("actions.capture_response_target.business.instruction_dialog_id_getter")
-            ?: "getDialogId"
-
-    val captureResponseTargetOptionalHasValueMethod: String
-        get() = getString("actions.capture_response_target.business.optional_has_value_method")
-            ?: "isPresent"
-
-    val captureResponseTargetOptionalValueGetter: String
-        get() = getString("actions.capture_response_target.business.optional_value_getter")
-            ?: "get"
-
-    val blockNativeTextStreamOwnerClass: String?
-        get() = getString("actions.block_native_text_stream.target.owner_class")
-
-    val blockNativeTextStreamMethodName: String?
-        get() = getString("actions.block_native_text_stream.target.method_name")
-
-    val blockNativeTextStreamMethodParams: List<String>?
-        get() = getList("actions.block_native_text_stream.target.param_types")
-            ?.mapNotNull { it.jsonPrimitive.contentOrNull }
-
-    val blockNativeTextStreamHookTiming: String?
-        get() = getString("actions.block_native_text_stream.target.hook_timing")
-
-    val blockNativeTextStreamTargetDialogIdGetter: String?
-        get() = getString("actions.block_native_text_stream.business.target_dialog_id_getter")
-
-    val blockNativeTextStreamInstructionFullName: String?
-        get() = getString("actions.block_native_text_stream.business.instruction_full_name")
-
-    val blockNativeTextStreamInstructionFullNameGetter: String
-        get() = getString("actions.block_native_text_stream.business.instruction_full_name_getter")
-            ?: "getFullName"
-
-    val blockNativeTextStreamInstructionDialogIdGetter: String
-        get() = getString("actions.block_native_text_stream.business.instruction_dialog_id_getter")
-            ?: "getDialogId"
-
-    val blockNativeTextStreamOptionalHasValueMethod: String
-        get() = getString("actions.block_native_text_stream.business.optional_has_value_method")
-            ?: "isPresent"
-
-    val blockNativeTextStreamOptionalValueGetter: String
-        get() = getString("actions.block_native_text_stream.business.optional_value_getter")
-            ?: "get"
-
-    val blockNativeTtsStreamOwnerClass: String?
-        get() = getString("actions.block_native_tts_stream.target.owner_class")
-
-    val blockNativeTtsStreamMethodName: String?
-        get() = getString("actions.block_native_tts_stream.target.method_name")
-
-    val blockNativeTtsStreamMethodParams: List<String>?
-        get() = getList("actions.block_native_tts_stream.target.param_types")
-            ?.mapNotNull { it.jsonPrimitive.contentOrNull }
-
-    val blockNativeTtsStreamHookTiming: String?
-        get() = getString("actions.block_native_tts_stream.target.hook_timing")
-
-    val blockNativeTtsStreamTargetDialogIdGetter: String?
-        get() = getString("actions.block_native_tts_stream.business.target_dialog_id_getter")
-
-    val blockNativeTtsStreamInstructionFullName: String?
-        get() = getString("actions.block_native_tts_stream.business.instruction_full_name")
-
-    val blockNativeTtsStreamInstructionFullNameGetter: String
-        get() = getString("actions.block_native_tts_stream.business.instruction_full_name_getter")
-            ?: "getFullName"
-
-    val blockNativeTtsStreamInstructionDialogIdGetter: String
-        get() = getString("actions.block_native_tts_stream.business.instruction_dialog_id_getter")
-            ?: "getDialogId"
-
-    val blockNativeTtsStreamOptionalHasValueMethod: String
-        get() = getString("actions.block_native_tts_stream.business.optional_has_value_method")
-            ?: "isPresent"
-
-    val blockNativeTtsStreamOptionalValueGetter: String
-        get() = getString("actions.block_native_tts_stream.business.optional_value_getter")
-            ?: "get"
-
-    val blockNativeTtsPlaybackOwnerClass: String?
-        get() = getString("actions.block_native_tts_playback.target.owner_class")
-
-    val blockNativeTtsPlaybackMethodName: String?
-        get() = getString("actions.block_native_tts_playback.target.method_name")
-
-    val blockNativeTtsPlaybackMethodParams: List<String>?
-        get() = getList("actions.block_native_tts_playback.target.param_types")
-            ?.mapNotNull { it.jsonPrimitive.contentOrNull }
-
-    val blockNativeTtsPlaybackHookTiming: String?
-        get() = getString("actions.block_native_tts_playback.target.hook_timing")
-
-    val blockNativeTtsPlaybackTargetDialogIdGetter: String?
-        get() = getString("actions.block_native_tts_playback.business.target_dialog_id_getter")
-
-    val renderTextStreamCardOwnerClass: String?
-        get() = getString("actions.render_text_stream_card.target.owner_class")
-
-    val renderTextStreamCardMethodName: String?
-        get() = getString("actions.render_text_stream_card.target.method_name")
-
-    val renderTextStreamCardMethodParams: List<String>?
-        get() = getList("actions.render_text_stream_card.target.param_types")
-            ?.mapNotNull { it.jsonPrimitive.contentOrNull }
-
-    val renderTextStreamCardHookTiming: String?
-        get() = getString("actions.render_text_stream_card.target.hook_timing")
-
-    val renderTextStreamCardInstructionNamespace: String
-        get() = getString("actions.render_text_stream_card.business.instruction_namespace") ?: "Template"
-
-    val renderTextStreamCardInstructionName: String
-        get() = getString("actions.render_text_stream_card.business.instruction_name") ?: "ToastStream"
-
-    val renderTextStreamCardInstructionClass: String
-        get() = getString("actions.render_text_stream_card.business.instruction_class")
-            ?: "com.xiaomi.ai.api.common.Instruction"
-
-    val renderTextStreamCardInstructionConstructorParamTypes: List<String>
-        get() = getList("actions.render_text_stream_card.business.instruction_constructor_param_types")
-            ?.mapNotNull { it.jsonPrimitive.contentOrNull }
-            ?: emptyList()
-
-    val renderTextStreamCardInstructionHeaderClass: String
-        get() = getString("actions.render_text_stream_card.business.instruction_header_class")
-            ?: "com.xiaomi.ai.api.common.InstructionHeader"
-
-    val renderTextStreamCardInstructionHeaderConstructorParamTypes: List<String>
-        get() = getList("actions.render_text_stream_card.business.instruction_header_constructor_param_types")
-            ?.mapNotNull { it.jsonPrimitive.contentOrNull }
-            ?: listOf("java.lang.String", "java.lang.String")
-
-    val renderTextStreamCardTextStreamPayloadClass: String
-        get() = getString("actions.render_text_stream_card.business.text_stream_payload_class")
-            ?: "com.xiaomi.ai.api.Template\$ToastStream"
-
-    val renderTextStreamCardTextStreamPayloadConstructorParamTypes: List<String>
-        get() = getList("actions.render_text_stream_card.business.text_stream_payload_constructor_param_types")
-            ?.mapNotNull { it.jsonPrimitive.contentOrNull }
-            ?: listOf("java.lang.String")
-
-    val renderTextStreamCardInstructionHeaderIdSetter: String
-        get() = getString("actions.render_text_stream_card.business.instruction_header_id_setter")
-            ?: "setId"
-
-    val renderTextStreamCardInstructionHeaderDialogIdSetter: String
-        get() = getString("actions.render_text_stream_card.business.instruction_header_dialog_id_setter")
-            ?: "setDialogId"
-
-    val renderTextStreamCardInstructionHeaderSetter: String
-        get() = getString("actions.render_text_stream_card.business.instruction_header_setter")
-            ?: "setHeader"
-
-    val renderTextStreamCardInstructionPayloadSetter: String
-        get() = getString("actions.render_text_stream_card.business.instruction_payload_setter")
-            ?: "setPayload"
-
-    val renderTextStreamCardInstructionIdPrefix: String
-        get() = getString("actions.render_text_stream_card.business.instruction_id_prefix")
-            ?: "nexus_xiaoai_text"
-
-    val renderTextStreamCardFinalChunkText: String
-        get() = getString("actions.render_text_stream_card.business.final_chunk_text") ?: "<FINAL>"
+        get() = ResetSession.targetActivityClass
 }
