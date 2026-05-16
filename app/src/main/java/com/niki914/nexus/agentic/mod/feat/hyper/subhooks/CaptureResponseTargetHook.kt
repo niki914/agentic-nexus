@@ -2,16 +2,14 @@ package com.niki914.nexus.agentic.mod.feat.hyper.subhooks
 
 import com.niki914.nexus.agentic.mod.feat.HookTarget
 import com.niki914.nexus.agentic.mod.feat.SubHook
-import com.niki914.nexus.agentic.mod.feat.hyper.ResponseTargetStore
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiConfigProvider
 import com.niki914.nexus.h.util.call
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
-/** 在宿主创建响应目标时捕获目标对象及其 dialogId，存入 ResponseTargetStore 供后续注入使用。 */
+/** 在宿主创建响应目标时捕获目标对象及其 dialogId，通过回调传给 XiaoaiChatHook 供后续注入。 */
 class CaptureResponseTargetHook(
-    private val responseTargetStore: ResponseTargetStore,
-    private val onCaptured: () -> Unit = {}
+    private val onCaptured: (target: Any, dialogId: String) -> Unit = { _, _ -> }
 ) : SubHook() {
 
     override val hookTarget: HookTarget?
@@ -23,7 +21,6 @@ class CaptureResponseTargetHook(
         if (dialogId.isNullOrBlank()) {
             return
         }
-        responseTargetStore.put(dialogId, param.thisObject)
-        onCaptured()
+        onCaptured(param.thisObject, dialogId)
     }
 }

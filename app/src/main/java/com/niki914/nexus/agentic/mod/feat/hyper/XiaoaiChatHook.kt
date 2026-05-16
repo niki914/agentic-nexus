@@ -24,21 +24,19 @@ class XiaoaiChatHook( // TODO NewRoom / 卡片采用白名单模式避免放行�
 ) : AbstractAssistantHook(scope) {
     override val name: String = "XiaoaiChatHook"
 
-    private val responseTargetStore = ResponseTargetStore()
     private val injectedInstructionRegistry = InjectedInstructionRegistry()
     private var renderTextStreamCardHook: RenderTextStreamCardHook? = null
 
+    @Volatile
+    private var capturedResponseTarget: Any? = null
     private var targetReady = CompletableDeferred<Unit>()
 
     override suspend fun onSessionReset(roomId: String) {
-        val previousDialogId = turnState.roomId
         super.onSessionReset(roomId)
         LLMController.resetConversation()
         targetReady.cancel()
         targetReady = CompletableDeferred()
-        if (previousDialogId.isNotBlank()) {
-            responseTargetStore.clear(previousDialogId)
-        }
+        capturedResponseTarget = null
         renderTextStreamCardHook?.reset()
     }
 
@@ -59,8 +57,10 @@ class XiaoaiChatHook( // TODO NewRoom / 卡片采用白名单模式避免放行�
 
     override fun installResponseHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
         CaptureResponseTargetHook(
-            responseTargetStore = responseTargetStore,
-            onCaptured = { targetReady.complete(Unit) }
+            onCaptured = { target, _ ->
+                capturedResponseTarget = target
+                targetReady.complete(Unit)
+            }
         ).onHook(lpparam)
 
         BlockNativeTextStreamHook(
@@ -78,7 +78,6 @@ class XiaoaiChatHook( // TODO NewRoom / 卡片采用白名单模式避免放行�
         ).onHook(lpparam)
 
         renderTextStreamCardHook = RenderTextStreamCardHook(
-            responseTargetStore = responseTargetStore,
             injectedInstructionRegistry = injectedInstructionRegistry
         ).also { it.onHook(lpparam) }
     }
@@ -129,6 +128,7 @@ class XiaoaiChatHook( // TODO NewRoom / 卡片采用白名单模式避免放行�
         renderTextStreamCardHook?.render(
             turnId = turnId,
             dialogId = roomId,
+            target = capturedResponseTarget,
             chunk = chunk,
             isFirst = isFirst,
             isFinal = isFinal

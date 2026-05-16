@@ -2,7 +2,6 @@ package com.niki914.nexus.agentic.mod.feat.hyper.subhooks
 
 import com.niki914.nexus.agentic.mod.feat.SubHook
 import com.niki914.nexus.agentic.mod.feat.hyper.InjectedInstructionRegistry
-import com.niki914.nexus.agentic.mod.feat.hyper.ResponseTargetStore
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiConfigProvider
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiRenderSession
 import com.niki914.nexus.h.util.call
@@ -12,7 +11,6 @@ import java.util.concurrent.atomic.AtomicLong
 
 /** 将 LLM 流式增量文本构造为宿主 Instruction 并注入响应目标，管理渲染会话生命周期与终帧补片。 */
 class RenderTextStreamCardHook(
-    private val responseTargetStore: ResponseTargetStore,
     private val injectedInstructionRegistry: InjectedInstructionRegistry
 ) : SubHook() {
 
@@ -26,6 +24,7 @@ class RenderTextStreamCardHook(
     fun render(
         turnId: Long,
         dialogId: String,
+        target: Any?,
         chunk: String,
         isFirst: Boolean,
         isFinal: Boolean
@@ -43,7 +42,6 @@ class RenderTextStreamCardHook(
             nextDelta
         }
 
-        val target = responseTargetStore.get(dialogId)
         if (target == null) {
             xlog("[$name] 未捕获到可用响应目标，暂不注入: dialogId=$dialogId")
             if (isFinal) {
