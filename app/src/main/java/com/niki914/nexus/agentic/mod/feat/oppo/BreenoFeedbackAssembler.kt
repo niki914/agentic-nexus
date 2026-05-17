@@ -5,19 +5,19 @@ import com.niki914.nexus.h.util.xTry
 
 object BreenoFeedbackAssembler {
     fun attachIfNeeded(bean: Any) {
-        val feedbackClassName = BreenoConfigProvider.feedbackInfoClass ?: return
-        val footerClassName = BreenoConfigProvider.footerInfoClass ?: return
-        val beanSetFeedbackInfoMethod = BreenoConfigProvider.beanSetFeedbackInfoMethod ?: return
-        val feedbackSetFooterInfoMethod = BreenoConfigProvider.feedbackSetFooterInfoMethod ?: return
-        val footerSetCopyFlagMethod = BreenoConfigProvider.footerInfoSetCopyFlagMethod ?: return
-        val footerSetUpvoteFlagMethod = BreenoConfigProvider.footerInfoSetUpvoteFlagMethod ?: return
+        val feedbackClassName = BreenoConfigProvider.RenderCard.feedbackInfoClass ?: return
+        val footerClassName = BreenoConfigProvider.RenderCard.footerInfoClass ?: return
+        val beanSetFeedbackInfoMethod = BreenoConfigProvider.RenderCard.beanSetFeedbackInfoMethod ?: return
+        val feedbackSetFooterInfoMethod = BreenoConfigProvider.RenderCard.feedbackSetFooterInfoMethod ?: return
+        val footerSetCopyFlagMethod = BreenoConfigProvider.RenderCard.footerInfoSetCopyFlagMethod ?: return
+        val footerSetUpvoteFlagMethod = BreenoConfigProvider.RenderCard.footerInfoSetUpvoteFlagMethod ?: return
 
         val classLoader = bean.javaClass.classLoader
         val feedback = instantiate(feedbackClassName, classLoader) ?: return
         val footer = instantiate(footerClassName, classLoader) ?: return
 
-        footer.call<Unit>(footerSetCopyFlagMethod, BreenoConfigProvider.feedbackCopyFlagEnabled)
-        footer.call<Unit>(footerSetUpvoteFlagMethod, BreenoConfigProvider.feedbackUpvoteFlagEnabled)
+        footer.call<Unit>(footerSetCopyFlagMethod, BreenoConfigProvider.RenderCard.feedbackCopyFlagEnabled)
+        footer.call<Unit>(footerSetUpvoteFlagMethod, BreenoConfigProvider.RenderCard.feedbackUpvoteFlagEnabled)
         feedback.call<Unit>(feedbackSetFooterInfoMethod, footer)
         bean.call<Unit>(beanSetFeedbackInfoMethod, feedback)
     }

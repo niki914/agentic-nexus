@@ -7,12 +7,13 @@ import com.niki914.nexus.agentic.chat.HiddenTurnSummary
 import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.TurnMode
-import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.InputHook
-import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.NativeCardPolicyHook
-import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.OperationFactoryHook
-import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.RoomIdManagerHook
+import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.CaptureInputHook
+import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.BlockNativeCardHook
+import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.SuppressCleanupHook
+import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.ResetSessionHook
 import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.findClass
+import com.niki914.nexus.h.util.hookMethod
 import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
@@ -27,9 +28,9 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     private var dataCenterInstance: Any? = null
     private var viewBeanClass: Class<*>? = null
     private val renderSessionMutex = Mutex()
-    private var currentRenderSession: StreamRenderSession? = null
+    private var currentRenderSession: BreenoRenderSession? = null
 
-    private data class StreamRenderSession(
+    private data class BreenoRenderSession(
         val turnId: Long,
         val roomId: String,
         val recordId: String,
@@ -74,22 +75,35 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     }
 
     override fun installSessionHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
-        RoomIdManagerHook(
+        ResetSessionHook(
             onSessionReset = { roomId ->
                 scope.launch {
                     onSessionReset(roomId)
                 }
             }
         ).onHook(lpparam)
+
+        BreenoConfigProvider.ResetSession.floatWindowTargetActivityClass?.let { targetActivity ->
+            installTargetActivityResumeTracker(lpparam, targetActivity)
+        }
+        val floatClass = BreenoConfigProvider.floatWindowOwnerClass
+        val detachMethod = BreenoConfigProvider.floatWindowDetachMethodName
+        if (floatClass != null && detachMethod != null) {
+            lpparam.hookMethod(
+                className = floatClass,
+                methodName = detachMethod,
+                before = { onFloatDetach() }
+            )
+        }
     }
 
     override fun installResponseHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
-        NativeCardPolicyHook(
-            viewBeanClassProvider = { viewBeanClass },
-            resolveTurnState = { roomId -> resolveTurnState(roomId) }
+        BlockNativeCardHook(
+            resolveTurnState = { roomId -> resolveTurnState(roomId) },
+            selfInjectedFlagKey = BreenoConfigProvider.CaptureResponseTarget.selfInjectedFlagKey ?: return
         ).onHook(lpparam)
 
-        OperationFactoryHook(
+        SuppressCleanupHook(
             resolveTurnState = { turnState }
         ).onHook(lpparam)
     }
@@ -98,8 +112,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         lpparam: XC_LoadPackage.LoadPackageParam,
         onInput: (roomId: String, query: String) -> Unit
     ) {
-        InputHook(
-            viewBeanClassProvider = { viewBeanClass },
+        CaptureInputHook(
             onDataCenterInstanceResolved = { instance ->
                 if (dataCenterInstance == null) {
                     dataCenterInstance = instance
@@ -111,12 +124,11 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     }
 
     override suspend fun dispatchQueryToLLM(turnId: Long, roomId: String, query: String) {
-        TODO()
-//        LLMController.send(query, scope) { chunk, pos ->
-//            val isFirst = pos == LLMController.Pos.First
-//            val isFinal = pos == LLMController.Pos.Final
-//            renderStreamCard(turnId, roomId, chunk, isFirst, isFinal)
-//        }
+        LLMController.stream(query).collect { (chunk, pos) ->
+            val isFirst = pos == LLMController.Pos.First
+            val isFinal = pos == LLMController.Pos.Final
+            renderStreamCard(turnId, roomId, chunk, isFirst, isFinal)
+        }
     }
 
     override suspend fun renderStreamCard(
@@ -139,21 +151,21 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
 
         val beanClass = viewBeanClass ?: return
         val dataCenterInsertMessageMethod =
-            BreenoConfigProvider.dataCenterInsertMessageMethod ?: return
+            BreenoConfigProvider.RenderCard.dataCenterInsertMessageMethod ?: return
         val dataCenterUpdateMessageMethod =
-            BreenoConfigProvider.dataCenterUpdateMessageMethod ?: return
+            BreenoConfigProvider.RenderCard.dataCenterUpdateMessageMethod ?: return
 
-        val mockBeanMethodsUnit = BreenoConfigProvider.mockBeanMethodsUnit
-        val mockBeanLocalDataUnit = BreenoConfigProvider.mockBeanLocalDataUnit
-        val typeAnswer = BreenoConfigProvider.typeAnswer ?: return
-        val hideFeedbackViewLocalDataKey = BreenoConfigProvider.hideFeedbackViewLocalDataKey ?: return
-        val setChatTypeMethod = BreenoConfigProvider.beanSetChatTypeMethod ?: return
-        val setRoomIdMethod = BreenoConfigProvider.beanSetRoomIdMethod ?: return
-        val setRecordIdMethod = BreenoConfigProvider.beanSetRecordIdMethod ?: return
-        val setContentMethod = BreenoConfigProvider.beanSetContentMethod ?: return
-        val setFinalMethod = BreenoConfigProvider.beanSetFinalMethod ?: return
-        val setFirstSliceMethod = BreenoConfigProvider.beanSetFirstSliceMethod ?: return
-        val addClientLocalDataMethod = BreenoConfigProvider.beanAddClientLocalDataMethod ?: return
+        val mockBeanMethodsUnit = BreenoConfigProvider.RenderCard.mockBeanMethodsUnit
+        val mockBeanLocalDataUnit = BreenoConfigProvider.RenderCard.mockBeanLocalDataUnit
+        val typeAnswer = BreenoConfigProvider.RenderCard.chatTypeAnswer ?: return
+        val hideFeedbackViewLocalDataKey = BreenoConfigProvider.RenderCard.hideFeedbackViewLocalDataKey ?: return
+        val setChatTypeMethod = BreenoConfigProvider.RenderCard.beanSetChatTypeMethod ?: return
+        val setRoomIdMethod = BreenoConfigProvider.RenderCard.beanSetRoomIdMethod ?: return
+        val setRecordIdMethod = BreenoConfigProvider.RenderCard.beanSetRecordIdMethod ?: return
+        val setContentMethod = BreenoConfigProvider.RenderCard.beanSetContentMethod ?: return
+        val setFinalMethod = BreenoConfigProvider.RenderCard.beanSetFinalMethod ?: return
+        val setFirstSliceMethod = BreenoConfigProvider.RenderCard.beanSetFirstSliceMethod ?: return
+        val addClientLocalDataMethod = BreenoConfigProvider.RenderCard.beanAddClientLocalDataMethod ?: return
 
         val renderSession = obtainRenderSession(turnId, roomId)
         if (isFirst || renderSession.bean == null) {
@@ -205,9 +217,9 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
             ?.takeIf { it == turnState.roomId }
             ?.let { turnState }
 
-    private suspend fun obtainRenderSession(turnId: Long, roomId: String): StreamRenderSession =
+    private suspend fun obtainRenderSession(turnId: Long, roomId: String): BreenoRenderSession =
         renderSessionMutex.withLock {
-            currentRenderSession?.takeIf { it.turnId == turnId } ?: StreamRenderSession(
+            currentRenderSession?.takeIf { it.turnId == turnId } ?: BreenoRenderSession(
                 turnId = turnId,
                 roomId = roomId,
                 recordId = "mock_record_${roomId}_${turnId}"

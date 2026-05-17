@@ -24,24 +24,24 @@ abstract class SubHook : Hook {
             return
         }
 
-        val timing = target.hookTiming
-        if (timing != null && timing != "before") {
-            xlog("[SubHook] ${name}: hookTiming=${timing}, skipping auto-install")
-            return
-        }
-
         val paramTypes = resolveParamTypes(target.methodParams, lpparam)
         if (paramTypes == null) {
             xlog("[SubHook] ${name}: failed to resolve paramTypes, skipping")
             return
         }
 
-        lpparam.hookMethod(
-            className = target.ownerClass,
-            methodName = target.methodName,
-            *paramTypes,
-            before = { param -> beforeHook(param) },
-            after = { param -> afterHook(param) }
-        )
+        when (val timing = target.hookTiming) {
+            "after", "before" -> {
+                xlog("[SubHook] ${name}: hookTiming=$timing, registering ${timing}-only hook")
+                lpparam.hookMethod(
+                    className = target.ownerClass,
+                    methodName = target.methodName,
+                    *paramTypes,
+                    before = { param -> beforeHook(param) },
+                    after = { param -> afterHook(param) }
+                )
+            }
+            else -> Unit
+        }
     }
 }

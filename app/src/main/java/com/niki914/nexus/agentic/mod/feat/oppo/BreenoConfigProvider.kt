@@ -1,164 +1,140 @@
 package com.niki914.nexus.agentic.mod.feat.oppo
 
 import com.niki914.nexus.agentic.mod.feat.BaseConfigProvider
+import com.niki914.nexus.agentic.mod.feat.HookTarget
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
+/** Breeno 云配置提供者，按 action 路径暴露各 Hook 所需的类名、方法名、参数索引等配置项。 */
 object BreenoConfigProvider : BaseConfigProvider() {
-    val roomIdManagerClass: String? // TODO 修改读参方式，最好 suspend
-        get() = getString("classes.room_id_manager")
 
-    val roomIdManagerCreateRoomMethod: String?
-        get() = getString("accessors.room_id_manager.create_room.method_name")
+    object CaptureInput {
+        private const val P = "actions.capture_input"
+        val hookTarget: HookTarget?
+            get() = parseHookTarget("$P.target")
+        val queryArgIndex: Int?
+            get() = getInt("$P.business.query_arg_index")
+        val dialogIdArgIndex: Int?
+            get() = getInt("$P.business.dialog_id_arg_index")
+        val chatTypeQuery: Int?
+            get() = getInt("$P.business.chat_type_query")
+        val beanGetChatTypeMethod: String?
+            get() = getString("$P.business.bean_get_chat_type_method")
+        val beanGetRoomIdMethod: String?
+            get() = getString("$P.business.bean_get_room_id_method")
+        val beanGetContentMethod: String?
+            get() = getString("$P.business.bean_get_content_method")
+    }
 
-    val roomIdManagerCreateRoomMethodParams: List<String>?
-        get() {
-            val list = getList("accessors.room_id_manager.create_room.param_types")
-            return list?.mapNotNull { it.jsonPrimitive.contentOrNull }
-        }
+    object CaptureResponseTarget {
+        private const val P = "actions.capture_response_target"
+        val hookTarget: HookTarget?
+            get() = parseHookTarget("$P.target")
+        val chatTypeAnswer: Int?
+            get() = getInt("$P.business.chat_type_answer")
+        val selfInjectedFlagKey: String?
+            get() = getString("$P.business.self_injected_flag_key")
+        val beanGetChatTypeMethod: String?
+            get() = getString("$P.business.bean_get_chat_type_method")
+        val beanGetClientLocalDataMethod: String?
+            get() = getString("$P.business.bean_get_client_local_data_method")
+        val beanGetRoomIdMethod: String?
+            get() = getString("$P.business.bean_get_room_id_method")
+    }
+
+    object ResetSession {
+        private const val P = "actions.reset_session"
+        val hookTarget: HookTarget?
+            get() = parseHookTarget("$P.target")
+        val floatWindowTargetActivityClass: String?
+            get() = getString("$P.business.float_window_target_activity_class")
+        val floatWindowOwnerClass: String?
+            get() = getString("$P.business.float_window_owner_class")
+        val floatWindowDetachMethodName: String?
+            get() = getString("$P.business.float_window_detach_method_name")
+    }
+
+    object SuppressCleanup {
+        private const val P = "actions.suppress_cleanup"
+        val hookTarget: HookTarget?
+            get() = parseHookTarget("$P.target")
+        val cleanOperationClass: String?
+            get() = getString("$P.business.clean_operation_class")
+        val doNothingOperationClass: String?
+            get() = getString("$P.business.do_nothing_operation_class")
+    }
+
+    object RenderCard {
+        private const val P = "actions.render_card"
+        val viewBeanClass: String?
+            get() = getString("$P.business.view_bean_class")
+        val dataCenterInsertMessageMethod: String?
+            get() = getString("$P.business.data_center_insert_message_method")
+        val dataCenterUpdateMessageMethod: String?
+            get() = getString("$P.business.data_center_update_message_method")
+        val beanSetChatTypeMethod: String?
+            get() = getString("$P.business.bean_set_chat_type_method")
+        val beanSetRoomIdMethod: String?
+            get() = getString("$P.business.bean_set_room_id_method")
+        val beanSetContentMethod: String?
+            get() = getString("$P.business.bean_set_content_method")
+        val beanSetRecordIdMethod: String?
+            get() = getString("$P.business.bean_set_record_id_method")
+        val beanSetFinalMethod: String?
+            get() = getString("$P.business.bean_set_final_method")
+        val beanSetFirstSliceMethod: String?
+            get() = getString("$P.business.bean_set_first_slice_method")
+        val beanAddClientLocalDataMethod: String?
+            get() = getString("$P.business.bean_add_client_local_data_method")
+        val chatTypeAnswer: Int?
+            get() = getInt("$P.business.chat_type_answer")
+        val hideFeedbackViewLocalDataKey: String?
+            get() = getString("$P.business.hide_feedback_view_local_data_key")
+        val mockBeanMethodsUnit: List<Pair<String, Any>>
+            get() = readConfigPairs("$P.business.mock_bean_methods")
+        val mockBeanLocalDataUnit: List<Pair<String, Any>>
+            get() = readConfigPairs("$P.business.mock_bean_local_data")
+        val feedbackInfoClass: String?
+            get() = getString("$P.business.feedback_info_class")
+        val footerInfoClass: String?
+            get() = getString("$P.business.footer_info_class")
+        val beanSetFeedbackInfoMethod: String?
+            get() = getString("$P.business.bean_set_feedback_info_method")
+        val feedbackSetFooterInfoMethod: String?
+            get() = getString("$P.business.feedback_set_footer_info_method")
+        val footerInfoSetCopyFlagMethod: String?
+            get() = getString("$P.business.footer_info_set_copy_flag_method")
+        val footerInfoSetUpvoteFlagMethod: String?
+            get() = getString("$P.business.footer_info_set_upvote_flag_method")
+        val feedbackCopyFlagEnabled: Boolean
+            get() = getBoolean("$P.business.feedback_copy_flag_default") ?: true
+        val feedbackUpvoteFlagEnabled: Boolean
+            get() = getBoolean("$P.business.feedback_upvote_flag_default") ?: true
+    }
+
+    // ---- convenience aliases (mirror XiaoaiConfigProvider pattern) ----
 
     val viewBeanClass: String?
-        get() = getString("classes.view_bean")
+        get() = RenderCard.viewBeanClass
 
-    val dataCenterClass: String?
-        get() = getString("classes.data_center")
+    val floatWindowOwnerClass: String?
+        get() = ResetSession.floatWindowOwnerClass
 
-    val operationFactoryClass: String?
-        get() = getString("classes.operation_factory")
+    val floatWindowDetachMethodName: String?
+        get() = ResetSession.floatWindowDetachMethodName
 
-    val directiveClass: String?
-        get() = getString("classes.directive")
+    val floatWindowTargetActivityClass: String?
+        get() = ResetSession.floatWindowTargetActivityClass
 
-    val cleanOperationClass: String?
-        get() = getString("classes.clean_operation")
+    // ---- private helpers ----
 
-    val doNothingOperationClass: String?
-        get() = getString("classes.do_nothing_operation")
-
-    val feedbackInfoClass: String?
-        get() = getString("classes.feedback_info")
-
-    val footerInfoClass: String?
-        get() = getString("classes.footer_info")
-
-    val dataCenterInsertMessageMethod: String?
-        get() = getString("accessors.data_center.insert_message.method_name")
-
-    val dataCenterInsertMessageMethodParams: List<String>?
-        get() {
-            val list = getList("accessors.data_center.insert_message.param_types")
-            return list?.mapNotNull { it.jsonPrimitive.contentOrNull }
-        }
-
-    val dataCenterUpdateMessageMethod: String?
-        get() = getString("accessors.data_center.update_message")
-
-    val operationFactoryCreateMethod: String?
-        get() = getString("accessors.operation_factory.create.method_name")
-
-    val operationFactoryCreateMethodParams: List<String>?
-        get() {
-            val list = getList("accessors.operation_factory.create.param_types")
-            return list?.mapNotNull { it.jsonPrimitive.contentOrNull }
-        }
-
-    val beanGetChatTypeMethod: String?
-        get() = getString("accessors.bean.get_chat_type")
-
-    val beanSetChatTypeMethod: String?
-        get() = getString("accessors.bean.set_chat_type")
-
-    val beanGetRoomIdMethod: String?
-        get() = getString("accessors.bean.get_room_id")
-
-    val beanSetRoomIdMethod: String?
-        get() = getString("accessors.bean.set_room_id")
-
-    val beanGetContentMethod: String?
-        get() = getString("accessors.bean.get_content")
-
-    val beanSetContentMethod: String?
-        get() = getString("accessors.bean.set_content")
-
-    val beanSetRecordIdMethod: String?
-        get() = getString("accessors.bean.set_record_id")
-
-    val beanSetFinalMethod: String?
-        get() = getString("accessors.bean.set_final")
-
-    val beanSetFirstSliceMethod: String?
-        get() = getString("accessors.bean.set_first_slice")
-
-    val beanAddClientLocalDataMethod: String?
-        get() = getString("accessors.bean.add_client_local_data")
-
-    val beanGetClientLocalDataMethod: String?
-        get() = getString("accessors.bean.get_client_local_data")
-
-    val beanSetFeedbackInfoMethod: String?
-        get() = getString("accessors.bean.set_feedback_info")
-
-    val feedbackSetFooterInfoMethod: String?
-        get() = getString("accessors.feedback.set_footer_info")
-
-    val footerInfoSetCopyFlagMethod: String?
-        get() = getString("accessors.footer_info.set_copy_flag")
-
-    val footerInfoSetUpvoteFlagMethod: String?
-        get() = getString("accessors.footer_info.set_upvote_flag")
-
-    val typeQuery: Int?
-        get() = getInt("schema.chat_type.query")
-
-    val typeAnswer: Int?
-        get() = getInt("schema.chat_type.answer")
-
-    val selfInjectedMockFlagKey: String?
-        get() = getString("schema.mock_flags.self_injected")
-
-    val hideFeedbackViewLocalDataKey: String?
-        get() = getString("schema.mock_flags.hide_feedback_view")
-
-    val feedbackCopyFlagEnabled: Boolean
-        get() = getBoolean("runtime.feedback_defaults.copy_flag") ?: true
-
-    val feedbackUpvoteFlagEnabled: Boolean
-        get() = getBoolean("runtime.feedback_defaults.upvote_flag") ?: true
-
-    val mockBeanLocalDataUnit: List<Pair<String, Any>>
-        get() = readConfigPairs(
-            objectPath = "runtime.mock_defaults.local_data",
-            legacyListPath = "mock_bean_local_data_unit"
-        )
-
-    val mockBeanMethodsUnit: List<Pair<String, Any>>
-        get() = readConfigPairs(
-            objectPath = "runtime.mock_defaults.bean_methods",
-            legacyListPath = "mock_bean_methods_unit"
-        )
-
-    private fun readConfigPairs(
-        objectPath: String,
-        legacyListPath: String
-    ): List<Pair<String, Any>> {
+    private fun readConfigPairs(objectPath: String): List<Pair<String, Any>> =
         getObject(objectPath)?.mapNotNull { (key, value) ->
             value.toConfigValue()?.let { key to it }
-        }?.takeIf { it.isNotEmpty() }?.let { return it }
-
-        val list = getList(legacyListPath) ?: return emptyList()
-        return list.mapNotNull { element ->
-            if (element is JsonArray && element.size == 2) {
-                val key = element[0].jsonPrimitive.contentOrNull ?: return@mapNotNull null
-                element[1].toConfigValue()?.let { key to it }
-            } else {
-                null
-            }
-        }
-    }
+        } ?: emptyList()
 
     private fun JsonElement.toConfigValue(): Any? {
         val primitive = jsonPrimitive
