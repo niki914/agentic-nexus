@@ -10,7 +10,7 @@ import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.XC_MethodHook
 
 /**
- * 在 InjectedLLM 模式下拦截原生回答卡片，避免原生回答覆盖注入的 LLM 回复。
+ * 在 InjectedLLM 模式下拦截原生回答卡片，避免 Breeno 侧基于回答卡片的全量刷新注入被原生回答覆盖。
  *
  * 逻辑：
  * - 检查 bean 的 chatType 是否为回答类型（answer），非回答类型直接放行

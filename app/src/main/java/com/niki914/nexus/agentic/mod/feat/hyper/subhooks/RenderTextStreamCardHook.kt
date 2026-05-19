@@ -8,7 +8,7 @@ import com.niki914.nexus.h.util.setTag
 import com.niki914.nexus.h.util.xlog
 import java.util.concurrent.atomic.AtomicLong
 
-/** 将 LLM 流式增量文本构造为宿主 Instruction 并注入响应目标，管理渲染会话生命周期与终帧补片。 */
+/** 将 LLM 的累计文本切成增量块，构造为宿主 Instruction 并注入响应目标，管理渲染会话生命周期与终帧补片。 */
 class RenderTextStreamCardHook : SubHook() {
 
     private val instructionCounter = AtomicLong()

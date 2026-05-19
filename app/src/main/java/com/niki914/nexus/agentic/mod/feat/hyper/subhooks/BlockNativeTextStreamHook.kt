@@ -9,9 +9,8 @@ import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.getTag
 import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.callbacks.XC_LoadPackage
 
-/** 在 InjectedLLM 模式下拦截原生文字流指令，避免注入文本被原生回复覆盖。 */
+/** 在 InjectedLLM 模式下拦截原生文字流指令，避免 XiaoAi 的增量文本分片注入被原生回复覆盖。 */
 class BlockNativeTextStreamHook(
     private val resolveTurnState: (String?) -> ConversationTurnState?
 ) : SubHook() {
