@@ -63,7 +63,7 @@ dependencies {
     implementation("org.luckypray:dexkit:2.1.0")
 
     // LLM & networking
-    implementation("com.github.niki914:S3ss10n:2.0.0")
+    implementation("com.github.niki914:s3ss10n:2.0.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 

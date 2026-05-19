@@ -25,7 +25,10 @@ object LLMController {
                 systemPrompt = localSettings.prompt.ifBlank { "You are a helpful assistant." }
             }
             val sb = StringBuilder()
-            send(query) { event ->
+            send(query).collect { event ->
+
+            }
+            send(query) { event -> // TODO Session 已经支持 flow
                 when (event) {
                     is SessionEvent.RoundStarted -> trySend("" to Pos.First)
                     is SessionEvent.TextDelta -> { // TODO 字数测速
