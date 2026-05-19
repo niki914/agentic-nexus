@@ -12,9 +12,9 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
         private const val P = "actions.capture_input"
         val hookTarget: HookTarget?
             get() = parseHookTarget("$P.target")
-        val dialogIdArgIndex: Int?
+        val dialogIdArgIndex: Int
             get() = getInt("$P.business.dialog_id_arg_index")
-        val queryArgIndex: Int?
+        val queryArgIndex: Int
             get() = getInt("$P.business.query_arg_index")
     }
 
@@ -22,13 +22,13 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
         private const val P = "actions.capture_response_target"
         val hookTarget: HookTarget?
             get() = parseHookTarget("$P.target")
-        val targetDialogIdGetter: String?
+        val targetDialogIdGetter: String
             get() = getString("$P.business.target_dialog_id_getter")
-        val instructionDialogIdGetter: String?
+        val instructionDialogIdGetter: String
             get() = getString("$P.business.instruction_dialog_id_getter")
-        val optionalHasValueMethod: String?
+        val optionalHasValueMethod: String
             get() = getString("$P.business.optional_has_value_method")
-        val optionalValueGetter: String?
+        val optionalValueGetter: String
             get() = getString("$P.business.optional_value_getter")
     }
 
@@ -36,7 +36,7 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
         private const val P = "actions.reset_session"
         val hookTarget: HookTarget?
             get() = parseHookTarget("$P.target")
-        val targetActivityClass: String?
+        val targetActivityClass: String
             get() = getString("$P.business.target_activity_class")
     }
 
@@ -44,17 +44,17 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
         private const val P = "actions.block_native_text_stream"
         val hookTarget: HookTarget?
             get() = parseHookTarget("$P.target")
-        val targetDialogIdGetter: String?
+        val targetDialogIdGetter: String
             get() = getString("$P.business.target_dialog_id_getter")
-        val instructionFullName: String?
+        val instructionFullName: String
             get() = getString("$P.business.instruction_full_name")
-        val instructionFullNameGetter: String?
+        val instructionFullNameGetter: String
             get() = getString("$P.business.instruction_full_name_getter")
-        val instructionDialogIdGetter: String?
+        val instructionDialogIdGetter: String
             get() = getString("$P.business.instruction_dialog_id_getter")
-        val optionalHasValueMethod: String?
+        val optionalHasValueMethod: String
             get() = getString("$P.business.optional_has_value_method")
-        val optionalValueGetter: String?
+        val optionalValueGetter: String
             get() = getString("$P.business.optional_value_getter")
     }
 
@@ -62,17 +62,17 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
         private const val P = "actions.block_native_tts_stream"
         val hookTarget: HookTarget?
             get() = parseHookTarget("$P.target")
-        val targetDialogIdGetter: String?
+        val targetDialogIdGetter: String
             get() = getString("$P.business.target_dialog_id_getter")
-        val instructionFullName: String?
+        val instructionFullName: String
             get() = getString("$P.business.instruction_full_name")
-        val instructionFullNameGetter: String?
+        val instructionFullNameGetter: String
             get() = getString("$P.business.instruction_full_name_getter")
-        val instructionDialogIdGetter: String?
+        val instructionDialogIdGetter: String
             get() = getString("$P.business.instruction_dialog_id_getter")
-        val optionalHasValueMethod: String?
+        val optionalHasValueMethod: String
             get() = getString("$P.business.optional_has_value_method")
-        val optionalValueGetter: String?
+        val optionalValueGetter: String
             get() = getString("$P.business.optional_value_getter")
     }
 
@@ -80,7 +80,7 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
         private const val P = "actions.block_native_tts_playback"
         val hookTarget: HookTarget?
             get() = parseHookTarget("$P.target")
-        val targetDialogIdGetter: String?
+        val targetDialogIdGetter: String
             get() = getString("$P.business.target_dialog_id_getter")
     }
 
@@ -88,37 +88,37 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
         private const val P = "actions.render_text_stream_card"
         val hookTarget: HookTarget?
             get() = parseHookTarget("$P.target")
-        val instructionNamespace: String?
+        val instructionNamespace: String
             get() = getString("$P.business.instruction_namespace")
-        val instructionName: String?
+        val instructionName: String
             get() = getString("$P.business.instruction_name")
-        val instructionClass: String?
+        val instructionClass: String
             get() = getString("$P.business.instruction_class")
-        val instructionConstructorParamTypes: List<String>?
+        val instructionConstructorParamTypes: List<String>
             get() = getList("$P.business.instruction_constructor_param_types")
-                ?.mapNotNull { it.jsonPrimitive.contentOrNull }
-        val instructionHeaderClass: String?
+                .mapNotNull { it.jsonPrimitive.contentOrNull }
+        val instructionHeaderClass: String
             get() = getString("$P.business.instruction_header_class")
-        val instructionHeaderConstructorParamTypes: List<String>?
+        val instructionHeaderConstructorParamTypes: List<String>
             get() = getList("$P.business.instruction_header_constructor_param_types")
-                ?.mapNotNull { it.jsonPrimitive.contentOrNull }
-        val textStreamPayloadClass: String?
+                .mapNotNull { it.jsonPrimitive.contentOrNull }
+        val textStreamPayloadClass: String
             get() = getString("$P.business.text_stream_payload_class")
-        val textStreamPayloadConstructorParamTypes: List<String>?
+        val textStreamPayloadConstructorParamTypes: List<String>
             get() = getList("$P.business.text_stream_payload_constructor_param_types")
-                ?.mapNotNull { it.jsonPrimitive.contentOrNull }
-        val instructionHeaderIdSetter: String?
+                .mapNotNull { it.jsonPrimitive.contentOrNull }
+        val instructionHeaderIdSetter: String
             get() = getString("$P.business.instruction_header_id_setter")
-        val instructionHeaderDialogIdSetter: String?
+        val instructionHeaderDialogIdSetter: String
             get() = getString("$P.business.instruction_header_dialog_id_setter")
-        val instructionHeaderSetter: String?
+        val instructionHeaderSetter: String
             get() = getString("$P.business.instruction_header_setter")
-        val instructionPayloadSetter: String?
+        val instructionPayloadSetter: String
             get() = getString("$P.business.instruction_payload_setter")
-        val instructionIdPrefix: String?
+        val instructionIdPrefix: String
             get() = getString("$P.business.instruction_id_prefix")
         val finalChunkText: String
-            get() = getString("$P.business.final_chunk_text") ?: "<FINAL>"
+            get() = getString("$P.business.final_chunk_text")
     }
 
     object RenderTts {
@@ -132,6 +132,6 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
     val floatWindowDetachMethodName: String?
         get() = ResetSession.hookTarget?.methodName
 
-    val floatWindowTargetActivityClass: String?
+    val floatWindowTargetActivityClass: String
         get() = ResetSession.targetActivityClass
 }
