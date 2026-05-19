@@ -11,6 +11,8 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 
 /**
  * 抽象的配置提供者基类，用于规范各个语音助手的配置包装器
@@ -28,21 +30,21 @@ abstract class BaseConfigProvider {
         current
     }
 
-    fun getString(path: String) = getElement(path)?.jsonPrimitive?.contentOrNull
+    fun getString(path: String): String = getElement(path)?.jsonPrimitive?.contentOrNull.orThrowException(path)
 
-    fun getBoolean(path: String) = getElement(path)?.jsonPrimitive?.booleanOrNull
+    fun getBoolean(path: String): Boolean = getElement(path)?.jsonPrimitive?.booleanOrNull.orThrowException(path)
 
-    fun getInt(path: String) = getElement(path)?.jsonPrimitive?.intOrNull
+    fun getInt(path: String): Int = getElement(path)?.jsonPrimitive?.intOrNull.orThrowException(path)
 
-    fun getList(path: String) = (getElement(path) as? JsonArray)?.toList()
+    fun getList(path: String): List<JsonElement> = ((getElement(path) as? JsonArray)?.toList()).orThrowException(path)
 
-    fun getObject(path: String) = getElement(path) as? JsonObject
+    fun getObject(path: String): JsonObject = (getElement(path) as? JsonObject).orThrowException(path)
 
     fun parseHookTarget(path: String): HookTarget? = runCatching {
-        val ownerClass = getString("$path.owner_class") ?: throw onPathNotResolved("$path.owner_class")
-        val methodName = getString("$path.method_name") ?: throw onPathNotResolved("$path.method_name")
+        val ownerClass = getString("$path.owner_class")
+        val methodName = getString("$path.method_name")
         val methodParams = getList("$path.param_types")
-            ?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: throw onPathNotResolved("$path.param_types")
+            .mapNotNull { it.jsonPrimitive.contentOrNull }
         val hookTiming = getString("$path.hook_timing")
         val hookKind = getString("$path.hook_kind")
         val returnType = getString("$path.return_type")
@@ -51,7 +53,7 @@ abstract class BaseConfigProvider {
         xlog("[BaseConfigProvider] failed to resolved: ${it.message}")
     }.getOrNull()
 
-    fun onPathNotResolved(path: String): IllegalStateException {
-        return IllegalStateException("path not resolved : $path")
+    protected fun <T : Any> T?.orThrowException(path: String): T {
+        return this ?: throw IllegalStateException("path not resolved : $path")
     }
 }
