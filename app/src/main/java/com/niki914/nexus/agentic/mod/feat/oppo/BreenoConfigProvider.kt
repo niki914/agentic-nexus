@@ -45,16 +45,18 @@ object BreenoConfigProvider : BaseConfigProvider() {
             get() = getString("$P.business.bean_get_room_id_method")
     }
 
-    object ResetSession {
-        private const val P = "actions.reset_session"
+    object ResetConversationSignal {
+        private const val P = "actions.reset_conversation_signal"
         val hookTarget: HookTarget?
             get() = parseHookTarget("$P.target")
-        val floatWindowTargetActivityClass: String
-            get() = getString("$P.business.float_window_target_activity_class")
-        val floatWindowOwnerClass: String
-            get() = getString("$P.business.float_window_owner_class")
-        val floatWindowDetachMethodName: String
-            get() = getString("$P.business.float_window_detach_method_name")
+    }
+
+    object FloatScreenDetach {
+        private const val P = "actions.float_screen_detach"
+        val detachTarget: HookTarget?
+            get() = parseHookTarget("$P.target")
+        val resumeTarget: HookTarget?
+            get() = parseHookTarget("$P.business.resume_target")
     }
 
     object SuppressCleanup {
@@ -114,20 +116,6 @@ object BreenoConfigProvider : BaseConfigProvider() {
         val feedbackUpvoteFlagEnabled: Boolean
             get() = getBoolean("$P.business.feedback_upvote_flag_default")
     }
-
-    // ---- convenience aliases (mirror XiaoaiConfigProvider pattern) ----
-
-    val viewBeanClass: String
-        get() = RenderCard.viewBeanClass
-
-    val floatWindowOwnerClass: String
-        get() = ResetSession.floatWindowOwnerClass
-
-    val floatWindowDetachMethodName: String
-        get() = ResetSession.floatWindowDetachMethodName
-
-    val floatWindowTargetActivityClass: String
-        get() = ResetSession.floatWindowTargetActivityClass
 
     // ---- private helpers ----
 

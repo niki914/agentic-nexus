@@ -8,10 +8,10 @@ import com.niki914.nexus.agentic.chat.ConversationTurnState
 import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.h.core.runtime.Hook
 import com.niki914.nexus.h.util.hookMethod
+import com.niki914.nexus.h.util.resolveParamTypes
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 
 /**
  * 抽象语音助手 Hook 基类，规范核心生命周期与功能职责
@@ -21,34 +21,88 @@ import kotlin.math.abs
 abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook {
     protected var turnState: ConversationTurnState = ConversationTurnState()
 
-    private var floatDetachElapsed: Long = 0
-    private var targetActivityResumeElapsed: Long = 0
+    protected open val floatResumeGraceWindowMs: Long = 700L
+
+    private var lastFloatDetachObservedElapsed: Long = 0
+    private var lastFloatResumeObservedElapsed: Long = 0
     private val floatResetHandler = Handler(Looper.getMainLooper())
     private var pendingFloatResetCheck: Runnable? = null
 
-    protected fun installTargetActivityResumeTracker(
+    protected fun installFloatScreenDetachHooks(
         lpparam: XC_LoadPackage.LoadPackageParam,
-        targetActivityClass: String
+        detachTarget: HookTarget?,
+        resumeTarget: HookTarget?
     ) {
-        lpparam.hookMethod(
-            className = targetActivityClass,
-            methodName = "onResume",
-            after = { targetActivityResumeElapsed = SystemClock.elapsedRealtime() }
+        if (detachTarget == null || resumeTarget == null) return
+
+        installHookTargetObserver(
+            lpparam = lpparam,
+            target = detachTarget,
+            onObserved = ::onFloatScreenDetachObserved
+        )
+        installHookTargetObserver(
+            lpparam = lpparam,
+            target = resumeTarget,
+            onObserved = ::onFloatResumeObserved
         )
     }
 
-    protected fun onFloatDetach() {
-        floatDetachElapsed = SystemClock.elapsedRealtime()
+    protected fun onFloatScreenDetachObserved() {
+        val detachObservedElapsed = SystemClock.elapsedRealtime()
+        lastFloatDetachObservedElapsed = detachObservedElapsed
         pendingFloatResetCheck?.let { floatResetHandler.removeCallbacks(it) }
 
         val check = Runnable {
-            val abs = abs(targetActivityResumeElapsed - floatDetachElapsed)
-            if (abs > 700) {
+            val resumeObservedElapsed = lastFloatResumeObservedElapsed
+            val hasResumedAfterDetach = resumeObservedElapsed >= detachObservedElapsed
+            val resumeElapsedSinceDetach = resumeObservedElapsed - detachObservedElapsed
+            if (!hasResumedAfterDetach || resumeElapsedSinceDetach > floatResumeGraceWindowMs) {
                 scope.launch { onSessionReset("") }
             }
         }
         pendingFloatResetCheck = check
-        floatResetHandler.postDelayed(check, 700)
+        floatResetHandler.postDelayed(check, floatResumeGraceWindowMs)
+    }
+
+    protected fun onFloatResumeObserved() {
+        lastFloatResumeObservedElapsed = SystemClock.elapsedRealtime()
+    }
+
+    private fun installHookTargetObserver(
+        lpparam: XC_LoadPackage.LoadPackageParam,
+        target: HookTarget,
+        onObserved: () -> Unit
+    ) {
+        val paramTypes = resolveParamTypes(target.methodParams, lpparam) ?: return
+        registerBeforeOrAfterObserver(
+            lpparam = lpparam,
+            target = target,
+            paramTypes = paramTypes,
+            onObserved = onObserved
+        )
+    }
+
+    private fun registerBeforeOrAfterObserver(
+        lpparam: XC_LoadPackage.LoadPackageParam,
+        target: HookTarget,
+        paramTypes: Array<Class<*>>,
+        onObserved: () -> Unit
+    ) {
+        when (target.hookTiming?.lowercase()) {
+            "before" -> lpparam.hookMethod(
+                className = target.ownerClass,
+                methodName = target.methodName,
+                *paramTypes,
+                before = { onObserved() }
+            )
+            "after" -> lpparam.hookMethod(
+                className = target.ownerClass,
+                methodName = target.methodName,
+                *paramTypes,
+                after = { onObserved() }
+            )
+            else -> Unit
+        }
     }
 
     final override fun onHook(lpparam: XC_LoadPackage.LoadPackageParam) {

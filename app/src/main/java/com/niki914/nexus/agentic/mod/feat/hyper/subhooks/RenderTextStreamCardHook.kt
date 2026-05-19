@@ -72,29 +72,29 @@ class RenderTextStreamCardHook : SubHook() {
     ) {
         val classLoader = target.javaClass.classLoader ?: javaClass.classLoader
         val instruction = newInstance(
-            className = XiaoaiConfigProvider.RenderTextStreamCard.instructionClass!!,
-            constructorParamTypes = XiaoaiConfigProvider.RenderTextStreamCard.instructionConstructorParamTypes!!,
+            className = XiaoaiConfigProvider.RenderTextStreamCard.instructionClass,
+            constructorParamTypes = XiaoaiConfigProvider.RenderTextStreamCard.instructionConstructorParamTypes,
             classLoader = classLoader
         )
         val header = newInstance(
-            className = XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderClass!!,
-            constructorParamTypes = XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderConstructorParamTypes!!,
+            className = XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderClass,
+            constructorParamTypes = XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderConstructorParamTypes,
             classLoader = classLoader,
             XiaoaiConfigProvider.RenderTextStreamCard.instructionNamespace,
             XiaoaiConfigProvider.RenderTextStreamCard.instructionName
         )
         val payload = newInstance(
-            className = XiaoaiConfigProvider.RenderTextStreamCard.textStreamPayloadClass!!,
-            constructorParamTypes = XiaoaiConfigProvider.RenderTextStreamCard.textStreamPayloadConstructorParamTypes!!,
+            className = XiaoaiConfigProvider.RenderTextStreamCard.textStreamPayloadClass,
+            constructorParamTypes = XiaoaiConfigProvider.RenderTextStreamCard.textStreamPayloadConstructorParamTypes,
             classLoader = classLoader,
             text
         )
         val instructionId = buildInstructionId()
 
-        header.call<Any>(XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderIdSetter!!, instructionId)
-        header.call<Any>(XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderDialogIdSetter!!, dialogId)
-        instruction.call<Unit>(XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderSetter!!, header)
-        instruction.call<Unit>(XiaoaiConfigProvider.RenderTextStreamCard.instructionPayloadSetter!!, payload)
+        header.call<Any>(XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderIdSetter, instructionId)
+        header.call<Any>(XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderDialogIdSetter, dialogId)
+        instruction.call<Unit>(XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderSetter, header)
+        instruction.call<Unit>(XiaoaiConfigProvider.RenderTextStreamCard.instructionPayloadSetter, payload)
         instruction.setTag(INJECTED_FLAG, true)
         target.call<Unit>(methodName, instruction)
         xlog("[$name] 已注入文字流分片: dialogId=$dialogId, text=$text")

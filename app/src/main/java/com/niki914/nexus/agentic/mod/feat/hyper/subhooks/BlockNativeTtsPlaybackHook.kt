@@ -18,7 +18,7 @@ class BlockNativeTtsPlaybackHook(
         get() = XiaoaiConfigProvider.BlockNativeTtsPlayback.hookTarget
 
     override fun beforeHook(param: XC_MethodHook.MethodHookParam) {
-        val dialogIdGetter = XiaoaiConfigProvider.BlockNativeTtsPlayback.targetDialogIdGetter ?: return
+        val dialogIdGetter = XiaoaiConfigProvider.BlockNativeTtsPlayback.targetDialogIdGetter
         val dialogId = param.thisObject.call<String>(dialogIdGetter)
         when (resolveTurnState(dialogId)?.mode) {
             TurnMode.InjectedLLM -> {

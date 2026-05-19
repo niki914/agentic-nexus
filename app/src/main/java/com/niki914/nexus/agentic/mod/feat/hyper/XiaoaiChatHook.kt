@@ -10,7 +10,6 @@ import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeTtsStreamHoo
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.CaptureInputHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.CaptureResponseTargetHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.RenderTextStreamCardHook
-import com.niki914.nexus.h.util.hookMethod
 import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CompletableDeferred
@@ -40,18 +39,11 @@ class XiaoaiChatHook( // TODO NewRoom / 卡片采用白名单模式避免放行�
     }
 
     override fun installSessionHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
-        XiaoaiConfigProvider.floatWindowTargetActivityClass?.let {
-            installTargetActivityResumeTracker(lpparam, it)
-        }
-        val floatClass = XiaoaiConfigProvider.floatWindowOwnerClass
-        val detachMethod = XiaoaiConfigProvider.floatWindowDetachMethodName
-        if (floatClass != null && detachMethod != null) {
-            lpparam.hookMethod(
-                className = floatClass,
-                methodName = detachMethod,
-                before = { onFloatDetach() }
-            )
-        }
+        installFloatScreenDetachHooks(
+            lpparam = lpparam,
+            detachTarget = XiaoaiConfigProvider.FloatScreenDetach.detachTarget,
+            resumeTarget = XiaoaiConfigProvider.FloatScreenDetach.resumeTarget
+        )
     }
 
     override fun installResponseHooks(lpparam: XC_LoadPackage.LoadPackageParam) {

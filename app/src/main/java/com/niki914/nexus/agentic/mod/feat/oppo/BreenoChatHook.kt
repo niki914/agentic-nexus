@@ -10,10 +10,9 @@ import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.CaptureInputHook
 import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.BlockNativeCardHook
 import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.SuppressCleanupHook
-import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.ResetSessionHook
+import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.ResetConversationSignalHook
 import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.findClass
-import com.niki914.nexus.h.util.hookMethod
 import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
@@ -40,9 +39,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
 
     override fun onBeforeInstallHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
         xlog("[$name] installing...")
-        BreenoConfigProvider.viewBeanClass?.let {
-            viewBeanClass = lpparam.findClass(it)
-        }
+        viewBeanClass = lpparam.findClass(BreenoConfigProvider.RenderCard.viewBeanClass)
     }
 
     override suspend fun onTurnStateChanged(state: ConversationTurnState) {
@@ -76,32 +73,24 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     }
 
     override fun installSessionHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
-        ResetSessionHook(
+        ResetConversationSignalHook(
             onSessionReset = { roomId ->
                 scope.launch {
                     onSessionReset(roomId)
                 }
             }
         ).onHook(lpparam)
-
-        BreenoConfigProvider.ResetSession.floatWindowTargetActivityClass?.let { targetActivity ->
-            installTargetActivityResumeTracker(lpparam, targetActivity)
-        }
-        val floatClass = BreenoConfigProvider.floatWindowOwnerClass
-        val detachMethod = BreenoConfigProvider.floatWindowDetachMethodName
-        if (floatClass != null && detachMethod != null) {
-            lpparam.hookMethod(
-                className = floatClass,
-                methodName = detachMethod,
-                before = { onFloatDetach() }
-            )
-        }
+        installFloatScreenDetachHooks(
+            lpparam = lpparam,
+            detachTarget = BreenoConfigProvider.FloatScreenDetach.detachTarget,
+            resumeTarget = BreenoConfigProvider.FloatScreenDetach.resumeTarget
+        )
     }
 
     override fun installResponseHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
         BlockNativeCardHook(
             resolveTurnState = { roomId -> resolveTurnState(roomId) },
-            selfInjectedFlagKey = BreenoConfigProvider.CaptureResponseTarget.selfInjectedFlagKey ?: return
+            selfInjectedFlagKey = BreenoConfigProvider.CaptureResponseTarget.selfInjectedFlagKey
         ).onHook(lpparam)
 
         SuppressCleanupHook(
@@ -151,22 +140,20 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         }
 
         val beanClass = viewBeanClass ?: return
-        val dataCenterInsertMessageMethod =
-            BreenoConfigProvider.RenderCard.dataCenterInsertMessageMethod ?: return
-        val dataCenterUpdateMessageMethod =
-            BreenoConfigProvider.RenderCard.dataCenterUpdateMessageMethod ?: return
+        val dataCenterInsertMessageMethod = BreenoConfigProvider.RenderCard.dataCenterInsertMessageMethod
+        val dataCenterUpdateMessageMethod = BreenoConfigProvider.RenderCard.dataCenterUpdateMessageMethod
 
         val mockBeanMethodsUnit = BreenoConfigProvider.RenderCard.mockBeanMethodsUnit
         val mockBeanLocalDataUnit = BreenoConfigProvider.RenderCard.mockBeanLocalDataUnit
-        val typeAnswer = BreenoConfigProvider.RenderCard.chatTypeAnswer ?: return
-        val hideFeedbackViewLocalDataKey = BreenoConfigProvider.RenderCard.hideFeedbackViewLocalDataKey ?: return
-        val setChatTypeMethod = BreenoConfigProvider.RenderCard.beanSetChatTypeMethod ?: return
-        val setRoomIdMethod = BreenoConfigProvider.RenderCard.beanSetRoomIdMethod ?: return
-        val setRecordIdMethod = BreenoConfigProvider.RenderCard.beanSetRecordIdMethod ?: return
-        val setContentMethod = BreenoConfigProvider.RenderCard.beanSetContentMethod ?: return
-        val setFinalMethod = BreenoConfigProvider.RenderCard.beanSetFinalMethod ?: return
-        val setFirstSliceMethod = BreenoConfigProvider.RenderCard.beanSetFirstSliceMethod ?: return
-        val addClientLocalDataMethod = BreenoConfigProvider.RenderCard.beanAddClientLocalDataMethod ?: return
+        val typeAnswer = BreenoConfigProvider.RenderCard.chatTypeAnswer
+        val hideFeedbackViewLocalDataKey = BreenoConfigProvider.RenderCard.hideFeedbackViewLocalDataKey
+        val setChatTypeMethod = BreenoConfigProvider.RenderCard.beanSetChatTypeMethod
+        val setRoomIdMethod = BreenoConfigProvider.RenderCard.beanSetRoomIdMethod
+        val setRecordIdMethod = BreenoConfigProvider.RenderCard.beanSetRecordIdMethod
+        val setContentMethod = BreenoConfigProvider.RenderCard.beanSetContentMethod
+        val setFinalMethod = BreenoConfigProvider.RenderCard.beanSetFinalMethod
+        val setFirstSliceMethod = BreenoConfigProvider.RenderCard.beanSetFirstSliceMethod
+        val addClientLocalDataMethod = BreenoConfigProvider.RenderCard.beanAddClientLocalDataMethod
 
         val renderSession = obtainRenderSession(turnId, roomId)
         if (isFirst || renderSession.bean == null) {

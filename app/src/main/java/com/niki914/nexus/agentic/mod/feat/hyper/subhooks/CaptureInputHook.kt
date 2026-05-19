@@ -23,8 +23,8 @@ class CaptureInputHook(
         get() = XiaoaiConfigProvider.CaptureInput.hookTarget
 
     override fun beforeHook(param: XC_MethodHook.MethodHookParam) {
-        val dialogIdArgIndex = XiaoaiConfigProvider.CaptureInput.dialogIdArgIndex ?: return
-        val queryArgIndex = XiaoaiConfigProvider.CaptureInput.queryArgIndex ?: return
+        val dialogIdArgIndex = XiaoaiConfigProvider.CaptureInput.dialogIdArgIndex
+        val queryArgIndex = XiaoaiConfigProvider.CaptureInput.queryArgIndex
 
         val dialogId = param.args.getOrNull(dialogIdArgIndex) as? String
         val query = param.args.getOrNull(queryArgIndex) as? String

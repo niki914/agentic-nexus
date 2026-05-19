@@ -23,8 +23,8 @@ class BlockNativeTtsStreamHook(
         if (instruction.getTag<Boolean>(INJECTED_FLAG) == true) {
             return
         }
-        val fullName = instruction.call<String>(XiaoaiConfigProvider.BlockNativeTtsStream.instructionFullNameGetter ?: return)
-        val instructionFullName = XiaoaiConfigProvider.BlockNativeTtsStream.instructionFullName ?: return
+        val fullName = instruction.call<String>(XiaoaiConfigProvider.BlockNativeTtsStream.instructionFullNameGetter)
+        val instructionFullName = XiaoaiConfigProvider.BlockNativeTtsStream.instructionFullName
         if (fullName != instructionFullName) {
             return
         }

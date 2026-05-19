@@ -26,10 +26,8 @@ class SuppressCleanupHook(
         }
 
         val result = param.result ?: return
-        val cleanOperationClass =
-            BreenoConfigProvider.SuppressCleanup.cleanOperationClass ?: return
-        val doNothingOperationClass =
-            BreenoConfigProvider.SuppressCleanup.doNothingOperationClass ?: return
+        val cleanOperationClass = BreenoConfigProvider.SuppressCleanup.cleanOperationClass
+        val doNothingOperationClass = BreenoConfigProvider.SuppressCleanup.doNothingOperationClass
 
         val resultClass = result.javaClass
         val isCleanOperation = resultClass.name == cleanOperationClass ||

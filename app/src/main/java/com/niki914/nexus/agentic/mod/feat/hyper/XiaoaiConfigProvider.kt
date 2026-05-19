@@ -32,12 +32,18 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
             get() = getString("$P.business.optional_value_getter")
     }
 
-    object ResetSession {
-        private const val P = "actions.reset_session"
+    object ResetConversationSignal {
+        private const val P = "actions.reset_conversation_signal"
         val hookTarget: HookTarget?
             get() = parseHookTarget("$P.target")
-        val targetActivityClass: String
-            get() = getString("$P.business.target_activity_class")
+    }
+
+    object FloatScreenDetach {
+        private const val P = "actions.float_screen_detach"
+        val detachTarget: HookTarget?
+            get() = parseHookTarget("$P.target")
+        val resumeTarget: HookTarget?
+            get() = parseHookTarget("$P.business.resume_target")
     }
 
     object BlockNativeTextStream {
@@ -125,13 +131,4 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
         val hookTarget: HookTarget?
             get() = parseHookTarget("actions.render_tts.target")
     }
-
-    val floatWindowOwnerClass: String?
-        get() = ResetSession.hookTarget?.ownerClass
-
-    val floatWindowDetachMethodName: String?
-        get() = ResetSession.hookTarget?.methodName
-
-    val floatWindowTargetActivityClass: String
-        get() = ResetSession.targetActivityClass
 }

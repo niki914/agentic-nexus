@@ -25,11 +25,11 @@ class CaptureInputHook(
         get() = BreenoConfigProvider.CaptureInput.hookTarget
 
     override fun beforeHook(param: XC_MethodHook.MethodHookParam) {
-        val queryArgIndex = BreenoConfigProvider.CaptureInput.queryArgIndex ?: return
-        val chatTypeQuery = BreenoConfigProvider.CaptureInput.chatTypeQuery ?: return
-        val beanGetChatTypeMethod = BreenoConfigProvider.CaptureInput.beanGetChatTypeMethod ?: return
-        val beanGetRoomIdMethod = BreenoConfigProvider.CaptureInput.beanGetRoomIdMethod ?: return
-        val beanGetContentMethod = BreenoConfigProvider.CaptureInput.beanGetContentMethod ?: return
+        val queryArgIndex = BreenoConfigProvider.CaptureInput.queryArgIndex
+        val chatTypeQuery = BreenoConfigProvider.CaptureInput.chatTypeQuery
+        val beanGetChatTypeMethod = BreenoConfigProvider.CaptureInput.beanGetChatTypeMethod
+        val beanGetRoomIdMethod = BreenoConfigProvider.CaptureInput.beanGetRoomIdMethod
+        val beanGetContentMethod = BreenoConfigProvider.CaptureInput.beanGetContentMethod
 
         val bean = param.args.getOrNull(queryArgIndex) ?: return
         onDataCenterInstanceResolved(param.thisObject)

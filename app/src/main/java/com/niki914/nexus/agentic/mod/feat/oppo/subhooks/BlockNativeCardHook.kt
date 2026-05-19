@@ -31,14 +31,14 @@ class BlockNativeCardHook(
     override fun beforeHook(param: XC_MethodHook.MethodHookParam) {
         val bean = param.args[0] ?: return
 
-        val chatType = bean.call<Int>(BreenoConfigProvider.CaptureResponseTarget.beanGetChatTypeMethod ?: return) ?: return
-        val typeAnswer = BreenoConfigProvider.CaptureResponseTarget.chatTypeAnswer ?: return
+        val chatType = bean.call<Int>(BreenoConfigProvider.CaptureResponseTarget.beanGetChatTypeMethod) ?: return
+        val typeAnswer = BreenoConfigProvider.CaptureResponseTarget.chatTypeAnswer
         if (chatType != typeAnswer) {
             return
         }
 
         val isSelfInjected = bean.call<Any>(
-            BreenoConfigProvider.CaptureResponseTarget.beanGetClientLocalDataMethod ?: return,
+            BreenoConfigProvider.CaptureResponseTarget.beanGetClientLocalDataMethod,
             selfInjectedFlagKey
         ) != null
         if (isSelfInjected) {
@@ -46,7 +46,7 @@ class BlockNativeCardHook(
             return
         }
 
-        val roomId = bean.call<String>(BreenoConfigProvider.CaptureResponseTarget.beanGetRoomIdMethod ?: return)
+        val roomId = bean.call<String>(BreenoConfigProvider.CaptureResponseTarget.beanGetRoomIdMethod)
         if (roomId.isNullOrBlank()) {
             xlog("[$name] 回答卡片缺失 roomId，保守放行原生回答卡片")
             return

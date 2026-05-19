@@ -24,8 +24,8 @@ class BlockNativeTextStreamHook(
             return
         }
 
-        val fullName = instruction.call<String>(XiaoaiConfigProvider.BlockNativeTextStream.instructionFullNameGetter ?: return)
-        val instructionFullName = XiaoaiConfigProvider.BlockNativeTextStream.instructionFullName ?: return
+        val fullName = instruction.call<String>(XiaoaiConfigProvider.BlockNativeTextStream.instructionFullNameGetter)
+        val instructionFullName = XiaoaiConfigProvider.BlockNativeTextStream.instructionFullName
         if (fullName != instructionFullName) {
             return
         }
