@@ -22,6 +22,7 @@ import com.niki914.nexus.ipc.HostApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.niki914.nexus.ipc.XValues
+import com.niki914.nexus.agentic.app.liquid_example.LiquidExamplesScreen
 
 class MainActivity : ComponentActivity() {
     private val notificationPermissionLauncher = registerForActivityResult(
@@ -44,7 +45,9 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
-                ) {}
+                ) {
+                    LiquidExamplesScreen()
+                }
             }
         }
     }
