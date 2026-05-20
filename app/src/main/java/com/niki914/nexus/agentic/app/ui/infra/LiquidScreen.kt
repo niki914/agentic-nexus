@@ -8,11 +8,10 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -20,6 +19,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,6 +31,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -58,7 +59,10 @@ fun LiquidScreen(
     val hazeState = rememberHazeState(blurEnabled = true)
     val chromeBackdrop = rememberLayerBackdrop()
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val actionBarHeight = topInset + 56.dp
+    val titleBarHeight = 56.dp
+    val buttonSlotHeight = 72.dp
+    val actionBarHeight = topInset + titleBarHeight
+    val chromeHeight = topInset + buttonSlotHeight
 
     SideEffect { state.setActionBarHeight(actionBarHeight) }
 
@@ -72,7 +76,7 @@ fun LiquidScreen(
                 .zIndex(2f)
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
-                .height(actionBarHeight)
+                .height(chromeHeight)
                 .layerBackdrop(chromeBackdrop)
                 .hazeEffect(state = hazeState) {
                     tints = listOf(
@@ -93,8 +97,7 @@ fun LiquidScreen(
                 .zIndex(3f)
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
-                .height(actionBarHeight)
-                .padding(top = topInset)
+                .height(chromeHeight)
                 .padding(horizontal = 4.dp),
         ) {
             // Title — always centered in the full bar width
@@ -103,8 +106,10 @@ fun LiquidScreen(
             AnimatedContent(
                 targetState = state.title,
                 modifier = Modifier
-                    .align(Alignment.Center)
+                    .align(Alignment.TopCenter)
                     .fillMaxWidth()
+                    .padding(top = topInset)
+                    .fillMaxHeight()
                     .padding(horizontal = 48.dp),
                 transitionSpec = {
                     val titleEasing = FastOutSlowInEasing
@@ -139,80 +144,97 @@ fun LiquidScreen(
                 },
                 label = "title",
             ) { title ->
-                Text(
-                    text = title,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = TextStyle(
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (isDarkTheme) Color.White else Color.Black
-                    ),
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = title,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = TextStyle(
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = if (isDarkTheme) Color.White else Color.Black
+                        ),
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             // Left button
+            val leftButtonScale = animateFloatAsState(
+                targetValue = if (state.showLeftButton) 1f else 0f,
+                animationSpec = tween(buttonDuration, easing = LinearOutSlowInEasing),
+                label = "leftButtonScale",
+            )
             AnimatedVisibility(
                 visible = state.showLeftButton,
-                modifier = Modifier.align(Alignment.CenterStart),
-                enter = fadeIn(tween(buttonDuration, easing = LinearOutSlowInEasing)) +
-                    scaleIn(
-                        initialScale = 0f,
-                        animationSpec = tween(buttonDuration, easing = LinearOutSlowInEasing)
-                    ),
-                exit = fadeOut(tween(buttonDuration, easing = LinearOutSlowInEasing)) +
-                    scaleOut(
-                        targetScale = 0f,
-                        animationSpec = tween(buttonDuration, easing = LinearOutSlowInEasing)
-                    ),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = topInset),
+                enter = fadeIn(tween(buttonDuration, easing = LinearOutSlowInEasing)),
+                exit = fadeOut(tween(buttonDuration, easing = LinearOutSlowInEasing)),
             ) {
-                ActionBarButton(
-                    onClick = { state.onLeftClick?.invoke() },
-                    backdrop = chromeBackdrop,
-                    content = leftButton ?: {
-                        Text(
-                            text = "‹",
-                            style = TextStyle(
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Normal,
-                                color = if (isDarkTheme) Color.White else Color.Black,
+                Box(
+                    Modifier.graphicsLayer {
+                        scaleX = leftButtonScale.value
+                        scaleY = leftButtonScale.value
+                    }
+                ) {
+                    ActionBarButton(
+                        onClick = { state.onLeftClick?.invoke() },
+                        backdrop = chromeBackdrop,
+                        content = leftButton ?: {
+                            Text(
+                                text = "‹",
+                                style = TextStyle(
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    color = if (isDarkTheme) Color.White else Color.Black,
+                                )
                             )
-                        )
-                    },
-                )
+                        },
+                    )
+                }
             }
 
             // Right button
+            val rightButtonScale = animateFloatAsState(
+                targetValue = if (state.showRightButton) 1f else 0f,
+                animationSpec = tween(buttonDuration, easing = LinearOutSlowInEasing),
+                label = "rightButtonScale",
+            )
             AnimatedVisibility(
                 visible = state.showRightButton,
-                modifier = Modifier.align(Alignment.CenterEnd),
-                enter = fadeIn(tween(buttonDuration, easing = LinearOutSlowInEasing)) +
-                    scaleIn(
-                        initialScale = 0f,
-                        animationSpec = tween(buttonDuration, easing = LinearOutSlowInEasing)
-                    ),
-                exit = fadeOut(tween(buttonDuration, easing = LinearOutSlowInEasing)) +
-                    scaleOut(
-                        targetScale = 0f,
-                        animationSpec = tween(buttonDuration, easing = LinearOutSlowInEasing)
-                    ),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = topInset),
+                enter = fadeIn(tween(buttonDuration, easing = LinearOutSlowInEasing)),
+                exit = fadeOut(tween(buttonDuration, easing = LinearOutSlowInEasing)),
             ) {
-                ActionBarButton(
-                    onClick = { state.onRightClick?.invoke() },
-                    backdrop = chromeBackdrop,
-                    content = rightButton ?: {
-                        Text(
-                            text = "›",
-                            style = TextStyle(
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Normal,
-                                color = if (isDarkTheme) Color.White else Color.Black,
+                Box(
+                    Modifier.graphicsLayer {
+                        scaleX = rightButtonScale.value
+                        scaleY = rightButtonScale.value
+                    }
+                ) {
+                    ActionBarButton(
+                        onClick = { state.onRightClick?.invoke() },
+                        backdrop = chromeBackdrop,
+                        content = rightButton ?: {
+                            Text(
+                                text = "›",
+                                style = TextStyle(
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    color = if (isDarkTheme) Color.White else Color.Black,
+                                )
                             )
-                        )
-                    },
-                )
+                        },
+                    )
+                }
             }
         }
     }

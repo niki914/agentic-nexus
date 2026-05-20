@@ -50,7 +50,7 @@ fun HomeDemo() {
 
     LaunchedEffect(page) {
         if (page == 0) {
-            state.navigateBack(
+            state.navigateBack( // TODO 状态机
                 title = "首页",
                 showLeftButton = false,
                 showRightButton = true,
