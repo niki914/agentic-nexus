@@ -17,7 +17,6 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -63,10 +62,11 @@ fun LiquidScreen(
     SideEffect { state.setActionBarHeight(actionBarHeight) }
 
     Box(modifier.fillMaxSize()) {
-        // Layer 1: content as haze source
+        // Layer 1: content as haze source + backdrop capture source
         Box(
             Modifier
                 .fillMaxSize()
+                .layerBackdrop(chromeBackdrop)
                 .hazeSource(hazeState)
         ) {
             content()
@@ -83,11 +83,7 @@ fun LiquidScreen(
                 .hazeEffect(state = hazeState) {
                     tints = listOf(
                         HazeTint(
-                            if (isDarkTheme) {
-                                Color.Black.copy(alpha = 0.42f)
-                            } else {
-                                Color.White.copy(alpha = 0.55f)
-                            }
+                            if (isDarkTheme) Color.Black else Color.White
                         )
                     )
                     progressive = HazeProgressive.verticalGradient(
@@ -98,7 +94,7 @@ fun LiquidScreen(
         )
 
         // Layer 3: action bar foreground
-        Row(
+        Box(
             modifier = Modifier
                 .zIndex(3f)
                 .align(Alignment.TopCenter)
@@ -106,19 +102,62 @@ fun LiquidScreen(
                 .height(actionBarHeight)
                 .padding(top = topInset)
                 .padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
         ) {
+            // Title — always centered in the full bar width
+            val buttonDuration = 280
+            AnimatedContent(
+                targetState = state.title,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(horizontal = 48.dp),
+                transitionSpec = {
+                    when (state.titleDirection) {
+                        TitleDirection.Forward -> {
+                            (slideInHorizontally { it } + fadeIn(tween(buttonDuration))) togetherWith
+                                (slideOutHorizontally { -it } + fadeOut(tween(buttonDuration)))
+                        }
+                        TitleDirection.Back -> {
+                            (slideInHorizontally { -it } + fadeIn(tween(buttonDuration))) togetherWith
+                                (slideOutHorizontally { it } + fadeOut(tween(buttonDuration)))
+                        }
+                        TitleDirection.None -> {
+                            ContentTransform(
+                                targetContentEnter = EnterTransition.None,
+                                initialContentExit = ExitTransition.None,
+                                sizeTransform = SizeTransform(clip = false),
+                            )
+                        }
+                    }.using(SizeTransform(clip = false))
+                },
+                label = "title",
+            ) { title ->
+                Text(
+                    text = title,
+                    style = TextStyle(
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isDarkTheme) Color.White else Color.Black
+                    ),
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            // Left button
+            // TODO copy librepods
             AnimatedVisibility(
                 visible = state.showLeftButton,
-                enter = fadeIn(tween(300, easing = LinearOutSlowInEasing)) +
+                modifier = Modifier.align(Alignment.CenterStart),
+                enter = fadeIn(tween(buttonDuration, easing = LinearOutSlowInEasing)) +
                     scaleIn(
                         initialScale = 0f,
-                        animationSpec = tween(300, easing = LinearOutSlowInEasing)
+                        animationSpec = tween(buttonDuration, easing = LinearOutSlowInEasing)
                     ),
-                exit = fadeOut(tween(200, easing = LinearOutSlowInEasing)) +
+                exit = fadeOut(tween(buttonDuration, easing = LinearOutSlowInEasing)) +
                     scaleOut(
                         targetScale = 0f,
-                        animationSpec = tween(200, easing = LinearOutSlowInEasing)
+                        animationSpec = tween(buttonDuration, easing = LinearOutSlowInEasing)
                     ),
             ) {
                 ActionBarButton(
@@ -137,55 +176,19 @@ fun LiquidScreen(
                 )
             }
 
-            AnimatedContent(
-                targetState = state.title,
-                modifier = Modifier.weight(1f),
-                transitionSpec = {
-                    when (state.titleDirection) {
-                        TitleDirection.Forward -> {
-                            (slideInHorizontally { it } + fadeIn(tween(200))) togetherWith
-                                (slideOutHorizontally { -it } + fadeOut(tween(200)))
-                        }
-                        TitleDirection.Back -> {
-                            (slideInHorizontally { -it } + fadeIn(tween(200))) togetherWith
-                                (slideOutHorizontally { it } + fadeOut(tween(200)))
-                        }
-                        TitleDirection.None -> {
-                            ContentTransform(
-                                targetContentEnter = EnterTransition.None,
-                                initialContentExit = ExitTransition.None,
-                                sizeTransform = SizeTransform(clip = false),
-                            )
-                        }
-                    }.using(SizeTransform(clip = false))
-                },
-                label = "title",
-            ) { title ->
-                Text(
-                    text = title,
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                    style = TextStyle(
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (isDarkTheme) Color.White else Color.Black
-                    ),
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
+            // Right button
             AnimatedVisibility(
                 visible = state.showRightButton,
-                enter = fadeIn(tween(300, easing = LinearOutSlowInEasing)) +
+                modifier = Modifier.align(Alignment.CenterEnd),
+                enter = fadeIn(tween(buttonDuration, easing = LinearOutSlowInEasing)) +
                     scaleIn(
                         initialScale = 0f,
-                        animationSpec = tween(300, easing = LinearOutSlowInEasing)
+                        animationSpec = tween(buttonDuration, easing = LinearOutSlowInEasing)
                     ),
-                exit = fadeOut(tween(200, easing = LinearOutSlowInEasing)) +
+                exit = fadeOut(tween(buttonDuration, easing = LinearOutSlowInEasing)) +
                     scaleOut(
                         targetScale = 0f,
-                        animationSpec = tween(200, easing = LinearOutSlowInEasing)
+                        animationSpec = tween(buttonDuration, easing = LinearOutSlowInEasing)
                     ),
             ) {
                 ActionBarButton(
