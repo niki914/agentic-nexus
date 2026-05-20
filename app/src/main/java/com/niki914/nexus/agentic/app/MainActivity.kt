@@ -1,28 +1,24 @@
 package com.niki914.nexus.agentic.app
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
-import android.content.pm.PackageManager
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
+import com.niki914.nexus.agentic.app.ui.infra.HomeDemo
 import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.cb.BaseTheme
 import com.niki914.nexus.h.util.RootUtils
 import com.niki914.nexus.h.util.xlog
 import com.niki914.nexus.ipc.HostApp
+import com.niki914.nexus.ipc.XValues
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import com.niki914.nexus.ipc.XValues
-import com.niki914.nexus.agentic.app.liquid_example.LiquidExamplesScreen
 
 class MainActivity : ComponentActivity() {
     private val notificationPermissionLauncher = registerForActivityResult(
@@ -38,16 +34,9 @@ class MainActivity : ComponentActivity() {
 
         requestNotificationPermissionIfNeeded()
 
-        // TODO Use liquid glass~
-
         setContent {
-            BaseTheme { // 应用动态颜色主题
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    LiquidExamplesScreen()
-                }
+            BaseTheme {
+                HomeDemo()
             }
         }
     }
@@ -83,7 +72,10 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             return
         }
-        fun checkPermission() = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        fun checkPermission() = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
         if (checkPermission()) return
         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
