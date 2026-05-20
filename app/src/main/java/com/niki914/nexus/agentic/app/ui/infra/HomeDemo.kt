@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.chrisbanes.haze.hazeSource
 
 
 // --- LiquidScreen 用例: 首页 ↔ 详情 双页导航 ---
@@ -77,9 +78,11 @@ fun HomeDemo() {
         rightButton = {
             Text("☰", fontSize = 20.sp)
         },
-    ) {
+    ) { hazeState ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .hazeSource(hazeState),
             contentPadding = PaddingValues(top = state.actionBarHeight.value),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {

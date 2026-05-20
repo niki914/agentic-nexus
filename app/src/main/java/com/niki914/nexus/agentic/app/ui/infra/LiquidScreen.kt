@@ -39,10 +39,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 
 @Composable
@@ -51,7 +51,7 @@ fun LiquidScreen(
     modifier: Modifier = Modifier,
     leftButton: (@Composable () -> Unit)? = null,
     rightButton: (@Composable () -> Unit)? = null,
-    content: @Composable () -> Unit,
+    content: @Composable (hazeState: HazeState) -> Unit,
 ) {
     val isDarkTheme = isSystemInDarkTheme()
     val hazeState = rememberHazeState(blurEnabled = true)
@@ -62,15 +62,8 @@ fun LiquidScreen(
     SideEffect { state.setActionBarHeight(actionBarHeight) }
 
     Box(modifier.fillMaxSize()) {
-        // Layer 1: content as haze source + backdrop capture source
-        Box(
-            Modifier
-                .fillMaxSize()
-                .layerBackdrop(chromeBackdrop)
-                .hazeSource(hazeState)
-        ) {
-            content()
-        }
+        // Layer 1: page content owns the haze source placement.
+        content(hazeState)
 
         // Layer 2: action bar progressive blur background
         Box(
