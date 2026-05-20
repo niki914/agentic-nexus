@@ -6,6 +6,7 @@ import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -98,21 +99,35 @@ fun LiquidScreen(
         ) {
             // Title — always centered in the full bar width
             val buttonDuration = 280
+            val titleDuration = 320
             AnimatedContent(
                 targetState = state.title,
                 modifier = Modifier
                     .align(Alignment.Center)
+                    .fillMaxWidth()
                     .padding(horizontal = 48.dp),
                 transitionSpec = {
+                    val titleEasing = FastOutSlowInEasing
+                    val enterForward = slideInHorizontally(
+                        animationSpec = tween(titleDuration, easing = titleEasing),
+                        initialOffsetX = { fullWidth -> fullWidth }
+                    ) + fadeIn(tween(titleDuration, easing = titleEasing))
+                    val exitForward = slideOutHorizontally(
+                        animationSpec = tween(titleDuration, easing = titleEasing),
+                        targetOffsetX = { fullWidth -> -fullWidth }
+                    ) + fadeOut(tween(titleDuration, easing = titleEasing))
+                    val enterBack = slideInHorizontally(
+                        animationSpec = tween(titleDuration, easing = titleEasing),
+                        initialOffsetX = { fullWidth -> -fullWidth }
+                    ) + fadeIn(tween(titleDuration, easing = titleEasing))
+                    val exitBack = slideOutHorizontally(
+                        animationSpec = tween(titleDuration, easing = titleEasing),
+                        targetOffsetX = { fullWidth -> fullWidth }
+                    ) + fadeOut(tween(titleDuration, easing = titleEasing))
+
                     when (state.titleDirection) {
-                        TitleDirection.Forward -> {
-                            (slideInHorizontally { it } + fadeIn(tween(buttonDuration))) togetherWith
-                                (slideOutHorizontally { -it } + fadeOut(tween(buttonDuration)))
-                        }
-                        TitleDirection.Back -> {
-                            (slideInHorizontally { -it } + fadeIn(tween(buttonDuration))) togetherWith
-                                (slideOutHorizontally { it } + fadeOut(tween(buttonDuration)))
-                        }
+                        TitleDirection.Forward -> enterForward togetherWith exitForward
+                        TitleDirection.Back -> enterBack togetherWith exitBack
                         TitleDirection.None -> {
                             ContentTransform(
                                 targetContentEnter = EnterTransition.None,
@@ -126,6 +141,7 @@ fun LiquidScreen(
             ) { title ->
                 Text(
                     text = title,
+                    modifier = Modifier.fillMaxWidth(),
                     style = TextStyle(
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,

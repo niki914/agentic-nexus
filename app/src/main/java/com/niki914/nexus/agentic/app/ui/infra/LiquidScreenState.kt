@@ -29,6 +29,8 @@ class LiquidScreenState(
     internal var onLeftClick: (() -> Unit)? by mutableStateOf(initialOnLeftClick)
     internal var onRightClick: (() -> Unit)? by mutableStateOf(initialOnRightClick)
     internal var titleDirection by mutableStateOf(TitleDirection.None)
+    val navigationDirection: TitleDirection
+        get() = titleDirection
 
     internal fun setActionBarHeight(h: Dp) {
         _actionBarHeight.value = h
