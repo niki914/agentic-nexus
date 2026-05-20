@@ -7,6 +7,7 @@ import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
@@ -28,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.core.graphics.scale
-import androidx.compose.foundation.shape.RoundedCornerShape
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.colorControls
@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.nio.IntBuffer
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sign
 import kotlin.math.sin
@@ -53,7 +54,7 @@ fun AdaptiveLuminanceGlassContent() {
     val layer = rememberGraphicsLayer()
     val luminanceAnimation = remember { Animatable(if (isLightTheme) 1f else 0f) }
     val contentColorAnimation = remember {
-        Animatable(if (isLightTheme) Color.Black else Color.White)
+        Animatable(if (isLightTheme) Color.White else Color.Black)
     }
     LaunchedEffect(layer) {
         val buffer = IntBuffer.allocate(25)
@@ -77,7 +78,7 @@ fun AdaptiveLuminanceGlassContent() {
                 } / 25
             launch {
                 contentColorAnimation.animateTo(
-                    if (averageLuminance > 0.5f) Color.Black else Color.White,
+                    if (averageLuminance > 0.5f) Color.White else Color.Black,
                     tween(1000)
                 )
             }
@@ -101,18 +102,16 @@ fun AdaptiveLuminanceGlassContent() {
                     shape = { RoundedCornerShape(24f.dp) },
                     effects = {
                         val l = (luminanceAnimation.value * 2f - 1f).let { sign(it) * it * it }
+                        val contrastBoost = abs(l)
                         colorControls(
                             brightness =
-                                if (l > 0f) lerp(0.1f, 0.5f, l)
-                                else lerp(0.1f, -0.2f, -l),
-                            contrast =
-                                if (l > 0f) lerp(1f, 0f, l)
-                                else 1f,
-                            saturation = 1.5f
+                                if (l > 0f) lerp(-0.05f, -0.35f, l)
+                                else lerp(0.05f, 0.35f, -l),
+                            contrast = lerp(1.08f, 1.4f, contrastBoost),
+                            saturation = lerp(1.15f, 1.35f, contrastBoost)
                         )
                         blur(
-                            if (l > 0f) lerp(8f.dp.toPx(), 16f.dp.toPx(), l)
-                            else lerp(8f.dp.toPx(), 2f.dp.toPx(), -l)
+                            lerp(10f.dp.toPx(), 18f.dp.toPx(), contrastBoost)
                         )
                         lens(24f.dp.toPx(), size.minDimension / 2f, depthEffect = true)
                     },

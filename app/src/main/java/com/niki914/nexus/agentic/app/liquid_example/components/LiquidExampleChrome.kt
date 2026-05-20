@@ -3,11 +3,13 @@ package com.niki914.nexus.agentic.app.liquid_example.components
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -43,6 +45,7 @@ fun LiquidExampleChrome(
     val isDarkTheme = isSystemInDarkTheme()
     val hazeState = rememberHazeState(blurEnabled = true)
     val chromeBackdrop = rememberLayerBackdrop()
+    val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
     Box(modifier.fillMaxSize()) {
         // 内容层：作为 haze source，让顶栏可以模糊到滚动中的内容
@@ -60,12 +63,17 @@ fun LiquidExampleChrome(
                 .zIndex(2f)
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
-                .statusBarsPadding()
-                .height(56.dp)
+                .height(topInset + 56.dp)
                 .layerBackdrop(chromeBackdrop)
                 .hazeEffect(state = hazeState) {
                     tints = listOf(
-                        HazeTint(if (isDarkTheme) Color.Black.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.3f))
+                        HazeTint(
+                            if (isDarkTheme) {
+                                Color.Black.copy(alpha = 0.42f)
+                            } else {
+                                Color.White.copy(alpha = 0.55f)
+                            }
+                        )
                     )
                     progressive = HazeProgressive.verticalGradient(startIntensity = 1f, endIntensity = 0f)
                 }
@@ -77,8 +85,8 @@ fun LiquidExampleChrome(
                 .zIndex(3f)
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
-                .statusBarsPadding()
-                .height(56.dp)
+                .height(topInset + 56.dp)
+                .padding(top = topInset)
                 .padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

@@ -2,6 +2,7 @@ package com.niki914.nexus.agentic.app.liquid_example.destinations
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -14,6 +15,8 @@ import com.niki914.nexus.agentic.app.liquid_example.components.LiquidButton
 
 @Composable
 fun ButtonsContent() {
+    val textColor = if (isSystemInDarkTheme()) Color.White else Color.Black
+
     BackdropDemoScaffold { backdrop ->
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -25,7 +28,7 @@ fun ButtonsContent() {
             ) {
                 BasicText(
                     "Transparent Liquid Button",
-                    style = TextStyle(Color.Black, 15f.sp)
+                    style = TextStyle(textColor, 15f.sp)
                 )
             }
             LiquidButton(
@@ -35,7 +38,7 @@ fun ButtonsContent() {
             ) {
                 BasicText(
                     "Surface Liquid Button",
-                    style = TextStyle(Color.Black, 15f.sp)
+                    style = TextStyle(textColor, 15f.sp)
                 )
             }
             LiquidButton(

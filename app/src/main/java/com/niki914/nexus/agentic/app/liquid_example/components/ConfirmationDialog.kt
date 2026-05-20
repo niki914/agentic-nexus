@@ -136,8 +136,10 @@ fun ConfirmationDialog(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(
-                            modifier = Modifier.fillMaxWidth(0.9f),
-                            horizontalArrangement = Arrangement.spacedBy(24.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             StyledButton(
                                 onClick = onDismiss,

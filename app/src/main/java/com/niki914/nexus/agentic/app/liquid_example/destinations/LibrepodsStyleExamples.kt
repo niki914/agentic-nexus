@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -18,6 +19,8 @@ import com.niki914.nexus.agentic.app.liquid_example.components.StyledIconButton
 
 @Composable
 fun LibrepodsStyleExamples() {
+    val contentColor = if (isSystemInDarkTheme()) Color.White else Color.Black
+
     BackdropDemoScaffold { backdrop ->
         val showDialog = remember { mutableStateOf(false) }
 
@@ -30,12 +33,12 @@ fun LibrepodsStyleExamples() {
                 onClick = { showDialog.value = true },
                 backdrop = backdrop,
                 icon = "⚙",
-                iconTint = Color.White
+                iconTint = contentColor
             )
 
             Text(
                 text = "Show Confirmation Dialog",
-                color = Color.White,
+                color = contentColor,
                 modifier = Modifier.padding(top = 16.dp)
             )
         }
