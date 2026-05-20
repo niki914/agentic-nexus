@@ -138,7 +138,6 @@ fun LiquidScreen(
             }
 
             // Left button
-            // TODO copy librepods
             AnimatedVisibility(
                 visible = state.showLeftButton,
                 modifier = Modifier.align(Alignment.CenterStart),
