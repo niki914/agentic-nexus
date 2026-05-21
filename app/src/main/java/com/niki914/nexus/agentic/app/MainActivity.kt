@@ -10,7 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import com.niki914.nexus.agentic.app.ui.demo.HomeDemo
+import com.niki914.nexus.agentic.app.ui.nexus.NexusApp
 import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.cb.BaseTheme
 import com.niki914.nexus.h.util.RootUtils
@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             BaseTheme {
-                HomeDemo()
+                NexusApp()
             }
         }
     }

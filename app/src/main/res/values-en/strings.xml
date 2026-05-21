@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nexus_startup_headline">Nexus is ready</string>
+    <string name="nexus_startup_description">Finish the minimal onboarding first, confirm brand, provider, and base setup, then enter the main home screen.</string>
+    <string name="nexus_startup_continue">Start setup</string>
+
+    <string name="nexus_brand_check_title">Brand Check</string>
+    <string name="nexus_brand_check_headline">Choose the current host target</string>
+    <string name="nexus_brand_check_description">This page only confirms the navigation path for now and does not run real detection logic yet.</string>
+    <string name="nexus_brand_check_option_breeno">ColorOS / Breeno</string>
+    <string name="nexus_brand_check_option_breeno_summary">Used to verify the Breeno path and the following setup pages.</string>
+    <string name="nexus_brand_check_option_xiaoai">HyperOS / XiaoAi</string>
+    <string name="nexus_brand_check_option_xiaoai_summary">Used to verify the XiaoAi path and the following setup pages.</string>
+
+    <string name="nexus_provider_pick_title">Provider Pick</string>
+    <string name="nexus_provider_pick_headline">Choose an integration style</string>
+    <string name="nexus_provider_pick_description">This round is still a placeholder flow and only confirms the provider shape the user plans to use.</string>
+    <string name="nexus_provider_pick_option_openai">OpenAI Compatible</string>
+    <string name="nexus_provider_pick_option_openai_summary">Works for most providers compatible with the OpenAI API.</string>
+    <string name="nexus_provider_pick_option_anthropic">Anthropic Compatible</string>
+    <string name="nexus_provider_pick_option_anthropic_summary">Reserved as a placeholder entry for future Anthropic-style integrations.</string>
+    <string name="nexus_provider_pick_option_custom">Custom Integration</string>
+    <string name="nexus_provider_pick_option_custom_summary">Reserved for more flexible request pipelines and custom parameters.</string>
+
+    <string name="nexus_configure_title">Base Configure</string>
+    <string name="nexus_configure_headline">Configuration placeholder</string>
+    <string name="nexus_configure_description">A real form for endpoint, model, and prompt will be added here in a later iteration.</string>
+    <string name="nexus_configure_complete">Complete and continue</string>
+
+    <string name="nexus_done_headline">Ready to go</string>
+    <string name="nexus_done_description">The minimal onboarding flow is complete. Continue to the home screen to verify the navigation tree.</string>
+    <string name="nexus_done_enter_home">Enter home</string>
+
+    <string name="nexus_home_title">Nexus</string>
+    <string name="nexus_home_headline">Home placeholder</string>
+    <string name="nexus_home_description">The chat UI is not wired yet. This screen currently validates the main chrome and the settings entry.</string>
+
+    <string name="nexus_settings_title">Settings</string>
+    <string name="nexus_settings_menu_entry">Settings</string>
+    <string name="nexus_settings_section_model">Model and context</string>
+    <string name="nexus_settings_section_execution">Execution and rules</string>
+    <string name="nexus_settings_section_integration">Integrations and about</string>
+    <string name="nexus_settings_detail_placeholder">Content for this group will be filled in later. For now it only validates the settings tree navigation.</string>
+
+    <string name="nexus_settings_provider_model">Model provider</string>
+    <string name="nexus_settings_provider_model_summary">View and adjust provider source, default model, and related strategies.</string>
+    <string name="nexus_settings_network">Network</string>
+    <string name="nexus_settings_network_summary">Manage the minimal entry for endpoint, proxy, and request routing.</string>
+    <string name="nexus_settings_memory">Memory</string>
+    <string name="nexus_settings_memory_summary">Reserved for future session memory and context organization settings.</string>
+    <string name="nexus_settings_builtin_tools">Built-in tools</string>
+    <string name="nexus_settings_builtin_tools_summary">Review available built-in tools and their enablement state.</string>
+    <string name="nexus_settings_shell_rules">Shell rules</string>
+    <string name="nexus_settings_shell_rules_summary">Manage command execution constraints and default safety policies.</string>
+    <string name="nexus_settings_mcp">MCP</string>
+    <string name="nexus_settings_mcp_summary">Inspect external context services and tool bridge integration state.</string>
+    <string name="nexus_settings_custom_tools">Custom tools</string>
+    <string name="nexus_settings_custom_tools_summary">Manage user-defined tools and extension entry points.</string>
+    <string name="nexus_settings_about">About</string>
+    <string name="nexus_settings_about_summary">View version information, documentation, and support channels.</string>
+</resources>

@@ -2,4 +2,62 @@
 <resources>
     <string name="app_name">Nexus</string>
     <string name="xposed_desc">允许系统级语音助手换源自定义大模型供应商\n\n现支持: ColorOS 小布 | HyperOS 小爱同学</string>
+    <string name="nexus_startup_headline">Nexus 已准备就绪</string>
+    <string name="nexus_startup_description">先完成最小引导，确认品牌、供应商和基础配置，再进入正式主页。</string>
+    <string name="nexus_startup_continue">开始配置</string>
+
+    <string name="nexus_brand_check_title">品牌确认</string>
+    <string name="nexus_brand_check_headline">选择当前目标宿主</string>
+    <string name="nexus_brand_check_description">当前仅先确认导航路径，不在此页接真实探测逻辑。</string>
+    <string name="nexus_brand_check_option_breeno">ColorOS / 小布</string>
+    <string name="nexus_brand_check_option_breeno_summary">用于验证 Breeno 路径和后续配置页面。</string>
+    <string name="nexus_brand_check_option_xiaoai">HyperOS / 小爱同学</string>
+    <string name="nexus_brand_check_option_xiaoai_summary">用于验证 XiaoAi 路径和后续配置页面。</string>
+
+    <string name="nexus_provider_pick_title">供应商选择</string>
+    <string name="nexus_provider_pick_headline">选择接入方式</string>
+    <string name="nexus_provider_pick_description">本轮仍是占位流程，只确认用户准备采用哪种模型接入形态。</string>
+    <string name="nexus_provider_pick_option_openai">OpenAI Compatible</string>
+    <string name="nexus_provider_pick_option_openai_summary">适用于大多数兼容 OpenAI API 的供应商。</string>
+    <string name="nexus_provider_pick_option_anthropic">Anthropic Compatible</string>
+    <string name="nexus_provider_pick_option_anthropic_summary">预留给未来 Anthropic 风格接入的占位入口。</string>
+    <string name="nexus_provider_pick_option_custom">自定义接入</string>
+    <string name="nexus_provider_pick_option_custom_summary">保留给更灵活的请求链路和自定义参数。</string>
+
+    <string name="nexus_configure_title">基础配置</string>
+    <string name="nexus_configure_headline">配置入口占位</string>
+    <string name="nexus_configure_description">后续会在这里接入真实的 endpoint、model 和 prompt 配置表单。</string>
+    <string name="nexus_configure_complete">完成并继续</string>
+
+    <string name="nexus_done_headline">准备完成</string>
+    <string name="nexus_done_description">最小引导流程已经走通，接下来进入主页继续验证导航树。</string>
+    <string name="nexus_done_enter_home">进入主页</string>
+
+    <string name="nexus_home_title">Nexus</string>
+    <string name="nexus_home_headline">主页占位</string>
+    <string name="nexus_home_description">聊天界面暂未接入，本页仅用于承接正式 chrome 和设置入口。</string>
+
+    <string name="nexus_settings_title">设置</string>
+    <string name="nexus_settings_menu_entry">设置</string>
+    <string name="nexus_settings_section_model">模型与上下文</string>
+    <string name="nexus_settings_section_execution">执行与规则</string>
+    <string name="nexus_settings_section_integration">集成与关于</string>
+    <string name="nexus_settings_detail_placeholder">当前分组内容将在后续迭代中补齐，这里先用于验证设置树导航。</string>
+
+    <string name="nexus_settings_provider_model">模型供应商</string>
+    <string name="nexus_settings_provider_model_summary">查看和调整模型来源、默认模型与相关策略。</string>
+    <string name="nexus_settings_network">网络</string>
+    <string name="nexus_settings_network_summary">管理 endpoint、代理和请求链路的最小入口。</string>
+    <string name="nexus_settings_memory">记忆</string>
+    <string name="nexus_settings_memory_summary">预留给会话记忆和上下文组织的后续配置。</string>
+    <string name="nexus_settings_builtin_tools">内置工具</string>
+    <string name="nexus_settings_builtin_tools_summary">查看当前可用的内置工具及其启用状态。</string>
+    <string name="nexus_settings_shell_rules">Shell 规则</string>
+    <string name="nexus_settings_shell_rules_summary">管理命令执行约束和默认安全策略。</string>
+    <string name="nexus_settings_mcp">MCP</string>
+    <string name="nexus_settings_mcp_summary">查看外部上下文服务和工具桥接的接入状态。</string>
+    <string name="nexus_settings_custom_tools">自定义工具</string>
+    <string name="nexus_settings_custom_tools_summary">管理用户自定义工具和扩展入口。</string>
+    <string name="nexus_settings_about">关于</string>
+    <string name="nexus_settings_about_summary">查看版本信息、说明文档和后续支持渠道。</string>
 </resources>
