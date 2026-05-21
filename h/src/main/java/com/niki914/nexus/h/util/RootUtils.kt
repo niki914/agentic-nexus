@@ -1,16 +1,10 @@
 package com.niki914.nexus.h.util
 
-import android.os.Build
 import java.io.BufferedReader
 import java.io.DataOutputStream
 import java.io.InputStreamReader
 
 object RootUtils {
-    enum class OsFamily {
-        ColorOS,
-        HyperOS,
-        Unknown
-    }
 
     fun runCommand(command: String): String? {
         var process: Process? = null
@@ -52,19 +46,6 @@ object RootUtils {
         val regex = Regex("versionCode=(\\d+)")
         val matchResult = regex.find(output)
         return matchResult?.groupValues?.get(1)?.toLongOrNull()
-    }
-
-    fun getOsFamily(): OsFamily {
-        val manufacturer = Build.MANUFACTURER.trim().lowercase()
-        val o = setOf("oppo", "oneplus", "realme")
-        val result = when {
-            manufacturer in o -> OsFamily.ColorOS
-            manufacturer.contains("xiaomi") -> OsFamily.HyperOS
-            else -> OsFamily.Unknown
-        }
-
-        xlog("RootUtils.getOsFamily result=$result")
-        return result
     }
 
     private fun getSystemProperty(key: String): String? {
