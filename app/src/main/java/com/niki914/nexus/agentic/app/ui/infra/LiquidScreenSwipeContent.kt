@@ -32,19 +32,19 @@ fun <T> LiquidScreenSwipeContent(
         transitionSpec = {
             val enterForward = slideInHorizontally(
                 animationSpec = tween(duration, easing = easing),
-                initialOffsetX = { fullWidth -> -fullWidth }
+                initialOffsetX = { fullWidth -> fullWidth }
             ) + fadeIn(animationSpec = tween(duration, easing = easing))
             val exitForward = slideOutHorizontally(
                 animationSpec = tween(duration, easing = easing),
-                targetOffsetX = { fullWidth -> fullWidth }
+                targetOffsetX = { fullWidth -> -fullWidth }
             ) + fadeOut(animationSpec = tween(duration, easing = easing))
             val enterBack = slideInHorizontally(
                 animationSpec = tween(duration, easing = easing),
-                initialOffsetX = { fullWidth -> fullWidth }
+                initialOffsetX = { fullWidth -> -fullWidth }
             ) + fadeIn(animationSpec = tween(duration, easing = easing))
             val exitBack = slideOutHorizontally(
                 animationSpec = tween(duration, easing = easing),
-                targetOffsetX = { fullWidth -> -fullWidth }
+                targetOffsetX = { fullWidth -> fullWidth }
             ) + fadeOut(animationSpec = tween(duration, easing = easing))
 
             when (direction) {
