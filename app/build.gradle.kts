@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.niki914.nexus.agentic"
+    namespace = "com.niki914.nexus.agentic.app"
     compileSdk = 36
 
     defaultConfig {
