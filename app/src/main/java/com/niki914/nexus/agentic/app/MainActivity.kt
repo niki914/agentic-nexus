@@ -14,6 +14,7 @@ import com.niki914.nexus.h.util.xlog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+// tag:niki914 | tag:nexus-x-log | message:niki914 | message:nexus-x-log
 class MainActivity : ComponentActivity() {
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()

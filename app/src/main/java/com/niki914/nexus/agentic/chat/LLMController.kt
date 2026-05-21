@@ -14,8 +14,9 @@ import com.niki914.s3ss10n.SessionProtocols
 import com.niki914.s3ss10n.ToolCallKind
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
 
 object LLMController {
@@ -70,28 +71,29 @@ object LLMController {
 
     suspend fun snapshot(): LlmRuntimeSnapshot? = runtimeState?.snapshot
 
-    fun stream(query: String): Flow<LlmStreamEvent> = flow {
+    fun stream(query: String): Flow<LlmStreamEvent> = channelFlow {
         val state = refreshIfPossibleFromHookContext() ?: runtimeState
         if (state == null) {
-            emit(LlmStreamEvent.Error("LLM runtime is not ready"))
-            return@flow
+            send(LlmStreamEvent.Error("LLM runtime is not ready"))
+            return@channelFlow
         }
 
         val accumulator = StringBuilder()
         val startedAtMs = System.currentTimeMillis()
+        val sink: SendChannel<LlmStreamEvent> = this
         try {
-            state.session.send(query).collect { event ->
+            state.session.send(query) { event -> // TODO 代 session 修复后使用 flow api
                 mapSessionEvent(
                     event = event,
                     accumulator = accumulator,
                     startedAtMs = startedAtMs,
-                )?.let { emit(it) }
+                )?.let { sink.send(it) }
             }
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) {
                 throw throwable
             }
-            emit(
+            send(
                 LlmStreamEvent.Error(
                     message = throwable.message ?: "LLM stream failed",
                     throwable = throwable,
