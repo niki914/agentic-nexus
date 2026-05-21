@@ -16,7 +16,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.niki914.nexus.agentic.app.liquid_example.components.LiquidButton
 
 @Composable
-fun MaterialTintLiquidButton(
+fun MaterialTintLiquidButton( // TODO 更合理的大小 + Capsule
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -32,7 +32,7 @@ fun MaterialTintLiquidButton(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            .layerBackdrop(backdrop)
+            // .layerBackdrop(backdrop)
             .then(modifier),
         contentAlignment = Alignment.Center,
     ) {
