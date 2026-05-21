@@ -1,5 +1,6 @@
 package com.niki914.nexus.h.util
 
+import android.os.Build
 import java.io.BufferedReader
 import java.io.DataOutputStream
 import java.io.InputStreamReader
@@ -54,32 +55,11 @@ object RootUtils {
     }
 
     fun getOsFamily(): OsFamily {
-        val properties = mapOf(
-            "ro.mi.os.version.name" to getSystemProperty("ro.mi.os.version.name"),
-            "ro.miui.ui.version.name" to getSystemProperty("ro.miui.ui.version.name"),
-            "ro.build.version.oplusrom.display" to getSystemProperty("ro.build.version.oplusrom.display"),
-            "ro.build.version.oplusrom" to getSystemProperty("ro.build.version.oplusrom"),
-            "ro.build.version.opporom" to getSystemProperty("ro.build.version.opporom"),
-            "ro.product.brand" to getSystemProperty("ro.product.brand"),
-            "ro.product.manufacturer" to getSystemProperty("ro.product.manufacturer"),
-            "ro.product.system.brand" to getSystemProperty("ro.product.system.brand"),
-            "ro.product.system.manufacturer" to getSystemProperty("ro.product.system.manufacturer")
-        ).mapValues { (_, value) -> value.normalizeSystemProperty() }
-
-        xlog(
-            "RootUtils.getOsFamily props=${
-            properties.entries.joinToString { (key, value) -> "$key=$value" }
-        }")
-
-        val allValues = properties.values.joinToString(" ")
-
+        val manufacturer = Build.MANUFACTURER.trim().lowercase()
+        val o = setOf("oppo", "oneplus", "realme")
         val result = when {
-            !properties["ro.mi.os.version.name"].isNullOrEmpty() -> OsFamily.HyperOS
-            !properties["ro.build.version.oplusrom.display"].isNullOrEmpty() -> OsFamily.ColorOS
-            !properties["ro.build.version.oplusrom"].isNullOrEmpty() -> OsFamily.ColorOS
-            !properties["ro.build.version.opporom"].isNullOrEmpty() -> OsFamily.ColorOS
-            "hyperos" in allValues || "miui" in allValues || "xiaomi" in allValues || "redmi" in allValues -> OsFamily.HyperOS
-            "coloros" in allValues || "oplus" in allValues || "opporom" in allValues || "oppo" in allValues || "realme" in allValues || "oneplus" in allValues -> OsFamily.ColorOS
+            manufacturer in o -> OsFamily.ColorOS
+            manufacturer.contains("xiaomi") -> OsFamily.HyperOS
             else -> OsFamily.Unknown
         }
 
