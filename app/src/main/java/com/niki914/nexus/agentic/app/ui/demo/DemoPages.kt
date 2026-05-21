@@ -1,4 +1,4 @@
-package com.niki914.nexus.agentic.app.ui.infra.demo
+package com.niki914.nexus.agentic.app.ui.demo
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,10 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.niki914.nexus.agentic.app.ui.infra.nav.HomePage
-import com.niki914.nexus.agentic.app.ui.infra.nav.MorePage
-import com.niki914.nexus.agentic.app.ui.infra.nav.SettingsGroupPage
-import com.niki914.nexus.agentic.app.ui.infra.nav.SubSettingPage
+import com.niki914.nexus.agentic.app.ui.demo.nav.HomePage
+import com.niki914.nexus.agentic.app.ui.demo.nav.MorePage
+import com.niki914.nexus.agentic.app.ui.demo.nav.SettingsGroupPage
+import com.niki914.nexus.agentic.app.ui.demo.nav.SubSettingPage
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource

@@ -1,4 +1,6 @@
-package com.niki914.nexus.agentic.app.ui.infra.nav
+package com.niki914.nexus.agentic.app.ui.demo.nav
+
+import com.niki914.nexus.agentic.app.ui.infra.nav.Page
 
 sealed interface DemoPage : Page {
     val title: String

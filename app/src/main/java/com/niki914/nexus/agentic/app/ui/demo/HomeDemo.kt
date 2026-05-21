@@ -1,4 +1,4 @@
-package com.niki914.nexus.agentic.app.ui.infra
+package com.niki914.nexus.agentic.app.ui.demo
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
@@ -19,18 +19,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.niki914.nexus.agentic.app.ui.infra.demo.HomePageContent
-import com.niki914.nexus.agentic.app.ui.infra.demo.MorePageContent
-import com.niki914.nexus.agentic.app.ui.infra.demo.SettingsGroupPageContent
-import com.niki914.nexus.agentic.app.ui.infra.demo.SubSettingPageContent
-import com.niki914.nexus.agentic.app.ui.infra.nav.DemoPage
-import com.niki914.nexus.agentic.app.ui.infra.nav.HomePage
+import com.niki914.nexus.agentic.app.ui.demo.nav.DemoPage
+import com.niki914.nexus.agentic.app.ui.demo.nav.HomePage
+import com.niki914.nexus.agentic.app.ui.infra.LiquidScreen
+import com.niki914.nexus.agentic.app.ui.infra.LiquidScreenSwipeContent
+import com.niki914.nexus.agentic.app.ui.infra.TitleDirection
 import com.niki914.nexus.agentic.app.ui.infra.nav.LocalNavigationEntry
-import com.niki914.nexus.agentic.app.ui.infra.nav.MorePage
+import com.niki914.nexus.agentic.app.ui.demo.nav.MorePage
 import com.niki914.nexus.agentic.app.ui.infra.nav.NavigationEntry
-import com.niki914.nexus.agentic.app.ui.infra.nav.SettingsGroupPage
-import com.niki914.nexus.agentic.app.ui.infra.nav.SubSettingPage
+import com.niki914.nexus.agentic.app.ui.demo.nav.SettingsGroupPage
+import com.niki914.nexus.agentic.app.ui.demo.nav.SubSettingPage
 import com.niki914.nexus.agentic.app.ui.infra.nav.rememberNavigationController
+import com.niki914.nexus.agentic.app.ui.infra.rememberLiquidScreenState
 import dev.chrisbanes.haze.HazeState
 
 @Composable
@@ -39,11 +39,12 @@ fun HomeDemo() {
     val navigator = controller.navigator
     val currentEntry = controller.currentEntry
     val currentPage = currentEntry.page
-    val screenState = rememberLiquidScreenState(
-        title = currentPage.title,
-        showLeftButton = currentPage.showLeftButton,
-        showRightButton = currentPage.showRightButton,
-    )
+    val screenState =
+        rememberLiquidScreenState(
+            title = currentPage.title,
+            showLeftButton = currentPage.showLeftButton,
+            showRightButton = currentPage.showRightButton,
+        )
     var homeMenuExpanded by remember { mutableStateOf(false) }
 
     fun closeHomeMenu() {

@@ -1,4 +1,4 @@
-package com.niki914.nexus.agentic.app.ui.infra.demo
+package com.niki914.nexus.agentic.app.ui.demo
 
 import androidx.lifecycle.viewModelScope
 import com.niki914.nexus.cb.ComposeMVIViewModel

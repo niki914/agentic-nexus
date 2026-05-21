@@ -225,7 +225,7 @@ fun LiquidScreen(
                         backdrop = chromeBackdrop,
                         content = rightButton ?: {
                             Text(
-                                text = "›",
+                                text = "›", // TODO 去掉不预置
                                 style = TextStyle(
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Normal,
