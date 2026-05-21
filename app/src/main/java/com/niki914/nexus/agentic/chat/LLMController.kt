@@ -25,7 +25,7 @@ object LLMController {
                 systemPrompt = localSettings.prompt.ifBlank { "You are a helpful assistant." }
             }
             val sb = StringBuilder()
-            send(query).collect { event ->
+            send(query).collect { event -> // TODO <---- 使用此 flow API
 
             }
             send(query) { event -> // TODO Session 已经支持 flow
