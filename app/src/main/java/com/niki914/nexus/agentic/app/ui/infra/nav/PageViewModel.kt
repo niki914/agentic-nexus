@@ -6,7 +6,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 
-val LocalNavigationEntry = staticCompositionLocalOf<NavigationEntry> {
+val LocalNavigationEntry = staticCompositionLocalOf<NavigationEntry<out Page>> {
     error("No NavigationEntry provided")
 }
 

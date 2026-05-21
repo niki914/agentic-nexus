@@ -35,7 +35,7 @@ import dev.chrisbanes.haze.HazeState
 
 @Composable
 fun HomeDemo() {
-    val controller = rememberNavigationController(initialPage = HomePage)
+    val controller = rememberNavigationController<DemoPage>(initialPage = HomePage)
     val navigator = controller.navigator
     val currentEntry = controller.currentEntry
     val currentPage = currentEntry.page
@@ -154,7 +154,7 @@ fun HomeDemo() {
 
 @Composable
 private fun DemoPageContent(
-    entry: NavigationEntry,
+    entry: NavigationEntry<DemoPage>,
     topPadding: Dp,
     hazeState: HazeState,
     onPush: (DemoPage) -> Unit,

@@ -15,15 +15,15 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.niki914.nexus.agentic.app.ui.infra.TitleDirection
 
-data class NavigationEntry(
+data class NavigationEntry<P : Page>(
     val id: String,
-    val page: DemoPage,
+    val page: P,
     override val viewModelStore: ViewModelStore = ViewModelStore(),
 ) : ViewModelStoreOwner
 
 @Stable
-class NavigationController(
-    initialPage: DemoPage,
+class NavigationController<P : Page>(
+    initialPage: P,
     private val debounceMillis: Long = 300L,
 ) {
     private var nextEntryIndex by mutableIntStateOf(0)
@@ -33,18 +33,18 @@ class NavigationController(
     var lastDirection by mutableStateOf(TitleDirection.None)
         private set
 
-    val stack: List<NavigationEntry>
+    val stack: List<NavigationEntry<P>>
         get() = entryStack
 
-    val currentEntry: NavigationEntry
+    val currentEntry: NavigationEntry<P>
         get() = entryStack.last()
 
     val canGoBack: Boolean
         get() = entryStack.size > 1
 
-    val navigator: DemoNavigator = DemoNavigator(this)
+    val navigator: Navigator<P> = Navigator(this)
 
-    fun push(page: DemoPage) {
+    fun push(page: P) {
         if (!tryConsumeNavigationDebounce()) return
         entryStack += createEntry(page)
         lastDirection = TitleDirection.Forward
@@ -77,7 +77,7 @@ class NavigationController(
         return true
     }
 
-    private fun createEntry(page: DemoPage): NavigationEntry {
+    private fun createEntry(page: P): NavigationEntry<P> {
         nextEntryIndex += 1
         return NavigationEntry(
             id = "${page.routeKey}#$nextEntryIndex",
@@ -87,7 +87,7 @@ class NavigationController(
 }
 
 class NavigationControllerHolderViewModel : ViewModel() {
-    var controller: NavigationController? = null
+    var controller: NavigationController<*>? = null
 
     override fun onCleared() {
         controller?.clear()
@@ -96,12 +96,13 @@ class NavigationControllerHolderViewModel : ViewModel() {
 }
 
 @Composable
-fun rememberNavigationController(
-    initialPage: DemoPage,
-): NavigationController {
+fun <P : Page> rememberNavigationController(
+    initialPage: P,
+): NavigationController<P> {
     val holder = viewModel<NavigationControllerHolderViewModel>()
     return remember(holder, initialPage.routeKey) {
-        holder.controller ?: NavigationController(initialPage = initialPage).also {
+        @Suppress("UNCHECKED_CAST")
+        (holder.controller as? NavigationController<P>) ?: NavigationController(initialPage = initialPage).also {
             holder.controller = it
         }
     }

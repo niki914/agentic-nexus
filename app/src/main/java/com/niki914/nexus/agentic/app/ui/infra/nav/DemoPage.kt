@@ -1,9 +1,6 @@
 package com.niki914.nexus.agentic.app.ui.infra.nav
 
-import androidx.compose.runtime.Stable
-
-sealed interface DemoPage {
-    val routeKey: String
+sealed interface DemoPage : Page {
     val title: String
     val showLeftButton: Boolean
     val showRightButton: Boolean
@@ -39,19 +36,6 @@ data class SubSettingPage(
     override val title: String = "Sub Setting ${settingId.toDisplaySuffix()}"
     override val showLeftButton: Boolean = true
     override val showRightButton: Boolean = false
-}
-
-@Stable
-class DemoNavigator internal constructor(
-    private val controller: NavigationController,
-) {
-    fun push(page: DemoPage) {
-        controller.push(page)
-    }
-
-    fun pop(): Boolean {
-        return controller.pop()
-    }
 }
 
 private fun String.toDisplaySuffix(): String {
