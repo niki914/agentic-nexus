@@ -1,5 +1,6 @@
 package com.niki914.nexus.agentic.app.ui.infra.nav
 
+import android.os.SystemClock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -23,9 +24,11 @@ data class NavigationEntry(
 @Stable
 class NavigationController(
     initialPage: DemoPage,
+    private val debounceMillis: Long = 300L,
 ) {
     private var nextEntryIndex by mutableIntStateOf(0)
     private val entryStack = mutableStateListOf(createEntry(initialPage))
+    private var lastNavigationAtMillis: Long? = null
 
     var lastDirection by mutableStateOf(TitleDirection.None)
         private set
@@ -42,12 +45,14 @@ class NavigationController(
     val navigator: DemoNavigator = DemoNavigator(this)
 
     fun push(page: DemoPage) {
+        if (!tryConsumeNavigationDebounce()) return
         entryStack += createEntry(page)
         lastDirection = TitleDirection.Forward
     }
 
     fun pop(): Boolean {
         if (!canGoBack) return false
+        if (!tryConsumeNavigationDebounce()) return false
         val removedEntry = entryStack.removeAt(entryStack.lastIndex)
         removedEntry.viewModelStore.clear()
         lastDirection = TitleDirection.Back
@@ -58,6 +63,18 @@ class NavigationController(
         entryStack.forEach { entry -> entry.viewModelStore.clear() }
         entryStack.clear()
         lastDirection = TitleDirection.None
+    }
+
+    private fun tryConsumeNavigationDebounce(): Boolean {
+        if (debounceMillis <= 0L) return true
+
+        val now = SystemClock.elapsedRealtime()
+        val previousNavigationAtMillis = lastNavigationAtMillis
+        if (previousNavigationAtMillis != null && now - previousNavigationAtMillis < debounceMillis) {
+            return false
+        }
+        lastNavigationAtMillis = now
+        return true
     }
 
     private fun createEntry(page: DemoPage): NavigationEntry {
