@@ -7,6 +7,9 @@ import com.niki914.nexus.agentic.chat.HiddenTurnSummary
 import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.TurnMode
+import com.niki914.nexus.agentic.chat.chunk
+import com.niki914.nexus.agentic.chat.isFinal
+import com.niki914.nexus.agentic.chat.isFirst
 import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.CaptureInputHook
 import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.BlockNativeCardHook
 import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.SuppressCleanupHook
@@ -114,10 +117,8 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     }
 
     override suspend fun dispatchQueryToLLM(turnId: Long, roomId: String, query: String) {
-        LLMController.stream(query).collect { (chunk, pos) ->
-            val isFirst = pos == LLMController.Pos.First
-            val isFinal = pos == LLMController.Pos.Final
-            renderStreamCard(turnId, roomId, chunk, isFirst, isFinal)
+        LLMController.stream(query).collect { event ->
+            renderStreamCard(turnId, roomId, event.chunk, event.isFirst, event.isFinal)
         }
     }
 

@@ -1,4 +1,4 @@
-package com.niki914.nexus.agentic.chat.v2
+package com.niki914.nexus.agentic.chat.agentic
 
 data class PromptComposeResult(
     val finalSystemPrompt: String,

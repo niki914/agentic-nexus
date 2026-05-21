@@ -1,0 +1,36 @@
+package com.niki914.nexus.agentic.chat.v2
+
+import com.niki914.nexus.agentic.chat.LlmStreamEvent
+import com.niki914.nexus.agentic.chat.ToolCallKind
+import com.niki914.nexus.agentic.chat.ToolCallStatus
+import com.niki914.nexus.agentic.chat.agentic.ToolEventFormatter
+import com.niki914.nexus.agentic.chat.agentic.ToolRenderMode
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class ToolEventFormatterTest {
+
+    @Test
+    fun format_onlyFormatsToolEventsAndHonorsRenderMode() {
+        val running = LlmStreamEvent.ToolRunning(
+            ToolCallStatus(
+                callId = "call-1",
+                name = "search",
+                label = "Search",
+                kind = ToolCallKind.Local
+            )
+        )
+
+        val append = ToolEventFormatter.format(running, ToolRenderMode.AppendOnly)
+        val replace = ToolEventFormatter.format(running, ToolRenderMode.ReplaceStatus)
+
+        assertEquals("Calling tool: Search", append?.text)
+        assertFalse(append?.replacePreviousStatus ?: true)
+        assertEquals("Calling tool: Search", replace?.text)
+        assertTrue(replace?.replacePreviousStatus ?: false)
+        assertNull(ToolEventFormatter.format(LlmStreamEvent.Completed("done"), ToolRenderMode.AppendOnly))
+    }
+}

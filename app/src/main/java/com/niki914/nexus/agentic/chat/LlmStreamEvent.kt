@@ -1,4 +1,18 @@
-package com.niki914.nexus.agentic.chat.v2
+package com.niki914.nexus.agentic.chat
+
+val LlmStreamEvent.isFirst
+    get() = this is LlmStreamEvent.RoundStarted
+val LlmStreamEvent.isFinal
+    get() = this is LlmStreamEvent.Completed
+val LlmStreamEvent.chunk
+    get() = when (val event = this) {
+        is LlmStreamEvent.Error -> "\n\n${event.message}"
+        is LlmStreamEvent.TextDelta -> event.delta
+        is LlmStreamEvent.ToolFailed -> "\n[tool-failed]"
+        is LlmStreamEvent.ToolRunning -> "\n[tool-running]"
+        is LlmStreamEvent.ToolSucceeded -> "\n[tool-succeed]"
+        else -> ""
+    }
 
 sealed interface LlmStreamEvent {
     data object RoundStarted : LlmStreamEvent
@@ -6,7 +20,6 @@ sealed interface LlmStreamEvent {
     data class TextDelta(
         val delta: String,
         val fullText: String,
-        // TODO 增加 char/s 字符每秒指标，因为 Breeno 业务可以调整动画速度，我们可以通过这个动态控制动画速度，避免动画过快或过慢
         val charsPerSecond: Float? = null,
     ) : LlmStreamEvent
 

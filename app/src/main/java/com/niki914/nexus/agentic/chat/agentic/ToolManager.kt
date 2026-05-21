@@ -1,0 +1,157 @@
+package com.niki914.nexus.agentic.chat.agentic
+
+import android.content.Context
+import com.niki914.nexus.agentic.chat.LocalToolDefinition
+import com.niki914.nexus.agentic.chat.LocalToolParameter
+import com.niki914.nexus.agentic.chat.McpServerDefinition
+import com.niki914.nexus.agentic.chat.ResolvedTools
+import com.niki914.nexus.agentic.chat.ToolParameterType
+import com.niki914.nexus.agentic.chat.ToolSource
+import com.niki914.nexus.agentic.mod.LocalSettings
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
+
+class ToolManager {
+
+    suspend fun resolve(
+        context: Context,
+        settings: LocalSettings,
+    ): ResolvedTools = resolve(settings)
+
+    fun resolve(settings: LocalSettings): ResolvedTools {
+        val builtinTools = buildBuiltinTools(settings)
+        val customTools = buildCustomTools(settings)
+        val mcpServers = buildMcpServers(settings)
+
+        return ResolvedTools(
+            builtinTools = builtinTools,
+            customTools = customTools,
+            mcpServers = mcpServers,
+            promptLines = buildPromptLines(
+                builtinTools = builtinTools,
+                customTools = customTools,
+                mcpServers = mcpServers,
+            ),
+        )
+    }
+
+    private fun buildBuiltinTools(settings: LocalSettings): List<LocalToolDefinition> {
+        return settings.builtinToolFlags
+            .orEmpty()
+            .mapNotNull { (name, value) ->
+                val enabled = when (value) {
+                    is JsonPrimitive -> value.booleanOrNull ?: false
+                    is JsonObject -> value.boolean("enabled", default = true)
+                    else -> false
+                }
+                if (!enabled) {
+                    null
+                } else {
+                    LocalToolDefinition(
+                        name = name,
+                        description = (value as? JsonObject)?.string("description")
+                            ?: "Builtin tool: $name",
+                        source = ToolSource.Builtin,
+                    )
+                }
+            }
+            .sortedBy { it.name }
+    }
+
+    private fun buildCustomTools(settings: LocalSettings): List<LocalToolDefinition> {
+        return settings.customTools
+            .orEmptyObjects()
+            .mapNotNull { obj ->
+                val name = obj.string("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                LocalToolDefinition(
+                    name = name,
+                    description = obj.string("description"),
+                    parameters = obj.array("parameters").orEmptyObjects()
+                        .mapNotNull(::parseParameter),
+                    source = ToolSource.UserDefined,
+                    rawInputSchemaJson = obj.string("raw_input_schema").ifBlank { null },
+                )
+            }
+    }
+
+    private fun parseParameter(obj: JsonObject): LocalToolParameter? {
+        val name = obj.string("name").takeIf { it.isNotBlank() } ?: return null
+        return LocalToolParameter(
+            name = name,
+            description = obj.string("description"),
+            required = obj.boolean("required"),
+            type = obj.string("type").toToolParameterType(),
+        )
+    }
+
+    private fun buildMcpServers(settings: LocalSettings): List<McpServerDefinition> {
+        return settings.mcpServers
+            .orEmptyObjects()
+            .mapNotNull { obj ->
+                val name = obj.string("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val url = obj.string("url").ifBlank {
+                    obj.obj("transport")?.string("url").orEmpty()
+                }
+                if (url.isBlank()) {
+                    null
+                } else {
+                    McpServerDefinition.Http(
+                        name = name,
+                        url = url,
+                        enabled = obj.boolean("enabled", default = true),
+                        headers = obj.obj("headers")
+                            ?.mapValues { (_, value) -> value.jsonPrimitive.contentOrNull.orEmpty() }
+                            ?: emptyMap(),
+                    )
+                }
+            }
+    }
+
+    fun buildPromptLines(
+        builtinTools: List<LocalToolDefinition>,
+        customTools: List<LocalToolDefinition>,
+        mcpServers: List<McpServerDefinition>,
+    ): List<String> {
+        val lines = mutableListOf<String>()
+
+        val enabledMcpServers = mcpServers.filter { it.enabled }
+        if (enabledMcpServers.isNotEmpty()) {
+            val serverNames = enabledMcpServers.joinToString { it.name }
+            lines += "Available MCP servers: $serverNames"
+        }
+
+        return lines
+    }
+
+    private fun String.toToolParameterType(): ToolParameterType {
+        return when (lowercase()) {
+            "int", "integer" -> ToolParameterType.Int
+            "boolean", "bool" -> ToolParameterType.Boolean
+            "number", "float", "double" -> ToolParameterType.Number
+            "object" -> ToolParameterType.Object
+            "array" -> ToolParameterType.Array
+            else -> ToolParameterType.String
+        }
+    }
+
+    private fun JsonObject?.orEmpty(): JsonObject = this ?: JsonObject(emptyMap())
+
+    private fun JsonArray?.orEmptyObjects(): List<JsonObject> =
+        this?.mapNotNull { it as? JsonObject } ?: emptyList()
+
+    private fun JsonObject.string(key: String): String =
+        (this[key] as? JsonPrimitive)?.contentOrNull.orEmpty()
+
+    private fun JsonObject.boolean(key: String, default: Boolean = false): Boolean =
+        (this[key] as? JsonPrimitive)?.booleanOrNull ?: default
+
+    private fun JsonObject.array(key: String): JsonArray? =
+        this[key] as? JsonArray
+
+    private fun JsonObject.obj(key: String): JsonObject? =
+        this[key] as? JsonObject
+}
