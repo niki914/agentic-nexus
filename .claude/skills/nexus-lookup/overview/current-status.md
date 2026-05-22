@@ -1,31 +1,24 @@
 # Current Status
 
-## 目的
+## 已落地能力
 
-本文件后续用于回答“项目现在到底做到哪一步了”。它必须明确区分已落地、进行中、提案中三类内容。
+- **基础架构与路由**：Xposed 入口与多宿主分发（当前支持 `ColorOS / Breeno` 与 `HyperOS / XiaoAi`），位于 `app/` 与 `h/` 模块。
+- **配置同步机制**：本地 Python 配置服务器（按包名/版本号下发）与主 App/宿主进程的 IPC 配置桥接（`XIpcBridge`，`SettingsContentProvider`）。
+- **Breeno 注入实现**：基于卡片层拦截的原生回答屏蔽与流式渲染（单卡片全量刷新模式）。
+- **XiaoAi 注入实现**：基于底层指令流与文字流拦截的增量文本分片注入，包含 TTS 与原生播放拦截。
+- **基础 LLM 对接**：基于 `s3ss10n` 的旧版 `LLMController` 单例门面，支持基础的流式输出拦截与注入。
+- **LLM Controller v2 重构**：实现了单例 session 状态对齐，统一了自定义 tool、MCP 及 memory prompt 从 `LocalSettings` 的扩展入口。
+- **MCP Tool Cache MVP**：为 MCP discovered tools 增加 `LocalSettings` 缓存兜底，以优化冷启体验。
 
-## 后续应填充的信息
+## 提案
 
-- 已落地能力：哪些功能已经在源码中存在并可从源码验证
-- 进行中能力：哪些能力已有部分实现，但架构或接口还在调整
-- 提案能力：哪些内容只存在于 PRD、task 文档、设计稿中
-- 已知技术债、待重构点、重要 TODO
-- 最近一轮大方向，例如 Tool/MCP、UI Shell、配置上云等
+- **UI Shell 升级**：主应用 `MainActivity` 界面升级为 Apple Liquid Glass 风格。
+- **多语言支持**：为 Breeno 分支提供多语言注入支持。
+- **生成测速**：在 LLMController 中实现字数测速功能。
 
-## 建议信息来源
+## 已知技术债、待重构点、重要 TODO
 
-优先从这些来源交叉核对，而不是只相信某一份文档：
-
-- `CLAUDE.md`
-- `README.md`
-- `docs/.asc_task/`
-- `UI-PRD.md`
-- `prd-nav-status-machine.md`
-- 相关源码目录本身
-
-## 写作约束
-
-- 不要把 task 文档内容直接宣布为“已经实现”
-- 不要抄源码或 PRD 大段原文
-- 结论必须附相对路径来源
-- 如果状态不确定，明确标成“待核实”
+- `RenderTextStreamCardHook`：当前使用了监视器锁且硬编码类名，需将类名上云并重构锁机制。
+- `BaseConfigProvider` / `BreenoConfigProvider`：需引入 Dataclass 描述 hook spot，并将下游读参方式重构为 `suspend`。
+- `AbstractAssistantHook`：需统一所有业务分支的 subhooks 命名、云 config 结构及生命周期方法名。
+- `LLMController`：需补充前置配置检查与快速失败逻辑。

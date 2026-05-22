@@ -56,7 +56,8 @@ Use a short lookup report in this shape:
 ## Hard Rules
 
 - Always read `index.md` before reading any subdocument.
-- Do not treat PRD or task docs as proof of implementation.
+- DO NOT read `docs/.asc_task/` or treat task docs as proof of implementation.
+- ALWAYS trust source code for current implementation over design documents.
 - Do not paste large code blocks into lookup reports.
 - Prefer relative source paths over copied code.
 - If an architecture explanation truly requires code excerpts, keep them minimal and explanatory.
@@ -72,6 +73,7 @@ Use these tiers while reading:
 ## Common Mistakes
 
 - jumping directly into grep without reading `index.md`
-- treating `docs/.asc_task/` as already shipped behavior
+- attempting to read or parse `docs/.asc_task/` files instead of relying on actual source code
+- treating design documents as the final source of truth instead of trusting the source code
 - copying code into wiki instead of pointing to source paths
 - reading every document instead of routing by scenario

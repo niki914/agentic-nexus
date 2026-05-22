@@ -2,27 +2,24 @@
 
 ## 目的
 
-本文件后续用于登记任务文档、PRD、设计稿，并说明它们与当前源码实现之间的关系。
+本文件用于登记任务文档、PRD、设计稿，并说明它们与当前源码实现之间的关系。
 
-## 后续应填充的信息
+## 注册列表
 
-- 每份 task 文档或 PRD 的路径
-- 文档主题是什么
-- 它是 `In Progress` 还是 `Proposal`
-- 是否已有对应源码落地
-- 如果已有源码，应补哪些相对路径作为交叉验证入口
+### UI 与导航系列
 
-## 建议优先登记的文档
+**[UI PRD: Nexus App Shell v1](UI-PRD.md)**
+- **主题**：定义 App Shell 的信息架构和页面流，涵盖从冷启（Startup/Onboarding）到 Home，再到 Settings 树的 UI 规范与状态模型。
+- **状态**：`部分落地`
+- **源码落地**：部分
+- **源码核对入口**：
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/feat/`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/`
 
-- `docs/.asc_task/llm_controller_v2/plan.md`
-- `docs/.asc_task/llm_controller_v2/progress.md`
-- `docs/.asc_task/llm_controller_v2/tech_design.md`
-- `docs/.asc_task/llm_controller_v2/tech_survey.md`
-- `UI-PRD.md`
-- `prd-nav-status-machine.md`
-
-## 写作约束
-
-- 不要把这些文档原文复制过来
-- 不要把设计目标直接写成既成事实
-- 每条登记都应附上“源码核对入口”的相对路径建议
+**[PRD: Navigation State Machine](prd-nav-status-machine.md)**
+- **主题**：设计了一套轻量级导航状态机（`NavigationController` 与 `Page` 接口），用于统一处理线性条件流（如冷启引导）和树状钻取流（如设置项）。
+- **状态**：`部分落地`
+- **源码落地**：部分
+- **源码核对入口**：
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/NavigationController.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/Page.kt`

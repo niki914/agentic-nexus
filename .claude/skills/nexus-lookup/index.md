@@ -12,16 +12,6 @@
 
 它不负责存放源码副本，也不应该演变成另一个 `CLAUDE.md`。
 
-## 全局写作约束
-
-所有子文档后续补内容时都必须遵守这些规则：
-
-- 不要大段抄源码
-- 除非为了说明架构机制，否则不要贴代码片段
-- 默认只写相对路径，指引真正的源码位置
-- 文档要描述职责、边界、调用链、状态和风险，不要复述实现细节到逐行级别
-- 如果文档内容与当前源码冲突，必须回到源码核实并更新文档，而不是继续传播旧说法
-
 ## 知识地图
 
 ### overview/ — 项目总览与当前状态
@@ -70,9 +60,3 @@
 | LLMController、Prompt、Tool、MCP、事件流 | `architecture/llm-runtime.md` -> `overview/current-status.md` |
 | UI、onboarding、settings tree、Liquid Glass、导航状态机 | `domains/ui-shell/index.md` -> `reference/task-docs-registry.md` |
 | 某个设计文档是否已经实现 | `reference/task-docs-registry.md` -> `overview/current-status.md` -> 相关源码路径 |
-
-## 文档维护原则
-
-- 稳定事实优先沉淀到 `overview/`、`architecture/`、`domains/`
-- 临时设计与任务文档只在 `reference/task-docs-registry.md` 注册，不直接等价为现状
-- 如果某个主题已经足够大，再继续拆子文档，不要过早做过深层级

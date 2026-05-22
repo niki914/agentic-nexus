@@ -1,26 +1,33 @@
 # XiaoAi Domain
 
-## 目的
+## 整体心智模型
 
-本文件后续用于给 XiaoAi 相关任务提供专项导航，帮助读者快速进入响应目标捕获、文本流注入与 TTS 拦截链路。
+XiaoAi 宿主（`com.miui.voiceassist`）的注入模型是**增量文本分片注入**，走的是响应目标与 Instruction 流层，其 Hook 点更为底层。由于是在指令分片级别进行操作，除了注入大模型的流式分片，还必须严格拦截与屏蔽原生的文字流、TTS 指令流及播报链路，以防止原生回复与注入回复交错冲突。
 
-## 后续应填充的信息
+## 响应目标的捕获与复用
 
-- XiaoAi 分支的整体心智模型
-- 响应目标是如何被捕获并在后续渲染中复用的
-- 原生文字流、TTS 指令流、TTS 播放链路分别在哪里被阻断
-- 增量文本分片注入的关键状态和约束
-- 调试 XiaoAi 相关问题时优先查看哪些相对路径
+响应目标在 `CaptureResponseTargetHook` 处，于原生响应目标创建链路被捕获。在捕获完成后，`dispatchQueryToLLM()` 才会开始消费大模型生成的共享文本流。在后续的文本流渲染阶段（`RenderTextStreamCardHook`），会直接复用已捕获的响应目标对象，而不是重新去查找目标对象，确保了注入指令能够准确路由到目标。
 
-## 建议引用的源码位置
+## 原生链路阻断
 
-- `app/src/main/java/.../mod/feat/hyper/XiaoaiChatHook.kt`
-- `app/src/main/java/.../mod/feat/hyper/XiaoaiConfigProvider.kt`
-- `app/src/main/java/.../mod/feat/hyper/XiaoaiRenderSession.kt`
-- `app/src/main/java/.../mod/feat/hyper/subhooks/`
+原生链路的阻断分布在以下关键 Hook 中：
+- **原生文字流**：由 `BlockNativeTextStreamHook` 拦截，屏蔽与注入轮次冲突的原生文本分片。
+- **原生 TTS 指令流**：由 `BlockNativeTtsStreamHook` 拦截，阻断下发给播报引擎的 TTS 指令。
+- **原生 TTS 播放链路**：由 `BlockNativeTtsPlaybackHook` 拦截，屏蔽漏网的底层原生播报。
 
-## 写作约束
+## 增量文本分片注入机制
 
-- 不要复制 Hook 与渲染实现全文
-- 除非为了说明架构，否则不要贴代码
-- 用术语解释、链路描述、相对路径导航替代源码复制
+注入阶段的关键状态和约束：
+- 渲染前必须校验当前轮次是否仍为活跃的 `InjectedLLM` 轮次。
+- 文本注入由 `RenderTextStreamCardHook` 维护单例 `XiaoaiRenderSession` 进行。
+- 渲染逻辑是根据大模型返回的累计文本计算出本次增量 `delta`，对宿主执行的是分片注入，而非整段覆盖。
+- 每个增量块会被包装为宿主可消费的 `Instruction` 对象。其中涉及的 `namespace`、`name`、`idPrefix` 等元数据，均通过 `XiaoaiConfigProvider` 提供。
+- 在最后一帧终帧处理时，还会额外注入由配置定义的 `renderTextStreamCardFinalChunkText`（终帧补片文本），随后清空当前的渲染 session 状态。
+
+## 关键源码导航
+
+调试 XiaoAi 注入逻辑与查阅实现细节时，优先查看以下相对路径：
+- **主入口与总线**：`app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`
+- **配置提取与转换**：`app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiConfigProvider.kt`
+- **渲染会话状态**：`app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiRenderSession.kt`
+- **底层拦截与注入子 Hook**：`app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/subhooks/`

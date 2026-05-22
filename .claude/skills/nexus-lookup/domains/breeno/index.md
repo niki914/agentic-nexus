@@ -1,26 +1,34 @@
 # Breeno Domain
 
-## 目的
+## 整体心智模型
 
-本文件后续用于给 Breeno 相关任务提供专项导航，而不是承载完整源码说明。
+Breeno 的宿主注入模型是**“单卡片全量刷新”**。Breeno 的响应注入与拦截都发生在**回答卡片层（DataCenter / UI 层）**，hook 点相对较高。模型输出通过单次插入后，使用全量文本不断刷新同一条回答卡片来呈现增量流式效果。
 
-## 后续应填充的信息
+## 关键 Hook 列表与各自职责
 
-- Breeno 分支的整体心智模型
-- 关键 Hook 列表与各自职责
-- 用户 query 从哪里捕获，响应从哪里注入，原生卡片从哪里拦截
-- session reset 与浮窗 / Activity 生命周期的联动点
-- 调试 Breeno 问题时最该先看的相对路径
+- **`CaptureInputHook`**
+  - **触发点**: `DataCenter#insertMessage` 执行前。
+  - **职责**: 拦截用户输入并将其传递给 `AbstractAssistantHook` 捕获 Query，同时缓存当前的 `DataCenter` 实例供后续注入卡片时使用。
+- **`BlockNativeCardHook`**
+  - **触发点**: `DataCenter#insertMessage` 执行前。
+  - **职责**: 在 `InjectedLLM` 模式下，拦截原生 Breeno 的回答卡片。
+- **`SuppressCleanupHook`**
+  - **触发点**: `OperationFactory#create` 执行后。
+  - **职责**: 将 Breeno 内部的清理操作替换为 `DoNothingOperation`，避免系统因为判定异常而移除被注入或被拦截的卡片。
+- **`ResetConversationSignalHook`**
+  - **触发点**: 宿主会话重置方法调用时。
+  - **职责**: 监听宿主新会话创建或会话切换，触发重置当前 LLM session 状态。
 
-## 建议引用的源码位置
+## 数据流向与生命周期联动
 
-- `app/src/main/java/.../mod/feat/oppo/BreenoChatHook.kt`
-- `app/src/main/java/.../mod/feat/oppo/BreenoConfigProvider.kt`
-- `app/src/main/java/.../mod/feat/oppo/BreenoFeedbackAssembler.kt`
-- `app/src/main/java/.../mod/feat/oppo/subhooks/`
+- **用户 query 捕获**: 发生在卡片层的 `CaptureInputHook`。
+- **响应注入**: 发生在 `BreenoChatHook#renderStreamCard()`。首帧通过 `dataCenter.insertMessage` 插入，后续分片和终帧均通过 `dataCenter.updateMessage` 对该卡片进行全量刷新。
+- **原生卡片拦截**: 发生在卡片层的 `BlockNativeCardHook`。
+- **session reset 与生命周期的联动点**: 在 `BreenoChatHook.installSessionHooks()` 中安装了浮窗 View 的 `detach` 监听并跟踪目标 Activity 的 `onResume()` 生命周期。若浮窗 detach 后 700ms 内未回到目标页面，判定用户已离开，则触发 `onSessionReset()` 清理当前回合。
 
-## 写作约束
+## 调试 Breeno 问题的相对路径
 
-- 不要抄 Hook 实现和反射细节代码
-- 除非为了解释架构，否则不要贴代码
-- 只写业务链路、职责分工、调试入口、相对路径
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt` (流式渲染卡片与流程控制)
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoConfigProvider.kt` (云控类名、方法名与 Mock 静态配置)
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoFeedbackAssembler.kt` (卡片反馈按钮组装)
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/subhooks/` (所有的 Breeno 注入与拦截 Hook 逻辑)
