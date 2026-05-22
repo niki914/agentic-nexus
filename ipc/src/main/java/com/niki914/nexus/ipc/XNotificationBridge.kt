@@ -13,12 +13,13 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import java.util.concurrent.atomic.AtomicInteger
 
 internal object XNotificationBridge {
 
     private const val CHANNEL_ID = "nexus_xservice_default_channel"
     private const val CHANNEL_NAME = "Nexus"
-    private const val NOTIFICATION_ID = 1001
+    private val nextNotificationId = AtomicInteger(1001)
 
     fun post(
         context: Context,
@@ -43,7 +44,10 @@ internal object XNotificationBridge {
         createContentIntent(context, uri)?.let { contentIntent ->
             builder.setContentIntent(contentIntent)
         }
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build())
+        NotificationManagerCompat.from(context).notify(
+            nextNotificationId.getAndIncrement(),
+            builder.build()
+        )
     }
 
     private fun ensureNotificationChannel(context: Context) {
