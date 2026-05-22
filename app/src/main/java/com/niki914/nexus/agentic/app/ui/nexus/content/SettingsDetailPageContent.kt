@@ -26,6 +26,14 @@ fun SettingsDetailPageContent(
     topPadding: Dp,
     hazeState: HazeState,
 ) {
+    if (group == NexusSettingsGroup.CustomTools) {
+        CustomToolsSettingsContent(
+            topPadding = topPadding,
+            hazeState = hazeState,
+        )
+        return
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()

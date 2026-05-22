@@ -32,7 +32,10 @@ data class LocalToolDefinition(
     val description: String,
     val parameters: List<LocalToolParameter> = emptyList(),
     val source: ToolSource = ToolSource.Builtin,
+    // 仅用于把已有 JSON schema 透传给 session，本身不参与命令执行。
     val rawInputSchemaJson: String? = null,
+    // 仅命令型 Tool 使用，表示用户配置的固定命令字符串；Builtin/MCP 派生工具必须为 null。
+    val command: String? = null,
 )
 
 data class LocalToolParameter(
@@ -45,6 +48,7 @@ data class LocalToolParameter(
 enum class ToolSource {
     Builtin,
     UserDefined,
+    Command,
 }
 
 enum class ToolParameterType {

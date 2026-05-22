@@ -54,4 +54,29 @@
     <string name="nexus_settings_custom_tools_summary">Manage user-defined tools and extension entry points.</string>
     <string name="nexus_settings_about">About</string>
     <string name="nexus_settings_about_summary">View version information, documentation, and support channels.</string>
+
+    <string name="nexus_command_tools_page_description">Manage command tools here. Saving writes back to `command_tools`, which the runtime can refresh and register as local command tools.</string>
+    <string name="nexus_command_tools_list_title">Configured tools</string>
+    <string name="nexus_command_tools_loading">Loading saved command tools...</string>
+    <string name="nexus_command_tools_empty">No command tools yet. Add one and save it first.</string>
+    <string name="nexus_command_tools_summary_fallback">No description yet, so the list falls back to the command text.</string>
+    <string name="nexus_command_tools_state_enabled">Enabled</string>
+    <string name="nexus_command_tools_state_disabled">Disabled</string>
+    <string name="nexus_command_tools_add_action">Add tool</string>
+    <string name="nexus_command_tools_editor_title_create">Create command tool</string>
+    <string name="nexus_command_tools_editor_title_edit">Edit command tool</string>
+    <string name="nexus_command_tools_field_name">Tool name</string>
+    <string name="nexus_command_tools_field_name_placeholder">For example open_wechat</string>
+    <string name="nexus_command_tools_field_description">Tool description</string>
+    <string name="nexus_command_tools_field_description_placeholder">Tell the model what this tool is good for.</string>
+    <string name="nexus_command_tools_field_enabled">Enable this tool</string>
+    <string name="nexus_command_tools_field_enabled_description">Disabled tools stay in settings but are not registered into the current session.</string>
+    <string name="nexus_command_tools_field_command">Fixed command</string>
+    <string name="nexus_command_tools_field_command_placeholder">For example am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI</string>
+    <string name="nexus_command_tools_save_action">Save tool</string>
+    <string name="nexus_command_tools_delete_action">Delete current tool</string>
+    <string name="nexus_command_tools_save_success">Command tool saved.</string>
+    <string name="nexus_command_tools_delete_success">Command tool deleted.</string>
+    <string name="nexus_command_tools_save_failed">Save failed: %1$s</string>
+    <string name="nexus_command_tools_duplicate_name">Tool names must be unique. Choose a different name.</string>
 </resources>

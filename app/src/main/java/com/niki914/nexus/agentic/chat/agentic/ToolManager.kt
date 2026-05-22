@@ -25,7 +25,8 @@ class ToolManager {
 
     fun resolve(settings: LocalSettings): ResolvedTools {
         val builtinTools = buildBuiltinTools(settings)
-        val customTools = buildCustomTools(settings)
+        val commandTools = buildCommandTools(settings)
+        val customTools = buildCustomTools(settings) + commandTools
         val mcpServers = buildMcpServers(settings)
 
         return ResolvedTools(
@@ -77,6 +78,29 @@ class ToolManager {
                     rawInputSchemaJson = obj.string("raw_input_schema").ifBlank { null },
                 )
             }
+    }
+
+    private fun buildCommandTools(settings: LocalSettings): List<LocalToolDefinition> {
+        return settings.commandTools
+            .orEmptyObjects()
+            .mapNotNull { obj ->
+                val enabled = obj.boolean("enabled", default = true)
+                val name = obj.string("name").trim()
+                val command = obj.string("command").trim()
+                if (!enabled || name.isBlank() || command.isBlank()) {
+                    return@mapNotNull null
+                }
+                val description = obj.string("description").ifBlank { "Command tool: $name" }
+                LocalToolDefinition(
+                    name = name,
+                    description = description,
+                    source = ToolSource.Command,
+                    command = command,
+                )
+            }
+            .associateBy(LocalToolDefinition::name)
+            .values
+            .toList()
     }
 
     private fun parseParameter(obj: JsonObject): LocalToolParameter? {
@@ -144,6 +168,12 @@ class ToolManager {
         mcpServers: List<McpServerDefinition>,
     ): List<String> {
         val lines = mutableListOf<String>()
+        val commandToolNames = customTools
+            .filter { it.source == ToolSource.Command }
+            .map { it.name }
+        if (commandToolNames.isNotEmpty()) {
+            lines += "Available command tools: ${commandToolNames.joinToString()}"
+        }
 
         val enabledMcpServers = mcpServers.filter { it.enabled }
         if (enabledMcpServers.isNotEmpty()) {

@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -33,9 +34,11 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.util.concurrent.TimeUnit
 
 object LLMController {
     private const val MCP_DISCOVERED_TOOLS_CACHE_KEY = "mcp_discovered_tools_cache"
+    private const val COMMAND_TOOL_TIMEOUT_MS = 10_000L
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -172,7 +175,11 @@ object LLMController {
             )
             hooks {
                 when (kind) {
-                    ToolCallKind.Local -> error("Local tool '$name' has no executor yet.")
+                    ToolCallKind.Local -> {
+                        val commandTool = findCommandTool(name)
+                            ?: return@hooks error("Local tool '$name' is not executable in current runtime.")
+                        ok(executeCommandTool(commandTool))
+                    }
                     is ToolCallKind.Mcp -> delegate()
                 }
             }
@@ -199,6 +206,13 @@ object LLMController {
 
         localTools {
             previousTools?.allLocalToolNames().orEmpty().forEach(::remove)
+            tools.customTools
+                .filter { it.source == ToolSource.Command }
+                .forEach { tool ->
+                    add(tool.name) {
+                        description = tool.description
+                    }
+                }
         }
 
         mcp {
@@ -293,6 +307,92 @@ object LLMController {
                 ),
             )
         )
+    }
+
+    private fun findCommandTool(name: String): LocalToolDefinition? {
+        return runtimeState?.snapshot?.tools?.customTools
+            .orEmpty()
+            .firstOrNull { it.source == ToolSource.Command && it.name == name }
+    }
+
+    private suspend fun executeCommandTool(tool: LocalToolDefinition): String {
+        val command = tool.command?.trim().orEmpty()
+        if (command.isBlank()) {
+            return buildCommandToolFailureJson(
+                command = command,
+                message = "Command tool '${tool.name}' has empty command.",
+            )
+        }
+        return withContext(Dispatchers.IO) {
+            var process: Process? = null
+            try {
+                process = ProcessBuilder("/system/bin/sh", "-c", command)
+                    .redirectErrorStream(true)
+                    .start()
+                val finished = process.waitFor(COMMAND_TOOL_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                if (!finished) {
+                    process.destroy()
+                    process.waitFor(200, TimeUnit.MILLISECONDS)
+                    if (process.isAlive) {
+                        process.destroyForcibly()
+                    }
+                    return@withContext buildCommandToolFailureJson(
+                        command = command,
+                        message = "Command timed out after ${COMMAND_TOOL_TIMEOUT_MS}ms.",
+                    )
+                }
+                val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
+                val exitCode = process.exitValue()
+                if (exitCode == 0) {
+                    buildCommandToolSuccessJson(command = command, stdout = output)
+                } else {
+                    buildCommandToolFailureJson(
+                        command = command,
+                        message = output.ifBlank { "Command exited with code $exitCode." },
+                    )
+                }
+            } catch (throwable: Throwable) {
+                if (throwable is CancellationException) {
+                    process?.destroy()
+                    if (process?.isAlive == true) {
+                        process.destroyForcibly()
+                    }
+                    throw throwable
+                }
+                xlog("LLMController.executeCommandTool failed: ${throwable.message}")
+                buildCommandToolFailureJson(
+                    command = command,
+                    message = throwable.message ?: "Command execution failed.",
+                )
+            } finally {
+                process?.inputStream?.close()
+                process?.outputStream?.close()
+                process?.errorStream?.close()
+                if (process?.isAlive == true) {
+                    process.destroyForcibly()
+                }
+            }
+        }
+    }
+
+    private fun buildCommandToolSuccessJson(command: String, stdout: String): String {
+        return JsonObject(
+            mapOf(
+                "ok" to JsonPrimitive(true),
+                "command" to JsonPrimitive(command),
+                "stdout" to JsonPrimitive(stdout),
+            )
+        ).toString()
+    }
+
+    private fun buildCommandToolFailureJson(command: String, message: String): String {
+        return JsonObject(
+            mapOf(
+                "ok" to JsonPrimitive(false),
+                "command" to JsonPrimitive(command),
+                "message" to JsonPrimitive(message),
+            )
+        ).toString()
     }
 
     private fun mapSessionEvent(
