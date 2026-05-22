@@ -16,7 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import com.niki914.nexus.agentic.app.liquid_example.components.LiquidButton
+import com.niki914.nexus.agentic.app.ui.infra.component.LiquidButton
 
 @Composable
 fun TintLiquidButton(

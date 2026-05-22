@@ -7,6 +7,8 @@ sealed interface NexusPage : Page {
     val titleRes: Int?
     val showLeftButton: Boolean
     val showRightButton: Boolean
+    val showBlurLayer: Boolean
+        get() = true
 }
 
 data object StartupPage : NexusPage {
@@ -14,6 +16,7 @@ data object StartupPage : NexusPage {
     override val titleRes: Int? = null
     override val showLeftButton: Boolean = false
     override val showRightButton: Boolean = false
+    override val showBlurLayer: Boolean = false
 }
 
 data object ProviderPickPage : NexusPage {

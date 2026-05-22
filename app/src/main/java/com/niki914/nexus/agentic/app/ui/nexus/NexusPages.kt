@@ -34,7 +34,6 @@ fun NexusPageContent(
     when (val page = entry.page) {
         StartupPage -> StartupPageContent(
             topPadding = topPadding,
-            hazeState = hazeState,
             assistantUi = startupAssistantUi,
             onContinue = {
                 onPush(

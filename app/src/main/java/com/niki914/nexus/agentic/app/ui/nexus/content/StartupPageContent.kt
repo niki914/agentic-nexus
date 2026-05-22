@@ -25,13 +25,10 @@ import androidx.compose.ui.unit.sp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.TintLiquidButton
 import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
 
 @Composable
 fun StartupPageContent(
     topPadding: Dp,
-    hazeState: HazeState,
     assistantUi: StartupAssistantUi,
     onContinue: () -> Unit,
 ) {
@@ -53,7 +50,6 @@ fun StartupPageContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .hazeSource(hazeState)
     ) {
         StartupPosterBackground()
 

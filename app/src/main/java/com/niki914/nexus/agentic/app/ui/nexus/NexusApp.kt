@@ -46,6 +46,7 @@ fun NexusApp(
         title = currentTitle,
         showLeftButton = currentPage.showLeftButton,
         showRightButton = currentPage.showRightButton,
+        showBlurLayer = currentPage.showBlurLayer,
     )
     var homeMenuExpanded by remember { mutableStateOf(false) }
 
@@ -86,6 +87,7 @@ fun NexusApp(
                 title = currentTitle,
                 showLeftButton = currentPage.showLeftButton,
                 showRightButton = currentPage.showRightButton,
+                showBlurLayer = currentPage.showBlurLayer,
                 onLeftClick = onLeftClick,
                 onRightClick = onRightClick,
             )
@@ -94,6 +96,7 @@ fun NexusApp(
                 title = currentTitle,
                 showLeftButton = currentPage.showLeftButton,
                 showRightButton = currentPage.showRightButton,
+                showBlurLayer = currentPage.showBlurLayer,
                 onLeftClick = onLeftClick,
                 onRightClick = onRightClick,
             )
@@ -102,6 +105,7 @@ fun NexusApp(
                 title = currentTitle,
                 showLeftButton = currentPage.showLeftButton,
                 showRightButton = currentPage.showRightButton,
+                showBlurLayer = currentPage.showBlurLayer,
                 onLeftClick = onLeftClick,
                 onRightClick = onRightClick,
             )

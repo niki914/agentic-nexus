@@ -71,25 +71,32 @@ fun LiquidScreen(
         content(hazeState)
 
         // Layer 2: action bar progressive blur background
-        Box(
-            Modifier
+        AnimatedVisibility(
+            visible = state.showBlurLayer,
+            modifier = Modifier
                 .zIndex(2f)
-                .align(Alignment.TopCenter)
-                .fillMaxWidth()
-                .height(chromeHeight)
-                .layerBackdrop(chromeBackdrop)
-                .hazeEffect(state = hazeState) {
-                    tints = listOf(
-                        HazeTint(
-                            if (isDarkTheme) Color.Black else Color.White
+                .align(Alignment.TopCenter),
+            enter = fadeIn(tween(320, easing = FastOutSlowInEasing)),
+            exit = fadeOut(tween(320, easing = FastOutSlowInEasing)),
+        ) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(chromeHeight)
+                    .layerBackdrop(chromeBackdrop)
+                    .hazeEffect(state = hazeState) {
+                        tints = listOf(
+                            HazeTint(
+                                if (isDarkTheme) Color.Black else Color.White
+                            )
                         )
-                    )
-                    progressive = HazeProgressive.verticalGradient(
-                        startIntensity = 1f,
-                        endIntensity = 0f
-                    )
-                }
-        )
+                        progressive = HazeProgressive.verticalGradient(
+                            startIntensity = 1f,
+                            endIntensity = 0f
+                        )
+                    }
+            )
+        }
 
         // Layer 3: action bar foreground
         Box(

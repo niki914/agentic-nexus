@@ -17,6 +17,7 @@ class LiquidScreenState(
     initialTitle: String = "",
     initialShowLeftButton: Boolean = true,
     initialShowRightButton: Boolean = true,
+    initialShowBlurLayer: Boolean = true,
     initialOnLeftClick: (() -> Unit)? = null,
     initialOnRightClick: (() -> Unit)? = null,
 ) {
@@ -26,6 +27,7 @@ class LiquidScreenState(
     internal var title by mutableStateOf(initialTitle)
     internal var showLeftButton by mutableStateOf(initialShowLeftButton)
     internal var showRightButton by mutableStateOf(initialShowRightButton)
+    internal var showBlurLayer by mutableStateOf(initialShowBlurLayer)
     internal var onLeftClick: (() -> Unit)? by mutableStateOf(initialOnLeftClick)
     internal var onRightClick: (() -> Unit)? by mutableStateOf(initialOnRightClick)
     internal var titleDirection by mutableStateOf(TitleDirection.None)
@@ -40,45 +42,50 @@ class LiquidScreenState(
         title: String,
         showLeftButton: Boolean = this.showLeftButton,
         showRightButton: Boolean = this.showRightButton,
+        showBlurLayer: Boolean = this.showBlurLayer,
         onLeftClick: (() -> Unit)? = this.onLeftClick,
         onRightClick: (() -> Unit)? = this.onRightClick,
     ) {
         titleDirection = TitleDirection.Forward
-        apply(title, showLeftButton, showRightButton, onLeftClick, onRightClick)
+        apply(title, showLeftButton, showRightButton, showBlurLayer, onLeftClick, onRightClick)
     }
 
     fun navigateBack(
         title: String,
         showLeftButton: Boolean = this.showLeftButton,
         showRightButton: Boolean = this.showRightButton,
+        showBlurLayer: Boolean = this.showBlurLayer,
         onLeftClick: (() -> Unit)? = this.onLeftClick,
         onRightClick: (() -> Unit)? = this.onRightClick,
     ) {
         titleDirection = TitleDirection.Back
-        apply(title, showLeftButton, showRightButton, onLeftClick, onRightClick)
+        apply(title, showLeftButton, showRightButton, showBlurLayer, onLeftClick, onRightClick)
     }
 
     fun update(
         title: String,
         showLeftButton: Boolean = this.showLeftButton,
         showRightButton: Boolean = this.showRightButton,
+        showBlurLayer: Boolean = this.showBlurLayer,
         onLeftClick: (() -> Unit)? = this.onLeftClick,
         onRightClick: (() -> Unit)? = this.onRightClick,
     ) {
         titleDirection = TitleDirection.None
-        apply(title, showLeftButton, showRightButton, onLeftClick, onRightClick)
+        apply(title, showLeftButton, showRightButton, showBlurLayer, onLeftClick, onRightClick)
     }
 
     private fun apply(
         title: String,
         showLeftButton: Boolean,
         showRightButton: Boolean,
+        showBlurLayer: Boolean,
         onLeftClick: (() -> Unit)?,
         onRightClick: (() -> Unit)?,
     ) {
         this.title = title
         this.showLeftButton = showLeftButton
         this.showRightButton = showRightButton
+        this.showBlurLayer = showBlurLayer
         this.onLeftClick = onLeftClick
         this.onRightClick = onRightClick
     }
@@ -89,6 +96,7 @@ fun rememberLiquidScreenState(
     title: String = "",
     showLeftButton: Boolean = true,
     showRightButton: Boolean = true,
+    showBlurLayer: Boolean = true,
     onLeftClick: (() -> Unit)? = null,
     onRightClick: (() -> Unit)? = null,
 ): LiquidScreenState {
@@ -97,6 +105,7 @@ fun rememberLiquidScreenState(
             initialTitle = title,
             initialShowLeftButton = showLeftButton,
             initialShowRightButton = showRightButton,
+            initialShowBlurLayer = showBlurLayer,
             initialOnLeftClick = onLeftClick,
             initialOnRightClick = onRightClick,
         )

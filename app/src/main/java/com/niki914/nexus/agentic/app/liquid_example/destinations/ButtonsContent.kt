@@ -11,7 +11,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.niki914.nexus.agentic.app.liquid_example.BackdropDemoScaffold
-import com.niki914.nexus.agentic.app.liquid_example.components.LiquidButton
+import com.niki914.nexus.agentic.app.ui.infra.component.LiquidButton
 
 @Composable
 fun ButtonsContent() {
