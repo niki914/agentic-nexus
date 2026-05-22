@@ -10,7 +10,7 @@ val LlmStreamEvent.chunk
         is LlmStreamEvent.TextDelta -> event.delta
         is LlmStreamEvent.ToolFailed -> "\n[tool-failed]"
         is LlmStreamEvent.ToolRunning -> "\n[tool-running]"
-        is LlmStreamEvent.ToolSucceeded -> "\n[tool-succeed]"
+        is LlmStreamEvent.ToolSucceeded -> "\n[tool-succeed]" // TODO 需要联动上一次的 chunk 自动决定是否换行
         else -> ""
     }
 

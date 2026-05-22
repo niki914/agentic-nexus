@@ -115,6 +115,10 @@ val adbReverse = tasks.register("adbReverse") {
                 commandLine(adbPath, "reverse", "tcp:1234", "tcp:1234")
                 isIgnoreExitValue = true
             }
+            project.exec {
+                commandLine(adbPath, "reverse", "tcp:51338", "tcp:51338")
+                isIgnoreExitValue = true
+            }
             println("ADB reverse successful.")
         } catch (e: Exception) {
             println("Failed to execute adb reverse: ${e.message}")

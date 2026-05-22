@@ -35,6 +35,17 @@ class App : Application() {
                             "takeover_keywords" to JsonArray(
                                 emptyList()
 //                            listOf( JsonPrimitive("闹钟"), JsonPrimitive("清理"))
+                            ),
+                            "mcp_servers" to JsonArray(
+                                listOf(
+                                    JsonObject(
+                                        mapOf(
+                                            "name" to JsonPrimitive("aslocate"),
+                                            "url" to JsonPrimitive("http://127.0.0.1:51338/mcp"),
+                                            "enabled" to JsonPrimitive(true)
+                                        )
+                                    )
+                                )
                             )
                         )
                     )
