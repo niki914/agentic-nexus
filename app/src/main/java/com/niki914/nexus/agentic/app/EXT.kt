@@ -6,7 +6,9 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.result.ActivityResultLauncher
 import androidx.core.content.ContextCompat
+import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
 import com.niki914.nexus.h.util.OsFamily
+import com.niki914.nexus.h.util.OsUtils
 import com.niki914.nexus.ipc.HostApp
 import com.niki914.nexus.ipc.XValues
 
@@ -58,4 +60,8 @@ fun Activity.resolveTargetHostPackage(osFamily: OsFamily): String? {
     return candidatePkgs.firstOrNull { pkg ->
         getInstalledPackageVersionCode(pkg) != null
     }
+}
+
+fun Activity.resolveStartupAssistantUi(): StartupAssistantUi {
+    return StartupAssistantUi.fromOsFamily(OsUtils.getCurr())
 }

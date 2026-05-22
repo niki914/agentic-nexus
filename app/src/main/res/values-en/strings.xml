@@ -1,26 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="nexus_startup_headline">Nexus is ready</string>
-    <string name="nexus_startup_description">Finish the minimal onboarding first, confirm brand, provider, and base setup, then enter the main home screen.</string>
+    <string name="nexus_startup_headline">Route the system assistant to your own model</string>
+    <string name="nexus_startup_status_breeno">Supported assistant: Breeno</string>
+    <string name="nexus_startup_status_xiaoai">Supported assistant: XiaoAi</string>
+    <string name="nexus_startup_status_chat_only">Unsupported OS: Chat only mode</string>
     <string name="nexus_startup_continue">Start setup</string>
 
-    <string name="nexus_brand_check_title">Brand Check</string>
-    <string name="nexus_brand_check_headline">Choose the current host target</string>
-    <string name="nexus_brand_check_description">This page only confirms the navigation path for now and does not run real detection logic yet.</string>
-    <string name="nexus_brand_check_option_breeno">ColorOS / Breeno</string>
-    <string name="nexus_brand_check_option_breeno_summary">Used to verify the Breeno path and the following setup pages.</string>
-    <string name="nexus_brand_check_option_xiaoai">HyperOS / XiaoAi</string>
-    <string name="nexus_brand_check_option_xiaoai_summary">Used to verify the XiaoAi path and the following setup pages.</string>
-
     <string name="nexus_provider_pick_title">Provider Pick</string>
-    <string name="nexus_provider_pick_headline">Choose an integration style</string>
-    <string name="nexus_provider_pick_description">This round is still a placeholder flow and only confirms the provider shape the user plans to use.</string>
-    <string name="nexus_provider_pick_option_openai">OpenAI Compatible</string>
-    <string name="nexus_provider_pick_option_openai_summary">Works for most providers compatible with the OpenAI API.</string>
-    <string name="nexus_provider_pick_option_anthropic">Anthropic Compatible</string>
-    <string name="nexus_provider_pick_option_anthropic_summary">Reserved as a placeholder entry for future Anthropic-style integrations.</string>
-    <string name="nexus_provider_pick_option_custom">Custom Integration</string>
-    <string name="nexus_provider_pick_option_custom_summary">Reserved for more flexible request pipelines and custom parameters.</string>
+    <string name="nexus_provider_pick_headline">Choose a model provider</string>
+    <string name="nexus_provider_pick_description">Choose the large model provider you want to use, then continue to the next step.</string>
+    <string name="nexus_provider_pick_option_deepseek">DeepSeek</string>
+    <string name="nexus_provider_pick_option_deepseek_summary">Best for connecting DeepSeek family models first.</string>
+    <string name="nexus_provider_pick_option_openai">OpenAI</string>
+    <string name="nexus_provider_pick_option_openai_summary">For the official OpenAI API and compatible implementations.</string>
+    <string name="nexus_provider_pick_option_anthropic">Anthropic</string>
+    <string name="nexus_provider_pick_option_anthropic_summary">For Claude family models or compatible integrations.</string>
+    <string name="nexus_provider_pick_option_google">Google</string>
+    <string name="nexus_provider_pick_option_google_summary">For Gemini family models or Google ecosystem integrations.</string>
 
     <string name="nexus_configure_title">Base Configure</string>
     <string name="nexus_configure_headline">Configuration placeholder</string>

@@ -12,7 +12,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.content.SelectionPageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SettingsDetailPageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SettingsHomePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.StartupPageContent
-import com.niki914.nexus.agentic.app.ui.nexus.nav.BrandCheckPage
+import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
 import com.niki914.nexus.agentic.app.ui.nexus.nav.ConfigurePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.DonePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
@@ -28,34 +28,23 @@ fun NexusPageContent(
     entry: NavigationEntry<NexusPage>,
     topPadding: Dp,
     hazeState: HazeState,
+    startupAssistantUi: StartupAssistantUi,
     onPush: (NexusPage) -> Unit,
 ) {
     when (val page = entry.page) {
         StartupPage -> StartupPageContent(
             topPadding = topPadding,
             hazeState = hazeState,
-            onContinue = { onPush(BrandCheckPage) },
-        )
-
-        BrandCheckPage -> SelectionPageContent(
-            topPadding = topPadding,
-            hazeState = hazeState,
-            headline = stringResource(R.string.nexus_brand_check_headline),
-            description = stringResource(R.string.nexus_brand_check_description),
-            options = listOf(
-                SelectionOption(
-                    id = "breeno",
-                    title = stringResource(R.string.nexus_brand_check_option_breeno),
-                    summary = stringResource(R.string.nexus_brand_check_option_breeno_summary),
-                    onClick = { onPush(ProviderPickPage) },
-                ),
-                SelectionOption(
-                    id = "xiaoai",
-                    title = stringResource(R.string.nexus_brand_check_option_xiaoai),
-                    summary = stringResource(R.string.nexus_brand_check_option_xiaoai_summary),
-                    onClick = { onPush(ProviderPickPage) },
-                ),
-            ),
+            assistantUi = startupAssistantUi,
+            onContinue = {
+                onPush(
+                    when (startupAssistantUi) {
+                        StartupAssistantUi.Breeno,
+                        StartupAssistantUi.XiaoAi -> ProviderPickPage
+                        StartupAssistantUi.ChatOnly -> HomePage
+                    }
+                )
+            },
         )
 
         ProviderPickPage -> SelectionPageContent(
@@ -65,21 +54,27 @@ fun NexusPageContent(
             description = stringResource(R.string.nexus_provider_pick_description),
             options = listOf(
                 SelectionOption(
-                    id = "openai-compatible",
+                    id = "deepseek",
+                    title = stringResource(R.string.nexus_provider_pick_option_deepseek),
+                    summary = stringResource(R.string.nexus_provider_pick_option_deepseek_summary),
+                    onClick = { onPush(ConfigurePage) },
+                ),
+                SelectionOption(
+                    id = "openai",
                     title = stringResource(R.string.nexus_provider_pick_option_openai),
                     summary = stringResource(R.string.nexus_provider_pick_option_openai_summary),
                     onClick = { onPush(ConfigurePage) },
                 ),
                 SelectionOption(
-                    id = "anthropic-compatible",
+                    id = "anthropic",
                     title = stringResource(R.string.nexus_provider_pick_option_anthropic),
                     summary = stringResource(R.string.nexus_provider_pick_option_anthropic_summary),
                     onClick = { onPush(ConfigurePage) },
                 ),
                 SelectionOption(
-                    id = "custom",
-                    title = stringResource(R.string.nexus_provider_pick_option_custom),
-                    summary = stringResource(R.string.nexus_provider_pick_option_custom_summary),
+                    id = "google",
+                    title = stringResource(R.string.nexus_provider_pick_option_google),
+                    summary = stringResource(R.string.nexus_provider_pick_option_google_summary),
                     onClick = { onPush(ConfigurePage) },
                 ),
             ),

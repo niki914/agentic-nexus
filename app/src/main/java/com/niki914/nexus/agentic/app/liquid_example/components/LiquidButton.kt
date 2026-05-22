@@ -2,13 +2,13 @@ package com.niki914.nexus.agentic.app.liquid_example.components
 
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,12 +20,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceAtMost
 import androidx.compose.ui.util.lerp
 import com.kyant.backdrop.Backdrop
-import com.niki914.nexus.agentic.app.liquid_example.utils.InteractiveHighlight
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
-import androidx.compose.foundation.shape.CircleShape
+import com.kyant.capsule.ContinuousCapsule
+import com.kyant.capsule.continuities.G2Continuity
+import com.niki914.nexus.agentic.app.liquid_example.utils.InteractiveHighlight
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -54,7 +55,7 @@ fun LiquidButton(
         modifier
             .drawBackdrop(
                 backdrop = backdrop,
-                shape = { CircleShape },
+                shape = { ContinuousCapsule(G2Continuity()) },
                 effects = {
                     vibrancy()
                     blur(2f.dp.toPx())

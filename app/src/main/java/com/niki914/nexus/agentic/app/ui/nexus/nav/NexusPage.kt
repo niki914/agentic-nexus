@@ -16,13 +16,6 @@ data object StartupPage : NexusPage {
     override val showRightButton: Boolean = false
 }
 
-data object BrandCheckPage : NexusPage {
-    override val routeKey: String = "brand-check"
-    override val titleRes: Int = R.string.nexus_brand_check_title
-    override val showLeftButton: Boolean = true
-    override val showRightButton: Boolean = false
-}
-
 data object ProviderPickPage : NexusPage {
     override val routeKey: String = "provider-pick"
     override val titleRes: Int = R.string.nexus_provider_pick_title

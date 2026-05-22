@@ -26,13 +26,16 @@ import com.niki914.nexus.agentic.app.ui.infra.TitleDirection
 import com.niki914.nexus.agentic.app.ui.infra.nav.LocalNavigationEntry
 import com.niki914.nexus.agentic.app.ui.infra.nav.rememberNavigationController
 import com.niki914.nexus.agentic.app.ui.infra.rememberLiquidScreenState
+import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
 import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsHomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.StartupPage
 
 @Composable
-fun NexusApp() {
+fun NexusApp(
+    startupAssistantUi: StartupAssistantUi,
+) {
     val controller = rememberNavigationController<NexusPage>(initialPage = StartupPage)
     val navigator = controller.navigator
     val currentEntry = controller.currentEntry
@@ -120,6 +123,7 @@ fun NexusApp() {
                         entry = entry,
                         topPadding = screenState.actionBarHeight.value,
                         hazeState = hazeState,
+                        startupAssistantUi = startupAssistantUi,
                         onPush = ::push,
                     )
                 }

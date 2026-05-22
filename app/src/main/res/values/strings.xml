@@ -2,27 +2,23 @@
 <resources>
     <string name="app_name">Nexus</string>
     <string name="xposed_desc">允许系统级语音助手换源自定义大模型供应商\n\n现支持: ColorOS 小布 | HyperOS 小爱同学</string>
-    <string name="nexus_startup_headline">Nexus 已准备就绪</string>
-    <string name="nexus_startup_description">先完成最小引导，确认品牌、供应商和基础配置，再进入正式主页。</string>
+    <string name="nexus_startup_headline">让系统助手接入你自己的模型</string>
+    <string name="nexus_startup_status_breeno">已支持助手：Breeno</string>
+    <string name="nexus_startup_status_xiaoai">已支持助手：小爱同学</string>
+    <string name="nexus_startup_status_chat_only">不支持的系统：仅聊天模式</string>
     <string name="nexus_startup_continue">开始配置</string>
 
-    <string name="nexus_brand_check_title">品牌确认</string>
-    <string name="nexus_brand_check_headline">选择当前目标宿主</string>
-    <string name="nexus_brand_check_description">当前仅先确认导航路径，不在此页接真实探测逻辑。</string>
-    <string name="nexus_brand_check_option_breeno">ColorOS / 小布</string>
-    <string name="nexus_brand_check_option_breeno_summary">用于验证 Breeno 路径和后续配置页面。</string>
-    <string name="nexus_brand_check_option_xiaoai">HyperOS / 小爱同学</string>
-    <string name="nexus_brand_check_option_xiaoai_summary">用于验证 XiaoAi 路径和后续配置页面。</string>
-
     <string name="nexus_provider_pick_title">供应商选择</string>
-    <string name="nexus_provider_pick_headline">选择接入方式</string>
-    <string name="nexus_provider_pick_description">本轮仍是占位流程，只确认用户准备采用哪种模型接入形态。</string>
-    <string name="nexus_provider_pick_option_openai">OpenAI Compatible</string>
-    <string name="nexus_provider_pick_option_openai_summary">适用于大多数兼容 OpenAI API 的供应商。</string>
-    <string name="nexus_provider_pick_option_anthropic">Anthropic Compatible</string>
-    <string name="nexus_provider_pick_option_anthropic_summary">预留给未来 Anthropic 风格接入的占位入口。</string>
-    <string name="nexus_provider_pick_option_custom">自定义接入</string>
-    <string name="nexus_provider_pick_option_custom_summary">保留给更灵活的请求链路和自定义参数。</string>
+    <string name="nexus_provider_pick_headline">选择大模型提供商</string>
+    <string name="nexus_provider_pick_description">选择你期望使用的大模型提供商，选完后直接进入下一步。</string>
+    <string name="nexus_provider_pick_option_deepseek">DeepSeek</string>
+    <string name="nexus_provider_pick_option_deepseek_summary">适合优先接入 DeepSeek 系列模型。</string>
+    <string name="nexus_provider_pick_option_openai">OpenAI</string>
+    <string name="nexus_provider_pick_option_openai_summary">适用于 OpenAI 官方接口与兼容实现。</string>
+    <string name="nexus_provider_pick_option_anthropic">Anthropic</string>
+    <string name="nexus_provider_pick_option_anthropic_summary">用于 Claude 系列模型或兼容接入。</string>
+    <string name="nexus_provider_pick_option_google">Google</string>
+    <string name="nexus_provider_pick_option_google_summary">用于 Gemini 系列模型或 Google 生态接入。</string>
 
     <string name="nexus_configure_title">基础配置</string>
     <string name="nexus_configure_headline">配置入口占位</string>

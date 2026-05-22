@@ -28,10 +28,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         requestNotificationPermissionIfNeeded(notificationPermissionLauncher)
+        val startupAssistantUi = resolveStartupAssistantUi()
 
         setContent {
             BaseTheme {
-                NexusApp()
+                NexusApp(startupAssistantUi = startupAssistantUi)
             }
         }
     }
