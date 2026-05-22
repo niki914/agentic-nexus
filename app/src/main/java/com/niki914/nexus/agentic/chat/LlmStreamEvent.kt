@@ -10,7 +10,18 @@ val LlmStreamEvent.chunk
         is LlmStreamEvent.TextDelta -> event.delta
         is LlmStreamEvent.ToolFailed -> "\n[tool-failed]"
         is LlmStreamEvent.ToolRunning -> "\n[tool-running]"
-        is LlmStreamEvent.ToolSucceeded -> "\n[tool-succeed]" // TODO 需要联动上一次的 chunk 自动决定是否换行
+        is LlmStreamEvent.ToolSucceeded -> "\n[tool-succeed]" // TODO P0 需要联动上一次的 chunk 自动决定是否换行
+        else -> ""
+    }
+
+val LlmStreamEvent.fullText: String
+    get() = when (val event = this) {
+        is LlmStreamEvent.Error -> "\n\n${event.message}"
+        is LlmStreamEvent.TextDelta -> event.fullText
+        is LlmStreamEvent.Completed -> event.fullText
+        is LlmStreamEvent.ToolFailed -> "\n[tool-failed]"
+        is LlmStreamEvent.ToolRunning -> "\n[tool-running]"
+        is LlmStreamEvent.ToolSucceeded -> "\n[tool-succeed]" // TODO P0 需要联动上一次的 chunk 自动决定是否换行
         else -> ""
     }
 

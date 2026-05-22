@@ -27,6 +27,7 @@ fun Activity.getInstalledPackageVersionCode(packageName: String): Long? {
             packageInfo.versionCode.toLong()
         }
     } catch (_: PackageManager.NameNotFoundException) {
+        // TODO report
         null
     }
 }

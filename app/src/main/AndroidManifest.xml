@@ -4,6 +4,11 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <queries>
+        <package android:name="com.heytap.speechassist" />
+        <package android:name="com.miui.voiceassist" />
+    </queries>
+
     <application
         android:name="com.niki914.nexus.agentic.app.App"
         android:allowBackup="true"

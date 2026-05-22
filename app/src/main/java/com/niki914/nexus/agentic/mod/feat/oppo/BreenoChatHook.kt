@@ -7,7 +7,7 @@ import com.niki914.nexus.agentic.chat.HiddenTurnSummary
 import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.TurnMode
-import com.niki914.nexus.agentic.chat.chunk
+import com.niki914.nexus.agentic.chat.fullText
 import com.niki914.nexus.agentic.chat.isFinal
 import com.niki914.nexus.agentic.chat.isFirst
 import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.CaptureInputHook
@@ -118,14 +118,14 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
 
     override suspend fun dispatchQueryToLLM(turnId: Long, roomId: String, query: String) {
         LLMController.stream(query).collect { event ->
-            renderStreamCard(turnId, roomId, event.chunk, event.isFirst, event.isFinal)
+            renderStreamCard(turnId, roomId, event.fullText, event.isFirst, event.isFinal)
         }
     }
 
     override suspend fun renderStreamCard(
         turnId: Long,
         roomId: String,
-        chunk: String,
+        fullText: String,
         isFirst: Boolean,
         isFinal: Boolean
     ) {
@@ -175,7 +175,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
 
         val mockBean = renderSession.bean ?: return
 
-        mockBean.call<Unit>(setContentMethod, chunk)
+        mockBean.call<Unit>(setContentMethod, fullText)
         mockBean.call<Unit>(setFinalMethod, isFinal)
         mockBean.call<Unit>(setFirstSliceMethod, isFirst)
         mockBeanMethodsUnit.filter { it.first == "setHasTextPrintAnimPlayed" }
