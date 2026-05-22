@@ -2,6 +2,7 @@ package com.niki914.nexus.agentic.chat
 
 import com.niki914.nexus.agentic.chat.agentic.PromptComposeResult
 import com.niki914.nexus.agentic.mod.LocalSettings
+import kotlinx.serialization.json.JsonObject
 
 data class LlmRuntimeSnapshot(
     val settings: LocalSettings,
@@ -55,6 +56,31 @@ enum class ToolParameterType {
     Array,
 }
 
+data class McpCachedTool(
+    val name: String,
+    val description: String,
+    val inputSchema: JsonObject,
+)
+
+internal fun mcpCacheKey(
+    url: String,
+    headers: Map<String, String>,
+): String {
+    val normalizedHeaders = headers
+        .mapKeys { (key, _) -> key.lowercase() }
+        .toSortedMap()
+    return buildString {
+        append(url)
+        append("#")
+        normalizedHeaders.forEach { (key, value) ->
+            append(key)
+            append("=")
+            append(value)
+            append("&")
+        }
+    }
+}
+
 sealed interface McpServerDefinition {
     val name: String
     val enabled: Boolean
@@ -64,5 +90,6 @@ sealed interface McpServerDefinition {
         val url: String,
         override val enabled: Boolean = true,
         val headers: Map<String, String> = emptyMap(),
+        val cachedTools: List<McpCachedTool> = emptyList(),
     ) : McpServerDefinition
 }

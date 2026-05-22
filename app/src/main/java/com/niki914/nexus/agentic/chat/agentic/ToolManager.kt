@@ -3,10 +3,12 @@ package com.niki914.nexus.agentic.chat.agentic
 import android.content.Context
 import com.niki914.nexus.agentic.chat.LocalToolDefinition
 import com.niki914.nexus.agentic.chat.LocalToolParameter
+import com.niki914.nexus.agentic.chat.McpCachedTool
 import com.niki914.nexus.agentic.chat.McpServerDefinition
 import com.niki914.nexus.agentic.chat.ResolvedTools
 import com.niki914.nexus.agentic.chat.ToolParameterType
 import com.niki914.nexus.agentic.chat.ToolSource
+import com.niki914.nexus.agentic.chat.mcpCacheKey
 import com.niki914.nexus.agentic.mod.LocalSettings
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -16,7 +18,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 class ToolManager {
-
     suspend fun resolve(
         context: Context,
         settings: LocalSettings,
@@ -89,6 +90,7 @@ class ToolManager {
     }
 
     private fun buildMcpServers(settings: LocalSettings): List<McpServerDefinition> {
+        val cache = settings.mcpDiscoveredToolsCache
         return settings.mcpServers
             .orEmptyObjects()
             .mapNotNull { obj ->
@@ -99,15 +101,40 @@ class ToolManager {
                 if (url.isBlank()) {
                     null
                 } else {
+                    val headers = obj.obj("headers")
+                        ?.mapValues { (_, value) -> value.jsonPrimitive.contentOrNull.orEmpty() }
+                        ?: emptyMap()
                     McpServerDefinition.Http(
                         name = name,
                         url = url,
                         enabled = obj.boolean("enabled", default = true),
-                        headers = obj.obj("headers")
-                            ?.mapValues { (_, value) -> value.jsonPrimitive.contentOrNull.orEmpty() }
-                            ?: emptyMap(),
+                        headers = headers,
+                        cachedTools = parseCachedTools(
+                            cache = cache?.get(
+                                mcpCacheKey(
+                                    url = url,
+                                    headers = headers
+                                )
+                            ) as? JsonObject,
+                        ),
                     )
                 }
+            }
+    }
+
+    private fun parseCachedTools(
+        cache: JsonObject?,
+    ): List<McpCachedTool> {
+        return cache?.array("tools")
+            .orEmptyObjects()
+            .mapNotNull { tool ->
+                val name = tool.string("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val inputSchema = tool.obj("inputSchema") ?: return@mapNotNull null
+                McpCachedTool(
+                    name = name,
+                    description = tool.string("description"),
+                    inputSchema = inputSchema,
+                )
             }
     }
 

@@ -1,40 +1,62 @@
 package com.niki914.nexus.agentic.chat
 
 import android.content.Context
+import com.niki914.nexus.agentic.chat.agentic.McpInterceptorHttpEngine
 import com.niki914.nexus.agentic.chat.agentic.PromptComposer
 import com.niki914.nexus.agentic.chat.agentic.PromptComposerInput
 import com.niki914.nexus.agentic.chat.agentic.ToolManager
 import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.mod.LocalSettings
+import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.s3ss10n.Session
 import com.niki914.s3ss10n.SessionConfig
 import com.niki914.s3ss10n.SessionEvent
 import com.niki914.s3ss10n.SessionProtocols
 import com.niki914.s3ss10n.ToolCallKind
+import com.niki914.s3ss10n.ext.net.OkHttpEngine
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 object LLMController {
+    private const val LOG_TAG = "qwerqwer"
+    private const val MCP_DISCOVERED_TOOLS_CACHE_KEY = "mcp_discovered_tools_cache"
+
+    private val json = Json { ignoreUnknownKeys = true }
 
     private val promptComposer = PromptComposer()
     private val toolManager = ToolManager()
+    private val mcpCacheWriteMutex = Mutex()
 
     private var runtimeState: RuntimeState? = null
     private var session: Session? = null
+    private var sessionContext: Context? = null
+    private var lastMcpServersFingerprint: String? = null
 
     suspend fun refresh(context: Context): LlmRuntimeSnapshot {
+        val previousSnapshot = runtimeState?.snapshot
+        sessionContext = context.applicationContext
         val settings = HookLocalSettings.update(context)
-        val tools = toolManager.resolve(context, settings)
+        val resolvedTools = toolManager.resolve(context, settings)
         val prompt = promptComposer.compose(
             PromptComposerInput(
                 baseSystemPrompt = settings.prompt,
                 memorySections = buildMemorySections(settings),
-                toolSections = tools.promptLines,
+                toolSections = resolvedTools.promptLines,
                 runtimeSections = buildRuntimeSections(settings),
             )
         )
@@ -46,18 +68,38 @@ object LLMController {
             finalSystemPrompt = prompt.finalSystemPrompt,
             proxy = settings.proxy,
         )
+        val isNewSession = session == null
+        val currentMcpServersFingerprint = settings.mcpServers?.toString().orEmpty()
         val activeSession = obtainSession()
         activeSession.update {
             applyRuntimeConfig(
                 config = config,
-                tools = tools,
-                previousTools = runtimeState?.snapshot?.tools,
+                tools = resolvedTools,
+                previousTools = previousSnapshot?.tools,
             )
         }
+        val shouldRefreshMcp = resolvedTools.mcpServers.isNotEmpty() &&
+                (isNewSession || currentMcpServersFingerprint != lastMcpServersFingerprint)
+        if (shouldRefreshMcp) {
+            runCatching {
+                val refreshResult = activeSession.refreshMcpTools()
+                android.util.Log.d(
+                    LOG_TAG,
+                    "LLMController.refreshMcpTools refreshed=${refreshResult.refreshedServers} failed=${refreshResult.failedServers} count=${refreshResult.discoveredToolCount}"
+                )
+            }.onFailure { error ->
+                android.util.Log.d(
+                    LOG_TAG,
+                    "LLMController.refreshMcpTools failed: ${error.message}"
+                )
+            }
+        }
+        lastMcpServersFingerprint = currentMcpServersFingerprint
+
         return LlmRuntimeSnapshot(
             settings = settings,
             config = config,
-            tools = tools,
+            tools = resolvedTools,
             prompt = prompt,
         ).also { snapshot ->
             runtimeState = RuntimeState(snapshot = snapshot, session = activeSession)
@@ -124,6 +166,10 @@ object LLMController {
 
     private suspend fun openSession(): Session {
         return Session.Companion.open<SessionProtocols.OpenAI> {
+            httpEngine = McpInterceptorHttpEngine(
+                delegate = OkHttpEngine(),
+                onToolsDiscovered = ::handleMcpDiscoveryResponse,
+            )
             hooks {
                 when (kind) {
                     ToolCallKind.Local -> error("Local tool '$name' has no executor yet.")
@@ -163,10 +209,87 @@ object LLMController {
                         enabled = server.enabled
                         headers = server.headers
                         http { url = server.url }
+                        server.cachedTools.forEach { cachedTool ->
+                            tool(cachedTool.name) {
+                                description = cachedTool.description
+                                rawJsonSchema(cachedTool.inputSchema.toString())
+                            }
+                        }
                     }
                 }
             }
         }
+    }
+
+    private suspend fun handleMcpDiscoveryResponse(
+        url: String,
+        headers: Map<String, String>,
+        responseJson: String,
+    ) {
+        runCatching {
+            val tools = extractDiscoveredTools(responseJson)
+            persistDiscoveredTools(url = url, headers = headers, tools = tools)
+        }.onFailure { error ->
+            android.util.Log.d(
+                LOG_TAG,
+                "LLMController.handleMcpDiscoveryResponse failed for $url: ${error.message}"
+            )
+        }
+    }
+
+    private suspend fun persistDiscoveredTools(
+        url: String,
+        headers: Map<String, String>,
+        tools: List<McpCachedTool>,
+    ) {
+        val context = sessionContext ?: ContextProvider.await()
+        mcpCacheWriteMutex.withLock {
+            val latestSettings = XService.getLocalSettings(context)
+            val latestCache =
+                latestSettings.mcpDiscoveredToolsCache?.toMutableMap() ?: mutableMapOf()
+            latestCache[mcpCacheKey(url = url, headers = headers)] = buildMcpCacheEntry(tools)
+
+            val updatedProps = latestSettings.props.toMutableMap()
+            updatedProps[MCP_DISCOVERED_TOOLS_CACHE_KEY] = JsonObject(latestCache)
+            XService.putLocalSettings(context, LocalSettings(JsonObject(updatedProps)))
+        }
+    }
+
+    private fun extractDiscoveredTools(responseJson: String): List<McpCachedTool> {
+        val root = json.parseToJsonElement(responseJson).jsonObject
+        val result = root["result"]?.jsonObject
+            ?: error("MCP discovery response missing result object")
+        return result["tools"]?.jsonArray.orEmpty().mapNotNull { element ->
+            val tool = element as? JsonObject ?: return@mapNotNull null
+            val name = tool["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+            val inputSchema = tool["inputSchema"] as? JsonObject ?: return@mapNotNull null
+            if (name.isBlank()) {
+                return@mapNotNull null
+            }
+            McpCachedTool(
+                name = name,
+                description = tool["description"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                inputSchema = inputSchema,
+            )
+        }
+    }
+
+    private fun buildMcpCacheEntry(tools: List<McpCachedTool>): JsonObject {
+        return JsonObject(
+            mapOf(
+                "tools" to JsonArray(
+                    tools.map { tool ->
+                        JsonObject(
+                            mapOf(
+                                "name" to JsonPrimitive(tool.name),
+                                "description" to JsonPrimitive(tool.description),
+                                "inputSchema" to tool.inputSchema,
+                            )
+                        )
+                    }
+                ),
+            )
+        )
     }
 
     private fun mapSessionEvent(
