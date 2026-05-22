@@ -89,7 +89,7 @@ object XEvent {
     ) {
         val context = ContextProvider.await()
         val packageName = context.packageName
-        val processName = try {
+        val processName = runCatching {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 Application.getProcessName()
             } else {
@@ -97,7 +97,7 @@ object XEvent {
                 val currentProcessNameMethod = activityThreadClass.getDeclaredMethod("currentProcessName")
                 currentProcessNameMethod.invoke(null) as String
             }
-        } catch (e: Throwable) {
+        }.getOrElse {
             packageName
         }
 

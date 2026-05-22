@@ -2,6 +2,7 @@ package com.niki914.nexus.agentic.mod.feat
 
 import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.h.util.ContextProvider
+import com.niki914.nexus.h.util.xTry
 import com.niki914.nexus.h.util.xlog
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
@@ -11,8 +12,6 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.contract
 
 /**
  * 抽象的配置提供者基类，用于规范各个语音助手的配置包装器
@@ -40,7 +39,7 @@ abstract class BaseConfigProvider {
 
     fun getObject(path: String): JsonObject = (getElement(path) as? JsonObject).orThrowException(path)
 
-    fun parseHookTarget(path: String): HookTarget? = runCatching {
+    fun parseHookTarget(path: String): HookTarget? = xTry("BaseConfigProvider.parseHookTarget:$path") {
         val ownerClass = getString("$path.owner_class")
         val methodName = getString("$path.method_name")
         val methodParams = getList("$path.param_types")
@@ -48,10 +47,8 @@ abstract class BaseConfigProvider {
         val hookTiming = getString("$path.hook_timing")
         val hookKind = getString("$path.hook_kind")
         val returnType = getString("$path.return_type")
-        return HookTarget(ownerClass, methodName, methodParams, hookTiming, hookKind, returnType)
-    }.onFailure {
-        xlog("[BaseConfigProvider] failed to resolved: ${it.message}")
-    }.getOrNull()
+        HookTarget(ownerClass, methodName, methodParams, hookTiming, hookKind, returnType)
+    }
 
     protected fun <T : Any> T?.orThrowException(path: String): T {
         return this ?: throw IllegalStateException("path not resolved : $path")

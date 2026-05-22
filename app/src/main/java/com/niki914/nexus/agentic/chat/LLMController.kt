@@ -9,6 +9,8 @@ import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.h.util.ContextProvider
+import com.niki914.nexus.h.util.xTry
+import com.niki914.nexus.h.util.xlog
 import com.niki914.s3ss10n.Session
 import com.niki914.s3ss10n.SessionConfig
 import com.niki914.s3ss10n.SessionEvent
@@ -33,7 +35,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 object LLMController {
-    private const val LOG_TAG = "qwerqwer"
     private const val MCP_DISCOVERED_TOOLS_CACHE_KEY = "mcp_discovered_tools_cache"
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -81,17 +82,16 @@ object LLMController {
         val shouldRefreshMcp = resolvedTools.mcpServers.isNotEmpty() &&
                 (isNewSession || currentMcpServersFingerprint != lastMcpServersFingerprint)
         if (shouldRefreshMcp) {
-            runCatching {
+            try {
                 val refreshResult = activeSession.refreshMcpTools()
-                android.util.Log.d(
-                    LOG_TAG,
+                xlog(
                     "LLMController.refreshMcpTools refreshed=${refreshResult.refreshedServers} failed=${refreshResult.failedServers} count=${refreshResult.discoveredToolCount}"
                 )
-            }.onFailure { error ->
-                android.util.Log.d(
-                    LOG_TAG,
-                    "LLMController.refreshMcpTools failed: ${error.message}"
-                )
+            } catch (throwable: Throwable) {
+                if (throwable is CancellationException) {
+                    throw throwable
+                }
+                xlog("LLMController.refreshMcpTools failed: ${throwable.message}")
             }
         }
         lastMcpServersFingerprint = currentMcpServersFingerprint
@@ -165,7 +165,7 @@ object LLMController {
     }
 
     private suspend fun openSession(): Session {
-        return Session.Companion.open<SessionProtocols.OpenAI> {
+        return Session.open<SessionProtocols.OpenAI> {
             httpEngine = McpInterceptorHttpEngine(
                 delegate = OkHttpEngine(),
                 onToolsDiscovered = ::handleMcpDiscoveryResponse,
@@ -226,14 +226,17 @@ object LLMController {
         headers: Map<String, String>,
         responseJson: String,
     ) {
-        runCatching {
-            val tools = extractDiscoveredTools(responseJson)
+        val tools =
+            xTry("LLMController.handleMcpDiscoveryResponse:extract:$url") {
+                extractDiscoveredTools(responseJson)
+            } ?: return
+        try {
             persistDiscoveredTools(url = url, headers = headers, tools = tools)
-        }.onFailure { error ->
-            android.util.Log.d(
-                LOG_TAG,
-                "LLMController.handleMcpDiscoveryResponse failed for $url: ${error.message}"
-            )
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) {
+                throw throwable
+            }
+            xlog("LLMController.handleMcpDiscoveryResponse:persist failed for $url: ${throwable.message}")
         }
     }
 

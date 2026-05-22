@@ -1,5 +1,7 @@
 package com.niki914.nexus.agentic.chat.agentic
 
+import com.niki914.nexus.h.util.xTry
+import com.niki914.nexus.h.util.xlog
 import com.niki914.s3ss10n.net.HttpEngine
 import com.niki914.s3ss10n.net.HttpRequest
 import kotlinx.coroutines.flow.Flow
@@ -21,17 +23,14 @@ class McpInterceptorHttpEngine(
     override suspend fun unary(request: HttpRequest): String {
         val response = delegate.unary(request)
         if (request.isToolsListRequest()) {
-            runCatching {
+            try {
                 onToolsDiscovered(
                     request.url,
                     request.headers.filterKeys { !it.equals("Content-Type", ignoreCase = true) },
                     response
                 )
-            }.onFailure { error ->
-                android.util.Log.d(
-                    "qwerqwer",
-                    "McpInterceptorHttpEngine.onToolsDiscovered failed for ${request.url}: ${error.message}"
-                )
+            } catch (error: Throwable) {
+                xlog("McpInterceptorHttpEngine.onToolsDiscovered failed for ${request.url}: ${error.message}")
             }
         }
         return response
@@ -47,9 +46,9 @@ class McpInterceptorHttpEngine(
         }
         val bodyBytes = body ?: return false
         val bodyText = bodyBytes.toString(Charsets.UTF_8)
-        val root = runCatching {
+        val root = xTry("McpInterceptorHttpEngine.isToolsListRequest:${url}") {
             json.parseToJsonElement(bodyText) as? JsonObject
-        }.getOrNull() ?: return false
+        } ?: return false
         return root["method"]?.jsonPrimitive?.contentOrNull == "tools/list"
     }
 }
