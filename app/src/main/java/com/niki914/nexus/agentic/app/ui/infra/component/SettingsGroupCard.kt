@@ -1,7 +1,6 @@
 package com.niki914.nexus.agentic.app.ui.infra.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
@@ -13,22 +12,28 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
+/**
+ * iOS 风分组卡片：外置章节标题 + 圆角卡片容器。
+ * 排版抄自 ui/settings/StyledToggle 的 independent=true 分支，颜色走 MaterialTheme，
+ * 深浅色由 colorScheme.surfaceContainer / onSurfaceVariant 自动适配。
+ *
+ * 卡片本身 clip 成圆角，方便子项（如 SettingsNavigationRow）在按压渐变时
+ * 不会溢出圆角边界。
+ */
 @Composable
 fun SettingsGroupCard(
     title: String,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val isDarkTheme = isSystemInDarkTheme()
-    val cardColor = if (isDarkTheme) Color(0xFF1C1C1E) else Color.White
     val titleColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+    val cardColor = MaterialTheme.colorScheme.surfaceContainer
+    val cardShape = RoundedCornerShape(28.dp)
 
-    Column(
-        modifier = modifier.fillMaxWidth(),
-    ) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = title,
             style = MaterialTheme.typography.labelLarge,
@@ -39,7 +44,8 @@ fun SettingsGroupCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(cardColor, RoundedCornerShape(28.dp))
+                .clip(cardShape)
+                .background(cardColor, cardShape)
                 .padding(vertical = 4.dp),
             content = content,
         )
