@@ -13,40 +13,44 @@
 
 负责从本地 Python 服务获取最新配置并落盘。读写方向：`Server -> Main App -> IPC / Local Disk`。
 
-1. **触发与宿主判定**：`MainActivity.onResume()` 中，根据操作系统类型（`RootUtils.getOsFamily()`）与设备已安装包列表，选择当前优先适配的宿主包名。
-2. **远程拉取**：调用 `XService.refreshWebSettings(context, packageName, versionCode)` 发起 HTTP GET 请求，目标地址为 `http://127.0.0.1:8788/<packageName>/<versionCode>/config.json`。
-3. **分发写入**：拉取到 JSON 后，调用 `XIpcBridge.writeWebSettingsJson()`。
-4. **IPC 路由**：`XIpcBridge` 根据传入的 `Context` 判断所在进程，决定是直接本地落盘还是通过 `SettingsContentProvider` 跨进程通讯。
-5. **本地落盘**：最终由 `XIpcStoreRepository` 调用 `ConfigPersistence`，将 JSON 真正写入本地文件。
+1. **触发与系统判定**：`MainActivity.onResume()` 调用 `OsUtils.getCurr()` 获取当前系统类型。
+2. **宿主选择**：`resolveTargetHostPackage(osFamily)` 根据系统类型和已安装包列表选择目标宿主包名。
+3. **版本获取**：`getInstalledPackageVersionCode(targetPkg)` 读取目标宿主版本号。
+4. **远程拉取**：调用 `XService.refreshWebSettings(context, packageName, versionCode)` 发起 HTTP GET 请求，目标地址为 `http://127.0.0.1:8788/<packageName>/<versionCode>/config.json`。
+5. **分发写入**：拉取到 JSON 后，调用 `XIpcBridge.writeWebSettingsJson()`。
+6. **IPC 路由**：`XIpcBridge` 根据传入的 `Context` 判断所在进程，决定直接本地落盘或通过 `SettingsContentProvider` 跨进程通讯。
+7. **本地落盘**：最终由 `XIpcStoreRepository` 调用 `ConfigPersistence` 写入本地文件。
 
 ## 宿主进程读取链路
 
 供目标应用在 Hook 运行时动态读取参数与模型配置。读写方向：`Local Disk / IPC -> Host App -> Hook Logic`。
 
-1. **发起读取**：Hook 业务逻辑调用 `XService.getWebSettings(context)` 或 `getLocalSettings(context)`，底层由 `XIpcBridge.read*Json()` 负责获取配置文本。
+1. **发起读取**：Hook 业务逻辑调用 `XService.getWebSettings(context)` 或 `getLocalSettings(context)`，底层由 `XIpcBridge.read*Json()` 获取配置文本。
 2. **JSON 解析**：通过 `parseJsonObject()` 将读取到的字符串反序列化为 `JsonObject`。
 3. **领域对象暴露**：
    - `WebSettings` 暴露通用的 `config` 属性。
-   - `LocalSettings` 暴露 LLM 特定的属性，包含：`endpoint`、`apiKey`、`model`、`prompt`、`proxy`、`takeoverKeywords`。
-4. **云端路径寻址**：具体业务 Hook（如渲染、流控）通过 `BaseConfigProvider.getElement(path)` 使用点号路径（Dot Notation）读取深度嵌套的动态字段。
+   - `LocalSettings` 暴露 LLM 特定配置，包含 endpoint、apiKey、model、prompt、proxy、takeoverKeywords、memoryPrompt、tools、MCP、commandTools 等字段。
+4. **云端路径寻址**：具体业务 Hook 通过 `BaseConfigProvider.getElement(path)` 使用点号路径读取深层动态字段。
 
 ## 核心模块与持久化职责
 
 - **`XIpcBridge`**：作为配置流转的核心路由，根据当前 `Context` 自动判断调用方处于主进程还是宿主进程，隐藏进程差异。
 - **`SettingsContentProvider`**：处理跨进程请求，为没有文件读写权限或路径不同的宿主进程提供访问桥梁。
-- **持久化层 (`XIpcStoreRepository` / `ConfigPersistence`)**：封装基础 I/O 操作与存储媒介细节，执行文件的写入与缓存读取。
+- **持久化层 (`XIpcStoreRepository` / `ConfigPersistence`)**：封装基础 I/O 操作与存储媒介细节，执行文件写入与缓存读取。
 
 ## Server 端策略
 
 本地 Python 静态服务 (`server/server.py`) 负责下发配置：
 
 - **路径匹配规则**：强制按包名作为一级目录结构，匹配规则为 `/<packageName>/<versionCode>/config.json`。不使用 alias。
-- **最近版本回退**：若请求对应的 `<versionCode>` 目录不存在，服务会在同包名 (`<packageName>`) 目录下寻找版本号“距离最近”的配置并返回，以此提供一定的跨版本容错和向前/向后兼容。
+- **最近版本回退**：若请求对应的 `<versionCode>` 目录不存在，服务会在同包名 (`<packageName>`) 目录下寻找版本号“距离最近”的配置并返回。
 
 ## 核心源码参考
 
+- `app/src/main/java/com/niki914/nexus/agentic/app/MainActivity.kt`
 - `app/src/main/java/com/niki914/nexus/agentic/mod/XService.kt`
 - `app/src/main/java/com/niki914/nexus/agentic/mod/HookLocalSettings.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/SettingModels.kt`
 - `ipc/src/main/java/com/niki914/nexus/ipc/XIpcBridge.kt`
 - `ipc/src/main/java/com/niki914/nexus/ipc/cp/SettingsContentProvider.kt`
 - `ipc/src/main/java/com/niki914/nexus/ipc/store/`

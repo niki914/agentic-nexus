@@ -4,28 +4,36 @@
 
 ### LLMController
 - **源码已落地**
-- **负责**：作为流式调用的全局门面，持有唯一的 `Session` 实例与 `RuntimeState`（snapshot）。编排 `refresh`（配置拉取）、`stream`（流式请求）和 `resetConversation`（会话重置）。负责将底层的 `SessionEvent` 映射为项目内的 `LlmStreamEvent`。
-- **不负责**：不直接解析配置组装 Prompt（委托给 `PromptComposer`）；不直接解析 Tool/MCP 的原始配置（委托给 `ToolManager`）；不负责格式化工具事件的宿主展示文本（委托给 `ToolEventFormatter`）。
+- **负责**：作为流式调用的全局门面，持有唯一的 `Session` 实例与 `RuntimeState` snapshot。编排 `refresh`、`stream`、`resetConversation`，并通过 `LlmStreamEventMapper` 将底层 `SessionEvent` 映射为项目内的 `LlmStreamEvent`。
+- **不负责**：不直接解析配置组装 Prompt；不直接解析 Tool/MCP 原始配置；不直接执行具体命令工具。
 
 ### PromptComposer
 - **源码已落地**
-- **职责**：动态组合 `systemPrompt`。通过 `compose` 方法，将 `baseSystemPrompt`、`memorySections`、`toolSections` 和 `runtimeSections` 按照特定顺序拼接，输出包含各区块结构的 `PromptComposeResult`。
+- **职责**：组合 `systemPrompt`，按 `baseSystemPrompt`、memory、tool、runtime 区块产出 `PromptComposeResult`。
 
 ### ToolManager
 - **源码已落地**
-- **职责**：从 `LocalSettings` 提取并解析 Builtin Tools、Custom Tools 以及 MCP Servers 的配置，产出 `ResolvedTools` 对象。同时负责生成提示 LLM 当前可用工具的 prompt lines。
+- **职责**：从 `LocalSettings` 解析 builtin tool flags、custom tools、command tools、MCP servers，产出 `ResolvedTools`，并生成提示 LLM 当前可用工具的 prompt lines。
+
+### SessionToolBinder
+- **源码已落地**
+- **职责**：把 `ResolvedTools` 绑定到 `SessionConfig.Builder`，注册 local tools、HTTP MCP servers，并使用 discovered tools cache 改善 MCP 冷启体验。
+
+### ToolCallDispatcher / CommandToolExecutor
+- **源码已落地**
+- **职责**：在 `ToolCallKind.Local` 回调中查找 `LocalTool.Command`，通过 `/system/bin/sh -c` 执行 `command_tools` 配置的命令，并将成功或失败结果序列化为 JSON 字符串。
 
 ### ToolEventFormatter
 - **源码已落地**
-- **职责**：将结构化的工具运行事件（如 `ToolRunning`、`ToolSucceeded` 等 `LlmStreamEvent`）转化为宿主（Breeno / XiaoAi）可以直接展示的最小文本，并根据宿主特性区分 `AppendOnly` 和 `ReplaceStatus` 两种渲染模式。
+- **职责**：将结构化工具运行事件转成宿主可展示文本，并根据宿主渲染特性区分 `AppendOnly` 和 `ReplaceStatus`。
 
 ## 流式事件映射
 
-`SessionEvent`（底层 SDK 事件）与项目内的 `LlmStreamEvent` 的映射关系在 `LLMController` 中严格落地：
+`SessionEvent` 与项目内 `LlmStreamEvent` 的映射由 `LlmStreamEventMapper` 负责：
 
 - `SessionEvent.RoundStarted` -> `LlmStreamEvent.RoundStarted`
 - `SessionEvent.TextDelta` -> `LlmStreamEvent.TextDelta`（计算累计文本和 `charsPerSecond`）
-- `SessionEvent.ToolRunning` -> `LlmStreamEvent.ToolRunning`（包装为 `ToolCallStatus`）
+- `SessionEvent.ToolRunning` -> `LlmStreamEvent.ToolRunning`
 - `SessionEvent.ToolSucceeded` -> `LlmStreamEvent.ToolSucceeded`
 - `SessionEvent.ToolFailed` -> `LlmStreamEvent.ToolFailed`
 - `SessionEvent.Error` -> `LlmStreamEvent.Error`
@@ -33,13 +41,21 @@
 
 ## Tool/MCP 落地状态
 
-- **MCP 能力（已落地）**：HTTP 类型的 MCP Server 已经完全接入。`ToolManager` 会解析配置，`LLMController` 会将其真实注册到 `Session` 的 MCP DSL 中。
-- **Local Tool 能力（半落地 / 仅 Snapshot）**：内置工具（Builtin Tools）与自定义工具（Custom Tools）在 `ToolManager` 中已经完成配置解析，但**尚未接入执行器**。当前在 `LLMController` 的 Session 初始化闭包中，遇到 `ToolCallKind.Local` 会抛出异常（`has no executor yet`）。
+- **HTTP MCP（已落地）**：`ToolManager` 解析 MCP server 配置，`SessionToolBinder` 注册到 `Session`，`McpInterceptorHttpEngine` 与 `McpDiscoveryCacheStore` 维护 discovered tools cache。
+- **Command Tools（已落地）**：`LocalSettings.commandTools` -> `ToolManager.buildCommandTools()` -> `ResolvedTools.customTools` -> `SessionToolBinder.localTools` -> `ToolCallDispatcher` -> `CommandToolExecutor`。
+- **Custom Tools（半落地）**：配置解析、prompt 暴露与 local tool 注册已存在，但非 command 类型没有对应执行器。
+- **Builtin Tool Flags（半落地）**：配置解析和 prompt lines 已存在，未看到独立 builtin 执行链路。
 
 ## 关键源码入口
 
 - `app/src/main/java/com/niki914/nexus/agentic/chat/LLMController.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/chat/LlmStreamEvent.kt`
 - `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/PromptComposer.kt`
 - `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolManager.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/SessionToolBinder.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolCallDispatcher.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/CommandToolExecutor.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/McpDiscoveryCacheStore.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/McpInterceptorHttpEngine.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/LlmStreamEventMapper.kt`
 - `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolEventFormatter.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/chat/LlmStreamEvent.kt`

@@ -37,27 +37,27 @@
 | --- | --- | --- |
 | `domains/breeno/index.md` | Stable | Breeno 侧业务心智、关键 Hook、源码入口、调试关注点 |
 | `domains/xiaoai/index.md` | Stable | XiaoAi 侧业务心智、关键 Hook、源码入口、调试关注点 |
-| `domains/ui-shell/index.md` | Proposal | UI Shell、onboarding、settings tree、导航状态机、PRD 来源 |
+| `domains/ui-shell/index.md` | In Progress | UI Shell、onboarding、settings tree、导航状态机、PRD 来源 |
 
 ### reference/ — 高频索引与注册表
 
 | 文件 | 层级 | 预期内容 |
 | --- | --- | --- |
 | `reference/source-map.md` | Stable | 关键类、目录、文件入口的相对路径地图 |
-| `reference/task-docs-registry.md` | In Progress | `docs/.asc_task/`、PRD、设计稿的注册表与可信度说明 |
+| `reference/task-docs-registry.md` | In Progress | PRD、设计稿与源码落地状态的注册表 |
 
 ## 检索建议
 
-| 场景                                             | 推荐阅读顺序 |
-|------------------------------------------------| --- |
-| 工程结构、模块职责、关键入口                                 | `overview/project-overview.md` -> `reference/source-map.md` |
-| 现在项目做到哪、哪些能力还没正式落地                             | `overview/current-status.md` -> `reference/task-docs-registry.md` |
-| Xposed 启动、宿主匹配、Hook 安装顺序                       | `architecture/boot-sequence.md` -> `reference/source-map.md` |
-| 会话状态、takeover、turnId、reset                     | `architecture/turn-state.md` |
-| Breeno 响应注入、卡片刷新、相关子 Hook                      | `domains/breeno/index.md` -> `architecture/render-pipeline.md` |
-| XiaoAi 响应目标捕获、文本流/TTS 拦截、分片注入                  | `domains/xiaoai/index.md` -> `architecture/render-pipeline.md` |
-| 配置来源、IPC、server、版本回退                           | `architecture/config-resolution.md` -> `reference/source-map.md` |
-| LLMController、Prompt、Tool、MCP、事件流              | `architecture/llm-runtime.md` -> `overview/current-status.md` |
- | S3ss10n 库 - LLM 及 MCP 网络请求相关                   | SESSION.md
- | UI、onboarding、settings tree、Liquid Glass、导航状态机 | `domains/ui-shell/index.md` -> `reference/task-docs-registry.md` |
- | 某个设计文档是否已经实现                                   | `reference/task-docs-registry.md` -> `overview/current-status.md` -> 相关源码路径 |
+| 场景 | 推荐阅读顺序 |
+| --- | --- |
+| 工程结构、模块职责、关键入口 | `overview/project-overview.md` -> `reference/source-map.md` |
+| 现在项目做到哪、哪些能力还没正式落地 | `overview/current-status.md` -> `reference/task-docs-registry.md` |
+| Xposed 启动、宿主匹配、Hook 安装顺序 | `architecture/boot-sequence.md` -> `reference/source-map.md` |
+| 会话状态、takeover、turnId、reset | `architecture/turn-state.md` |
+| Breeno 响应注入、卡片刷新、相关子 Hook | `domains/breeno/index.md` -> `architecture/render-pipeline.md` |
+| XiaoAi 响应目标捕获、文本流/TTS 拦截、分片注入 | `domains/xiaoai/index.md` -> `architecture/render-pipeline.md` |
+| 配置来源、IPC、server、版本回退 | `architecture/config-resolution.md` -> `reference/source-map.md` |
+| LLMController、Prompt、Tool、MCP、事件流 | `architecture/llm-runtime.md` -> `overview/current-status.md` |
+| S3ss10n 库、LLM 及 MCP 网络请求 | `SESSION.md` |
+| UI、onboarding、settings tree、Liquid Glass、导航状态机 | `domains/ui-shell/index.md` -> `reference/task-docs-registry.md` |
+| 某个设计文档是否已经实现 | `reference/task-docs-registry.md` -> `overview/current-status.md` -> 相关源码路径 |

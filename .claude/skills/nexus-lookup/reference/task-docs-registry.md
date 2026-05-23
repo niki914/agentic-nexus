@@ -1,25 +1,33 @@
 # Task Docs Registry
 
-## 目的
+## UI 与导航系列
 
-本文件用于登记任务文档、PRD、设计稿，并说明它们与当前源码实现之间的关系。
+### `UI-PRD.md`
 
-## 注册列表
-
-### UI 与导航系列
-
-**[UI PRD: Nexus App Shell v1](UI-PRD.md)**
-- **主题**：定义 App Shell 的信息架构和页面流，涵盖从冷启（Startup/Onboarding）到 Home，再到 Settings 树的 UI 规范与状态模型。
+- **主题**：定义 App Shell 的信息架构和页面流，涵盖 Startup、Home、Configure、Selection、Settings 树以及 Liquid Glass UI 方向。
 - **状态**：`部分落地`
-- **源码落地**：部分
+- **已落地**：`NexusApp`、主要页面 content、Liquid 基础组件、导航控制器、Settings 主页/详情页、命令工具设置页。
+- **仍需核对**：PRD 中的完整动效、极端状态、细粒度设置树覆盖情况。
 - **源码核对入口**：
-  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/feat/`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/`
   - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/nav/NavigationController.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/nav/Page.kt`
 
-**[PRD: Navigation State Machine](prd-nav-status-machine.md)**
-- **主题**：设计了一套轻量级导航状态机（`NavigationController` 与 `Page` 接口），用于统一处理线性条件流（如冷启引导）和树状钻取流（如设置项）。
-- **状态**：`部分落地`
-- **源码落地**：部分
+### `apple-liquid-glass-philosophy.md`
+
+- **主题**：Liquid Glass 视觉原则与组件设计参考。
+- **状态**：`参考文档`
 - **源码核对入口**：
-  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/NavigationController.kt`
-  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/Page.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/component/`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/LiquidScreen.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/LiquidScreenState.kt`
+
+### `SESSION.md`
+
+- **主题**：S3ss10n、LLM 和 MCP 网络请求相关记录。
+- **状态**：`参考文档`
+- **源码核对入口**：
+  - `app/src/main/java/com/niki914/nexus/agentic/chat/LLMController.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/`

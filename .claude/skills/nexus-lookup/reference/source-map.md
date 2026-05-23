@@ -30,8 +30,33 @@
 - `LlmStreamEvent.kt`: 流事件定义
 - `LlmModels.kt`: 模型定义
 - `agentic/PromptComposer.kt`: 提示词组装
-- `agentic/ToolManager.kt`: 工具管理器
+- `agentic/ToolManager.kt`: 工具配置解析与 prompt lines 生成
+- `agentic/SessionToolBinder.kt`: local tools 与 MCP servers 绑定
+- `agentic/ToolCallDispatcher.kt`: local tool 调度
+- `agentic/CommandToolExecutor.kt`: command tools 执行器
+- `agentic/McpDiscoveryCacheStore.kt`: MCP discovered tools 缓存
+- `agentic/McpInterceptorHttpEngine.kt`: MCP discovery HTTP interceptor
+- `agentic/LlmStreamEventMapper.kt`: `SessionEvent` 到 `LlmStreamEvent` 的映射
 - `agentic/ToolEventFormatter.kt`: 工具事件格式化
+
+## app/src/main/java/com/niki914/nexus/agentic/app/ui/
+
+- `nexus/NexusApp.kt`: 主 App Shell 入口
+- `nexus/NexusPages.kt`: Nexus 页面装配
+- `nexus/nav/NexusPage.kt`: Nexus 页面定义
+- `nexus/nav/NexusSettingsGroup.kt`: 设置组模型
+- `nexus/content/StartupPageContent.kt`: 启动页内容
+- `nexus/content/HomePageContent.kt`: 首页内容
+- `nexus/content/ConfigurePageContent.kt`: 配置页内容
+- `nexus/content/SelectionPageContent.kt`: 选择页内容
+- `nexus/content/SettingsHomePageContent.kt`: 设置首页内容
+- `nexus/content/SettingsDetailPageContent.kt`: 设置详情内容
+- `nexus/content/CustomToolsSettingsContent.kt`: 命令工具设置页
+- `infra/nav/NavigationController.kt`: 导航控制器
+- `infra/nav/Navigator.kt`: 导航能力接口
+- `infra/nav/Page.kt`: 页面接口
+- `infra/nav/PageViewModel.kt`: 页面 ViewModel 基类
+- `infra/component/`: Liquid 与设置项基础组件
 
 ## app/src/main/java/a0/a0/a0/a0/a0/a0/
 
@@ -40,11 +65,15 @@
 ## app/src/main/java/com/niki914/nexus/agentic/mod/
 
 - `XService.kt`: 本地/远程配置门面
+- `SettingModels.kt`: `LocalSettings`、`WebSettings` 等配置模型
+- `HookLocalSettings.kt`: Hook 侧本地配置读取
 
 ## ipc/src/main/java/com/niki914/nexus/ipc/
 
 - `XIpcBridge.kt`: IPC 桥接
 - `XRes.kt`: 宿主枚举与 IPC 常量
+- `cp/SettingsContentProvider.kt`: 跨进程配置 Provider
+- `store/`: 配置持久化存储
 
 ## server/
 
@@ -55,6 +84,6 @@
 ## 根目录文档
 
 - `README.md`: 主 README
+- `SESSION.md`: S3ss10n / LLM / MCP 相关记录
 - `UI-PRD.md`: UI 与 PRD
-- `prd-nav-status-machine.md`: 导航状态机 PRD
 - `apple-liquid-glass-philosophy.md`: 苹果 Liquid Glass 设计理念
