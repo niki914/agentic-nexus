@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +28,7 @@ import com.niki914.nexus.agentic.app.ui.infra.nav.LocalNavigationEntry
 import com.niki914.nexus.agentic.app.ui.infra.nav.rememberNavigationController
 import com.niki914.nexus.agentic.app.ui.infra.rememberLiquidScreenState
 import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
+import com.niki914.nexus.agentic.app.ui.nexus.model.rememberHomeChatController
 import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsHomePage
@@ -37,10 +39,13 @@ fun NexusApp(
     startupAssistantUi: StartupAssistantUi,
 ) {
     val controller = rememberNavigationController<NexusPage>(initialPage = StartupPage)
+    val homeChatController = rememberHomeChatController()
+    val appScope = rememberCoroutineScope()
     val navigator = controller.navigator
     val currentEntry = controller.currentEntry
     val currentPage = currentEntry.page
     val currentTitle = currentPage.titleRes?.let { stringResource(it) }.orEmpty()
+    val clearMenuLabel = stringResource(R.string.nexus_home_menu_clear)
     val settingsMenuLabel = stringResource(R.string.nexus_settings_menu_entry)
     val screenState = rememberLiquidScreenState(
         title = currentTitle,
@@ -128,6 +133,7 @@ fun NexusApp(
                         topPadding = screenState.actionBarHeight.value,
                         hazeState = hazeState,
                         startupAssistantUi = startupAssistantUi,
+                        homeChatController = homeChatController,
                         onPush = ::push,
                     )
                 }
@@ -142,6 +148,13 @@ fun NexusApp(
                     expanded = currentPage == HomePage && homeMenuExpanded,
                     onDismissRequest = ::closeHomeMenu,
                 ) {
+                    DropdownMenuItem(
+                        text = { Text(clearMenuLabel) },
+                        onClick = {
+                            closeHomeMenu()
+                            homeChatController.clearConversation(appScope)
+                        },
+                    )
                     DropdownMenuItem(
                         text = { Text(settingsMenuLabel) },
                         onClick = { push(SettingsHomePage) },

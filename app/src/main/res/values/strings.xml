@@ -32,6 +32,12 @@
     <string name="nexus_home_title">Nexus</string>
     <string name="nexus_home_headline">主页占位</string>
     <string name="nexus_home_description">聊天界面暂未接入，本页仅用于承接正式 chrome 和设置入口。</string>
+    <string name="nexus_home_menu_clear">清除</string>
+    <string name="nexus_home_input_placeholder">输入消息...</string>
+    <string name="nexus_home_tool_running">running</string>
+    <string name="nexus_home_tool_succeeded">succeeded</string>
+    <string name="nexus_home_tool_failed">failed</string>
+    <string name="nexus_home_send_content_description">发送消息</string>
 
     <string name="nexus_settings_title">设置</string>
     <string name="nexus_settings_menu_entry">设置</string>

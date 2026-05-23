@@ -12,6 +12,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.content.SelectionPageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SettingsDetailPageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SettingsHomePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.StartupPageContent
+import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatController
 import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
 import com.niki914.nexus.agentic.app.ui.nexus.nav.ConfigurePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.DonePage
@@ -29,6 +30,7 @@ fun NexusPageContent(
     topPadding: Dp,
     hazeState: HazeState,
     startupAssistantUi: StartupAssistantUi,
+    homeChatController: HomeChatController,
     onPush: (NexusPage) -> Unit,
 ) {
     when (val page = entry.page) {
@@ -94,6 +96,7 @@ fun NexusPageContent(
         HomePage -> HomePageContent(
             topPadding = topPadding,
             hazeState = hazeState,
+            chatController = homeChatController,
         )
 
         SettingsHomePage -> SettingsHomePageContent(
