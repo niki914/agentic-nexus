@@ -1,13 +1,12 @@
 package com.niki914.nexus.agentic.chat.agentic
 
 import android.content.Context
-import com.niki914.nexus.agentic.chat.LocalToolDefinition
+import com.niki914.nexus.agentic.chat.LocalTool
 import com.niki914.nexus.agentic.chat.LocalToolParameter
 import com.niki914.nexus.agentic.chat.McpCachedTool
 import com.niki914.nexus.agentic.chat.McpServerDefinition
 import com.niki914.nexus.agentic.chat.ResolvedTools
 import com.niki914.nexus.agentic.chat.ToolParameterType
-import com.niki914.nexus.agentic.chat.ToolSource
 import com.niki914.nexus.agentic.chat.mcpCacheKey
 import com.niki914.nexus.agentic.mod.LocalSettings
 import kotlinx.serialization.json.JsonArray
@@ -41,7 +40,7 @@ class ToolManager {
         )
     }
 
-    private fun buildBuiltinTools(settings: LocalSettings): List<LocalToolDefinition> {
+    private fun buildBuiltinTools(settings: LocalSettings): List<LocalTool.Builtin> {
         return settings.builtinToolFlags
             .orEmpty()
             .mapNotNull { (name, value) ->
@@ -53,34 +52,32 @@ class ToolManager {
                 if (!enabled) {
                     null
                 } else {
-                    LocalToolDefinition(
+                    LocalTool.Builtin(
                         name = name,
                         description = (value as? JsonObject)?.string("description")
                             ?: "Builtin tool: $name",
-                        source = ToolSource.Builtin,
                     )
                 }
             }
             .sortedBy { it.name }
     }
 
-    private fun buildCustomTools(settings: LocalSettings): List<LocalToolDefinition> {
+    private fun buildCustomTools(settings: LocalSettings): List<LocalTool.UserDefined> {
         return settings.customTools
             .orEmptyObjects()
             .mapNotNull { obj ->
                 val name = obj.string("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
-                LocalToolDefinition(
+                LocalTool.UserDefined(
                     name = name,
                     description = obj.string("description"),
                     parameters = obj.array("parameters").orEmptyObjects()
                         .mapNotNull(::parseParameter),
-                    source = ToolSource.UserDefined,
                     rawInputSchemaJson = obj.string("raw_input_schema").ifBlank { null },
                 )
             }
     }
 
-    private fun buildCommandTools(settings: LocalSettings): List<LocalToolDefinition> {
+    private fun buildCommandTools(settings: LocalSettings): List<LocalTool.Command> {
         return settings.commandTools
             .orEmptyObjects()
             .mapNotNull { obj ->
@@ -91,14 +88,13 @@ class ToolManager {
                     return@mapNotNull null
                 }
                 val description = obj.string("description").ifBlank { "Command tool: $name" }
-                LocalToolDefinition(
+                LocalTool.Command(
                     name = name,
                     description = description,
-                    source = ToolSource.Command,
                     command = command,
                 )
             }
-            .associateBy(LocalToolDefinition::name)
+            .associateBy(LocalTool.Command::name)
             .values
             .toList()
     }
@@ -163,13 +159,13 @@ class ToolManager {
     }
 
     fun buildPromptLines(
-        builtinTools: List<LocalToolDefinition>,
-        customTools: List<LocalToolDefinition>,
+        builtinTools: List<LocalTool>,
+        customTools: List<LocalTool>,
         mcpServers: List<McpServerDefinition>,
     ): List<String> {
         val lines = mutableListOf<String>()
         val commandToolNames = customTools
-            .filter { it.source == ToolSource.Command }
+            .filterIsInstance<LocalTool.Command>()
             .map { it.name }
         if (commandToolNames.isNotEmpty()) {
             lines += "Available command tools: ${commandToolNames.joinToString()}"

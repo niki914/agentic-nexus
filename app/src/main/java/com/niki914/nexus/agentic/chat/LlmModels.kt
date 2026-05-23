@@ -21,22 +21,34 @@ data class ResolvedLlmConfig(
 )
 
 data class ResolvedTools(
-    val builtinTools: List<LocalToolDefinition> = emptyList(),
-    val customTools: List<LocalToolDefinition> = emptyList(),
+    val builtinTools: List<LocalTool> = emptyList(),
+    val customTools: List<LocalTool> = emptyList(),
     val mcpServers: List<McpServerDefinition> = emptyList(),
     val promptLines: List<String> = emptyList(),
 )
 
-data class LocalToolDefinition(
-    val name: String,
-    val description: String,
-    val parameters: List<LocalToolParameter> = emptyList(),
-    val source: ToolSource = ToolSource.Builtin,
-    // 仅用于把已有 JSON schema 透传给 session，本身不参与命令执行。
-    val rawInputSchemaJson: String? = null,
-    // 仅命令型 Tool 使用，表示用户配置的固定命令字符串；Builtin/MCP 派生工具必须为 null。
-    val command: String? = null,
-)
+sealed interface LocalTool {
+    val name: String
+    val description: String
+
+    data class Builtin(
+        override val name: String,
+        override val description: String,
+    ) : LocalTool
+
+    data class UserDefined(
+        override val name: String,
+        override val description: String,
+        val parameters: List<LocalToolParameter> = emptyList(),
+        val rawInputSchemaJson: String? = null,
+    ) : LocalTool
+
+    data class Command(
+        override val name: String,
+        override val description: String,
+        val command: String,
+    ) : LocalTool
+}
 
 data class LocalToolParameter(
     val name: String,
@@ -44,12 +56,6 @@ data class LocalToolParameter(
     val required: Boolean = false,
     val type: ToolParameterType = ToolParameterType.String,
 )
-
-enum class ToolSource {
-    Builtin,
-    UserDefined,
-    Command,
-}
 
 enum class ToolParameterType {
     String,
@@ -65,6 +71,14 @@ data class McpCachedTool(
     val description: String,
     val inputSchema: JsonObject,
 )
+
+fun ResolvedTools.allLocalTools(): List<LocalTool> {
+    return builtinTools + customTools
+}
+
+fun ResolvedTools.allLocalToolNames(): List<String> {
+    return allLocalTools().map { it.name }
+}
 
 internal fun mcpCacheKey(
     url: String,
