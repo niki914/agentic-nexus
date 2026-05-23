@@ -58,10 +58,7 @@ internal object XIpcStoreRepository {
         context: Context,
         store: IpcContract.Store
     ): String? {
-        return when (store) {
-            IpcContract.Store.WEB_SETTINGS -> ConfigPersistence.readWebSettings(context)
-            IpcContract.Store.LOCAL_SETTINGS -> ConfigPersistence.readLocalSettings(context)
-        }
+        return ConfigPersistence.readJson(context, store)
     }
 
     private fun writePersistedJson(
@@ -69,10 +66,7 @@ internal object XIpcStoreRepository {
         store: IpcContract.Store,
         json: String
     ) {
-        when (store) {
-            IpcContract.Store.WEB_SETTINGS -> ConfigPersistence.writeWebSettings(context, json)
-            IpcContract.Store.LOCAL_SETTINGS -> ConfigPersistence.writeLocalSettings(context, json)
-        }
+        ConfigPersistence.writeJson(context, store, json)
     }
 
     private fun updateJsonValue(

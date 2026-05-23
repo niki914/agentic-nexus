@@ -36,6 +36,7 @@ object XValues {
 
 object IpcContract {
     const val AUTHORITY = "com.niki914.nexus.ipc.provider"
+    const val STORE_FILE_ROOT = "stores"
     val CONTENT_URI: Uri = "content://$AUTHORITY".toUri()
 
     enum class Method(val wireName: String) {
@@ -66,13 +67,15 @@ object IpcContract {
         TITLE("title"),
         CONTENT("content"),
         URI("uri"),
-        SUCCESS("success")
+        SUCCESS("success"),
+        STORE_URI("store_uri")
     }
 
     enum class Store(
         val readMethod: Method,
         val writeMethod: Method,
         val mutateMethod: Method,
+        val filePathSegment: String,
         val payloadField: Field,
         val legacyPayloadField: Field? = null
     ) {
@@ -80,6 +83,7 @@ object IpcContract {
             readMethod = Method.GET_WEB_SETTINGS,
             writeMethod = Method.PUT_WEB_SETTINGS,
             mutateMethod = Method.MUTATE_WEB_SETTINGS,
+            filePathSegment = "web_settings",
             payloadField = Field.WEB_SETTINGS_JSON,
             legacyPayloadField = Field.CONFIG_JSON
         ),
@@ -87,8 +91,24 @@ object IpcContract {
             readMethod = Method.GET_LOCAL_SETTINGS,
             writeMethod = Method.PUT_LOCAL_SETTINGS,
             mutateMethod = Method.MUTATE_LOCAL_SETTINGS,
+            filePathSegment = "local_settings",
             payloadField = Field.LOCAL_SETTINGS_JSON
-        )
+        );
+
+        val fileUri: Uri
+            get() = CONTENT_URI.buildUpon()
+                .appendPath(STORE_FILE_ROOT)
+                .appendPath(filePathSegment)
+                .build()
+
+        companion object {
+            private val byFilePathSegment = entries.associateBy(Store::filePathSegment)
+
+            fun fromFilePathSegments(pathSegments: List<String>): Store? {
+                if (pathSegments.size != 2 || pathSegments[0] != STORE_FILE_ROOT) return null
+                return byFilePathSegment[pathSegments[1]]
+            }
+        }
     }
 }
 

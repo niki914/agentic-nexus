@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import com.google.android.material.color.DynamicColors
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.mod.XService
+import com.niki914.nexus.h.util.xlog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -35,6 +36,7 @@ class App : Application() {
     }
 
     private fun shouldSeedDefaultSettings(settings: LocalSettings): Boolean {
+        return true
         return settings.endpoint.isBlank() &&
             settings.model.isBlank() &&
             settings.commandTools == null
@@ -45,6 +47,9 @@ class App : Application() {
         buildDefaultProps().forEach { (key, value) ->
             if (shouldApplyDefaultValue(existingSettings, key)) {
                 mergedProps[key] = value
+                xlog("mergeDefaultLocalSettings put: $key, value: $value")
+            } else {
+                xlog("mergeDefaultLocalSettings skip putting $key, curr value: ${existingSettings.apiKey}")
             }
         }
         return LocalSettings(JsonObject(mergedProps))

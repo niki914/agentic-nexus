@@ -2,6 +2,7 @@ package com.niki914.nexus.ipc
 
 import android.content.Context
 import android.os.Bundle
+import com.niki914.nexus.h.util.xlog
 import com.niki914.nexus.ipc.store.XIpcStoreRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -88,7 +89,7 @@ object XIpcBridge {
         store: IpcContract.Store,
         json: String
     ) {
-        if (shouldUseProvider(context)) {
+        val writeSucceeded = if (shouldUseProvider(context)) {
             withContext(Dispatchers.IO) {
                 writeJsonViaProvider(
                     context = context,
@@ -98,8 +99,11 @@ object XIpcBridge {
             }
         } else {
             XIpcStoreRepository.writeJson(context, store, json)
+            true
         }
-        updateWebCacheIfNeeded(store, json)
+        if (writeSucceeded) {
+            updateWebCacheIfNeeded(store, json)
+        }
     }
 
     suspend fun mutateSetting(
@@ -163,38 +167,47 @@ object XIpcBridge {
     ): String {
         return if (shouldUseProvider(context)) {
             withContext(Dispatchers.IO) {
-                readJsonViaProvider(context, store)
+                readJsonViaProviderFile(context, store)
             }
         } else {
             XIpcStoreRepository.readJson(context, store)
         }
     }
 
-    private fun readJsonViaProvider(
+    private fun readJsonViaProviderFile(
         context: Context,
         store: IpcContract.Store
     ): String {
-        return callProvider(
-            context = context,
-            method = store.readMethod
-        )?.let { bundle ->
-            bundle.readString(store.payloadField)
-                ?: store.legacyPayloadField?.let { field ->
-                    bundle.readString(field)
-                }
-        } ?: EMPTY_JSON
+        return try {
+            val json = context.contentResolver.openInputStream(store.fileUri)
+                ?.bufferedReader(Charsets.UTF_8)
+                ?.use { it.readText() }
+
+            if (json.isNullOrBlank()) {
+                xlog("XIpcBridge read store=${store.name} channel=file fallback=empty")
+                EMPTY_JSON
+            } else {
+                xlog("XIpcBridge read store=${store.name} channel=file chars=${json.length}")
+                json
+            }
+        } catch (t: Throwable) {
+            xlog("XIpcBridge read store=${store.name} channel=file fallback=${t.message}")
+            EMPTY_JSON
+        }
     }
 
     private fun writeJsonViaProvider(
         context: Context,
         store: IpcContract.Store,
         json: String
-    ) {
-        callProvider(
+    ): Boolean {
+        val success = callProvider(
             context = context,
             method = store.writeMethod,
             extras = ipcBundleOf(store.payloadField to json)
-        )
+        )?.readBoolean(IpcContract.Field.SUCCESS) == true
+        xlog("XIpcBridge write store=${store.name} chars=${json.length} success=$success")
+        return success
     }
 
     private fun mutateJsonViaProvider(
@@ -203,19 +216,18 @@ object XIpcBridge {
         key: String,
         valueJson: String
     ): String {
-        return callProvider(
+        val success = callProvider(
             context = context,
             method = store.mutateMethod,
             extras = ipcBundleOf(
                 IpcContract.Field.PATH to key,
                 IpcContract.Field.VALUE_JSON to valueJson
             )
-        )?.let { bundle ->
-            bundle.readString(store.payloadField)
-                ?: store.legacyPayloadField?.let { field ->
-                    bundle.readString(field)
-                }
-        } ?: readJsonViaProvider(context, store)
+        )?.readBoolean(IpcContract.Field.SUCCESS) == true
+        xlog(
+            "XIpcBridge mutate store=${store.name} key=$key valueChars=${valueJson.length} success=$success"
+        )
+        return readJsonViaProviderFile(context, store)
     }
 
     private fun callProvider(

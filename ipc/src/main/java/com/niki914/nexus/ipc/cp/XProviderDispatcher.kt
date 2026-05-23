@@ -18,10 +18,7 @@ internal object XProviderDispatcher {
     ): Bundle? {
         return when (method) {
             IpcContract.Method.GET_CONFIG,
-            IpcContract.Method.GET_WEB_SETTINGS -> respondWithStore(
-                context = context,
-                store = IpcContract.Store.WEB_SETTINGS
-            )
+            IpcContract.Method.GET_WEB_SETTINGS -> respondWithStoreHandle(IpcContract.Store.WEB_SETTINGS)
 
             IpcContract.Method.PUT_WEB_SETTINGS -> {
                 val json = extras?.readString(IpcContract.Store.WEB_SETTINGS.payloadField)
@@ -29,42 +26,43 @@ internal object XProviderDispatcher {
                         extras?.readString(field)
                     }
                     ?: return null
-                respondWithWrittenStore(
+                writeStore(
                     context = context,
                     store = IpcContract.Store.WEB_SETTINGS,
                     json = json
                 )
+                respondSuccess()
             }
 
             IpcContract.Method.MUTATE_WEB_SETTINGS -> {
-                respondWithMutatedStore(
+                mutateStore(
                     context = context,
                     store = IpcContract.Store.WEB_SETTINGS,
                     extras = extras
-                )
+                ) ?: return null
+                respondSuccess()
             }
 
-            IpcContract.Method.GET_LOCAL_SETTINGS -> respondWithStore(
-                context = context,
-                store = IpcContract.Store.LOCAL_SETTINGS
-            )
+            IpcContract.Method.GET_LOCAL_SETTINGS -> respondWithStoreHandle(IpcContract.Store.LOCAL_SETTINGS)
 
             IpcContract.Method.PUT_LOCAL_SETTINGS -> {
                 val json = extras?.readString(IpcContract.Store.LOCAL_SETTINGS.payloadField)
                     ?: return null
-                respondWithWrittenStore(
+                writeStore(
                     context = context,
                     store = IpcContract.Store.LOCAL_SETTINGS,
                     json = json
                 )
+                respondSuccess()
             }
 
             IpcContract.Method.MUTATE_LOCAL_SETTINGS -> {
-                respondWithMutatedStore(
+                mutateStore(
                     context = context,
                     store = IpcContract.Store.LOCAL_SETTINGS,
                     extras = extras
-                )
+                ) ?: return null
+                respondSuccess()
             }
 
             IpcContract.Method.POST_NOTIFICATION -> {
@@ -77,38 +75,36 @@ internal object XProviderDispatcher {
         }
     }
 
-    private fun respondWithStore(
-        context: Context,
+    private fun respondWithStoreHandle(
         store: IpcContract.Store
     ): Bundle {
-        val json = runBlocking {
-            XIpcStoreRepository.readJson(context, store)
-        }
-        return storeResponse(store, json)
+        return ipcBundleOf(
+            IpcContract.Field.SUCCESS to true,
+            IpcContract.Field.STORE_URI to store.fileUri.toString()
+        )
     }
 
-    private fun respondWithWrittenStore(
+    private fun writeStore(
         context: Context,
         store: IpcContract.Store,
         json: String
-    ): Bundle {
-        val updatedJson = runBlocking {
+    ) {
+        runBlocking {
             XIpcStoreRepository.writeJson(context, store, json)
         }
-        return storeResponse(store, updatedJson)
     }
 
-    private fun respondWithMutatedStore(
+    private fun mutateStore(
         context: Context,
         store: IpcContract.Store,
         extras: Bundle?
-    ): Bundle? {
+    ): Unit? {
         val path = extras?.readString(IpcContract.Field.PATH)
             ?.takeIf(String::isNotBlank)
             ?: return null
         val valueJson = extras.readString(IpcContract.Field.VALUE_JSON)
             ?: return null
-        val updatedJson = runBlocking {
+        runBlocking {
             XIpcStoreRepository.mutateJson(
                 context = context,
                 store = store,
@@ -116,18 +112,10 @@ internal object XProviderDispatcher {
                 valueJson = valueJson
             )
         }
-        return storeResponse(store, updatedJson)
+        return Unit
     }
 
-    private fun storeResponse(
-        store: IpcContract.Store,
-        json: String
-    ): Bundle {
-        val pairs = buildList {
-            add(IpcContract.Field.SUCCESS to true)
-            add(store.payloadField to json)
-            store.legacyPayloadField?.let { add(it to json) }
-        }
-        return ipcBundleOf(*pairs.toTypedArray())
+    private fun respondSuccess(): Bundle {
+        return ipcBundleOf(IpcContract.Field.SUCCESS to true)
     }
 }

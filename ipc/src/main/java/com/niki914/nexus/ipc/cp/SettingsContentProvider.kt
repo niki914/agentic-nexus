@@ -2,13 +2,16 @@ package com.niki914.nexus.ipc.cp
 
 import android.content.ContentProvider
 import android.content.ContentValues
+import android.content.Context
 import android.database.Cursor
 import android.net.Uri
-import android.os.Bundle
 import android.os.Binder
+import android.os.Bundle
+import android.os.ParcelFileDescriptor
 import android.os.Process
 import com.niki914.nexus.ipc.IpcContract
 import com.niki914.nexus.ipc.XValues
+import com.niki914.nexus.ipc.store.ConfigPersistence
 
 class SettingsContentProvider : ContentProvider() {
 
@@ -16,21 +19,7 @@ class SettingsContentProvider : ContentProvider() {
 
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
         val appContext = context ?: return null
-        
-        val callingUid = Binder.getCallingUid()
-        if (callingUid != Process.myUid()) {
-            val callerPackages = appContext.packageManager.getPackagesForUid(callingUid) ?: emptyArray()
-            val callingPkg = callingPackage
-            if (callingPkg != null) {
-                if (callingPkg !in XValues.appList || callingPkg !in callerPackages) {
-                    return null
-                }
-            } else {
-                if (callerPackages.none { it in XValues.appList }) {
-                    return null
-                }
-            }
-        }
+        if (!isCallerAllowed(appContext)) return null
 
         val resolvedMethod = IpcContract.Method.fromWire(method)
             ?: return super.call(method, arg, extras)
@@ -39,6 +28,29 @@ class SettingsContentProvider : ContentProvider() {
             method = resolvedMethod,
             extras = extras
         ) ?: super.call(method, arg, extras)
+    }
+
+    override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor? {
+        if (mode != "r") return null
+        val appContext = context ?: return null
+        if (!isCallerAllowed(appContext)) return null
+        val store = IpcContract.Store.fromFilePathSegments(uri.pathSegments) ?: return null
+        val file = ConfigPersistence.fileFor(appContext, store)
+        if (!file.exists()) return null
+        return ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+    }
+
+    private fun isCallerAllowed(appContext: Context): Boolean {
+        val callingUid = Binder.getCallingUid()
+        if (callingUid == Process.myUid()) return true
+
+        val callerPackages = appContext.packageManager.getPackagesForUid(callingUid) ?: emptyArray()
+        val callingPkg = callingPackage
+        return if (callingPkg != null) {
+            callingPkg in XValues.appList && callingPkg in callerPackages
+        } else {
+            callerPackages.any { it in XValues.appList }
+        }
     }
 
     override fun query(uri: Uri, p1: Array<out String>?, p2: String?, p3: Array<out String>?, p4: String?): Cursor? = null
