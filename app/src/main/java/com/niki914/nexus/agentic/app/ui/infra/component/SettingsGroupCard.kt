@@ -7,13 +7,20 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.kyant.capsule.Continuity
+import com.kyant.capsule.continuities.G2Continuity
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.unit.LayoutDirection
 
 /**
  * iOS 风分组卡片：外置章节标题 + 圆角卡片容器。
@@ -31,7 +38,7 @@ fun SettingsGroupCard(
 ) {
     val titleColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
     val cardColor = MaterialTheme.colorScheme.surfaceContainer
-    val cardShape = RoundedCornerShape(28.dp)
+    val cardShape = G2RoundedCornerShape(28.dp)
 
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
@@ -45,9 +52,29 @@ fun SettingsGroupCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(cardShape)
-                .background(cardColor, cardShape)
-                .padding(vertical = 4.dp),
+                .background(cardColor, cardShape),
             content = content,
+        )
+    }
+}
+
+private data class G2RoundedCornerShape(
+    val cornerRadius: Dp,
+    val continuity: Continuity = G2Continuity(),
+) : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density,
+    ): Outline {
+        val radius = with(density) { cornerRadius.toPx() }
+            .coerceAtMost(size.minDimension / 2f)
+        return continuity.createRoundedRectangleOutline(
+            size = size,
+            topLeft = radius,
+            topRight = radius,
+            bottomRight = radius,
+            bottomLeft = radius,
         )
     }
 }
