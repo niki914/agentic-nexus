@@ -25,6 +25,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
 
+// TODO P1 [Parse] HTTP 400 , body={"error":{"message":"Invalid assistant message: content or toolcalls must be set","type":"invalidrequesterror","param":null,"code":"invalidrequest_error"}}
+// TODO P0 rm caches when mcp server is inreachable
+// TODO UI 认领你的 AI 伴侣
+// TODO Provider page --> Theme color and Icon, e.g. [🐳 (#3964fe) DeepSeek/深度求索] <----- Wowwwww
+// TODO 然后这个颜色可以传到下一页 hhhh <--- 用 colors.xml 记录主流的色
+// TODO impl a mcpHooks {} like hooks to make mcp update easier
 object LLMController {
     private val promptComposer = PromptComposer()
     private val toolManager = ToolManager()
