@@ -38,11 +38,7 @@ fun HomePageContent(
     val density = LocalDensity.current
     val imeBottom = with(density) { WindowInsets.ime.getBottom(this).toDp() }
     val navigationBottom = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
-    val composerBottomPadding = if (imeBottom > 0.dp) {
-        imeBottom + 2.dp
-    } else {
-        navigationBottom + 20.dp
-    }
+    val composerBottomPadding = (imeBottom + 12.dp).coerceAtLeast(navigationBottom + 20.dp)
 
     Box(
         modifier = Modifier
@@ -71,7 +67,7 @@ fun HomePageContent(
             }
         }
 
-        LiquidChatComposer(
+        LiquidChatComposer( // TODO P2 限制输入框最大行数
             value = uiState.input,
             onValueChange = { value ->
                 viewModel.sendIntent(HomeChatIntent.InputChanged(value))
