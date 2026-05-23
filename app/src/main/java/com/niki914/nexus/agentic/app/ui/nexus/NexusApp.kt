@@ -13,13 +13,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.LiquidScreen
 import com.niki914.nexus.agentic.app.ui.infra.LiquidScreenSwipeContent
@@ -27,8 +27,9 @@ import com.niki914.nexus.agentic.app.ui.infra.TitleDirection
 import com.niki914.nexus.agentic.app.ui.infra.nav.LocalNavigationEntry
 import com.niki914.nexus.agentic.app.ui.infra.nav.rememberNavigationController
 import com.niki914.nexus.agentic.app.ui.infra.rememberLiquidScreenState
+import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatIntent
+import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
-import com.niki914.nexus.agentic.app.ui.nexus.model.rememberHomeChatController
 import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsHomePage
@@ -39,11 +40,20 @@ fun NexusApp(
     startupAssistantUi: StartupAssistantUi,
 ) {
     val controller = rememberNavigationController<NexusPage>(initialPage = StartupPage)
-    val homeChatController = rememberHomeChatController()
-    val appScope = rememberCoroutineScope()
     val navigator = controller.navigator
     val currentEntry = controller.currentEntry
     val currentPage = currentEntry.page
+    val currentHomeChatViewModel = if (currentPage == HomePage) {
+        remember(currentEntry) {
+            val viewModelClass = HomeChatViewModel::class.java
+            ViewModelProvider(
+                currentEntry,
+                ViewModelProvider.NewInstanceFactory(),
+            )[viewModelClass.name, viewModelClass]
+        }
+    } else {
+        null
+    }
     val currentTitle = currentPage.titleRes?.let { stringResource(it) }.orEmpty()
     val clearMenuLabel = stringResource(R.string.nexus_home_menu_clear)
     val settingsMenuLabel = stringResource(R.string.nexus_settings_menu_entry)
@@ -133,7 +143,6 @@ fun NexusApp(
                         topPadding = screenState.actionBarHeight.value,
                         hazeState = hazeState,
                         startupAssistantUi = startupAssistantUi,
-                        homeChatController = homeChatController,
                         onPush = ::push,
                     )
                 }
@@ -152,7 +161,7 @@ fun NexusApp(
                         text = { Text(clearMenuLabel) },
                         onClick = {
                             closeHomeMenu()
-                            homeChatController.clearConversation(appScope)
+                            currentHomeChatViewModel?.sendIntent(HomeChatIntent.ClearConversation)
                         },
                     )
                     DropdownMenuItem(

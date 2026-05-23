@@ -9,6 +9,7 @@ import androidx.lifecycle.lifecycleScope
 import com.niki914.nexus.agentic.app.ui.nexus.NexusApp
 import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.cb.BaseTheme
+import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.nexus.h.util.OsUtils
 import com.niki914.nexus.h.util.xlog
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +27,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        ContextProvider.provide(applicationContext)
 
         requestNotificationPermissionIfNeeded(notificationPermissionLauncher)
         val startupAssistantUi = resolveStartupAssistantUi()

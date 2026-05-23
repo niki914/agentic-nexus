@@ -2,20 +2,34 @@ package com.niki914.nexus.agentic.app.ui.nexus.model
 
 import com.niki914.nexus.agentic.chat.LlmStreamEvent
 import com.niki914.nexus.agentic.chat.ToolCallStatus
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.yield
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestWatcher
+import org.junit.runner.Description
 
-class HomeChatControllerTest {
+@OptIn(ExperimentalCoroutinesApi::class)
+class HomeChatViewModelTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun send_collectsTextAndUpdatesSingleToolStatus() = runBlocking {
-        val controller = HomeChatController(
+    fun send_collectsTextAndUpdatesSingleToolStatus() = runTest {
+        val viewModel = HomeChatViewModel(
             streamProvider = { query ->
                 assertEquals("hello", query)
                 flowOf(
@@ -29,42 +43,44 @@ class HomeChatControllerTest {
             resetConversation = {},
         )
 
-        controller.onInputChange("  hello  ")
-        controller.send(this)
-        yield()
+        viewModel.sendIntent(HomeChatIntent.InputChanged("  hello  "))
+        viewModel.sendIntent(HomeChatIntent.Send)
+        advanceUntilIdle()
 
-        assertEquals("", controller.input)
-        assertFalse(controller.isGenerating)
-        assertEquals(1, controller.turns.size)
-        val turn = controller.turns.single()
+        val state = viewModel.uiStateFlow.value
+        assertEquals("", state.input)
+        assertFalse(state.isGenerating)
+        assertEquals(1, state.turns.size)
+        val turn = state.turns.single()
         assertEquals("hello", turn.userText)
         assertEquals("hello back", turn.assistantText)
         assertEquals(HomeToolStatus(name = "Search", state = HomeToolState.Succeeded), turn.toolStatus)
     }
 
     @Test
-    fun clearConversation_clearsUiStateAndResetsRuntime() = runBlocking {
+    fun clearConversation_clearsUiStateAndResetsRuntime() = runTest {
         var resetCalled = false
-        val controller = HomeChatController(
+        val viewModel = HomeChatViewModel(
             streamProvider = { flowOf(LlmStreamEvent.Completed("done")) },
             resetConversation = { resetCalled = true },
         )
-        controller.onInputChange("hello")
-        controller.send(this)
-        yield()
+        viewModel.sendIntent(HomeChatIntent.InputChanged("hello"))
+        viewModel.sendIntent(HomeChatIntent.Send)
+        advanceUntilIdle()
 
-        controller.clearConversation(this)
-        yield()
+        viewModel.sendIntent(HomeChatIntent.ClearConversation)
+        advanceUntilIdle()
 
         assertTrue(resetCalled)
-        assertEquals("", controller.input)
-        assertFalse(controller.isGenerating)
-        assertTrue(controller.turns.isEmpty())
+        val state = viewModel.uiStateFlow.value
+        assertEquals("", state.input)
+        assertFalse(state.isGenerating)
+        assertTrue(state.turns.isEmpty())
     }
 
     @Test
-    fun send_doesNotCreateVisibleFallbackWhenUnexpectedErrorHasNoMessage() = runBlocking {
-        val controller = HomeChatController(
+    fun send_doesNotCreateVisibleFallbackWhenUnexpectedErrorHasNoMessage() = runTest {
+        val viewModel = HomeChatViewModel(
             streamProvider = {
                 flow {
                     throw RuntimeException()
@@ -73,12 +89,55 @@ class HomeChatControllerTest {
             resetConversation = {},
         )
 
-        controller.onInputChange("hello")
-        controller.send(this)
-        yield()
+        viewModel.sendIntent(HomeChatIntent.InputChanged("hello"))
+        viewModel.sendIntent(HomeChatIntent.Send)
+        advanceUntilIdle()
 
-        assertEquals(1, controller.turns.size)
-        assertEquals(null, controller.turns.single().errorMessage)
-        assertFalse(controller.isGenerating)
+        val state = viewModel.uiStateFlow.value
+        assertEquals(1, state.turns.size)
+        assertEquals(null, state.turns.single().errorMessage)
+        assertFalse(state.isGenerating)
+    }
+
+    @Test
+    fun send_ignoresSecondSendWhileGenerating() = runTest {
+        val viewModel = HomeChatViewModel(
+            streamProvider = {
+                flow {
+                    emit(LlmStreamEvent.RoundStarted)
+                    awaitCancellation()
+                }
+            },
+            resetConversation = {},
+        )
+
+        viewModel.sendIntent(HomeChatIntent.InputChanged("first"))
+        viewModel.sendIntent(HomeChatIntent.Send)
+        runCurrent()
+        viewModel.sendIntent(HomeChatIntent.InputChanged("second"))
+        viewModel.sendIntent(HomeChatIntent.Send)
+        advanceUntilIdle()
+
+        val state = viewModel.uiStateFlow.value
+        assertTrue(state.isGenerating)
+        assertEquals("second", state.input)
+        assertEquals(1, state.turns.size)
+        assertEquals("first", state.turns.single().userText)
+
+        viewModel.sendIntent(HomeChatIntent.ClearConversation)
+        advanceUntilIdle()
+    }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class MainDispatcherRule(
+    private val dispatcher: TestDispatcher = StandardTestDispatcher(),
+) : TestWatcher() {
+    override fun starting(description: Description) {
+        Dispatchers.setMain(dispatcher)
+    }
+
+    override fun finished(description: Description) {
+        Dispatchers.resetMain()
     }
 }

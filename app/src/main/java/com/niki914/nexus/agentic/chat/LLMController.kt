@@ -94,23 +94,31 @@ object LLMController {
     suspend fun snapshot(): LlmRuntimeSnapshot? = runtimeState?.snapshot
 
     fun stream(query: String): Flow<LlmStreamEvent> = channelFlow {
+        xlog("LLMController.stream start queryLength=${query.length}")
         val state = refreshIfPossibleFromHookContext() ?: runtimeState
         if (state == null) {
+            xlog("LLMController.stream runtimeNotReady")
             send(LlmStreamEvent.Error("LLM runtime is not ready"))
             return@channelFlow
         }
 
+        xlog("LLMController.stream runtimeReady")
         val accumulator = StringBuilder()
         val startedAtMs = System.currentTimeMillis()
         val sink: SendChannel<LlmStreamEvent> = this
         try {
+            xlog("LLMController.stream sessionSend begin")
             state.session.send(query) { event -> // TODO 代 session 修复后使用 flow api
-                LlmStreamEventMapper.map(event, accumulator, startedAtMs)?.let { sink.send(it) }
+                val mapped = LlmStreamEventMapper.map(event, accumulator, startedAtMs)
+                xlog("LLMController.stream sessionEvent type=${event::class.simpleName} mapped=${mapped?.let(::eventName)}")
+                mapped?.let { sink.send(it) }
             }
+            xlog("LLMController.stream sessionSend done")
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) {
                 throw throwable
             }
+            xlog("LLMController.stream error type=${throwable::class.simpleName} message=${throwable.message}")
             send(
                 LlmStreamEvent.Error(message = throwable.message ?: "LLM stream failed", throwable = throwable)
             )
@@ -123,7 +131,8 @@ object LLMController {
 
     private suspend fun refreshIfPossibleFromHookContext(): RuntimeState? {
         return try {
-            refreshFromHookContext()
+            val context = sessionContext ?: ContextProvider.await()
+            refresh(context)
             runtimeState
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) {
@@ -173,4 +182,14 @@ object LLMController {
     }
 
     private data class RuntimeState(val snapshot: LlmRuntimeSnapshot, val session: Session)
+
+    private fun eventName(event: LlmStreamEvent): String = when (event) {
+        LlmStreamEvent.RoundStarted -> "RoundStarted"
+        is LlmStreamEvent.TextDelta -> "TextDelta"
+        is LlmStreamEvent.ToolRunning -> "ToolRunning"
+        is LlmStreamEvent.ToolSucceeded -> "ToolSucceeded"
+        is LlmStreamEvent.ToolFailed -> "ToolFailed"
+        is LlmStreamEvent.Error -> "Error"
+        is LlmStreamEvent.Completed -> "Completed"
+    }
 }

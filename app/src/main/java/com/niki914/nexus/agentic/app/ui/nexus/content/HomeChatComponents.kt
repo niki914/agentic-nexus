@@ -3,6 +3,7 @@ package com.niki914.nexus.agentic.app.ui.nexus.content
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import com.kyant.capsule.ContinuousCapsule
 import com.kyant.capsule.continuities.G2Continuity
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.component.G2RoundedCornerShape
 import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolState
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolStatus
@@ -57,15 +60,15 @@ fun UserMessageBubble(
     modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val bubbleShape = ContinuousCapsule(G2Continuity())
+    val bubbleShape = G2RoundedCornerShape(24.dp)
 
-    Row(
+    BoxWithConstraints(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.End,
+        contentAlignment = Alignment.CenterEnd,
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth(0.82f)
+                .widthIn(max = maxWidth * 0.82f)
                 .clip(bubbleShape)
                 .background(colorScheme.primary.copy(alpha = 0.18f), bubbleShape)
                 .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -128,11 +131,11 @@ fun LiquidChatComposer(
     value: String,
     onValueChange: (String) -> Unit,
     onSendClick: () -> Unit,
-    enabled: Boolean,
+    sendEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val sendEnabled = enabled && value.isNotBlank()
-    val contentColor = if (sendEnabled) {
+    val canSend = sendEnabled && value.isNotBlank()
+    val contentColor = if (canSend) {
         MaterialTheme.colorScheme.primary
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
@@ -142,14 +145,14 @@ fun LiquidChatComposer(
         value = value,
         onValueChange = onValueChange,
         placeholder = stringResource(R.string.nexus_home_input_placeholder),
-        enabled = enabled,
+        enabled = true,
         singleLine = false,
         modifier = modifier.fillMaxWidth(),
         trailingContent = {
             CompositionLocalProvider(LocalContentColor provides contentColor) {
                 IconButton(
                     onClick = onSendClick,
-                    enabled = sendEnabled,
+                    enabled = canSend,
                     modifier = Modifier.size(40.dp),
                 ) {
                     Icon(

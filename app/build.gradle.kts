@@ -89,6 +89,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview-android:1.8.3")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }
 
 // 获取 ADB 路径

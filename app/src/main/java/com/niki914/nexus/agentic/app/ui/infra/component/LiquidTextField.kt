@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -29,8 +30,6 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
-import com.kyant.capsule.ContinuousCapsule
-import com.kyant.capsule.continuities.G2Continuity
 import com.niki914.nexus.agentic.app.liquid_example.utils.InteractiveHighlight
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -71,15 +70,16 @@ fun LiquidTextField(
         colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
     }
     val surfaceColor = if (enabled) {
-        colorScheme.surface.copy(alpha = 0.18f)
+        colorScheme.surfaceContainerHigh.copy(alpha = 0.64f)
     } else {
-        colorScheme.surfaceVariant.copy(alpha = 0.16f)
+        colorScheme.surfaceContainer.copy(alpha = 0.42f)
     }
     val tintColor = if (enabled) {
-        colorScheme.primary.copy(alpha = 0.08f)
+        colorScheme.primaryContainer.copy(alpha = 0.32f)
     } else {
         Color.Transparent
     }
+    val containerShape = RoundedCornerShape(28.dp)
 
     BasicTextField(
         value = value,
@@ -89,7 +89,7 @@ fun LiquidTextField(
             .heightIn(min = 52.dp)
             .drawBackdrop(
                 backdrop = backdrop,
-                shape = { ContinuousCapsule(G2Continuity()) },
+                shape = { containerShape },
                 effects = {
                     vibrancy()
                     blur(2.dp.toPx())
@@ -131,7 +131,7 @@ fun LiquidTextField(
                     drawRect(surfaceColor)
                 },
             )
-            .clip(ContinuousCapsule(G2Continuity()))
+            .clip(containerShape)
             .then(if (enabled) interactiveHighlight.modifier else Modifier)
             .then(if (enabled) interactiveHighlight.gestureModifier else Modifier)
             .padding(horizontal = 18.dp, vertical = 12.dp),

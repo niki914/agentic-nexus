@@ -3,22 +3,28 @@ package com.niki914.nexus.agentic.app.ui.nexus.content
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatController
+import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatTurn
+import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatViewModel
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 
@@ -26,9 +32,17 @@ import dev.chrisbanes.haze.hazeSource
 fun HomePageContent(
     topPadding: Dp,
     hazeState: HazeState,
-    chatController: HomeChatController,
 ) {
-    val scope = rememberCoroutineScope()
+    val viewModel = pageViewModel<HomeChatViewModel>()
+    val uiState by viewModel.uiStateFlow.collectAsState()
+    val density = LocalDensity.current
+    val imeBottom = with(density) { WindowInsets.ime.getBottom(this).toDp() }
+    val navigationBottom = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
+    val composerBottomPadding = if (imeBottom > 0.dp) {
+        imeBottom + 2.dp
+    } else {
+        navigationBottom + 20.dp
+    }
 
     Box(
         modifier = Modifier
@@ -45,7 +59,7 @@ fun HomePageContent(
             ),
         ) {
             items(
-                items = chatController.turns,
+                items = uiState.turns,
                 key = { turn -> turn.id },
             ) { turn ->
                 HomeChatTurnItem(
@@ -58,15 +72,21 @@ fun HomePageContent(
         }
 
         LiquidChatComposer(
-            value = chatController.input,
-            onValueChange = chatController::onInputChange,
-            onSendClick = { chatController.send(scope) },
-            enabled = !chatController.isGenerating,
+            value = uiState.input,
+            onValueChange = { value ->
+                viewModel.sendIntent(HomeChatIntent.InputChanged(value))
+            },
+            onSendClick = {
+                viewModel.sendIntent(HomeChatIntent.Send)
+            },
+            sendEnabled = !uiState.isGenerating,
             modifier = Modifier
-                .align(androidx.compose.ui.Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .imePadding()
-                .padding(horizontal = 20.dp, vertical = 20.dp),
+                .align(Alignment.BottomCenter)
+                .padding(
+                    start = 20.dp,
+                    end = 20.dp,
+                    bottom = composerBottomPadding,
+                ),
         )
     }
 }

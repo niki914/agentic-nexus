@@ -58,7 +58,7 @@ fun SettingsGroupCard(
     }
 }
 
-private data class G2RoundedCornerShape(
+internal data class G2RoundedCornerShape(
     val cornerRadius: Dp,
     val continuity: Continuity = G2Continuity(),
 ) : Shape {
