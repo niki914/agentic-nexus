@@ -70,10 +70,12 @@
 
 ## ipc/src/main/java/com/niki914/nexus/ipc/
 
-- `XIpcBridge.kt`: IPC 桥接
-- `XRes.kt`: 宿主枚举与 IPC 常量
-- `cp/SettingsContentProvider.kt`: 跨进程配置 Provider
-- `store/`: 配置持久化存储
+- `XIpcBridge.kt`: IPC 桥接；主 App 直连 repository，宿主通过 provider call / file stream 访问
+- `XRes.kt`: 宿主枚举、IPC method/field、Store 文件 URI 契约
+- `cp/SettingsContentProvider.kt`: 跨进程配置 Provider；`call()` 处理命令型操作，`openFile()` 暴露只读 Store 文件流
+- `cp/XProviderDispatcher.kt`: Provider call 分发器，GET 返回 Store handle，PUT / MUTATE 返回 success-only
+- `store/ConfigPersistence.kt`: `WEB_SETTINGS` 与 `LOCAL_SETTINGS` 的 JSON 文件持久化
+- `store/XIpcStoreRepository.kt`: Store 级 `Mutex`、读写与 JSON mutate
 
 ## server/
 

@@ -3,7 +3,7 @@
 ## 已落地能力
 
 - **基础架构与路由**：Xposed 入口与多宿主分发支持 `ColorOS / Breeno` 与 `HyperOS / XiaoAi`，位于 `app/` 与 `h/` 模块。
-- **配置同步机制**：本地 Python 配置服务器按包名/版本号下发配置，主 App 与宿主进程通过 `XIpcBridge` 和 `SettingsContentProvider` 同步配置。
+- **配置同步机制**：本地 Python 配置服务器按包名/版本号下发 WebSettings；`WEB_SETTINGS` 与 `LOCAL_SETTINGS` 均由 `XIpcStoreRepository` / `ConfigPersistence` 文件化持久化，宿主读取通过 `SettingsContentProvider.openFile()` 暴露的文件流完成，写入与 mutate 仍通过 provider call 分发。
 - **Breeno 注入实现**：基于卡片层拦截原生回答，使用单卡片全量刷新模式渲染 LLM 输出。
 - **XiaoAi 注入实现**：基于底层指令流与文字流拦截做增量文本分片注入，并拦截 TTS 流与原生播放。
 - **LLM Runtime**：`LLMController` 持有单例 `Session` 与 runtime snapshot，支持配置刷新、流式请求、会话重置和统一事件映射。
