@@ -48,7 +48,7 @@ class ToolManager(
             .map { tool ->
                 LocalTool.Builtin(
                     name = tool.name,
-                    description = "Builtin tool: ${tool.name}",
+                    description = tool.description,
                     tool = tool,
                 )
             }
@@ -156,6 +156,11 @@ class ToolManager(
         mcpServers: List<McpServerDefinition>,
     ): List<String> {
         val lines = mutableListOf<String>()
+        val builtinToolNames = builtinTools.map { it.name }
+        if (builtinToolNames.isNotEmpty()) {
+            lines += "Available builtin tools: ${builtinToolNames.joinToString()}"
+        }
+
         val commandToolNames = customTools
             .filterIsInstance<LocalTool.Command>()
             .map { it.name }

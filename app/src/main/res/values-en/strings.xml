@@ -55,6 +55,15 @@
     <string name="nexus_settings_about">About</string>
     <string name="nexus_settings_about_summary">View version information, documentation, and support channels.</string>
 
+    <string name="nexus_builtin_tools_page_description">Manage which built-in tools are enabled. Enabled tools are registered after a runtime refresh or in the next conversation.</string>
+    <string name="nexus_builtin_tools_list_title">Built-in tools</string>
+    <string name="nexus_builtin_tools_loading">Loading built-in tool states...</string>
+    <string name="nexus_builtin_tools_empty">No configurable built-in tools are available.</string>
+    <string name="nexus_builtin_tools_save_success_enabled">Built-in tool enabled.</string>
+    <string name="nexus_builtin_tools_save_success_disabled">Built-in tool disabled.</string>
+    <string name="nexus_builtin_tools_save_failed">Save failed: %1$s</string>
+    <string name="nexus_builtin_tools_effect_hint">Changes take effect after a runtime refresh or in the next conversation.</string>
+
     <string name="nexus_command_tools_page_description">Manage command tools here. Saving writes back to `command_tools`, which the runtime can refresh and register as local command tools.</string>
     <string name="nexus_command_tools_list_title">Configured tools</string>
     <string name="nexus_command_tools_loading">Loading saved command tools...</string>

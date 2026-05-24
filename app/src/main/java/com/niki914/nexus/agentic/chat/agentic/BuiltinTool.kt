@@ -8,6 +8,9 @@ import kotlinx.serialization.json.JsonPrimitive
 abstract class BuiltinTool {
     abstract val name: String
 
+    open val description: String
+        get() = "Builtin tool: $name"
+
     abstract fun configure(config: LocalToolConfig)
 
     abstract suspend fun invoke(request: BuiltinToolRequest): BuiltinToolResult

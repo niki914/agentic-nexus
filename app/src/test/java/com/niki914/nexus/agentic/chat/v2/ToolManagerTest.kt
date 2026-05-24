@@ -60,11 +60,14 @@ class ToolManagerTest {
         )
 
         val resolved = ToolManager(
-            builtinToolRegistry = BuiltinToolRegistry(listOf(FakeBuiltinTool("time")))
+            builtinToolRegistry = BuiltinToolRegistry(
+                listOf(FakeBuiltinTool(name = "time", description = "Read current time."))
+            )
         ).resolve(settings)
 
         assertEquals(listOf("time"), resolved.builtinTools.map { it.name })
         assertTrue(resolved.builtinTools.single() is LocalTool.Builtin)
+        assertEquals("Read current time.", resolved.builtinTools.single().description)
 
         val userDefinedTool = resolved.customTools.filterIsInstance<LocalTool.UserDefined>().single()
         assertEquals("getCurrentWeather", userDefinedTool.name)
@@ -83,6 +86,7 @@ class ToolManagerTest {
         assertEquals("""{"type":"object"}""", cachedTool.inputSchema.toString())
         assertEquals(
             listOf(
+                "Available builtin tools: time",
                 "Available command tools: currentTime",
                 "Available MCP servers: aslocate",
             ),
@@ -105,10 +109,33 @@ class ToolManagerTest {
         val resolved = ToolManager().resolve(settings)
 
         assertEquals(listOf("create_command_tool"), resolved.builtinTools.map { it.name })
+        assertEquals(
+            "Available builtin tools: create_command_tool",
+            resolved.promptLines.first(),
+        )
+    }
+
+    @Test
+    fun resolveFromSettings_missingBuiltinFlagDoesNotExposeBuiltinPromptLine() {
+        val settings = LocalSettings(
+            Json.parseToJsonElement(
+                """
+                {
+                  "builtin_tool_flags": {}
+                }
+                """.trimIndent()
+            ).jsonObject
+        )
+
+        val resolved = ToolManager().resolve(settings)
+
+        assertTrue(resolved.builtinTools.isEmpty())
+        assertTrue(resolved.promptLines.none { it.startsWith("Available builtin tools:") })
     }
 
     private class FakeBuiltinTool(
         override val name: String,
+        override val description: String = "Builtin tool: $name",
     ) : BuiltinTool() {
         override fun configure(config: LocalToolConfig) = Unit
 

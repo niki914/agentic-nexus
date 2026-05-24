@@ -14,8 +14,10 @@ class CreateCommandToolBuiltin(
 ) : BuiltinTool() {
     override val name: String = "create_command_tool"
 
+    override val description: String = "Create or update a command tool in LocalSettings.command_tools."
+
     override fun configure(config: LocalToolConfig) {
-        config.description = "Create or update a command tool in LocalSettings.command_tools."
+        config.description = description
         config.string("name") {
             description = "Unique command tool name matching ^[a-zA-Z_][a-zA-Z0-9_]{1,63}$."
             required = true

@@ -26,6 +26,14 @@ fun SettingsDetailPageContent(
     topPadding: Dp,
     hazeState: HazeState,
 ) {
+    if (group == NexusSettingsGroup.BuiltinTools) {
+        BuiltinToolsSettingsContent(
+            topPadding = topPadding,
+            hazeState = hazeState,
+        )
+        return
+    }
+
     if (group == NexusSettingsGroup.CustomTools) {
         CustomToolsSettingsContent(
             topPadding = topPadding,

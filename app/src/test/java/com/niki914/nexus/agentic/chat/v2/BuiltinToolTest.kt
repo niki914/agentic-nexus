@@ -4,6 +4,7 @@ import com.niki914.nexus.agentic.chat.agentic.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolResult
+import com.niki914.nexus.agentic.chat.agentic.CreateCommandToolBuiltin
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.serialization.json.Json
@@ -15,6 +16,24 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BuiltinToolTest {
+    @Test
+    fun defaultDescription_usesToolName() {
+        val tool = FakeBuiltinTool("known")
+
+        assertEquals("Builtin tool: known", tool.description)
+    }
+
+    @Test
+    fun createCommandToolDescription_matchesConfigureDescription() {
+        val tool = CreateCommandToolBuiltin()
+        val config = LocalToolConfig()
+
+        tool.configure(config)
+
+        assertEquals("Create or update a command tool in LocalSettings.command_tools.", tool.description)
+        assertEquals(tool.description, config.description)
+    }
+
     @Test
     fun failureResult_serializesRequiredFields() {
         val result = BuiltinToolResult.failure(
