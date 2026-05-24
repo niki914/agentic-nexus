@@ -27,7 +27,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.capsule.ContinuousCapsule
@@ -36,6 +40,7 @@ import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownTypography
 import com.mikepenz.markdown.model.rememberMarkdownState
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.cb.BaseTheme
 import com.niki914.nexus.agentic.app.ui.infra.component.G2RoundedCornerShape
 import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolState
@@ -43,15 +48,88 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolStatus
 
 private val ToolSucceededIndicatorColor = Color(0xFF4F8F6B)
 private val ToolFailedIndicatorColor = Color(0xFFB85C5C)
+private const val AssistantMarkdownPreviewText = """
+# Nexus 对话排版
+
+这是一段用于观察正文、标题、引用和表格体感的示例内容。标题不应该再像页面 Hero 一样夸张。
+
+## 标题层级
+
+- 一级信息要明显
+- 二级信息要克制
+- 列表和正文尽量共用节奏
+
+### 表格密度
+
+| 项目 | 目标 |
+| --- | --- |
+| H1 | 明显但不撑爆聊天流 |
+| H2 | 比正文大一档 |
+| Table | 与正文接近，便于连续阅读 |
+
+> 这是一段引用文字，用来确认弱化后的信息层级是否还清楚。
+
+`inline code`
+
+```kotlin
+val answer = "markdown preview"
+println(answer)
+```
+"""
 
 @Composable
 fun AssistantOutputText(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    val textStyle = MaterialTheme.typography.bodyLarge.copy(
+    val bodyStyle = MaterialTheme.typography.bodyLarge.copy(
         fontSize = (MaterialTheme.typography.bodyLarge.fontSize.value + 1f).sp,
         lineHeight = (MaterialTheme.typography.bodyLarge.lineHeight.value + 2f).sp,
+    )
+    val h1Style = bodyStyle.copy(
+        fontSize = 18.sp,
+        lineHeight = 22.sp,
+        fontWeight = FontWeight.SemiBold,
+    )
+    val h2Style = bodyStyle.copy(
+        fontSize = 15.sp,
+        lineHeight = 20.sp,
+        fontWeight = FontWeight.SemiBold,
+    )
+    val h3Style = bodyStyle.copy(
+        fontSize = 14.sp,
+        lineHeight = 19.sp,
+        fontWeight = FontWeight.SemiBold,
+    )
+    val h4Style = bodyStyle.copy(
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
+        fontWeight = FontWeight.Medium,
+    )
+    val h5Style = bodyStyle.copy(
+        fontSize = 12.sp,
+        lineHeight = 17.sp,
+        fontWeight = FontWeight.Medium,
+    )
+    val h6Style = bodyStyle.copy(
+        fontSize = 11.sp,
+        lineHeight = 16.sp,
+        fontWeight = FontWeight.Medium,
+    )
+    val tableStyle = bodyStyle.copy(
+        fontSize = 16.sp,
+        lineHeight = 22.sp,
+    )
+    val codeStyle = bodyStyle.copy(
+        fontSize = 15.sp,
+        lineHeight = 22.sp,
+        fontFamily = FontFamily.Monospace,
+    )
+    val quoteStyle = bodyStyle.copy(
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        fontStyle = FontStyle.Italic,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     val markdownState = rememberMarkdownState(
         content = text,
@@ -62,14 +140,38 @@ fun AssistantOutputText(
         markdownState = markdownState,
         modifier = modifier.fillMaxWidth(),
         typography = markdownTypography(
-            text = textStyle,
-            paragraph = textStyle,
-            ordered = textStyle,
-            bullet = textStyle,
-            list = textStyle,
-            table = textStyle,
+            h1 = h1Style,
+            h2 = h2Style,
+            h3 = h3Style,
+            h4 = h4Style,
+            h5 = h5Style,
+            h6 = h6Style,
+            text = bodyStyle,
+            code = codeStyle,
+            inlineCode = codeStyle,
+            quote = quoteStyle,
+            paragraph = bodyStyle,
+            ordered = bodyStyle,
+            bullet = bodyStyle,
+            list = bodyStyle,
+            table = tableStyle,
         ),
     )
+}
+
+@Preview(
+    name = "Assistant Markdown Preview",
+    showBackground = true,
+    widthDp = 420,
+)
+@Composable
+private fun AssistantOutputTextPreview() {
+    BaseTheme {
+        AssistantOutputText(
+            text = AssistantMarkdownPreviewText.trim(),
+            modifier = Modifier.padding(16.dp),
+        )
+    }
 }
 
 @Composable
