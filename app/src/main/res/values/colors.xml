@@ -4,4 +4,9 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="trans">#00000000</color>
+    <color name="provider_deepseek">#FF3964FE</color>
+    <color name="provider_openai_light">#FF000000</color>
+    <color name="provider_openai_dark">#FFFFFFFF</color>
+    <color name="provider_claude">#FFD97757</color>
+    <color name="provider_claude_content">#FFFAF9F5</color>
 </resources>

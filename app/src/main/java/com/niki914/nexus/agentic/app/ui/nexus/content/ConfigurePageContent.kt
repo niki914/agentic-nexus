@@ -12,13 +12,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.agentic.app.ui.infra.component.MaterialTintLiquidButton
+import com.niki914.nexus.agentic.app.ui.infra.component.TintLiquidButton
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 
@@ -26,6 +27,10 @@ import dev.chrisbanes.haze.hazeSource
 fun ConfigurePageContent(
     topPadding: Dp,
     hazeState: HazeState,
+    buttonDarkContainerColor: Color = MaterialTheme.colorScheme.primary,
+    buttonLightContainerColor: Color = MaterialTheme.colorScheme.primary,
+    buttonDarkContentColor: Color = MaterialTheme.colorScheme.onPrimary,
+    buttonLightContentColor: Color = MaterialTheme.colorScheme.onPrimary,
     onComplete: () -> Unit,
 ) {
     ConfigurePageContent(
@@ -34,6 +39,10 @@ fun ConfigurePageContent(
         headline = stringResource(R.string.nexus_configure_headline),
         description = stringResource(R.string.nexus_configure_description),
         buttonText = stringResource(R.string.nexus_configure_complete),
+        buttonDarkContainerColor = buttonDarkContainerColor,
+        buttonLightContainerColor = buttonLightContainerColor,
+        buttonDarkContentColor = buttonDarkContentColor,
+        buttonLightContentColor = buttonLightContentColor,
         onComplete = onComplete,
     )
 }
@@ -45,6 +54,10 @@ internal fun ConfigurePageContent(
     headline: String,
     description: String,
     buttonText: String,
+    buttonDarkContainerColor: Color = MaterialTheme.colorScheme.primary,
+    buttonLightContainerColor: Color = MaterialTheme.colorScheme.primary,
+    buttonDarkContentColor: Color = MaterialTheme.colorScheme.onPrimary,
+    buttonLightContentColor: Color = MaterialTheme.colorScheme.onPrimary,
     onComplete: () -> Unit,
 ) {
     Box(
@@ -78,8 +91,12 @@ internal fun ConfigurePageContent(
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
-            MaterialTintLiquidButton(
+            TintLiquidButton(
                 text = buttonText,
+                darkContainerColor = buttonDarkContainerColor,
+                lightContainerColor = buttonLightContainerColor,
+                darkContentColor = buttonDarkContentColor,
+                lightContentColor = buttonLightContentColor,
                 onClick = onComplete,
             )
         }

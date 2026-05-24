@@ -26,8 +26,10 @@ data object ProviderPickPage : NexusPage {
     override val showRightButton: Boolean = false
 }
 
-data object ConfigurePage : NexusPage {
-    override val routeKey: String = "configure"
+data class ConfigurePage(
+    val providerId: String? = null,
+) : NexusPage {
+    override val routeKey: String = if (providerId == null) "configure" else "configure:$providerId"
     override val titleRes: Int = R.string.nexus_configure_title
     override val showLeftButton: Boolean = true
     override val showRightButton: Boolean = false
