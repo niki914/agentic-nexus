@@ -170,77 +170,63 @@ fun LiquidScreen(
                 }
             }
 
-            // Left button
-            val leftButtonScale = animateFloatAsState(
-                targetValue = if (state.showLeftButton) 1f else 0f,
-                animationSpec = tween(buttonDuration, easing = LinearOutSlowInEasing),
-                label = "leftButtonScale",
-            )
-            AnimatedVisibility(
-                visible = state.showLeftButton,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(top = topInset),
-                enter = fadeIn(tween(buttonDuration, easing = LinearOutSlowInEasing)),
-                exit = fadeOut(tween(buttonDuration, easing = LinearOutSlowInEasing)),
-            ) {
-                Box(
-                    Modifier.graphicsLayer {
-                        scaleX = leftButtonScale.value
-                        scaleY = leftButtonScale.value
-                    }
+            leftButton?.let { buttonContent ->
+                // Left button
+                val leftButtonScale = animateFloatAsState(
+                    targetValue = if (state.showLeftButton) 1f else 0f,
+                    animationSpec = tween(buttonDuration, easing = LinearOutSlowInEasing),
+                    label = "leftButtonScale",
+                )
+                AnimatedVisibility(
+                    visible = state.showLeftButton,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(top = topInset),
+                    enter = fadeIn(tween(buttonDuration, easing = LinearOutSlowInEasing)),
+                    exit = fadeOut(tween(buttonDuration, easing = LinearOutSlowInEasing)),
                 ) {
-                    ActionBarButton(
-                        onClick = { state.onLeftClick?.invoke() },
-                        backdrop = chromeBackdrop,
-                        content = leftButton ?: {
-                            Text(
-                                text = "‹",
-                                style = TextStyle(
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Normal,
-                                    color = if (isDarkTheme) Color.White else Color.Black,
-                                )
-                            )
-                        },
-                    )
+                    Box(
+                        Modifier.graphicsLayer {
+                            scaleX = leftButtonScale.value
+                            scaleY = leftButtonScale.value
+                        }
+                    ) {
+                        ActionBarButton(
+                            onClick = { state.onLeftClick?.invoke() },
+                            backdrop = chromeBackdrop,
+                            content = buttonContent,
+                        )
+                    }
                 }
             }
 
-            // Right button
-            val rightButtonScale = animateFloatAsState(
-                targetValue = if (state.showRightButton) 1f else 0f,
-                animationSpec = tween(buttonDuration, easing = LinearOutSlowInEasing),
-                label = "rightButtonScale",
-            )
-            AnimatedVisibility(
-                visible = state.showRightButton,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = topInset),
-                enter = fadeIn(tween(buttonDuration, easing = LinearOutSlowInEasing)),
-                exit = fadeOut(tween(buttonDuration, easing = LinearOutSlowInEasing)),
-            ) {
-                Box(
-                    Modifier.graphicsLayer {
-                        scaleX = rightButtonScale.value
-                        scaleY = rightButtonScale.value
-                    }
+            rightButton?.let { buttonContent ->
+                // Right button
+                val rightButtonScale = animateFloatAsState(
+                    targetValue = if (state.showRightButton) 1f else 0f,
+                    animationSpec = tween(buttonDuration, easing = LinearOutSlowInEasing),
+                    label = "rightButtonScale",
+                )
+                AnimatedVisibility(
+                    visible = state.showRightButton,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = topInset),
+                    enter = fadeIn(tween(buttonDuration, easing = LinearOutSlowInEasing)),
+                    exit = fadeOut(tween(buttonDuration, easing = LinearOutSlowInEasing)),
                 ) {
-                    ActionBarButton(
-                        onClick = { state.onRightClick?.invoke() },
-                        backdrop = chromeBackdrop,
-                        content = rightButton ?: {
-                            Text(
-                                text = "›", // TODO 去掉不预置
-                                style = TextStyle(
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Normal,
-                                    color = if (isDarkTheme) Color.White else Color.Black,
-                                )
-                            )
-                        },
-                    )
+                    Box(
+                        Modifier.graphicsLayer {
+                            scaleX = rightButtonScale.value
+                            scaleY = rightButtonScale.value
+                        }
+                    ) {
+                        ActionBarButton(
+                            onClick = { state.onRightClick?.invoke() },
+                            backdrop = chromeBackdrop,
+                            content = buttonContent,
+                        )
+                    }
                 }
             }
         }

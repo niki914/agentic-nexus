@@ -45,9 +45,8 @@ abstract class BaseConfigProvider {
         val methodParams = getList("$path.param_types")
             .mapNotNull { it.jsonPrimitive.contentOrNull }
         val hookTiming = getString("$path.hook_timing")
-        val hookKind = getString("$path.hook_kind")
         val returnType = getString("$path.return_type")
-        HookTarget(ownerClass, methodName, methodParams, hookTiming, hookKind, returnType)
+        HookTarget(ownerClass, methodName, methodParams, hookTiming, returnType)
     }
 
     protected fun <T : Any> T?.orThrowException(path: String): T {

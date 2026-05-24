@@ -1,9 +1,15 @@
 package com.niki914.nexus.agentic.app.ui.nexus
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
@@ -15,10 +21,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.ViewModelProvider
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.LiquidScreen
@@ -39,6 +48,8 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.StartupPage
 fun NexusApp(
     startupAssistantUi: StartupAssistantUi,
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
+    val actionIconTint = if (isDarkTheme) Color.White else Color.Black
     val controller = rememberNavigationController<NexusPage>(initialPage = StartupPage)
     val navigator = controller.navigator
     val currentEntry = controller.currentEntry
@@ -129,7 +140,18 @@ fun NexusApp(
 
     LiquidScreen(
         state = screenState,
-        rightButton = { Text(text = "⋯", fontSize = 20.sp) },
+        leftButton = {
+            ActionBarImage(
+                painter = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack),
+                tint = actionIconTint,
+            )
+        },
+        rightButton = {
+            ActionBarImage(
+                painter = rememberVectorPainter(Icons.Default.MoreHoriz),
+                tint = actionIconTint,
+            )
+        },
     ) { hazeState ->
         Box(modifier = Modifier.fillMaxSize()) {
             LiquidScreenSwipeContent(
@@ -172,4 +194,18 @@ fun NexusApp(
             }
         }
     }
+}
+
+@Composable
+private fun ActionBarImage(
+    painter: androidx.compose.ui.graphics.painter.Painter,
+    tint: Color,
+    size: Dp = 20.dp,
+) {
+    Image(
+        painter = painter,
+        contentDescription = null,
+        modifier = Modifier.size(size),
+        colorFilter = ColorFilter.tint(tint),
+    )
 }

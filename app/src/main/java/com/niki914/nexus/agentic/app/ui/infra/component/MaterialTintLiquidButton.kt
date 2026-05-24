@@ -11,12 +11,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import com.niki914.nexus.agentic.app.ui.infra.component.LiquidButton
 
 @Composable
-fun MaterialTintLiquidButton( // TODO 更合理的大小 + Capsule
+fun MaterialTintLiquidButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -32,7 +30,6 @@ fun MaterialTintLiquidButton( // TODO 更合理的大小 + Capsule
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            // .layerBackdrop(backdrop)
             .then(modifier),
         contentAlignment = Alignment.Center,
     ) {
