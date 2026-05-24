@@ -6,13 +6,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.annotation.DrawableRes
-import com.niki914.nexus.agentic.app.R
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import com.niki914.nexus.agentic.app.ui.infra.component.TintLiquidButton
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
@@ -48,7 +51,7 @@ fun SelectionPageContent(
             TintLiquidButton(
                 text = option.title,
                 leadingIconRes = option.leadingIconRes,
-                trailingIconRes = R.drawable.ic_chevron_right,
+                trailingIcon = Icons.AutoMirrored.Filled.ArrowForward,
                 tintLeadingIcon = option.tintLeadingIcon,
                 darkContainerColor = option.darkContainerColor,
                 lightContainerColor = option.lightContainerColor,

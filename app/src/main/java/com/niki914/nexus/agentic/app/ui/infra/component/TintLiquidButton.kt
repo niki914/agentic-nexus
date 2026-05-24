@@ -16,15 +16,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.annotation.DrawableRes
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import com.niki914.nexus.agentic.app.ui.infra.component.LiquidButton
 
 @Composable
 fun TintLiquidButton(
@@ -34,6 +33,7 @@ fun TintLiquidButton(
     enabled: Boolean = true,
     @DrawableRes leadingIconRes: Int? = null,
     @DrawableRes trailingIconRes: Int? = null,
+    trailingIcon: ImageVector? = null,
     leadingIconContentDescription: String? = null,
     trailingIconContentDescription: String? = null,
     tintLeadingIcon: Boolean = true,
@@ -93,7 +93,7 @@ fun TintLiquidButton(
             surfaceColor = if (enabled) resolvedSurfaceColor else Color.Transparent,
         ) {
             val currentContentColor = if (enabled) resolvedContentColor else disabledContentColor
-            if (leadingIconRes == null && trailingIconRes == null) {
+            if (leadingIconRes == null && trailingIconRes == null && trailingIcon == null) {
                 Text(
                     text = text,
                     style = MaterialTheme.typography.titleMedium,
@@ -113,23 +113,33 @@ fun TintLiquidButton(
                             painter = painterResource(iconRes),
                             contentDescription = leadingIconContentDescription,
                             tint = if (tintLeadingIcon) currentContentColor else Color.Unspecified,
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier.size(22.dp),
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                     }
                     Text(
                         text = text,
                         style = MaterialTheme.typography.titleMedium,
                         color = currentContentColor,
                         textAlign = TextAlign.Start,
+                        modifier = Modifier.weight(1f),
                     )
-                    Spacer(modifier = Modifier.weight(1f))
+                    if (trailingIconRes != null || trailingIcon != null) {
+                        Spacer(modifier = Modifier.width(12.dp))
+                    }
                     trailingIconRes?.let { iconRes ->
                         Icon(
                             painter = painterResource(iconRes),
                             contentDescription = trailingIconContentDescription,
                             tint = if (tintTrailingIcon) currentContentColor else Color.Unspecified,
-                            modifier = Modifier.size(22.dp),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    } ?: trailingIcon?.let { icon ->
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = trailingIconContentDescription,
+                            tint = if (tintTrailingIcon) currentContentColor else Color.Unspecified,
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                 }
