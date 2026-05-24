@@ -41,6 +41,9 @@ import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolState
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolStatus
 
+private val ToolSucceededIndicatorColor = Color(0xFF4F8F6B)
+private val ToolFailedIndicatorColor = Color(0xFFB85C5C)
+
 @Composable
 fun AssistantOutputText(
     text: String,
@@ -193,12 +196,19 @@ private fun ToolStatusIndicator(
         )
         HomeToolState.Succeeded,
         HomeToolState.Failed,
-        -> Box(
-            modifier = Modifier
-                .size(10.dp)
-                .clip(ContinuousCapsule(G2Continuity()))
-                .background(color.copy(alpha = 0.78f)),
-        )
+        -> {
+            val indicatorColor = when (state) {
+                HomeToolState.Succeeded -> ToolSucceededIndicatorColor
+                HomeToolState.Failed -> ToolFailedIndicatorColor
+                HomeToolState.Running -> color
+            }
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(ContinuousCapsule(G2Continuity()))
+                    .background(indicatorColor.copy(alpha = 0.82f)),
+            )
+        }
     }
 }
 
