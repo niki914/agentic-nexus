@@ -32,6 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.capsule.ContinuousCapsule
 import com.kyant.capsule.continuities.G2Continuity
+import com.mikepenz.markdown.m3.Markdown
+import com.mikepenz.markdown.m3.markdownTypography
+import com.mikepenz.markdown.model.rememberMarkdownState
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.G2RoundedCornerShape
 import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
@@ -43,14 +46,26 @@ fun AssistantOutputText(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    Text(
-        text = text,
+    val textStyle = MaterialTheme.typography.bodyLarge.copy(
+        fontSize = (MaterialTheme.typography.bodyLarge.fontSize.value + 1f).sp,
+        lineHeight = (MaterialTheme.typography.bodyLarge.lineHeight.value + 2f).sp,
+    )
+    val markdownState = rememberMarkdownState(
+        content = text,
+        immediate = true,
+    )
+
+    Markdown(
+        markdownState = markdownState,
         modifier = modifier.fillMaxWidth(),
-        style = MaterialTheme.typography.bodyLarge.copy(
-            fontSize = (MaterialTheme.typography.bodyLarge.fontSize.value + 1f).sp,
-            lineHeight = (MaterialTheme.typography.bodyLarge.lineHeight.value + 2f).sp,
+        typography = markdownTypography(
+            text = textStyle,
+            paragraph = textStyle,
+            ordered = textStyle,
+            bullet = textStyle,
+            list = textStyle,
+            table = textStyle,
         ),
-        color = MaterialTheme.colorScheme.onSurface,
     )
 }
 
