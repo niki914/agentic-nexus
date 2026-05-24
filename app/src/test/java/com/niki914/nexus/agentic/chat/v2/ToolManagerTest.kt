@@ -1,8 +1,13 @@
 package com.niki914.nexus.agentic.chat.v2
 
 import com.niki914.nexus.agentic.chat.LocalTool
+import com.niki914.nexus.agentic.chat.agentic.BuiltinTool
+import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRegistry
+import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRequest
+import com.niki914.nexus.agentic.chat.agentic.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.ToolManager
 import com.niki914.nexus.agentic.mod.LocalSettings
+import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
@@ -17,7 +22,7 @@ class ToolManagerTest {
             Json.parseToJsonElement(
                 """
                 {
-                  "builtin_tool_flags": {"time": true, "weather": false},
+                  "builtin_tool_flags": {"time": true, "weather": false, "unknown": true},
                   "custom_tools": [
                     {
                       "name": "getCurrentWeather",
@@ -54,7 +59,9 @@ class ToolManagerTest {
             ).jsonObject
         )
 
-        val resolved = ToolManager().resolve(settings)
+        val resolved = ToolManager(
+            builtinToolRegistry = BuiltinToolRegistry(listOf(FakeBuiltinTool("time")))
+        ).resolve(settings)
 
         assertEquals(listOf("time"), resolved.builtinTools.map { it.name })
         assertTrue(resolved.builtinTools.single() is LocalTool.Builtin)
@@ -81,5 +88,32 @@ class ToolManagerTest {
             ),
             resolved.promptLines,
         )
+    }
+
+    @Test
+    fun resolveFromSettings_defaultRegistryResolvesCreateCommandToolDuringB03() {
+        val settings = LocalSettings(
+            Json.parseToJsonElement(
+                """
+                {
+                  "builtin_tool_flags": {"create_command_tool": true, "unknown": true}
+                }
+                """.trimIndent()
+            ).jsonObject
+        )
+
+        val resolved = ToolManager().resolve(settings)
+
+        assertEquals(listOf("create_command_tool"), resolved.builtinTools.map { it.name })
+    }
+
+    private class FakeBuiltinTool(
+        override val name: String,
+    ) : BuiltinTool() {
+        override fun configure(config: LocalToolConfig) = Unit
+
+        override suspend fun invoke(request: BuiltinToolRequest): BuiltinToolResult {
+            return BuiltinToolResult.success(message = "ok")
+        }
     }
 }

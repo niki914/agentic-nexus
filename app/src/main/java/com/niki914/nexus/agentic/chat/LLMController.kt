@@ -159,9 +159,13 @@ object LLMController {
             hooks {
                 when (kind) {
                     ToolCallKind.Local -> {
-                        val commandTool = toolCallDispatcher.findCommandTool(name)
-                            ?: return@hooks error("Local tool '$name' is not executable in current runtime.")
-                        ok(toolCallDispatcher.executeCommandTool(commandTool))
+                        ok(
+                            toolCallDispatcher.executeLocalTool(
+                                context = sessionContext ?: ContextProvider.await(),
+                                name = name,
+                                argumentsJson = argumentsJson,
+                            )
+                        )
                     }
                     is ToolCallKind.Mcp -> delegate()
                 }

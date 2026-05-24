@@ -28,14 +28,15 @@ import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsNavigationRow
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleRow
 import com.niki914.nexus.agentic.app.ui.infra.component.StyledTextField
+import com.niki914.nexus.agentic.chat.agentic.BuiltinToolResult
+import com.niki914.nexus.agentic.chat.agentic.CommandToolConfig
+import com.niki914.nexus.agentic.chat.agentic.CommandToolManager
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.mod.XService
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
@@ -213,12 +214,16 @@ fun CustomToolsSettingsContent(
                             }
                             runCatching {
                                 saveCommandTools(context, updatedItems)
-                            }.onSuccess {
-                                items = updatedItems
-                                formState = formState.copy(
-                                    editingIndex = updatedItems.indexOf(nextItem)
-                                )
-                                statusMessage = context.getString(R.string.nexus_command_tools_save_success)
+                            }.onSuccess { result ->
+                                if (result.ok) {
+                                    items = updatedItems
+                                    formState = formState.copy(
+                                        editingIndex = updatedItems.indexOf(nextItem)
+                                    )
+                                    statusMessage = context.getString(R.string.nexus_command_tools_save_success)
+                                } else {
+                                    statusMessage = result.message
+                                }
                             }.onFailure { throwable ->
                                 statusMessage = context.getString(
                                     R.string.nexus_command_tools_save_failed,
@@ -249,10 +254,14 @@ fun CustomToolsSettingsContent(
                                 val updatedItems = items.filterIndexed { index, _ -> index != editingIndex }
                                 runCatching {
                                     saveCommandTools(context, updatedItems)
-                                }.onSuccess {
-                                    items = updatedItems
-                                    formState = CommandToolFormState()
-                                    statusMessage = context.getString(R.string.nexus_command_tools_delete_success)
+                                }.onSuccess { result ->
+                                    if (result.ok) {
+                                        items = updatedItems
+                                        formState = CommandToolFormState()
+                                        statusMessage = context.getString(R.string.nexus_command_tools_delete_success)
+                                    } else {
+                                        statusMessage = result.message
+                                    }
                                 }.onFailure { throwable ->
                                     statusMessage = context.getString(
                                         R.string.nexus_command_tools_save_failed,
@@ -306,22 +315,18 @@ private fun parseCommandToolItems(settings: LocalSettings): List<CommandToolItem
 private suspend fun saveCommandTools(
     context: Context,
     items: List<CommandToolItem>,
-) {
-    val latestSettings = XService.getLocalSettings(context)
-    val updatedProps = latestSettings.props.toMutableMap()
-    updatedProps["command_tools"] = JsonArray(
-        items.map { item ->
-            JsonObject(
-                mapOf(
-                    "name" to JsonPrimitive(item.name),
-                    "description" to JsonPrimitive(item.description),
-                    "enabled" to JsonPrimitive(item.enabled),
-                    "command" to JsonPrimitive(item.command),
-                )
+): BuiltinToolResult {
+    return CommandToolManager().saveAll(
+        context = context,
+        items = items.map { item ->
+            CommandToolConfig(
+                name = item.name,
+                description = item.description,
+                enabled = item.enabled,
+                command = item.command,
             )
-        }
+        },
     )
-    XService.putLocalSettings(context, LocalSettings(JsonObject(updatedProps)))
 }
 
 private inline fun <T> List<T>.anyIndexed(predicate: (Int, T) -> Boolean): Boolean {

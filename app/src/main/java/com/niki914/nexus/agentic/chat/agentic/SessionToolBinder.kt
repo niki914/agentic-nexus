@@ -13,6 +13,13 @@ object SessionToolBinder {
     ) {
         localTools {
             previousTools?.allLocalToolNames().orEmpty().forEach(::remove)
+            tools.builtinTools
+                .filterIsInstance<LocalTool.Builtin>()
+                .forEach { tool ->
+                    add(tool.name) {
+                        tool.tool.configure(this)
+                    }
+                }
             tools.customTools
                 .filterIsInstance<LocalTool.Command>()
                 .forEach { tool ->

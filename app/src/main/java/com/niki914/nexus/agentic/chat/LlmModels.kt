@@ -1,5 +1,6 @@
 package com.niki914.nexus.agentic.chat
 
+import com.niki914.nexus.agentic.chat.agentic.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.PromptComposeResult
 import com.niki914.nexus.agentic.mod.LocalSettings
 import kotlinx.serialization.json.JsonObject
@@ -34,6 +35,7 @@ sealed interface LocalTool {
     data class Builtin(
         override val name: String,
         override val description: String,
+        val tool: BuiltinTool,
     ) : LocalTool
 
     data class UserDefined(

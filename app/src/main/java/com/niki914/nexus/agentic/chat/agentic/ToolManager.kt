@@ -16,7 +16,9 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
-class ToolManager {
+class ToolManager(
+    private val builtinToolRegistry: BuiltinToolRegistry = BuiltinToolRegistry.default(),
+) {
     suspend fun resolve(
         context: Context,
         settings: LocalSettings,
@@ -41,25 +43,15 @@ class ToolManager {
     }
 
     private fun buildBuiltinTools(settings: LocalSettings): List<LocalTool.Builtin> {
-        return settings.builtinToolFlags
-            .orEmpty()
-            .mapNotNull { (name, value) ->
-                val enabled = when (value) {
-                    is JsonPrimitive -> value.booleanOrNull ?: false
-                    is JsonObject -> value.boolean("enabled", default = true)
-                    else -> false
-                }
-                if (!enabled) {
-                    null
-                } else {
-                    LocalTool.Builtin(
-                        name = name,
-                        description = (value as? JsonObject)?.string("description")
-                            ?: "Builtin tool: $name",
-                    )
-                }
+        return builtinToolRegistry
+            .resolveEnabled(settings)
+            .map { tool ->
+                LocalTool.Builtin(
+                    name = tool.name,
+                    description = "Builtin tool: ${tool.name}",
+                    tool = tool,
+                )
             }
-            .sortedBy { it.name }
     }
 
     private fun buildCustomTools(settings: LocalSettings): List<LocalTool.UserDefined> {
@@ -190,8 +182,6 @@ class ToolManager {
             else -> ToolParameterType.String
         }
     }
-
-    private fun JsonObject?.orEmpty(): JsonObject = this ?: JsonObject(emptyMap())
 
     private fun JsonArray?.orEmptyObjects(): List<JsonObject> =
         this?.mapNotNull { it as? JsonObject } ?: emptyList()

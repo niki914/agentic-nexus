@@ -1,0 +1,78 @@
+package com.niki914.nexus.agentic.chat.agentic
+
+import android.content.Context
+import com.niki914.s3ss10n.LocalToolConfig
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+
+abstract class BuiltinTool {
+    abstract val name: String
+
+    abstract fun configure(config: LocalToolConfig)
+
+    abstract suspend fun invoke(request: BuiltinToolRequest): BuiltinToolResult
+}
+
+data class BuiltinToolRequest(
+    val context: Context,
+    val name: String,
+    val argumentsJson: String,
+)
+
+data class BuiltinToolResult(
+    val ok: Boolean,
+    val code: String,
+    val message: String,
+    val hint: String,
+    val fieldErrors: Map<String, String>,
+    val data: JsonObject,
+) {
+    fun toJsonString(): String {
+        return JsonObject(
+            mapOf(
+                "ok" to JsonPrimitive(ok),
+                "code" to JsonPrimitive(code),
+                "message" to JsonPrimitive(message),
+                "hint" to JsonPrimitive(hint),
+                "field_errors" to JsonObject(
+                    fieldErrors.mapValues { (_, value) -> JsonPrimitive(value) }
+                ),
+                "data" to data,
+            )
+        ).toString()
+    }
+
+    companion object {
+        fun success(
+            message: String,
+            data: JsonObject = JsonObject(emptyMap()),
+            hint: String = "",
+        ): BuiltinToolResult {
+            return BuiltinToolResult(
+                ok = true,
+                code = "OK",
+                message = message,
+                hint = hint,
+                fieldErrors = emptyMap(),
+                data = data,
+            )
+        }
+
+        fun failure(
+            code: String,
+            message: String,
+            hint: String = "",
+            fieldErrors: Map<String, String> = emptyMap(),
+            data: JsonObject = JsonObject(emptyMap()),
+        ): BuiltinToolResult {
+            return BuiltinToolResult(
+                ok = false,
+                code = code,
+                message = message,
+                hint = hint,
+                fieldErrors = fieldErrors,
+                data = data,
+            )
+        }
+    }
+}
