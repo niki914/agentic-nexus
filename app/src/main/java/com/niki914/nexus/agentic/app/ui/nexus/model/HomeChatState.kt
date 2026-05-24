@@ -17,15 +17,20 @@ enum class HomeToolState {
 }
 
 data class HomeToolStatus(
+    val callId: String? = null,
     val name: String,
     val state: HomeToolState,
 )
 
+sealed interface HomeChatBlock {
+    data class Text(val text: String) : HomeChatBlock
+    data class Tool(val status: HomeToolStatus) : HomeChatBlock
+}
+
 data class HomeChatTurn(
     val id: Long,
     val userText: String,
-    val assistantText: String = "",
-    val toolStatus: HomeToolStatus? = null,
+    val blocks: List<HomeChatBlock> = emptyList(),
     val errorMessage: String? = null,
 )
 
@@ -153,23 +158,23 @@ class HomeChatViewModel internal constructor(
         when (event) {
             LlmStreamEvent.RoundStarted -> updateState { copy(isGenerating = true) }
             is LlmStreamEvent.TextDelta -> updateTurn(turnId) {
-                it.copy(assistantText = event.fullText)
+                it.appendText(event.delta)
             }
             is LlmStreamEvent.ToolRunning -> updateTurn(turnId) {
-                it.copy(toolStatus = HomeToolStatus(name = event.call.label, state = HomeToolState.Running))
+                it.appendTool(event.call.callId, event.call.label, HomeToolState.Running)
             }
             is LlmStreamEvent.ToolSucceeded -> updateTurn(turnId) {
-                it.copy(toolStatus = HomeToolStatus(name = event.call.label, state = HomeToolState.Succeeded))
+                it.updateTool(event.call.callId, event.call.label, HomeToolState.Succeeded)
             }
             is LlmStreamEvent.ToolFailed -> updateTurn(turnId) {
-                it.copy(toolStatus = HomeToolStatus(name = event.call.label, state = HomeToolState.Failed))
+                it.updateTool(event.call.callId, event.call.label, HomeToolState.Failed)
             }
             is LlmStreamEvent.Error -> {
                 applyError(turnId = turnId, message = event.message)
             }
             is LlmStreamEvent.Completed -> {
                 updateTurn(turnId) {
-                    it.copy(assistantText = event.fullText)
+                    it.appendFinalText(event.fullText)
                 }
                 updateState { copy(isGenerating = false) }
             }
@@ -194,10 +199,72 @@ class HomeChatViewModel internal constructor(
         }
         val updatedTurn = transform(currentTurns[index])
         xlog(
-            "HomeChatViewModel.UpdateTurn turnId=$turnId assistantLength=${updatedTurn.assistantText.length} tool=${updatedTurn.toolStatus?.state} hasError=${updatedTurn.errorMessage != null}"
+            "HomeChatViewModel.UpdateTurn turnId=$turnId blockCount=${updatedTurn.blocks.size} hasError=${updatedTurn.errorMessage != null}"
         )
         updateState {
             copy(turns = currentTurns.toMutableList().also { it[index] = updatedTurn })
+        }
+    }
+
+    private fun HomeChatTurn.appendText(delta: String): HomeChatTurn {
+        if (delta.isEmpty()) return this
+        val lastBlock = blocks.lastOrNull()
+        return if (lastBlock is HomeChatBlock.Text) {
+            copy(blocks = blocks.dropLast(1) + lastBlock.copy(text = lastBlock.text + delta))
+        } else {
+            copy(blocks = blocks + HomeChatBlock.Text(delta))
+        }
+    }
+
+    private fun HomeChatTurn.appendFinalText(fullText: String): HomeChatTurn {
+        val displayedText = blocks.filterIsInstance<HomeChatBlock.Text>().joinToString(separator = "") { it.text }
+        val delta = fullText.removePrefix(displayedText)
+        return appendText(delta)
+    }
+
+    private fun HomeChatTurn.appendTool(
+        callId: String?,
+        label: String,
+        state: HomeToolState,
+    ): HomeChatTurn = copy(
+        blocks = blocks + HomeChatBlock.Tool(
+            HomeToolStatus(
+                callId = callId,
+                name = label,
+                state = state,
+            ),
+        ),
+    )
+
+    private fun HomeChatTurn.updateTool(
+        callId: String?,
+        label: String,
+        state: HomeToolState,
+    ): HomeChatTurn {
+        val index = blocks.indexOfLast { block ->
+            block is HomeChatBlock.Tool && block.status.matchesTool(callId, label)
+        }
+        if (index == -1) {
+            return appendTool(callId, label, state)
+        }
+        return copy(
+            blocks = blocks.toMutableList().also { mutableBlocks ->
+                mutableBlocks[index] = HomeChatBlock.Tool(
+                    HomeToolStatus(
+                        callId = callId,
+                        name = label,
+                        state = state,
+                    ),
+                )
+            },
+        )
+    }
+
+    private fun HomeToolStatus.matchesTool(callId: String?, label: String): Boolean {
+        return if (callId != null || this.callId != null) {
+            this.callId == callId
+        } else {
+            name == label
         }
     }
 

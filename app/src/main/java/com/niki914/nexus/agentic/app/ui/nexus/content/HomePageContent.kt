@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatBlock
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatTurn
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatViewModel
@@ -95,18 +96,23 @@ private fun HomeChatTurnItem(
     Column(modifier = modifier) {
         UserMessageBubble(text = turn.userText)
 
-        turn.toolStatus?.let { status ->
-            ToolStatusPill(
-                status = status,
-                modifier = Modifier.padding(top = 12.dp),
-            )
-        }
-
-        if (turn.assistantText.isNotBlank()) {
-            AssistantOutputText(
-                text = turn.assistantText,
-                modifier = Modifier.padding(top = 12.dp),
-            )
+        turn.blocks.forEach { block ->
+            when (block) {
+                is HomeChatBlock.Text -> {
+                    if (block.text.isNotBlank()) {
+                        AssistantOutputText(
+                            text = block.text,
+                            modifier = Modifier.padding(top = 12.dp),
+                        )
+                    }
+                }
+                is HomeChatBlock.Tool -> {
+                    ToolStatusPill(
+                        status = block.status,
+                        modifier = Modifier.padding(top = 12.dp),
+                    )
+                }
+            }
         }
 
         turn.errorMessage?.takeIf { it.isNotBlank() }?.let { message ->

@@ -28,7 +28,7 @@ class HomeChatViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun send_collectsTextAndUpdatesSingleToolStatus() = runTest {
+    fun send_collectsTextAndToolCallsInStreamOrder() = runTest {
         val viewModel = HomeChatViewModel(
             streamProvider = { query ->
                 assertEquals("hello", query)
@@ -37,6 +37,9 @@ class HomeChatViewModelTest {
                     LlmStreamEvent.TextDelta(delta = "he", fullText = "he"),
                     LlmStreamEvent.ToolRunning(ToolCallStatus(name = "search", label = "Search")),
                     LlmStreamEvent.ToolSucceeded(ToolCallStatus(name = "search", label = "Search")),
+                    LlmStreamEvent.TextDelta(delta = "llo", fullText = "hello"),
+                    LlmStreamEvent.ToolRunning(ToolCallStatus(callId = "calc-1", name = "calc", label = "Calc")),
+                    LlmStreamEvent.ToolSucceeded(ToolCallStatus(callId = "calc-1", name = "calc", label = "Calc")),
                     LlmStreamEvent.Completed(fullText = "hello back"),
                 )
             },
@@ -53,8 +56,16 @@ class HomeChatViewModelTest {
         assertEquals(1, state.turns.size)
         val turn = state.turns.single()
         assertEquals("hello", turn.userText)
-        assertEquals("hello back", turn.assistantText)
-        assertEquals(HomeToolStatus(name = "Search", state = HomeToolState.Succeeded), turn.toolStatus)
+        assertEquals(
+            listOf(
+                HomeChatBlock.Text("he"),
+                HomeChatBlock.Tool(HomeToolStatus(name = "Search", state = HomeToolState.Succeeded)),
+                HomeChatBlock.Text("llo"),
+                HomeChatBlock.Tool(HomeToolStatus(callId = "calc-1", name = "Calc", state = HomeToolState.Succeeded)),
+                HomeChatBlock.Text(" back"),
+            ),
+            turn.blocks,
+        )
     }
 
     @Test
