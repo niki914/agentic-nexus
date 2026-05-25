@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -218,30 +219,43 @@ fun ToolStatusPill(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(
-            modifier = Modifier
-                .clip(shape)
-                .background(containerColor, shape)
-                .padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center,
         ) {
-            ToolStatusIndicator(
-                state = status.state,
-                color = contentColor,
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = status.name,
-                style = MaterialTheme.typography.labelLarge,
-                color = contentColor,
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = status.state.label(),
-                style = MaterialTheme.typography.labelMedium,
-                color = contentColor,
-            )
+            val maxNameWidth = maxWidth * 0.56f
+
+            Row(
+                modifier = Modifier
+                    .clip(shape)
+                    .background(containerColor, shape)
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                ToolStatusIndicator(
+                    state = status.state,
+                    color = contentColor,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = status.name,
+                    modifier = Modifier.widthIn(max = maxNameWidth),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = contentColor,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = status.state.label(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = contentColor,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
         }
     }
 }
