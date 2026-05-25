@@ -43,9 +43,9 @@ object XService {
         title: String,
         content: String,
         uri: String?
-    ) {
+    ): Boolean {
         val context = ContextProvider.await()
-        XIpcBridge.postNotification(context, title, content, uri)
+        return XIpcBridge.postNotification(context, title, content, uri)
     }
 }
 

@@ -33,6 +33,7 @@ class BuiltinToolRegistry(
         fun default(): BuiltinToolRegistry = BuiltinToolRegistry(
             listOf(
                 CreateCustomToolBuiltin(),
+                NotifyBuiltin(),
                 RunCommandBuildin_WIP_SAFE(),
             )
         )
