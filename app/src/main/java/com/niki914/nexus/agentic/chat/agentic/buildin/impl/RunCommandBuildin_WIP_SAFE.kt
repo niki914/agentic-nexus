@@ -1,5 +1,12 @@
-package com.niki914.nexus.agentic.chat.agentic
+package com.niki914.nexus.agentic.chat.agentic.buildin.impl
 
+import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRequest
+import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRunner
+import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
+import com.niki914.nexus.agentic.chat.agentic.buildin.RawJsonBuiltinTool
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerializationException

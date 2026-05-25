@@ -1,6 +1,6 @@
 package com.niki914.nexus.agentic.chat
 
-import com.niki914.nexus.agentic.chat.agentic.BuiltinTool
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.PromptComposeResult
 import com.niki914.nexus.agentic.mod.LocalSettings
 import kotlinx.serialization.json.JsonObject

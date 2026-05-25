@@ -1,6 +1,6 @@
 package com.niki914.nexus.agentic.chat.v2
 
-import com.niki914.nexus.agentic.chat.agentic.ShellCommandSafetyPolicy
+import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

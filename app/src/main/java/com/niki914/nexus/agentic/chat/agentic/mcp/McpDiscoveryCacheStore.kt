@@ -1,4 +1,4 @@
-package com.niki914.nexus.agentic.chat.agentic
+package com.niki914.nexus.agentic.chat.agentic.mcp
 
 import android.content.Context
 import com.niki914.nexus.agentic.chat.McpCachedTool

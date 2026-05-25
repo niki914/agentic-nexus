@@ -1,9 +1,9 @@
 package com.niki914.nexus.agentic.chat
 
 import android.content.Context
-import com.niki914.nexus.agentic.chat.agentic.LlmStreamEventMapper
-import com.niki914.nexus.agentic.chat.agentic.McpDiscoveryCacheStore
-import com.niki914.nexus.agentic.chat.agentic.McpInterceptorHttpEngine
+import com.niki914.nexus.agentic.chat.agentic.stream.LlmStreamEventMapper
+import com.niki914.nexus.agentic.chat.agentic.mcp.McpDiscoveryCacheStore
+import com.niki914.nexus.agentic.chat.agentic.mcp.McpInterceptorHttpEngine
 import com.niki914.nexus.agentic.chat.agentic.PromptComposer
 import com.niki914.nexus.agentic.chat.agentic.PromptComposerInput
 import com.niki914.nexus.agentic.chat.agentic.SessionToolBinder

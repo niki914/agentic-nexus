@@ -1,4 +1,4 @@
-package com.niki914.nexus.agentic.chat.agentic
+package com.niki914.nexus.agentic.chat.agentic.shell
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers

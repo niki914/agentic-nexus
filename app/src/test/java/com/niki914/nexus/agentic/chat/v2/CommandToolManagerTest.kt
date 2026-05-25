@@ -1,7 +1,7 @@
 package com.niki914.nexus.agentic.chat.v2
 
-import com.niki914.nexus.agentic.chat.agentic.CustomToolCreateRequest
-import com.niki914.nexus.agentic.chat.agentic.CustomToolManager
+import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
+import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolManager
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

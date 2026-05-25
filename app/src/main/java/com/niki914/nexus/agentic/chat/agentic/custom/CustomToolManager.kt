@@ -1,6 +1,9 @@
-package com.niki914.nexus.agentic.chat.agentic
+package com.niki914.nexus.agentic.chat.agentic.custom
 
 import android.content.Context
+import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.mod.XService
 import kotlinx.coroutines.CancellationException

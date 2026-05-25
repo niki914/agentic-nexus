@@ -3,6 +3,9 @@ package com.niki914.nexus.agentic.chat.agentic
 import android.content.Context
 import com.niki914.nexus.agentic.chat.LocalTool
 import com.niki914.nexus.agentic.chat.ResolvedTools
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolExecutor
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
+import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolExecutor
 
 class ToolCallDispatcher(
     private val builtinToolExecutor: BuiltinToolExecutor = BuiltinToolExecutor(),

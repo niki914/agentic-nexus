@@ -1,6 +1,6 @@
 package com.niki914.nexus.agentic.chat.v2
 
-import com.niki914.nexus.agentic.chat.agentic.BuiltinToolSettingsManager
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolSettingsManager
 import com.niki914.nexus.agentic.mod.LocalSettings
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean

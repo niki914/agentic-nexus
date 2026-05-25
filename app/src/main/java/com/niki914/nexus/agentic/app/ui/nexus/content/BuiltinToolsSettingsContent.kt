@@ -25,8 +25,8 @@ import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleRow
-import com.niki914.nexus.agentic.chat.agentic.BuiltinToolSettingItem
-import com.niki914.nexus.agentic.chat.agentic.BuiltinToolSettingsManager
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolSettingItem
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolSettingsManager
 import com.niki914.nexus.agentic.mod.XService
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource

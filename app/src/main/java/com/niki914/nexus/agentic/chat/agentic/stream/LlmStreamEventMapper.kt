@@ -1,6 +1,7 @@
-package com.niki914.nexus.agentic.chat.agentic
+package com.niki914.nexus.agentic.chat.agentic.stream
 
 import com.niki914.nexus.agentic.chat.LlmStreamEvent
+import com.niki914.nexus.agentic.chat.ToolCallKind
 import com.niki914.nexus.agentic.chat.ToolCallStatus
 import com.niki914.s3ss10n.SessionEvent
 import com.niki914.s3ss10n.ToolCallKind as SessionToolCallKind
@@ -64,10 +65,10 @@ object LlmStreamEventMapper {
     private fun SessionEvent.ToolFailed.toToolCallStatus(): ToolCallStatus =
         ToolCallStatus(callId = callId, name = toolName, label = toolName, kind = kind.toV2Kind())
 
-    private fun SessionToolCallKind.toV2Kind(): com.niki914.nexus.agentic.chat.ToolCallKind {
+    private fun SessionToolCallKind.toV2Kind(): ToolCallKind {
         return when (this) {
-            SessionToolCallKind.Local -> com.niki914.nexus.agentic.chat.ToolCallKind.Local
-            is SessionToolCallKind.Mcp -> com.niki914.nexus.agentic.chat.ToolCallKind.Mcp
+            SessionToolCallKind.Local -> ToolCallKind.Local
+            is SessionToolCallKind.Mcp -> ToolCallKind.Mcp
         }
     }
 }

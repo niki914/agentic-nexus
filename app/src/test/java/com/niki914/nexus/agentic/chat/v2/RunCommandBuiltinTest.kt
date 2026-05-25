@@ -1,9 +1,9 @@
 package com.niki914.nexus.agentic.chat.v2
 
 import android.content.ContextWrapper
-import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRequest
-import com.niki914.nexus.agentic.chat.agentic.RunCommandBuildin_WIP_SAFE
-import com.niki914.nexus.agentic.chat.agentic.ShellCommandRunner
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.RunCommandBuildin_WIP_SAFE
+import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRunner
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject

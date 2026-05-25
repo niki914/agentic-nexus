@@ -1,7 +1,7 @@
 package com.niki914.nexus.agentic.chat.v2
 
-import com.niki914.nexus.agentic.chat.agentic.ShellCommandRequest
-import com.niki914.nexus.agentic.chat.agentic.ShellCommandRunner
+import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRequest
+import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRunner
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

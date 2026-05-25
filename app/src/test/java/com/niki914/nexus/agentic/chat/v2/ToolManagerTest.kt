@@ -1,10 +1,10 @@
 package com.niki914.nexus.agentic.chat.v2
 
 import com.niki914.nexus.agentic.chat.LocalTool
-import com.niki914.nexus.agentic.chat.agentic.BuiltinTool
-import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRegistry
-import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRequest
-import com.niki914.nexus.agentic.chat.agentic.BuiltinToolResult
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.ToolManager
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.s3ss10n.LocalToolConfig

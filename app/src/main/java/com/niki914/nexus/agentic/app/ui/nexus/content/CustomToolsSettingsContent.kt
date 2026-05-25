@@ -28,9 +28,9 @@ import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsNavigationRow
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleRow
 import com.niki914.nexus.agentic.app.ui.infra.component.StyledTextField
-import com.niki914.nexus.agentic.chat.agentic.BuiltinToolResult
-import com.niki914.nexus.agentic.chat.agentic.CustomToolConfig
-import com.niki914.nexus.agentic.chat.agentic.CustomToolManager
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
+import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolConfig
+import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolManager
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.mod.XService
 import dev.chrisbanes.haze.HazeState
@@ -39,8 +39,6 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 @Composable

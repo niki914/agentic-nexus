@@ -1,6 +1,9 @@
-package com.niki914.nexus.agentic.chat.agentic
+package com.niki914.nexus.agentic.chat.agentic.custom
 
 import com.niki914.nexus.agentic.chat.LocalTool
+import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRequest
+import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRunner
+import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
 import com.niki914.nexus.h.util.xlog
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive

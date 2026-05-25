@@ -1,5 +1,8 @@
-package com.niki914.nexus.agentic.chat.agentic
+package com.niki914.nexus.agentic.chat.agentic.buildin.impl
 
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.mod.XService
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.CancellationException

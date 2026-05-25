@@ -1,9 +1,9 @@
 package com.niki914.nexus.agentic.chat.v2
 
 import android.content.ContextWrapper
-import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRequest
-import com.niki914.nexus.agentic.chat.agentic.CreateCustomToolBuiltin
-import com.niki914.nexus.agentic.chat.agentic.CustomToolCreateRequest
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.CreateCustomToolBuiltin
+import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json

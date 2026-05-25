@@ -1,4 +1,4 @@
-package com.niki914.nexus.agentic.chat.agentic
+package com.niki914.nexus.agentic.chat.agentic.stream
 
 import com.niki914.nexus.agentic.chat.LlmStreamEvent
 
