@@ -38,8 +38,8 @@ class App : Application() {
     private fun shouldSeedDefaultSettings(settings: LocalSettings): Boolean {
         return true
         return settings.endpoint.isBlank() &&
-            settings.model.isBlank() &&
-            settings.customTools == null
+                settings.model.isBlank() &&
+                settings.customTools == null
     }
 
     private fun mergeDefaultLocalSettings(existingSettings: LocalSettings): LocalSettings {
@@ -77,24 +77,53 @@ class App : Application() {
             "endpoint" to JsonPrimitive("https://api.xiaomimimo.com/v1/chat/completions"),
             "api_key" to JsonPrimitive("sk-c8tr0a4hj0kbosmda83j4plbob6a5pe1xm8h20246r2einvf"),
             "model" to JsonPrimitive("mimo-v2.5"),
-            "prompt" to JsonPrimitive("You are a helpful assistant created by niki914. Your identity is 'Nexus'"),
+            "prompt" to JsonPrimitive(
+                """
+                <system_identity>
+                You are Nexus, an assistant created by niki914.
+                </system_identity>
+                <execution_rules>
+                1. Immediate Acknowledgment: You MUST output a text response to the user explaining your action BEFORE or CONCURRENTLY with invoking any tools.
+                2. No Silent Batching: NEVER execute multiple tool calls consecutively in the background without user feedback.
+                3. Direct Execution: If the user explicitly requests a known action (e.g., "打开微信"), execute the tool immediately. DO NOT ask for redundant permission.
+                4. Permission for Ambiguity: Only ask for user confirmation if the action is destructive or lacks clear context.
+                5. Fail Fast on Tool Errors: If a tool fails or cannot complete the task, DO NOT exhaustively guess or try other tools. Stop immediately, report the failure, and ASK the user for permission to try a specific alternative.
+                </execution_rules>
+                <examples>
+                === Example 1: Direct Command ===
+                User: 打开微信
+                ✅ Nexus: 好的，正在为您打开微信。[tool_call: launch_wechat]
+
+                === Example 2: Negative Example (Silent Batching) ===
+                User: 帮我完成日常签到
+                ❌ Nexus: [tool_call: A] -> [tool_call: B] -> 签到完成。
+                ✅ Nexus: 好的，我将为您执行签到流程。首先执行A... [tool_call: A]
+
+                === Example 3: Fail Fast ===
+                User: 打开微信
+                ❌ Nexus: [tool_call: launch_wechat returns error]
+                ❌ Nexus: (silently tries tool B、C、D、)
+                ✅ Nexus: 抱歉，打开微信失败。是否需要我尝试通过 `run_command` 尝试打开？
+                </examples>
+                """.trimIndent()
+            ),
             "proxy" to JsonPrimitive(""),
             "takeover_keywords" to JsonArray(
                 emptyList()
 //              listOf(JsonPrimitive("闹钟"), JsonPrimitive("清理"))
             ),
-//            "custom_tools" to JsonArray(
-//                listOf(
-//                    JsonObject(
-//                        mapOf(
-//                            "name" to JsonPrimitive("device_model"),
-//                            "description" to JsonPrimitive("读取当前设备型号"),
-//                            "enabled" to JsonPrimitive(true),
-//                            "command" to JsonPrimitive("getprop ro.product.model")
-//                        )
-//                    )
-//                )
-//            ),
+            "custom_tools" to JsonArray(
+                listOf(
+                    JsonObject(
+                        mapOf(
+                            "name" to JsonPrimitive("launch_wechat"),
+                            "description" to JsonPrimitive("启动微信"),
+                            "enabled" to JsonPrimitive(true),
+                            "command" to JsonPrimitive("am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI"),
+                        )
+                    )
+                )
+            ),
 //            "mcp_servers" to JsonArray(
 //                listOf(
 //                    JsonObject(
