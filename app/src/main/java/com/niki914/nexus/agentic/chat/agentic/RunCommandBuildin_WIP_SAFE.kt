@@ -21,6 +21,8 @@ class RunCommandBuildin_WIP_SAFE(
     override val description: String =
         "Run a command in the Android device shell (`/system/bin/sh`), not in a desktop Linux or macOS shell. Each call starts in a fresh shell and defaults to cwd='/'. The environment is minimal: many desktop tools such as apt, python, pip, node, git, or bash may be unavailable. Prefer shell builtins, common Android shell commands, and absolute device paths. Unsafe commands may be blocked by safety policy."
 
+    override val defaultEnabled: Boolean = true
+
     override fun configure(config: LocalToolConfig) {
         config.description = description
         config.string("command") {

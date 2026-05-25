@@ -78,15 +78,26 @@ class BuiltinToolTest {
     }
 
     @Test
-    fun defaultRegistry_containsCreateCustomTool() {
+    fun defaultRegistry_containsExpectedTools() {
         val registry = BuiltinToolRegistry.default()
 
         assertEquals(
-            listOf("RunCommandBuildin_WIP_SAFE", "create_custom_tool"),
+            listOf("create_custom_tool", "run_command"),
             registry.all().map { it.name }.sorted()
         )
         assertEquals("create_custom_tool", registry.find("create_custom_tool")?.name)
-        assertEquals("RunCommandBuildin_WIP_SAFE", registry.find("RunCommandBuildin_WIP_SAFE")?.name)
+        assertEquals("run_command", registry.find("run_command")?.name)
+    }
+
+    @Test
+    fun resolveEnabled_usesDefaultEnabledWhenFlagMissing() {
+        val toolEnabled = FakeBuiltinTool("enabled", defaultEnabled = true)
+        val toolDisabled = FakeBuiltinTool("disabled", defaultEnabled = false)
+        val registry = BuiltinToolRegistry(listOf(toolEnabled, toolDisabled))
+
+        val resolved = registry.resolveEnabled(LocalSettings())
+
+        assertEquals(listOf("enabled"), resolved.map { it.name })
     }
 
     @Test
@@ -98,13 +109,14 @@ class BuiltinToolTest {
 
         assertEquals(tool.description, config.description)
         assertEquals(
-            "Run a shell command through the shared shell runner. Each call starts in a fresh shell with cwd='/' by default, supports optional workdir/timeout/merge_stderr arguments, and blocks unsafe commands.",
+            "Run a command in the Android device shell (`/system/bin/sh`), not in a desktop Linux or macOS shell. Each call starts in a fresh shell and defaults to cwd='/'. The environment is minimal: many desktop tools such as apt, python, pip, node, git, or bash may be unavailable. Prefer shell builtins, common Android shell commands, and absolute device paths. Unsafe commands may be blocked by safety policy.",
             tool.description,
         )
     }
 
     private class FakeBuiltinTool(
         override val name: String,
+        override val defaultEnabled: Boolean = false,
     ) : BuiltinTool() {
         override fun configure(config: LocalToolConfig) = Unit
 

@@ -16,6 +16,8 @@ class CreateCustomToolBuiltin(
 
     override val description: String = "Create or update a custom tool in LocalSettings.custom_tools."
 
+    override val defaultEnabled: Boolean = true
+
     override fun configure(config: LocalToolConfig) {
         config.description = description
         config.string("name") {

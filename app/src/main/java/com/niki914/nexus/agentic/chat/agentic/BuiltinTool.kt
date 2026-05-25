@@ -11,6 +11,8 @@ abstract class BuiltinTool {
     open val description: String
         get() = "Builtin tool: $name"
 
+    open val defaultEnabled: Boolean = false
+
     abstract fun configure(config: LocalToolConfig)
 
     abstract suspend fun invoke(request: BuiltinToolRequest): BuiltinToolResult

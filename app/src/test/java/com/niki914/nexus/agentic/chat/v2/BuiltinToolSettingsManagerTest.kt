@@ -15,15 +15,14 @@ class BuiltinToolSettingsManagerTest {
     private val manager = BuiltinToolSettingsManager()
 
     @Test
-    fun list_defaultsMissingFlagsToDisabled() {
+    fun list_defaultsMissingFlagsToEnabled() {
         val items = manager.list(LocalSettings())
 
-        assertEquals(listOf("create_custom_tool"), items.map { it.name })
         assertEquals(
-            "Create or update a custom tool in LocalSettings.custom_tools.",
-            items.single().description,
+            listOf("create_custom_tool", "run_command"),
+            items.map { it.name }.sorted()
         )
-        assertFalse(items.single().enabled)
+        assertTrue(items.all { it.enabled })
     }
 
     @Test

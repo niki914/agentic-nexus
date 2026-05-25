@@ -25,7 +25,7 @@ class BuiltinToolSettingsManager(
                 BuiltinToolSettingItem(
                     name = tool.name,
                     description = tool.description,
-                    enabled = isEnabled(settings, tool.name),
+                    enabled = isEnabled(settings, tool),
                 )
             }
     }
@@ -91,12 +91,12 @@ class BuiltinToolSettingsManager(
         )
     }
 
-    private fun isEnabled(settings: LocalSettings, name: String): Boolean {
-        val value = settings.builtinToolFlags?.get(name) ?: return false
+    private fun isEnabled(settings: LocalSettings, tool: BuiltinTool): Boolean {
+        val value = settings.builtinToolFlags?.get(tool.name) ?: return tool.defaultEnabled
         return when (value) {
-            is JsonPrimitive -> value.booleanOrNull ?: false
-            is JsonObject -> (value["enabled"] as? JsonPrimitive)?.booleanOrNull ?: false
-            else -> false
+            is JsonPrimitive -> value.booleanOrNull ?: tool.defaultEnabled
+            is JsonObject -> (value["enabled"] as? JsonPrimitive)?.booleanOrNull ?: tool.defaultEnabled
+            else -> tool.defaultEnabled
         }
     }
 
