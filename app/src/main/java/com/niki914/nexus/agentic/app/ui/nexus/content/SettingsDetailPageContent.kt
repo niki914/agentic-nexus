@@ -86,7 +86,7 @@ fun SettingsDetailPageContent(
                 textAlign = TextAlign.Center,
             )
             Text(
-                text = stringResource(R.string.nexus_settings_detail_placeholder),
+                text = stringResource(R.string.ui_settings_detail_placeholder),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

@@ -56,13 +56,13 @@ fun CustomToolsSettingsContent(
     var isSaving by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
 
-    val enabledStateText = stringResource(R.string.nexus_custom_tools_state_enabled)
-    val disabledStateText = stringResource(R.string.nexus_custom_tools_state_disabled)
-    val summaryFallback = stringResource(R.string.nexus_custom_tools_summary_fallback)
-    val duplicateNameError = stringResource(R.string.nexus_custom_tools_duplicate_name)
-    val saveSuccessText = stringResource(R.string.nexus_custom_tools_save_success)
-    val deleteSuccessText = stringResource(R.string.nexus_custom_tools_delete_success)
-    val saveFailedTemplate = stringResource(R.string.nexus_custom_tools_save_failed)
+    val enabledStateText = stringResource(R.string.custom_tool_state_enabled)
+    val disabledStateText = stringResource(R.string.custom_tool_state_disabled)
+    val summaryFallback = stringResource(R.string.custom_tool_summary_fallback)
+    val duplicateNameError = stringResource(R.string.custom_tool_duplicate_name)
+    val saveSuccessText = stringResource(R.string.custom_tool_save_success)
+    val deleteSuccessText = stringResource(R.string.custom_tool_delete_success)
+    val saveFailedTemplate = stringResource(R.string.custom_tool_save_failed)
     val trimmedName = formState.name.trim()
     val hasDuplicateName = trimmedName.isNotBlank() && items.anyIndexed { index, item ->
         item.name == trimmedName && index != formState.editingIndex
@@ -84,26 +84,26 @@ fun CustomToolsSettingsContent(
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         Text(
-            text = stringResource(R.string.nexus_settings_custom_tools),
+            text = stringResource(R.string.ui_settings_custom_tools),
             style = MaterialTheme.typography.headlineSmall,
         )
         Text(
-            text = stringResource(R.string.nexus_custom_tools_page_description),
+            text = stringResource(R.string.custom_tool_page_description),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        SettingsGroupCard(title = stringResource(R.string.nexus_custom_tools_list_title)) {
+        SettingsGroupCard(title = stringResource(R.string.custom_tool_list_title)) {
             if (isLoading) {
                 Text(
-                    text = stringResource(R.string.nexus_custom_tools_loading),
+                    text = stringResource(R.string.custom_tool_loading),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
                 )
             } else if (items.isEmpty()) {
                 Text(
-                    text = stringResource(R.string.nexus_custom_tools_empty),
+                    text = stringResource(R.string.custom_tool_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
@@ -137,7 +137,7 @@ fun CustomToolsSettingsContent(
         }
 
         MaterialTintLiquidButton(
-            text = stringResource(R.string.nexus_custom_tools_add_action),
+            text = stringResource(R.string.custom_tool_add_action),
             onClick = {
                 formState = CustomToolFormState()
                 statusMessage = null
@@ -147,9 +147,9 @@ fun CustomToolsSettingsContent(
         SettingsGroupCard(
             title = stringResource(
                 if (formState.editingIndex == null) {
-                    R.string.nexus_custom_tools_editor_title_create
+                    R.string.custom_tool_editor_title_create
                 } else {
-                    R.string.nexus_custom_tools_editor_title_edit
+                    R.string.custom_tool_editor_title_edit
                 }
             )
         ) {
@@ -160,26 +160,26 @@ fun CustomToolsSettingsContent(
                 StyledTextField(
                     value = formState.name,
                     onValueChange = { formState = formState.copy(name = it) },
-                    label = stringResource(R.string.nexus_custom_tools_field_name),
-                    placeholder = stringResource(R.string.nexus_custom_tools_field_name_placeholder),
+                    label = stringResource(R.string.custom_tool_field_name),
+                    placeholder = stringResource(R.string.custom_tool_field_name_placeholder),
                 )
                 StyledTextField(
                     value = formState.description,
                     onValueChange = { formState = formState.copy(description = it) },
-                    label = stringResource(R.string.nexus_custom_tools_field_description),
-                    placeholder = stringResource(R.string.nexus_custom_tools_field_description_placeholder),
+                    label = stringResource(R.string.custom_tool_field_description),
+                    placeholder = stringResource(R.string.custom_tool_field_description_placeholder),
                 )
                 SettingsToggleRow(
-                    label = stringResource(R.string.nexus_custom_tools_field_enabled),
-                    description = stringResource(R.string.nexus_custom_tools_field_enabled_description),
+                    label = stringResource(R.string.custom_tool_field_enabled),
+                    description = stringResource(R.string.custom_tool_field_enabled_description),
                     checked = formState.enabled,
                     onCheckedChange = { formState = formState.copy(enabled = it) },
                 )
                 StyledTextField(
                     value = formState.command,
                     onValueChange = { formState = formState.copy(command = it) },
-                    label = stringResource(R.string.nexus_custom_tools_field_command),
-                    placeholder = stringResource(R.string.nexus_custom_tools_field_command_placeholder),
+                    label = stringResource(R.string.custom_tool_field_command),
+                    placeholder = stringResource(R.string.custom_tool_field_command_placeholder),
                     singleLine = false,
                     minLines = 4,
                 )
@@ -191,7 +191,7 @@ fun CustomToolsSettingsContent(
                     )
                 }
                 MaterialTintLiquidButton(
-                    text = stringResource(R.string.nexus_custom_tools_save_action),
+                    text = stringResource(R.string.custom_tool_save_action),
                     enabled = !isSaving &&
                         trimmedName.isNotBlank() &&
                         formState.command.trim().isNotBlank() &&
@@ -243,7 +243,7 @@ fun CustomToolsSettingsContent(
                 }
                 if (formState.editingIndex != null) {
                     MaterialTintLiquidButton(
-                        text = stringResource(R.string.nexus_custom_tools_delete_action),
+                        text = stringResource(R.string.custom_tool_delete_action),
                         enabled = !isSaving,
                         containerColor = MaterialTheme.colorScheme.secondary,
                         contentColor = MaterialTheme.colorScheme.onSecondary,

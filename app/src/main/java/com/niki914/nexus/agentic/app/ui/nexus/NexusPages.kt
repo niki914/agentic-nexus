@@ -69,7 +69,7 @@ fun NexusPageContent(
                 options = listOf(
                     SelectionOption(
                         id = "deepseek",
-                        title = stringResource(R.string.nexus_provider_pick_option_deepseek),
+                        title = stringResource(R.string.ui_onboard_provider_pick_option_deepseek),
                         leadingIconRes = R.drawable.deepseek,
                         darkContainerColor = deepSeekColors.darkContainerColor,
                         lightContainerColor = deepSeekColors.lightContainerColor,
@@ -79,7 +79,7 @@ fun NexusPageContent(
                     ),
                     SelectionOption(
                         id = "openai",
-                        title = stringResource(R.string.nexus_provider_pick_option_openai),
+                        title = stringResource(R.string.ui_onboard_provider_pick_option_openai),
                         leadingIconRes = R.drawable.openai,
                         darkContainerColor = openAiColors.darkContainerColor,
                         lightContainerColor = openAiColors.lightContainerColor,
@@ -89,7 +89,7 @@ fun NexusPageContent(
                     ),
                     SelectionOption(
                         id = "anthropic",
-                        title = stringResource(R.string.nexus_provider_pick_option_anthropic),
+                        title = stringResource(R.string.ui_onboard_provider_pick_option_anthropic),
                         leadingIconRes = R.drawable.anthropic,
                         darkContainerColor = claudeColors.darkContainerColor,
                         lightContainerColor = claudeColors.lightContainerColor,
@@ -99,7 +99,7 @@ fun NexusPageContent(
                     ),
                     SelectionOption(
                         id = "google",
-                        title = stringResource(R.string.nexus_provider_pick_option_google),
+                        title = stringResource(R.string.ui_onboard_provider_pick_option_google),
                         leadingIconRes = R.drawable.gemini,
                         tintLeadingIcon = false,
                         darkContainerColor = geminiColors.darkContainerColor,
@@ -227,9 +227,9 @@ private fun DonePageContent(
     ConfigurePageContent(
         topPadding = topPadding,
         hazeState = hazeState,
-        headline = stringResource(R.string.nexus_done_headline),
-        description = stringResource(R.string.nexus_done_description),
-        buttonText = stringResource(R.string.nexus_done_enter_home),
+        headline = stringResource(R.string.ui_onboard_done_headline),
+        description = stringResource(R.string.ui_onboard_done_description),
+        buttonText = stringResource(R.string.ui_onboard_done_enter_home),
         onComplete = onEnterHome,
     )
 }

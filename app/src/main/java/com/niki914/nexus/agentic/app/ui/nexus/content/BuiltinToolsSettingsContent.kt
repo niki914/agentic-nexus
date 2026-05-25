@@ -58,7 +58,7 @@ fun BuiltinToolsSettingsContent(
                 throw throwable
             }
             statusMessage = context.getString(
-                R.string.nexus_builtin_tools_save_failed,
+                R.string.builtin_tool_save_failed,
                 throwable.message ?: throwable::class.java.simpleName,
             )
         }
@@ -75,23 +75,23 @@ fun BuiltinToolsSettingsContent(
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         Text(
-            text = stringResource(R.string.nexus_settings_builtin_tools),
+            text = stringResource(R.string.ui_settings_builtin_tools),
             style = MaterialTheme.typography.headlineSmall,
         )
         Text(
-            text = stringResource(R.string.nexus_builtin_tools_page_description),
+            text = stringResource(R.string.builtin_tool_page_description),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        SettingsGroupCard(title = stringResource(R.string.nexus_builtin_tools_list_title)) {
+        SettingsGroupCard(title = stringResource(R.string.builtin_tool_list_title)) {
             when {
                 isLoading -> BuiltinToolMessage(
-                    text = stringResource(R.string.nexus_builtin_tools_loading),
+                    text = stringResource(R.string.builtin_tool_loading),
                 )
 
                 items.isEmpty() -> BuiltinToolMessage(
-                    text = stringResource(R.string.nexus_builtin_tools_empty),
+                    text = stringResource(R.string.builtin_tool_empty),
                 )
 
                 else -> items.forEachIndexed { index, item ->
@@ -118,9 +118,9 @@ fun BuiltinToolsSettingsContent(
                                         items = loadBuiltinToolItems(context, manager)
                                         statusMessage = context.getString(
                                             if (checked) {
-                                                R.string.nexus_builtin_tools_save_success_enabled
+                                                R.string.builtin_tool_save_success_enabled
                                             } else {
-                                                R.string.nexus_builtin_tools_save_success_disabled
+                                                R.string.builtin_tool_save_success_disabled
                                             }
                                         )
                                     } else {
@@ -130,7 +130,7 @@ fun BuiltinToolsSettingsContent(
                                             fallback = previousItems,
                                         )
                                         statusMessage = context.getString(
-                                            R.string.nexus_builtin_tools_save_failed,
+                                            R.string.builtin_tool_save_failed,
                                             result.message,
                                         )
                                     }
@@ -144,7 +144,7 @@ fun BuiltinToolsSettingsContent(
                                         fallback = previousItems,
                                     )
                                     statusMessage = context.getString(
-                                        R.string.nexus_builtin_tools_save_failed,
+                                        R.string.builtin_tool_save_failed,
                                         throwable.message ?: throwable::class.java.simpleName,
                                     )
                                 }
@@ -171,7 +171,7 @@ fun BuiltinToolsSettingsContent(
             )
         }
         Text(
-            text = stringResource(R.string.nexus_builtin_tools_effect_hint),
+            text = stringResource(R.string.builtin_tool_effect_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

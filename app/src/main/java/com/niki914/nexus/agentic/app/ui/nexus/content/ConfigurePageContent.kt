@@ -36,9 +36,9 @@ fun ConfigurePageContent(
     ConfigurePageContent(
         topPadding = topPadding,
         hazeState = hazeState,
-        headline = stringResource(R.string.nexus_configure_headline),
-        description = stringResource(R.string.nexus_configure_description),
-        buttonText = stringResource(R.string.nexus_configure_complete),
+        headline = stringResource(R.string.ui_onboard_configure_headline),
+        description = stringResource(R.string.ui_onboard_configure_description),
+        buttonText = stringResource(R.string.ui_onboard_configure_complete),
         buttonDarkContainerColor = buttonDarkContainerColor,
         buttonLightContainerColor = buttonLightContainerColor,
         buttonDarkContentColor = buttonDarkContentColor,

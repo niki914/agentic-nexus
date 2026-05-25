@@ -278,7 +278,7 @@ fun LiquidChatComposer(
     LiquidTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = stringResource(R.string.nexus_home_input_placeholder),
+        placeholder = stringResource(R.string.ui_home_input_placeholder),
         enabled = true,
         singleLine = false,
         modifier = modifier.fillMaxWidth(),
@@ -291,7 +291,7 @@ fun LiquidChatComposer(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Send,
-                        contentDescription = stringResource(R.string.nexus_home_send_content_description),
+                        contentDescription = stringResource(R.string.ui_home_send_content_description),
                     )
                 }
             }
@@ -330,7 +330,7 @@ private fun ToolStatusIndicator(
 
 @Composable
 private fun HomeToolState.label(): String = when (this) {
-    HomeToolState.Running -> stringResource(R.string.nexus_home_tool_running)
-    HomeToolState.Succeeded -> stringResource(R.string.nexus_home_tool_succeeded)
-    HomeToolState.Failed -> stringResource(R.string.nexus_home_tool_failed)
+    HomeToolState.Running -> stringResource(R.string.ui_home_tool_running)
+    HomeToolState.Succeeded -> stringResource(R.string.ui_home_tool_succeeded)
+    HomeToolState.Failed -> stringResource(R.string.ui_home_tool_failed)
 }

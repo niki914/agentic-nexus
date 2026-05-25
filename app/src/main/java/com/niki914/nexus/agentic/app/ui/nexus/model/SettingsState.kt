@@ -57,7 +57,7 @@ internal fun buildSettingsUiState(
 private fun settingsSections(): List<SettingsSectionDefinition> {
     return listOf(
         SettingsSectionDefinition(
-            titleRes = R.string.nexus_settings_section_model,
+            titleRes = R.string.ui_settings_section_model,
             groups = listOf(
                 NexusSettingsGroup.ProviderModel,
                 NexusSettingsGroup.Network,
@@ -65,14 +65,14 @@ private fun settingsSections(): List<SettingsSectionDefinition> {
             ),
         ),
         SettingsSectionDefinition(
-            titleRes = R.string.nexus_settings_section_execution,
+            titleRes = R.string.ui_settings_section_execution,
             groups = listOf(
                 NexusSettingsGroup.BuiltinTools,
                 NexusSettingsGroup.ShellRules,
             ),
         ),
         SettingsSectionDefinition(
-            titleRes = R.string.nexus_settings_section_integration,
+            titleRes = R.string.ui_settings_section_integration,
             groups = listOf(
                 NexusSettingsGroup.Mcp,
                 NexusSettingsGroup.CustomTools,

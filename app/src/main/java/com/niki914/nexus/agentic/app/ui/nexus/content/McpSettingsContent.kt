@@ -46,10 +46,10 @@ fun McpSettingsContent(
     val uiState by viewModel.uiStateFlow.collectAsState()
     val scrollState = rememberScrollState()
 
-    val enabledStateText = stringResource(R.string.nexus_mcp_state_enabled)
-    val disabledStateText = stringResource(R.string.nexus_mcp_state_disabled)
-    val summaryFallback = stringResource(R.string.nexus_mcp_summary_fallback)
-    val duplicateNameError = stringResource(R.string.nexus_mcp_duplicate_name)
+    val enabledStateText = stringResource(R.string.mcp_state_enabled)
+    val disabledStateText = stringResource(R.string.mcp_state_disabled)
+    val summaryFallback = stringResource(R.string.mcp_summary_fallback)
+    val duplicateNameError = stringResource(R.string.mcp_duplicate_name)
     val trimmedName = uiState.formState.name.trim()
     val trimmedUrl = uiState.formState.url.trim()
     val hasDuplicateName = trimmedName.isNotBlank() && uiState.items.anyIndexed { index, item ->
@@ -70,26 +70,26 @@ fun McpSettingsContent(
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         Text(
-            text = stringResource(R.string.nexus_settings_mcp),
+            text = stringResource(R.string.ui_settings_mcp),
             style = MaterialTheme.typography.headlineSmall,
         )
         Text(
-            text = stringResource(R.string.nexus_mcp_page_description),
+            text = stringResource(R.string.mcp_page_description),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        SettingsGroupCard(title = stringResource(R.string.nexus_mcp_list_title)) {
+        SettingsGroupCard(title = stringResource(R.string.mcp_list_title)) {
             if (uiState.isLoading) {
                 Text(
-                    text = stringResource(R.string.nexus_mcp_loading),
+                    text = stringResource(R.string.mcp_loading),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
                 )
             } else if (uiState.items.isEmpty()) {
                 Text(
-                    text = stringResource(R.string.nexus_mcp_empty),
+                    text = stringResource(R.string.mcp_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
@@ -116,16 +116,16 @@ fun McpSettingsContent(
         }
 
         MaterialTintLiquidButton(
-            text = stringResource(R.string.nexus_mcp_add_action),
+            text = stringResource(R.string.mcp_add_action),
             onClick = { viewModel.sendIntent(McpSettingsIntent.StartCreate) },
         )
 
         SettingsGroupCard(
             title = stringResource(
                 if (uiState.formState.editingIndex == null) {
-                    R.string.nexus_mcp_editor_title_create
+                    R.string.mcp_editor_title_create
                 } else {
-                    R.string.nexus_mcp_editor_title_edit
+                    R.string.mcp_editor_title_edit
                 }
             )
         ) {
@@ -136,20 +136,20 @@ fun McpSettingsContent(
                 StyledTextField(
                     value = uiState.formState.name,
                     onValueChange = { viewModel.sendIntent(McpSettingsIntent.NameChanged(it)) },
-                    label = stringResource(R.string.nexus_mcp_field_name),
-                    placeholder = stringResource(R.string.nexus_mcp_field_name_placeholder),
+                    label = stringResource(R.string.mcp_field_name),
+                    placeholder = stringResource(R.string.mcp_field_name_placeholder),
                 )
                 StyledTextField(
                     value = uiState.formState.url,
                     onValueChange = { viewModel.sendIntent(McpSettingsIntent.UrlChanged(it)) },
-                    label = stringResource(R.string.nexus_mcp_field_url),
-                    placeholder = stringResource(R.string.nexus_mcp_field_url_placeholder),
+                    label = stringResource(R.string.mcp_field_url),
+                    placeholder = stringResource(R.string.mcp_field_url_placeholder),
                     singleLine = false,
                     minLines = 3,
                 )
                 SettingsToggleRow(
-                    label = stringResource(R.string.nexus_mcp_field_enabled),
-                    description = stringResource(R.string.nexus_mcp_field_enabled_description),
+                    label = stringResource(R.string.mcp_field_enabled),
+                    description = stringResource(R.string.mcp_field_enabled_description),
                     checked = uiState.formState.enabled,
                     onCheckedChange = { viewModel.sendIntent(McpSettingsIntent.EnabledChanged(it)) },
                 )
@@ -161,7 +161,7 @@ fun McpSettingsContent(
                     )
                 }
                 MaterialTintLiquidButton(
-                    text = stringResource(R.string.nexus_mcp_save_action),
+                    text = stringResource(R.string.mcp_save_action),
                     enabled = !uiState.isSaving &&
                         trimmedName.isNotBlank() &&
                         trimmedUrl.isNotBlank() &&
@@ -177,7 +177,7 @@ fun McpSettingsContent(
                 }
                 if (uiState.formState.editingIndex != null) {
                     MaterialTintLiquidButton(
-                        text = stringResource(R.string.nexus_mcp_delete_action),
+                        text = stringResource(R.string.mcp_delete_action),
                         enabled = !uiState.isSaving,
                         containerColor = MaterialTheme.colorScheme.secondary,
                         contentColor = MaterialTheme.colorScheme.onSecondary,

@@ -139,3 +139,5 @@ After reading the required files, respond to the user with a short Chinese statu
 4. ask only if a real ambiguity remains
 
 Do not dump the entire recovery chain to the user.
+
+当前进度：asc-01 phase2 finished。即将进入 3。回答语言：中文

@@ -68,8 +68,8 @@ fun NexusApp(
         null
     }
     val currentTitle = currentPage.titleRes?.let { stringResource(it) }.orEmpty()
-    val clearMenuLabel = stringResource(R.string.nexus_home_menu_clear)
-    val settingsMenuLabel = stringResource(R.string.nexus_settings_menu_entry)
+    val clearMenuLabel = stringResource(R.string.ui_home_menu_clear)
+    val settingsMenuLabel = stringResource(R.string.ui_settings_menu_entry)
     val screenState = rememberLiquidScreenState(
         title = currentTitle,
         showLeftButton = canNavigateBack,

@@ -69,7 +69,7 @@ fun StartupPageContent(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 Text(
-                    text = stringResource(R.string.nexus_startup_headline),
+                    text = stringResource(R.string.ui_onboard_startup_headline),
                     style = TextStyle(
                         fontSize = 42.sp,
                         lineHeight = 46.sp,

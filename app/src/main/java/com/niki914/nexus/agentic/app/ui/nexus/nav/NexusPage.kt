@@ -21,7 +21,7 @@ data object StartupPage : NexusPage {
 
 data object ProviderPickPage : NexusPage {
     override val routeKey: String = "provider-pick"
-    override val titleRes: Int = R.string.nexus_provider_pick_title
+    override val titleRes: Int = R.string.ui_onboard_provider_pick_title
     override val showLeftButton: Boolean = true
     override val showRightButton: Boolean = false
 }
@@ -30,7 +30,7 @@ data class ConfigurePage(
     val providerId: String? = null,
 ) : NexusPage {
     override val routeKey: String = if (providerId == null) "configure" else "configure:$providerId"
-    override val titleRes: Int = R.string.nexus_configure_title
+    override val titleRes: Int = R.string.ui_onboard_configure_title
     override val showLeftButton: Boolean = true
     override val showRightButton: Boolean = false
 }
@@ -44,14 +44,14 @@ data object DonePage : NexusPage {
 
 data object HomePage : NexusPage {
     override val routeKey: String = "home"
-    override val titleRes: Int = R.string.nexus_home_title
+    override val titleRes: Int = R.string.ui_home_title
     override val showLeftButton: Boolean = false
     override val showRightButton: Boolean = true
 }
 
 data object SettingsHomePage : NexusPage {
     override val routeKey: String = "settings-home"
-    override val titleRes: Int = R.string.nexus_settings_title
+    override val titleRes: Int = R.string.ui_settings_title
     override val showLeftButton: Boolean = true
     override val showRightButton: Boolean = false
 }
