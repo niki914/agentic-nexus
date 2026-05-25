@@ -26,7 +26,7 @@ import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.capsule.ContinuousCapsule
 import com.kyant.capsule.continuities.G2Continuity
-import com.niki914.nexus.agentic.app.liquid_example.utils.InteractiveHighlight
+import com.niki914.nexus.agentic.app.ui.infra.interaction.InteractiveHighlight
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
