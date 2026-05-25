@@ -2,8 +2,8 @@ package com.niki914.nexus.agentic.chat.v2
 
 import android.content.ContextWrapper
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRequest
-import com.niki914.nexus.agentic.chat.agentic.CommandToolCreateRequest
-import com.niki914.nexus.agentic.chat.agentic.CreateCommandToolBuiltin
+import com.niki914.nexus.agentic.chat.agentic.CreateCustomToolBuiltin
+import com.niki914.nexus.agentic.chat.agentic.CustomToolCreateRequest
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -16,14 +16,14 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CreateCommandToolBuiltinTest {
+class CreateCustomToolBuiltinTest {
     @Test
     fun configure_registersDescriptionAndSchemaWithDisabledDefault() {
         val config = LocalToolConfig()
 
-        CreateCommandToolBuiltin().configure(config)
+        CreateCustomToolBuiltin().configure(config)
 
-        assertTrue(config.description.contains("Create or update a command tool"))
+        assertTrue(config.description.contains("Create or update a custom tool"))
         val schema = Json.parseToJsonElement(config.rawInputSchemaJson!!).jsonObject
         val properties = schema["properties"]!!.jsonObject
         assertEquals(listOf("name", "description", "command"), schema["required"]!!.jsonArray.map { it.jsonPrimitive.content })
@@ -38,14 +38,14 @@ class CreateCommandToolBuiltinTest {
 
     @Test
     fun parseArguments_readsRequiredFieldsAndBooleanDefaults() {
-        val method = CreateCommandToolBuiltin::class.java.getDeclaredMethod(
+        val method = CreateCustomToolBuiltin::class.java.getDeclaredMethod(
             "parseArguments",
             String::class.java,
         )
         method.isAccessible = true
 
         val request = method.invoke(
-            CreateCommandToolBuiltin(),
+            CreateCustomToolBuiltin(),
             """
             {
               "name": "battery_status",
@@ -53,7 +53,7 @@ class CreateCommandToolBuiltinTest {
               "command": "dumpsys battery"
             }
             """.trimIndent(),
-        ) as CommandToolCreateRequest
+        ) as CustomToolCreateRequest
 
         assertEquals("battery_status", request.name)
         assertEquals("Read current battery status.", request.description)
@@ -64,10 +64,10 @@ class CreateCommandToolBuiltinTest {
 
     @Test
     fun invoke_returnsInvalidArgumentsJsonForNonObjectArguments() = runTest {
-        val result = CreateCommandToolBuiltin().invoke(
+        val result = CreateCustomToolBuiltin().invoke(
             BuiltinToolRequest(
                 context = ContextWrapper(null),
-                name = "create_command_tool",
+                name = "create_custom_tool",
                 argumentsJson = "[]",
             )
         )

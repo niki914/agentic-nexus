@@ -9,7 +9,7 @@ import com.niki914.nexus.agentic.chat.agentic.BuiltinToolExecutor
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolResult
-import com.niki914.nexus.agentic.chat.agentic.CommandToolExecutor
+import com.niki914.nexus.agentic.chat.agentic.CustomToolExecutor
 import com.niki914.nexus.agentic.chat.agentic.ToolCallDispatcher
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.test.runTest
@@ -23,24 +23,25 @@ class ToolCallDispatcherTest {
     private val context: Context = ContextWrapper(null)
 
     @Test
-    fun executeLocalTool_dispatchesEnabledBuiltinBeforeCommandFallback() = runTest {
-        val builtin = RecordingBuiltinTool("create_command_tool")
+    fun executeLocalTool_dispatchesEnabledBuiltinBeforeCustomToolFallback() = runTest {
+        val builtin = RecordingBuiltinTool("create_custom_tool")
         val dispatcher = ToolCallDispatcher(
             builtinToolExecutor = BuiltinToolExecutor(BuiltinToolRegistry(listOf(builtin))),
-            commandToolExecutor = CommandToolExecutor(),
+            customToolExecutor = CustomToolExecutor(),
             currentTools = {
                 ResolvedTools(
                     builtinTools = listOf(
                         LocalTool.Builtin(
-                            name = "create_command_tool",
-                            description = "Create command tool",
+                            name = "create_custom_tool",
+                            description = "Create custom tool",
                             tool = builtin,
                         )
                     ),
                     customTools = listOf(
-                        LocalTool.Command(
-                            name = "create_command_tool",
+                        LocalTool.Custom(
+                            name = "create_custom_tool",
                             description = "Conflicting command",
+                            enabled = true,
                             command = "date",
                         )
                     ),
@@ -50,7 +51,7 @@ class ToolCallDispatcherTest {
 
         val resultJson = dispatcher.executeLocalTool(
             context = context,
-            name = "create_command_tool",
+            name = "create_custom_tool",
             argumentsJson = """{"name":"battery_status"}""",
         )
 
@@ -61,16 +62,16 @@ class ToolCallDispatcherTest {
 
     @Test
     fun executeLocalTool_usesResolvedBuiltinInstanceInsteadOfExecutorRegistryLookup() = runTest {
-        val builtin = RecordingBuiltinTool("create_command_tool")
+        val builtin = RecordingBuiltinTool("create_custom_tool")
         val dispatcher = ToolCallDispatcher(
             builtinToolExecutor = BuiltinToolExecutor(BuiltinToolRegistry(emptyList())),
-            commandToolExecutor = CommandToolExecutor(),
+            customToolExecutor = CustomToolExecutor(),
             currentTools = {
                 ResolvedTools(
                     builtinTools = listOf(
                         LocalTool.Builtin(
-                            name = "create_command_tool",
-                            description = "Create command tool",
+                            name = "create_custom_tool",
+                            description = "Create custom tool",
                             tool = builtin,
                         )
                     ),
@@ -80,7 +81,7 @@ class ToolCallDispatcherTest {
 
         val resultJson = dispatcher.executeLocalTool(
             context = context,
-            name = "create_command_tool",
+            name = "create_custom_tool",
             argumentsJson = """{"name":"battery_status"}""",
         )
 
@@ -93,7 +94,7 @@ class ToolCallDispatcherTest {
     fun executeLocalTool_returnsStructuredErrorForUnknownName() = runTest {
         val dispatcher = ToolCallDispatcher(
             builtinToolExecutor = BuiltinToolExecutor(BuiltinToolRegistry(emptyList())),
-            commandToolExecutor = CommandToolExecutor(),
+            customToolExecutor = CustomToolExecutor(),
             currentTools = { ResolvedTools() },
         )
 
@@ -108,16 +109,17 @@ class ToolCallDispatcherTest {
     }
 
     @Test
-    fun executeLocalTool_fallsBackToCommandWhenBuiltinIsNotEnabled() = runTest {
+    fun executeLocalTool_fallsBackToCustomToolWhenBuiltinIsNotEnabled() = runTest {
         val dispatcher = ToolCallDispatcher(
             builtinToolExecutor = BuiltinToolExecutor(BuiltinToolRegistry(emptyList())),
-            commandToolExecutor = CommandToolExecutor(timeoutMs = 1),
+            customToolExecutor = CustomToolExecutor(timeoutMs = 1),
             currentTools = {
                 ResolvedTools(
                     customTools = listOf(
-                        LocalTool.Command(
+                        LocalTool.Custom(
                             name = "device_model",
                             description = "Read device model",
+                            enabled = true,
                             command = "getprop ro.product.model",
                         )
                     )

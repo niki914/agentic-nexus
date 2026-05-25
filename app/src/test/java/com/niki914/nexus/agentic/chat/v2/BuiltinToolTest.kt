@@ -4,7 +4,8 @@ import com.niki914.nexus.agentic.chat.agentic.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolResult
-import com.niki914.nexus.agentic.chat.agentic.CreateCommandToolBuiltin
+import com.niki914.nexus.agentic.chat.agentic.CreateCustomToolBuiltin
+import com.niki914.nexus.agentic.chat.agentic.RunCommandBuildin_WIP_SAFE
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.serialization.json.Json
@@ -24,13 +25,13 @@ class BuiltinToolTest {
     }
 
     @Test
-    fun createCommandToolDescription_matchesConfigureDescription() {
-        val tool = CreateCommandToolBuiltin()
+    fun createCustomToolDescription_matchesConfigureDescription() {
+        val tool = CreateCustomToolBuiltin()
         val config = LocalToolConfig()
 
         tool.configure(config)
 
-        assertEquals("Create or update a command tool in LocalSettings.command_tools.", tool.description)
+        assertEquals("Create or update a custom tool in LocalSettings.custom_tools.", tool.description)
         assertEquals(tool.description, config.description)
     }
 
@@ -77,11 +78,25 @@ class BuiltinToolTest {
     }
 
     @Test
-    fun defaultRegistry_containsCreateCommandToolDuringB03() {
+    fun defaultRegistry_containsCreateCustomTool() {
         val registry = BuiltinToolRegistry.default()
 
-        assertEquals(listOf("create_command_tool"), registry.all().map { it.name })
-        assertEquals("create_command_tool", registry.find("create_command_tool")?.name)
+        assertEquals(
+            listOf("RunCommandBuildin_WIP_SAFE", "create_custom_tool"),
+            registry.all().map { it.name }.sorted()
+        )
+        assertEquals("create_custom_tool", registry.find("create_custom_tool")?.name)
+        assertEquals("RunCommandBuildin_WIP_SAFE", registry.find("RunCommandBuildin_WIP_SAFE")?.name)
+    }
+
+    @Test
+    fun runCommandBuiltinDescription_matchesConfigureDescription() {
+        val tool = RunCommandBuildin_WIP_SAFE()
+        val config = LocalToolConfig()
+
+        tool.configure(config)
+
+        assertEquals(tool.description, config.description)
     }
 
     private class FakeBuiltinTool(

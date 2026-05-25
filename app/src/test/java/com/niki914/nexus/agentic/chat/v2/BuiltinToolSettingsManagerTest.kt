@@ -18,9 +18,9 @@ class BuiltinToolSettingsManagerTest {
     fun list_defaultsMissingFlagsToDisabled() {
         val items = manager.list(LocalSettings())
 
-        assertEquals(listOf("create_command_tool"), items.map { it.name })
+        assertEquals(listOf("create_custom_tool"), items.map { it.name })
         assertEquals(
-            "Create or update a command tool in LocalSettings.command_tools.",
+            "Create or update a custom tool in LocalSettings.custom_tools.",
             items.single().description,
         )
         assertFalse(items.single().enabled)
@@ -30,19 +30,19 @@ class BuiltinToolSettingsManagerTest {
     fun withEnabled_writesBooleanFlag() {
         val result = manager.withEnabled(
             settings = LocalSettings(),
-            name = "create_command_tool",
+            name = "create_custom_tool",
             enabled = true,
         )
 
         assertTrue(result.ok)
         assertEquals("OK", result.code)
         assertTrue(result.data["available_next_turn"]!!.jsonPrimitive.boolean)
-        assertEquals("create_command_tool", result.data["name"]!!.jsonPrimitive.content)
+        assertEquals("create_custom_tool", result.data["name"]!!.jsonPrimitive.content)
         assertTrue(result.data["enabled"]!!.jsonPrimitive.boolean)
         assertTrue(
             result.data["settings"]!!
                 .jsonObject["builtin_tool_flags"]!!
-                .jsonObject["create_command_tool"]!!
+                .jsonObject["create_custom_tool"]!!
                 .jsonPrimitive.boolean
         )
     }
@@ -67,7 +67,7 @@ class BuiltinToolSettingsManagerTest {
                 {
                   "endpoint": "https://example.invalid",
                   "builtin_tool_flags": {
-                    "create_command_tool": {"enabled": false},
+                    "create_custom_tool": {"enabled": false},
                     "legacy_builtin": true
                   }
                 }
@@ -77,7 +77,7 @@ class BuiltinToolSettingsManagerTest {
 
         val result = manager.withEnabled(
             settings = settings,
-            name = "create_command_tool",
+            name = "create_custom_tool",
             enabled = true,
         )
         val updated = result.data["settings"]!!.jsonObject
@@ -85,7 +85,7 @@ class BuiltinToolSettingsManagerTest {
         assertEquals("https://example.invalid", updated["endpoint"]!!.jsonPrimitive.content)
         assertTrue(
             updated["builtin_tool_flags"]!!
-                .jsonObject["create_command_tool"]!!
+                .jsonObject["create_custom_tool"]!!
                 .jsonPrimitive.boolean
         )
         assertTrue(

@@ -32,7 +32,8 @@ class BuiltinToolRegistry(
     companion object {
         fun default(): BuiltinToolRegistry = BuiltinToolRegistry(
             listOf(
-                CreateCommandToolBuiltin(),
+                CreateCustomToolBuiltin(),
+                RunCommandBuildin_WIP_SAFE(),
             )
         )
     }

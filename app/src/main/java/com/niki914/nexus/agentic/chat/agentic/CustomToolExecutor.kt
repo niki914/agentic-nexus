@@ -9,15 +9,15 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import java.util.concurrent.TimeUnit
 
-class CommandToolExecutor(
+class CustomToolExecutor(
     private val timeoutMs: Long = DEFAULT_TIMEOUT_MS,
 ) {
-    suspend fun execute(tool: LocalTool.Command): String {
+    suspend fun execute(tool: LocalTool.Custom): String {
         val command = tool.command.trim()
         if (command.isBlank()) {
             return buildFailureJson(
                 command = command,
-                message = "Command tool '${tool.name}' has empty command.",
+                message = "Custom tool '${tool.name}' has empty command.",
             )
         }
         return withContext(Dispatchers.IO) {
@@ -56,7 +56,7 @@ class CommandToolExecutor(
                     }
                     throw throwable
                 }
-                xlog("CommandToolExecutor.execute failed: ${throwable.message}")
+                xlog("CustomToolExecutor.execute failed: ${throwable.message}")
                 buildFailureJson(
                     command = command,
                     message = throwable.message ?: "Command execution failed.",

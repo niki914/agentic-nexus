@@ -16,6 +16,10 @@ abstract class BuiltinTool {
     abstract suspend fun invoke(request: BuiltinToolRequest): BuiltinToolResult
 }
 
+interface RawJsonBuiltinTool {
+    suspend fun invokeRawJson(request: BuiltinToolRequest): String
+}
+
 data class BuiltinToolRequest(
     val context: Context,
     val name: String,

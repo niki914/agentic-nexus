@@ -29,8 +29,8 @@ import com.niki914.nexus.agentic.app.ui.infra.component.SettingsNavigationRow
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleRow
 import com.niki914.nexus.agentic.app.ui.infra.component.StyledTextField
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolResult
-import com.niki914.nexus.agentic.chat.agentic.CommandToolConfig
-import com.niki914.nexus.agentic.chat.agentic.CommandToolManager
+import com.niki914.nexus.agentic.chat.agentic.CustomToolConfig
+import com.niki914.nexus.agentic.chat.agentic.CustomToolManager
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.mod.XService
 import dev.chrisbanes.haze.HazeState
@@ -52,16 +52,19 @@ fun CustomToolsSettingsContent(
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
-    var items by remember { mutableStateOf<List<CommandToolItem>>(emptyList()) }
-    var formState by remember { mutableStateOf(CommandToolFormState()) }
+    var items by remember { mutableStateOf<List<CustomToolItem>>(emptyList()) }
+    var formState by remember { mutableStateOf(CustomToolFormState()) }
     var isLoading by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
 
-    val enabledStateText = stringResource(R.string.nexus_command_tools_state_enabled)
-    val disabledStateText = stringResource(R.string.nexus_command_tools_state_disabled)
-    val summaryFallback = stringResource(R.string.nexus_command_tools_summary_fallback)
-    val duplicateNameError = stringResource(R.string.nexus_command_tools_duplicate_name)
+    val enabledStateText = stringResource(R.string.nexus_custom_tools_state_enabled)
+    val disabledStateText = stringResource(R.string.nexus_custom_tools_state_disabled)
+    val summaryFallback = stringResource(R.string.nexus_custom_tools_summary_fallback)
+    val duplicateNameError = stringResource(R.string.nexus_custom_tools_duplicate_name)
+    val saveSuccessText = stringResource(R.string.nexus_custom_tools_save_success)
+    val deleteSuccessText = stringResource(R.string.nexus_custom_tools_delete_success)
+    val saveFailedTemplate = stringResource(R.string.nexus_custom_tools_save_failed)
     val trimmedName = formState.name.trim()
     val hasDuplicateName = trimmedName.isNotBlank() && items.anyIndexed { index, item ->
         item.name == trimmedName && index != formState.editingIndex
@@ -69,7 +72,7 @@ fun CustomToolsSettingsContent(
 
     LaunchedEffect(Unit) {
         val settings = XService.getLocalSettings(context)
-        items = parseCommandToolItems(settings)
+        items = parseCustomToolItems(settings)
         isLoading = false
     }
 
@@ -87,22 +90,22 @@ fun CustomToolsSettingsContent(
             style = MaterialTheme.typography.headlineSmall,
         )
         Text(
-            text = stringResource(R.string.nexus_command_tools_page_description),
+            text = stringResource(R.string.nexus_custom_tools_page_description),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        SettingsGroupCard(title = stringResource(R.string.nexus_command_tools_list_title)) {
+        SettingsGroupCard(title = stringResource(R.string.nexus_custom_tools_list_title)) {
             if (isLoading) {
                 Text(
-                    text = stringResource(R.string.nexus_command_tools_loading),
+                    text = stringResource(R.string.nexus_custom_tools_loading),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
                 )
             } else if (items.isEmpty()) {
                 Text(
-                    text = stringResource(R.string.nexus_command_tools_empty),
+                    text = stringResource(R.string.nexus_custom_tools_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
@@ -114,7 +117,7 @@ fun CustomToolsSettingsContent(
                         summary = item.description.ifBlank { item.command.ifBlank { summaryFallback } },
                         currentState = if (item.enabled) enabledStateText else disabledStateText,
                         onClick = {
-                            formState = CommandToolFormState(
+                            formState = CustomToolFormState(
                                 editingIndex = index,
                                 name = item.name,
                                 description = item.description,
@@ -136,9 +139,9 @@ fun CustomToolsSettingsContent(
         }
 
         MaterialTintLiquidButton(
-            text = stringResource(R.string.nexus_command_tools_add_action),
+            text = stringResource(R.string.nexus_custom_tools_add_action),
             onClick = {
-                formState = CommandToolFormState()
+                formState = CustomToolFormState()
                 statusMessage = null
             },
         )
@@ -146,9 +149,9 @@ fun CustomToolsSettingsContent(
         SettingsGroupCard(
             title = stringResource(
                 if (formState.editingIndex == null) {
-                    R.string.nexus_command_tools_editor_title_create
+                    R.string.nexus_custom_tools_editor_title_create
                 } else {
-                    R.string.nexus_command_tools_editor_title_edit
+                    R.string.nexus_custom_tools_editor_title_edit
                 }
             )
         ) {
@@ -159,26 +162,26 @@ fun CustomToolsSettingsContent(
                 StyledTextField(
                     value = formState.name,
                     onValueChange = { formState = formState.copy(name = it) },
-                    label = stringResource(R.string.nexus_command_tools_field_name),
-                    placeholder = stringResource(R.string.nexus_command_tools_field_name_placeholder),
+                    label = stringResource(R.string.nexus_custom_tools_field_name),
+                    placeholder = stringResource(R.string.nexus_custom_tools_field_name_placeholder),
                 )
                 StyledTextField(
                     value = formState.description,
                     onValueChange = { formState = formState.copy(description = it) },
-                    label = stringResource(R.string.nexus_command_tools_field_description),
-                    placeholder = stringResource(R.string.nexus_command_tools_field_description_placeholder),
+                    label = stringResource(R.string.nexus_custom_tools_field_description),
+                    placeholder = stringResource(R.string.nexus_custom_tools_field_description_placeholder),
                 )
                 SettingsToggleRow(
-                    label = stringResource(R.string.nexus_command_tools_field_enabled),
-                    description = stringResource(R.string.nexus_command_tools_field_enabled_description),
+                    label = stringResource(R.string.nexus_custom_tools_field_enabled),
+                    description = stringResource(R.string.nexus_custom_tools_field_enabled_description),
                     checked = formState.enabled,
                     onCheckedChange = { formState = formState.copy(enabled = it) },
                 )
                 StyledTextField(
                     value = formState.command,
                     onValueChange = { formState = formState.copy(command = it) },
-                    label = stringResource(R.string.nexus_command_tools_field_command),
-                    placeholder = stringResource(R.string.nexus_command_tools_field_command_placeholder),
+                    label = stringResource(R.string.nexus_custom_tools_field_command),
+                    placeholder = stringResource(R.string.nexus_custom_tools_field_command_placeholder),
                     singleLine = false,
                     minLines = 4,
                 )
@@ -190,7 +193,7 @@ fun CustomToolsSettingsContent(
                     )
                 }
                 MaterialTintLiquidButton(
-                    text = stringResource(R.string.nexus_command_tools_save_action),
+                    text = stringResource(R.string.nexus_custom_tools_save_action),
                     enabled = !isSaving &&
                         trimmedName.isNotBlank() &&
                         formState.command.trim().isNotBlank() &&
@@ -198,7 +201,7 @@ fun CustomToolsSettingsContent(
                     onClick = {
                         scope.launch {
                             isSaving = true
-                            val nextItem = CommandToolItem(
+                            val nextItem = CustomToolItem(
                                 name = trimmedName,
                                 description = formState.description.trim(),
                                 enabled = formState.enabled,
@@ -213,20 +216,19 @@ fun CustomToolsSettingsContent(
                                 }
                             }
                             runCatching {
-                                saveCommandTools(context, updatedItems)
+                                saveCustomTools(context, updatedItems)
                             }.onSuccess { result ->
                                 if (result.ok) {
                                     items = updatedItems
                                     formState = formState.copy(
                                         editingIndex = updatedItems.indexOf(nextItem)
                                     )
-                                    statusMessage = context.getString(R.string.nexus_command_tools_save_success)
+                                    statusMessage = saveSuccessText
                                 } else {
                                     statusMessage = result.message
                                 }
                             }.onFailure { throwable ->
-                                statusMessage = context.getString(
-                                    R.string.nexus_command_tools_save_failed,
+                                statusMessage = saveFailedTemplate.format(
                                     throwable.message ?: throwable::class.java.simpleName
                                 )
                             }
@@ -243,7 +245,7 @@ fun CustomToolsSettingsContent(
                 }
                 if (formState.editingIndex != null) {
                     MaterialTintLiquidButton(
-                        text = stringResource(R.string.nexus_command_tools_delete_action),
+                        text = stringResource(R.string.nexus_custom_tools_delete_action),
                         enabled = !isSaving,
                         containerColor = MaterialTheme.colorScheme.secondary,
                         contentColor = MaterialTheme.colorScheme.onSecondary,
@@ -253,18 +255,17 @@ fun CustomToolsSettingsContent(
                                 isSaving = true
                                 val updatedItems = items.filterIndexed { index, _ -> index != editingIndex }
                                 runCatching {
-                                    saveCommandTools(context, updatedItems)
+                                    saveCustomTools(context, updatedItems)
                                 }.onSuccess { result ->
                                     if (result.ok) {
                                         items = updatedItems
-                                        formState = CommandToolFormState()
-                                        statusMessage = context.getString(R.string.nexus_command_tools_delete_success)
+                                        formState = CustomToolFormState()
+                                        statusMessage = deleteSuccessText
                                     } else {
                                         statusMessage = result.message
                                     }
                                 }.onFailure { throwable ->
-                                    statusMessage = context.getString(
-                                        R.string.nexus_command_tools_save_failed,
+                                    statusMessage = saveFailedTemplate.format(
                                         throwable.message ?: throwable::class.java.simpleName
                                     )
                                 }
@@ -278,7 +279,7 @@ fun CustomToolsSettingsContent(
     }
 }
 
-private data class CommandToolFormState(
+private data class CustomToolFormState(
     val editingIndex: Int? = null,
     val name: String = "",
     val description: String = "",
@@ -286,15 +287,15 @@ private data class CommandToolFormState(
     val command: String = "",
 )
 
-private data class CommandToolItem(
+private data class CustomToolItem(
     val name: String,
     val description: String,
     val enabled: Boolean,
     val command: String,
 )
 
-private fun parseCommandToolItems(settings: LocalSettings): List<CommandToolItem> {
-    return settings.commandTools
+private fun parseCustomToolItems(settings: LocalSettings): List<CustomToolItem> {
+    return settings.customTools
         ?.mapNotNull { element ->
             val obj = element as? JsonObject ?: return@mapNotNull null
             val name = obj["name"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
@@ -302,7 +303,7 @@ private fun parseCommandToolItems(settings: LocalSettings): List<CommandToolItem
             if (name.isBlank() && command.isBlank()) {
                 return@mapNotNull null
             }
-            CommandToolItem(
+            CustomToolItem(
                 name = name,
                 description = obj["description"]?.jsonPrimitive?.contentOrNull.orEmpty(),
                 enabled = obj["enabled"]?.jsonPrimitive?.booleanOrNull ?: true,
@@ -312,14 +313,14 @@ private fun parseCommandToolItems(settings: LocalSettings): List<CommandToolItem
         ?: emptyList()
 }
 
-private suspend fun saveCommandTools(
+private suspend fun saveCustomTools(
     context: Context,
-    items: List<CommandToolItem>,
+    items: List<CustomToolItem>,
 ): BuiltinToolResult {
-    return CommandToolManager().saveAll(
+    return CustomToolManager().saveAll(
         context = context,
         items = items.map { item ->
-            CommandToolConfig(
+            CustomToolConfig(
                 name = item.name,
                 description = item.description,
                 enabled = item.enabled,

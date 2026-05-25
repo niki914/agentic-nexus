@@ -12,7 +12,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 
-data class CommandToolCreateRequest(
+data class CustomToolCreateRequest(
     val name: String,
     val description: String,
     val command: String,
@@ -20,24 +20,24 @@ data class CommandToolCreateRequest(
     val overwrite: Boolean = false,
 )
 
-data class CommandToolConfig(
+data class CustomToolConfig(
     val name: String,
     val description: String,
     val enabled: Boolean,
     val command: String,
 )
 
-class CommandToolManager(
+class CustomToolManager(
     private val reservedToolNames: () -> Set<String> = {
         BuiltinToolRegistry.default().all().map { it.name }.toSet()
     },
 ) {
     suspend fun createOrUpdate(
         context: Context,
-        request: CommandToolCreateRequest,
+        request: CustomToolCreateRequest,
     ): BuiltinToolResult {
         return persist(context) { settings ->
-            val existingItems = parseCommandTools(settings)
+            val existingItems = parseCustomTools(settings)
             val validationError = validate(
                 request = request,
                 existingNames = existingItems.map { it.name }.toSet(),
@@ -62,7 +62,7 @@ class CommandToolManager(
 
     suspend fun saveAll(
         context: Context,
-        items: List<CommandToolConfig>,
+        items: List<CustomToolConfig>,
     ): BuiltinToolResult {
         return persist(context) {
             val normalizedItems = items.map { it.normalized() }
@@ -75,8 +75,8 @@ class CommandToolManager(
             }
 
             BuiltinToolResult.success(
-                message = "Command tools were saved.",
-                hint = "The updated command tools are available after the next runtime refresh.",
+                message = "Custom tools were saved.",
+                hint = "The updated custom tools are available after the next runtime refresh.",
                 data = JsonObject(
                     mapOf(
                         "available_next_turn" to JsonPrimitive(true),
@@ -88,7 +88,7 @@ class CommandToolManager(
     }
 
     fun validate(
-        request: CommandToolCreateRequest,
+        request: CustomToolCreateRequest,
         existingNames: Set<String>,
         reservedNames: Set<String>,
     ): BuiltinToolResult? {
@@ -100,7 +100,7 @@ class CommandToolManager(
         } else if (!NAME_PATTERN.matches(normalized.name)) {
             return BuiltinToolResult.failure(
                 code = "INVALID_NAME",
-                message = "Command tool name '${normalized.name}' is invalid.",
+                message = "Custom tool name '${normalized.name}' is invalid.",
                 hint = "Use 2-64 characters matching ^[a-zA-Z_][a-zA-Z0-9_]{1,63}$, for example battery_status.",
                 fieldErrors = mapOf("name" to "Name must start with a letter or underscore and contain only letters, digits, or underscores."),
             )
@@ -115,8 +115,8 @@ class CommandToolManager(
         if (fieldErrors.isNotEmpty()) {
             return BuiltinToolResult.failure(
                 code = "MISSING_REQUIRED_FIELD",
-                message = "Command tool requires non-empty name, description, and command.",
-                hint = "Provide all required fields before creating the command tool.",
+                message = "Custom tool requires non-empty name, description, and command.",
+                hint = "Provide all required fields before creating the custom tool.",
                 fieldErrors = fieldErrors,
             )
         }
@@ -124,7 +124,7 @@ class CommandToolManager(
         if (normalized.name in reservedNames) {
             return BuiltinToolResult.failure(
                 code = "RESERVED_NAME",
-                message = "Command tool name '${normalized.name}' is reserved by a builtin tool.",
+                message = "Custom tool name '${normalized.name}' is reserved by a builtin tool.",
                 hint = "Choose a different name that does not conflict with builtin tools.",
                 fieldErrors = mapOf("name" to "Reserved builtin tool name."),
             )
@@ -132,15 +132,15 @@ class CommandToolManager(
         if (normalized.name in existingNames && !normalized.overwrite) {
             return BuiltinToolResult.failure(
                 code = "NAME_CONFLICT",
-                message = "Command tool name '${normalized.name}' already exists.",
+                message = "Custom tool name '${normalized.name}' already exists.",
                 hint = "Use a different name, or set overwrite=true if replacement is intended.",
-                fieldErrors = mapOf("name" to "Already exists in command_tools."),
+                fieldErrors = mapOf("name" to "Already exists in custom_tools."),
             )
         }
         if (isDangerousCommand(normalized.command)) {
             return BuiltinToolResult.failure(
                 code = "UNSAFE_COMMAND",
-                message = "Command tool '${normalized.name}' uses a command blocked by the basic safety policy.",
+                message = "Custom tool '${normalized.name}' uses a command blocked by the basic safety policy.",
                 hint = "Remove high-risk operations such as rm -rf, reboot, su, setprop, pm uninstall, or dd.",
                 fieldErrors = mapOf("command" to "Unsafe command pattern was rejected."),
             )
@@ -151,7 +151,7 @@ class CommandToolManager(
 
     private suspend fun persist(
         context: Context,
-        build: (LocalSettings) -> Pair<BuiltinToolResult, List<CommandToolConfig>?>,
+        build: (LocalSettings) -> Pair<BuiltinToolResult, List<CustomToolConfig>?>,
     ): BuiltinToolResult {
         return writeMutex.withLock {
             try {
@@ -162,7 +162,7 @@ class CommandToolManager(
                 }
 
                 val updatedProps = latestSettings.props.toMutableMap()
-                updatedProps[COMMAND_TOOLS_KEY] = buildCommandToolsJson(updatedItems)
+                updatedProps[CUSTOM_TOOLS_KEY] = buildCustomToolsJson(updatedItems)
                 XService.putLocalSettings(context, LocalSettings(JsonObject(updatedProps)))
                 result
             } catch (throwable: Throwable) {
@@ -171,18 +171,18 @@ class CommandToolManager(
                 }
                 BuiltinToolResult.failure(
                     code = "SETTINGS_WRITE_FAILED",
-                    message = "Failed to write LocalSettings.command_tools: ${throwable.message ?: throwable::class.java.simpleName}.",
+                    message = "Failed to write LocalSettings.custom_tools: ${throwable.message ?: throwable::class.java.simpleName}.",
                     hint = "Retry after confirming the settings provider is available.",
                 )
             }
         }
     }
 
-    private fun parseCommandTools(settings: LocalSettings): List<CommandToolConfig> {
-        return settings.commandTools
+    private fun parseCustomTools(settings: LocalSettings): List<CustomToolConfig> {
+        return settings.customTools
             ?.mapNotNull { element ->
                 val obj = element as? JsonObject ?: return@mapNotNull null
-                CommandToolConfig(
+                CustomToolConfig(
                     name = obj.string("name").trim(),
                     description = obj.string("description").trim(),
                     enabled = obj.boolean("enabled", default = true),
@@ -192,7 +192,7 @@ class CommandToolManager(
             ?: emptyList()
     }
 
-    private fun buildCommandToolsJson(items: List<CommandToolConfig>): JsonArray {
+    private fun buildCustomToolsJson(items: List<CustomToolConfig>): JsonArray {
         return JsonArray(
             items.map { item ->
                 JsonObject(
@@ -208,12 +208,12 @@ class CommandToolManager(
     }
 
     private fun validateAll(
-        items: List<CommandToolConfig>,
+        items: List<CustomToolConfig>,
         reservedNames: Set<String>,
     ): BuiltinToolResult? {
         val names = mutableSetOf<String>()
         items.forEach { item ->
-            val request = CommandToolCreateRequest(
+            val request = CustomToolCreateRequest(
                 name = item.name,
                 description = item.description,
                 command = item.command,
@@ -231,9 +231,9 @@ class CommandToolManager(
             if (!names.add(item.name)) {
                 return BuiltinToolResult.failure(
                     code = "NAME_CONFLICT",
-                    message = "Command tool name '${item.name}' appears more than once.",
-                    hint = "Each command tool name must be unique.",
-                    fieldErrors = mapOf("name" to "Duplicate name in command_tools."),
+                    message = "Custom tool name '${item.name}' appears more than once.",
+                    hint = "Each custom tool name must be unique.",
+                    fieldErrors = mapOf("name" to "Duplicate name in custom_tools."),
                 )
             }
         }
@@ -241,10 +241,10 @@ class CommandToolManager(
     }
 
     private fun successForTool(
-        tool: CommandToolConfig,
+        tool: CustomToolConfig,
     ): BuiltinToolResult {
         return BuiltinToolResult.success(
-            message = "Command tool '${tool.name}' was saved.",
+            message = "Custom tool '${tool.name}' was saved.",
             hint = "The tool is available after the next runtime refresh.",
             data = JsonObject(
                 mapOf(
@@ -403,7 +403,7 @@ class CommandToolManager(
         return substringAfterLast('/')
     }
 
-    private fun CommandToolCreateRequest.normalized(): CommandToolCreateRequest {
+    private fun CustomToolCreateRequest.normalized(): CustomToolCreateRequest {
         return copy(
             name = name.trim(),
             description = description.trim(),
@@ -411,9 +411,9 @@ class CommandToolManager(
         )
     }
 
-    private fun CommandToolCreateRequest.toConfig(): CommandToolConfig {
+    private fun CustomToolCreateRequest.toConfig(): CustomToolConfig {
         val normalized = normalized()
-        return CommandToolConfig(
+        return CustomToolConfig(
             name = normalized.name,
             description = normalized.description,
             enabled = normalized.enabled,
@@ -421,7 +421,7 @@ class CommandToolManager(
         )
     }
 
-    private fun CommandToolConfig.normalized(): CommandToolConfig {
+    private fun CustomToolConfig.normalized(): CustomToolConfig {
         return copy(
             name = name.trim(),
             description = description.trim(),
@@ -438,7 +438,7 @@ class CommandToolManager(
     }
 
     companion object {
-        private const val COMMAND_TOOLS_KEY = "command_tools"
+        private const val CUSTOM_TOOLS_KEY = "custom_tools"
         private const val MAX_SHELL_PAYLOAD_DEPTH = 8
         private val NAME_PATTERN = Regex("^[a-zA-Z_][a-zA-Z0-9_]{1,63}$")
         private val SHELL_TOKEN_SEPARATORS = setOf(';', '&', '|', '`', '$', '(', ')', '<', '>')

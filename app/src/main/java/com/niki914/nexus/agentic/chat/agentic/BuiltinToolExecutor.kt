@@ -19,7 +19,7 @@ class BuiltinToolExecutor(
             ?: return BuiltinToolResult.failure(
                 code = "LOCAL_TOOL_NOT_EXECUTABLE",
                 message = "Local tool '$name' is not executable in current runtime.",
-                hint = "Check builtin_tool_flags or command_tools configuration.",
+                hint = "Check builtin_tool_flags or custom_tools configuration.",
             ).toJsonString()
 
         return execute(context = context, tool = tool, argumentsJson = argumentsJson)
@@ -30,6 +30,26 @@ class BuiltinToolExecutor(
         tool: BuiltinTool,
         argumentsJson: String,
     ): String {
+        if (tool is RawJsonBuiltinTool) {
+            return try {
+                tool.invokeRawJson(
+                    BuiltinToolRequest(
+                        context = context,
+                        name = tool.name,
+                        argumentsJson = argumentsJson,
+                    )
+                )
+            } catch (throwable: Throwable) {
+                if (throwable is CancellationException) {
+                    throw throwable
+                }
+                BuiltinToolResult.failure(
+                    code = "UNKNOWN_ERROR",
+                    message = throwable.message ?: "Builtin tool '${tool.name}' failed.",
+                    hint = "Inspect the builtin tool implementation and argumentsJson.",
+                ).toJsonString()
+            }
+        }
         return try {
             tool.invoke(
                 BuiltinToolRequest(

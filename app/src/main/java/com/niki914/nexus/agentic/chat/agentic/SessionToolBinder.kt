@@ -21,7 +21,7 @@ object SessionToolBinder {
                     }
                 }
             tools.customTools
-                .filterIsInstance<LocalTool.Command>()
+                .filterIsInstance<LocalTool.Custom>()
                 .forEach { tool ->
                     add(tool.name) {
                         description = tool.description

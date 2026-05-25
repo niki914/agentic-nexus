@@ -25,16 +25,7 @@ class ToolManagerTest {
                   "builtin_tool_flags": {"time": true, "weather": false, "unknown": true},
                   "custom_tools": [
                     {
-                      "name": "getCurrentWeather",
-                      "description": "Get weather for a city",
-                      "parameters": [
-                        {"name": "location", "description": "City name", "required": true, "type": "string"}
-                      ]
-                    }
-                  ],
-                  "command_tools": [
-                    {
-                      "name": "currentTime",
+                      "name": "current_time",
                       "description": "Get current timestamp",
                       "command": "date +%s",
                       "enabled": true
@@ -69,13 +60,9 @@ class ToolManagerTest {
         assertTrue(resolved.builtinTools.single() is LocalTool.Builtin)
         assertEquals("Read current time.", resolved.builtinTools.single().description)
 
-        val userDefinedTool = resolved.customTools.filterIsInstance<LocalTool.UserDefined>().single()
-        assertEquals("getCurrentWeather", userDefinedTool.name)
-        assertEquals("location", userDefinedTool.parameters.single().name)
-
-        val commandTool = resolved.customTools.filterIsInstance<LocalTool.Command>().single()
-        assertEquals("currentTime", commandTool.name)
-        assertEquals("date +%s", commandTool.command)
+        val customTool = resolved.customTools.filterIsInstance<LocalTool.Custom>().single()
+        assertEquals("current_time", customTool.name)
+        assertEquals("date +%s", customTool.command)
         assertEquals(listOf("aslocate"), resolved.mcpServers.map { it.name })
         val mcpServer = resolved.mcpServers.single()
         val cachedTool = (mcpServer as com.niki914.nexus.agentic.chat.McpServerDefinition.Http)
@@ -87,7 +74,7 @@ class ToolManagerTest {
         assertEquals(
             listOf(
                 "Available builtin tools: time",
-                "Available command tools: currentTime",
+                "Available custom tools: current_time",
                 "Available MCP servers: aslocate",
             ),
             resolved.promptLines,
@@ -95,12 +82,16 @@ class ToolManagerTest {
     }
 
     @Test
-    fun resolveFromSettings_defaultRegistryResolvesCreateCommandToolDuringB03() {
+    fun resolveFromSettings_defaultRegistryResolvesCreateCustomTool() {
         val settings = LocalSettings(
             Json.parseToJsonElement(
                 """
                 {
-                  "builtin_tool_flags": {"create_command_tool": true, "unknown": true}
+                  "builtin_tool_flags": {
+                    "create_custom_tool": true,
+                    "RunCommandBuildin_WIP_SAFE": true,
+                    "unknown": true
+                  }
                 }
                 """.trimIndent()
             ).jsonObject
@@ -108,9 +99,12 @@ class ToolManagerTest {
 
         val resolved = ToolManager().resolve(settings)
 
-        assertEquals(listOf("create_command_tool"), resolved.builtinTools.map { it.name })
         assertEquals(
-            "Available builtin tools: create_command_tool",
+            listOf("RunCommandBuildin_WIP_SAFE", "create_custom_tool"),
+            resolved.builtinTools.map { it.name }.sorted()
+        )
+        assertEquals(
+            "Available builtin tools: RunCommandBuildin_WIP_SAFE, create_custom_tool",
             resolved.promptLines.first(),
         )
     }

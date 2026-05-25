@@ -7,6 +7,7 @@ import com.niki914.nexus.agentic.chat.agentic.BuiltinToolExecutor
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolResult
+import com.niki914.nexus.agentic.chat.agentic.RawJsonBuiltinTool
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
@@ -21,16 +22,16 @@ class BuiltinToolExecutorTest {
 
     @Test
     fun execute_invokesBuiltinWithArgumentsJson() = runTest {
-        val tool = RecordingBuiltinTool("create_command_tool")
+        val tool = RecordingBuiltinTool("create_custom_tool")
         val executor = BuiltinToolExecutor(BuiltinToolRegistry(listOf(tool)))
 
         val resultJson = executor.execute(
             context = context,
-            name = "create_command_tool",
+            name = "create_custom_tool",
             argumentsJson = """{"name":"battery_status"}""",
         )
 
-        assertEquals("create_command_tool", tool.lastRequest?.name)
+        assertEquals("create_custom_tool", tool.lastRequest?.name)
         assertEquals("""{"name":"battery_status"}""", tool.lastRequest?.argumentsJson)
         val json = Json.parseToJsonElement(resultJson).jsonObject
         assertEquals("OK", json["code"]!!.jsonPrimitive.content)
@@ -44,6 +45,10 @@ class BuiltinToolExecutorTest {
 
         val json = Json.parseToJsonElement(resultJson).jsonObject
         assertEquals("LOCAL_TOOL_NOT_EXECUTABLE", json["code"]!!.jsonPrimitive.content)
+        assertEquals(
+            "Check builtin_tool_flags or custom_tools configuration.",
+            json["hint"]!!.jsonPrimitive.content,
+        )
     }
 
     @Test
@@ -57,6 +62,19 @@ class BuiltinToolExecutorTest {
         val json = Json.parseToJsonElement(resultJson).jsonObject
         assertEquals("UNKNOWN_ERROR", json["code"]!!.jsonPrimitive.content)
         assertEquals("boom", json["message"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun execute_returnsRawJsonForRawJsonBuiltin() = runTest {
+        val executor = BuiltinToolExecutor(
+            BuiltinToolRegistry(listOf(RawJsonBuiltin("raw_json_tool")))
+        )
+
+        val resultJson = executor.execute(context, "raw_json_tool", """{"command":"pwd"}""")
+
+        val json = Json.parseToJsonElement(resultJson).jsonObject
+        assertEquals("0", json["exit_code"]!!.jsonPrimitive.content)
+        assertEquals("/", json["stdout"]!!.jsonPrimitive.content)
     }
 
     @Test(expected = CancellationException::class)
@@ -89,6 +107,20 @@ class BuiltinToolExecutorTest {
 
         override suspend fun invoke(request: BuiltinToolRequest): BuiltinToolResult {
             throw throwable
+        }
+    }
+
+    private class RawJsonBuiltin(
+        override val name: String,
+    ) : BuiltinTool(), RawJsonBuiltinTool {
+        override fun configure(config: LocalToolConfig) = Unit
+
+        override suspend fun invoke(request: BuiltinToolRequest): BuiltinToolResult {
+            error("should not call invoke() for RawJsonBuiltinTool")
+        }
+
+        override suspend fun invokeRawJson(request: BuiltinToolRequest): String {
+            return """{"exit_code":0,"stdout":"/"}"""
         }
     }
 }

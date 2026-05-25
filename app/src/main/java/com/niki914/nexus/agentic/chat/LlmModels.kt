@@ -38,16 +38,10 @@ sealed interface LocalTool {
         val tool: BuiltinTool,
     ) : LocalTool
 
-    data class UserDefined(
+    data class Custom(
         override val name: String,
         override val description: String,
-        val parameters: List<LocalToolParameter> = emptyList(),
-        val rawInputSchemaJson: String? = null,
-    ) : LocalTool
-
-    data class Command(
-        override val name: String,
-        override val description: String,
+        val enabled: Boolean,
         val command: String,
     ) : LocalTool
 }

@@ -2,11 +2,9 @@ package com.niki914.nexus.agentic.chat.agentic
 
 import android.content.Context
 import com.niki914.nexus.agentic.chat.LocalTool
-import com.niki914.nexus.agentic.chat.LocalToolParameter
 import com.niki914.nexus.agentic.chat.McpCachedTool
 import com.niki914.nexus.agentic.chat.McpServerDefinition
 import com.niki914.nexus.agentic.chat.ResolvedTools
-import com.niki914.nexus.agentic.chat.ToolParameterType
 import com.niki914.nexus.agentic.chat.mcpCacheKey
 import com.niki914.nexus.agentic.mod.LocalSettings
 import kotlinx.serialization.json.JsonArray
@@ -14,6 +12,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 
 class ToolManager(
@@ -26,8 +25,7 @@ class ToolManager(
 
     fun resolve(settings: LocalSettings): ResolvedTools {
         val builtinTools = buildBuiltinTools(settings)
-        val commandTools = buildCommandTools(settings)
-        val customTools = buildCustomTools(settings) + commandTools
+        val customTools = buildCustomTools(settings)
         val mcpServers = buildMcpServers(settings)
 
         return ResolvedTools(
@@ -54,23 +52,8 @@ class ToolManager(
             }
     }
 
-    private fun buildCustomTools(settings: LocalSettings): List<LocalTool.UserDefined> {
+    private fun buildCustomTools(settings: LocalSettings): List<LocalTool.Custom> {
         return settings.customTools
-            .orEmptyObjects()
-            .mapNotNull { obj ->
-                val name = obj.string("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
-                LocalTool.UserDefined(
-                    name = name,
-                    description = obj.string("description"),
-                    parameters = obj.array("parameters").orEmptyObjects()
-                        .mapNotNull(::parseParameter),
-                    rawInputSchemaJson = obj.string("raw_input_schema").ifBlank { null },
-                )
-            }
-    }
-
-    private fun buildCommandTools(settings: LocalSettings): List<LocalTool.Command> {
-        return settings.commandTools
             .orEmptyObjects()
             .mapNotNull { obj ->
                 val enabled = obj.boolean("enabled", default = true)
@@ -79,26 +62,17 @@ class ToolManager(
                 if (!enabled || name.isBlank() || command.isBlank()) {
                     return@mapNotNull null
                 }
-                val description = obj.string("description").ifBlank { "Command tool: $name" }
-                LocalTool.Command(
+                val description = obj.string("description").ifBlank { "Custom tool: $name" }
+                LocalTool.Custom(
                     name = name,
                     description = description,
+                    enabled = enabled,
                     command = command,
                 )
             }
-            .associateBy(LocalTool.Command::name)
+            .associateBy(LocalTool.Custom::name)
             .values
             .toList()
-    }
-
-    private fun parseParameter(obj: JsonObject): LocalToolParameter? {
-        val name = obj.string("name").takeIf { it.isNotBlank() } ?: return null
-        return LocalToolParameter(
-            name = name,
-            description = obj.string("description"),
-            required = obj.boolean("required"),
-            type = obj.string("type").toToolParameterType(),
-        )
     }
 
     private fun buildMcpServers(settings: LocalSettings): List<McpServerDefinition> {
@@ -161,11 +135,11 @@ class ToolManager(
             lines += "Available builtin tools: ${builtinToolNames.joinToString()}"
         }
 
-        val commandToolNames = customTools
-            .filterIsInstance<LocalTool.Command>()
+        val customToolNames = customTools
+            .filterIsInstance<LocalTool.Custom>()
             .map { it.name }
-        if (commandToolNames.isNotEmpty()) {
-            lines += "Available command tools: ${commandToolNames.joinToString()}"
+        if (customToolNames.isNotEmpty()) {
+            lines += "Available custom tools: ${customToolNames.joinToString()}"
         }
 
         val enabledMcpServers = mcpServers.filter { it.enabled }
@@ -175,17 +149,6 @@ class ToolManager(
         }
 
         return lines
-    }
-
-    private fun String.toToolParameterType(): ToolParameterType {
-        return when (lowercase()) {
-            "int", "integer" -> ToolParameterType.Int
-            "boolean", "bool" -> ToolParameterType.Boolean
-            "number", "float", "double" -> ToolParameterType.Number
-            "object" -> ToolParameterType.Object
-            "array" -> ToolParameterType.Array
-            else -> ToolParameterType.String
-        }
     }
 
     private fun JsonArray?.orEmptyObjects(): List<JsonObject> =

@@ -9,17 +9,17 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
-class CreateCommandToolBuiltin(
-    private val manager: CommandToolManager = CommandToolManager(),
+class CreateCustomToolBuiltin(
+    private val manager: CustomToolManager = CustomToolManager(),
 ) : BuiltinTool() {
-    override val name: String = "create_command_tool"
+    override val name: String = "create_custom_tool"
 
-    override val description: String = "Create or update a command tool in LocalSettings.command_tools."
+    override val description: String = "Create or update a custom tool in LocalSettings.custom_tools."
 
     override fun configure(config: LocalToolConfig) {
         config.description = description
         config.string("name") {
-            description = "Unique command tool name matching ^[a-zA-Z_][a-zA-Z0-9_]{1,63}$."
+            description = "Unique custom tool name matching ^[a-zA-Z_][a-zA-Z0-9_]{1,63}$."
             required = true
         }
         config.string("description") {
@@ -27,18 +27,18 @@ class CreateCommandToolBuiltin(
             required = true
         }
         config.string("command") {
-            description = "Shell command executed by the command tool."
+            description = "Shell command executed by the custom tool."
             required = true
         }
         config.boolean("enabled") {
-            description = "Whether the created command tool is enabled. Defaults to false."
+            description = "Whether the created custom tool is enabled. Defaults to false."
             required = false
         }
         config.boolean("overwrite") {
-            description = "Whether to replace an existing command tool with the same name. Defaults to false."
+            description = "Whether to replace an existing custom tool with the same name. Defaults to false."
             required = false
         }
-        config.rawJsonSchema(CREATE_COMMAND_TOOL_SCHEMA)
+        config.rawJsonSchema(CREATE_CUSTOM_TOOL_SCHEMA)
     }
 
     override suspend fun invoke(request: BuiltinToolRequest): BuiltinToolResult {
@@ -50,7 +50,7 @@ class CreateCommandToolBuiltin(
             }
             return BuiltinToolResult.failure(
                 code = "INVALID_ARGUMENTS_JSON",
-                message = "create_command_tool arguments must be a JSON object with name, description, command, enabled, and overwrite fields.",
+                message = "create_custom_tool arguments must be a JSON object with name, description, command, enabled, and overwrite fields.",
                 hint = """Example: {"name":"battery_status","description":"Read current battery status.","command":"dumpsys battery","enabled":false,"overwrite":false}""",
                 fieldErrors = mapOf("argumentsJson" to (throwable.message ?: "Invalid JSON object.")),
             )
@@ -59,7 +59,7 @@ class CreateCommandToolBuiltin(
         return manager.createOrUpdate(request.context, createRequest)
     }
 
-    private fun parseArguments(argumentsJson: String): CommandToolCreateRequest {
+    private fun parseArguments(argumentsJson: String): CustomToolCreateRequest {
         val element = try {
             Json.parseToJsonElement(argumentsJson)
         } catch (throwable: SerializationException) {
@@ -69,7 +69,7 @@ class CreateCommandToolBuiltin(
         }
         val obj = element as? JsonObject
             ?: throw IllegalArgumentException("argumentsJson must be a JSON object.")
-        return CommandToolCreateRequest(
+        return CustomToolCreateRequest(
             name = obj.string("name"),
             description = obj.string("description"),
             command = obj.string("command"),
@@ -87,13 +87,13 @@ class CreateCommandToolBuiltin(
     }
 
     companion object {
-        private const val CREATE_COMMAND_TOOL_SCHEMA = """
+        private const val CREATE_CUSTOM_TOOL_SCHEMA = """
             {
               "type": "object",
               "properties": {
                 "name": {
                   "type": "string",
-                  "description": "Unique command tool name matching ^[a-zA-Z_][a-zA-Z0-9_]{1,63}$."
+                  "description": "Unique custom tool name matching ^[a-zA-Z_][a-zA-Z0-9_]{1,63}$."
                 },
                 "description": {
                   "type": "string",
@@ -101,16 +101,16 @@ class CreateCommandToolBuiltin(
                 },
                 "command": {
                   "type": "string",
-                  "description": "Shell command executed by the command tool."
+                  "description": "Shell command executed by the custom tool."
                 },
                 "enabled": {
                   "type": "boolean",
-                  "description": "Whether the created command tool is enabled.",
+                  "description": "Whether the created custom tool is enabled.",
                   "default": false
                 },
                 "overwrite": {
                   "type": "boolean",
-                  "description": "Whether to replace an existing command tool with the same name.",
+                  "description": "Whether to replace an existing custom tool with the same name.",
                   "default": false
                 }
               },

@@ -33,7 +33,7 @@
 - `agentic/ToolManager.kt`: 工具配置解析与 prompt lines 生成
 - `agentic/SessionToolBinder.kt`: local tools 与 MCP servers 绑定
 - `agentic/ToolCallDispatcher.kt`: local tool 调度
-- `agentic/CommandToolExecutor.kt`: command tools 执行器
+- `agentic/CustomToolExecutor.kt`: custom tools 执行器
 - `agentic/McpDiscoveryCacheStore.kt`: MCP discovered tools 缓存
 - `agentic/McpInterceptorHttpEngine.kt`: MCP discovery HTTP interceptor
 - `agentic/LlmStreamEventMapper.kt`: `SessionEvent` 到 `LlmStreamEvent` 的映射
@@ -51,7 +51,7 @@
 - `nexus/content/SelectionPageContent.kt`: 选择页内容
 - `nexus/content/SettingsHomePageContent.kt`: 设置首页内容
 - `nexus/content/SettingsDetailPageContent.kt`: 设置详情内容
-- `nexus/content/CustomToolsSettingsContent.kt`: 命令工具设置页
+- `nexus/content/CustomToolsSettingsContent.kt`: 自定义工具设置页
 - `infra/nav/NavigationController.kt`: 导航控制器
 - `infra/nav/Navigator.kt`: 导航能力接口
 - `infra/nav/Page.kt`: 页面接口

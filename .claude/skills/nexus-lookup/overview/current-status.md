@@ -8,12 +8,11 @@
 - **XiaoAi 注入实现**：基于底层指令流与文字流拦截做增量文本分片注入，并拦截 TTS 流与原生播放。
 - **LLM Runtime**：`LLMController` 持有单例 `Session` 与 runtime snapshot，支持配置刷新、流式请求、会话重置和统一事件映射。
 - **HTTP MCP**：MCP server 配置解析、Session 注册、discovered tools cache 与 HTTP interceptor 已落地。
-- **Command Tools**：`command_tools` 从 `LocalSettings` 解析到 local tool 注册和 `CommandToolExecutor` 执行链路已落地。
-- **UI Shell**：`NexusApp`、startup/home/configure/selection/settings 页面、Liquid 组件与导航控制器已落地，命令工具设置页已接入。
+- **CustomTool**：`custom_tools` 从 `LocalSettings` 解析到 `LocalTool.Custom`、local tool 注册、`ToolCallDispatcher` 与 `CustomToolExecutor` 执行链路已落地；builtin 入口使用 `create_custom_tool`。
+- **UI Shell**：`NexusApp`、startup/home/configure/selection/settings 页面、Liquid 组件与导航控制器已落地，自定义工具设置页已接入 `custom_tools` 读写闭环。
 
 ## 半落地能力
 
-- **Custom Tools**：非 command 类型 custom tools 已有配置解析、prompt 暴露与 local tool 注册，但缺少对应执行器。
 - **Builtin Tool Flags**：已解析 builtin tool flags 并生成 prompt lines，未看到独立 builtin 执行链路。
 - **UI PRD 完整态**：App Shell 主体页面和导航已存在，但 PRD 中的细节状态、动效和设置树完整覆盖仍需逐项核对源码。
 

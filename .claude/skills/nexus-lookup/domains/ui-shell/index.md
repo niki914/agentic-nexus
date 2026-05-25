@@ -2,14 +2,14 @@
 
 ## 现实状态与目标状态
 
-- **现实状态**：已基于 `app/src/main/java/com/niki914/nexus/agentic/app/ui/` 实现 `NexusApp` 壳层，包含基于 `NavigationController` 的自定义栈式状态机，落地了 Startup、Home、Configure、Selection、Settings 树状导航和命令工具设置页。
+- **现实状态**：已基于 `app/src/main/java/com/niki914/nexus/agentic/app/ui/` 实现 `NexusApp` 壳层，包含基于 `NavigationController` 的自定义栈式状态机，落地了 Startup、Home、Configure、Selection、Settings 树状导航和自定义工具设置页。
 - **目标状态**：继续核对 `UI-PRD.md` 中的完整动效、极端状态、细粒度设置树覆盖情况，并把配置持久化与运行时能力接入更多设置页面。
 
 ## 基础设施与 PRD 对应关系
 
 - **已落地的 UI 能力**：`LiquidScreen` 及状态管理、`LiquidScreenSwipeContent` 转场、`NavigationController` 导航机、`SettingsGroupCard`、`SettingsNavigationRow`、`CustomToolsSettingsContent` 等组件与页面。
-- **已落地的业务能力**：命令工具设置页已读写 `command_tools` 配置，运行时侧已有 `CommandToolExecutor` 执行链路。
-- **半落地的业务能力**：非 command 类型 custom tools 与 builtin tool flags 仍以配置解析和 prompt 暴露为主。
+- **已落地的业务能力**：自定义工具设置页已读写 `custom_tools` 配置，运行时侧已有 `CustomToolExecutor` 执行链路。
+- **半落地的业务能力**：builtin tool flags 仍以配置解析和 prompt 暴露为主。
 - **`UI-PRD.md` 解决的问题**：定义 App Shell 的视觉原则、用户场景、页面信息架构以及组件规范，指导页面流的设计。
 
 ## 阅读建议

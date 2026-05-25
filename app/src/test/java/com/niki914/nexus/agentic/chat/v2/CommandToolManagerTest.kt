@@ -1,13 +1,13 @@
 package com.niki914.nexus.agentic.chat.v2
 
-import com.niki914.nexus.agentic.chat.agentic.CommandToolCreateRequest
-import com.niki914.nexus.agentic.chat.agentic.CommandToolManager
+import com.niki914.nexus.agentic.chat.agentic.CustomToolCreateRequest
+import com.niki914.nexus.agentic.chat.agentic.CustomToolManager
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class CommandToolManagerTest {
-    private val manager = CommandToolManager(reservedToolNames = { emptySet() })
+class CustomToolManagerTest {
+    private val manager = CustomToolManager(reservedToolNames = { emptySet() })
 
     @Test
     fun validate_rejectsDangerousCommandsWithExecutablePathsOrAliases() {
@@ -93,10 +93,10 @@ class CommandToolManagerTest {
         assertEquals("UNSAFE_COMMAND", result?.code)
     }
 
-    private fun request(command: String): CommandToolCreateRequest {
-        return CommandToolCreateRequest(
+    private fun request(command: String): CustomToolCreateRequest {
+        return CustomToolCreateRequest(
             name = "sample_tool",
-            description = "Sample command tool.",
+            description = "Sample custom tool.",
             command = command,
         )
     }

@@ -39,7 +39,7 @@ class App : Application() {
         return true
         return settings.endpoint.isBlank() &&
             settings.model.isBlank() &&
-            settings.commandTools == null
+            settings.customTools == null
     }
 
     private fun mergeDefaultLocalSettings(existingSettings: LocalSettings): LocalSettings {
@@ -67,7 +67,7 @@ class App : Application() {
             "proxy" -> settings.proxy.isBlank()
             "takeover_keywords" -> settings.takeoverKeywords.isEmpty()
             "mcp_servers" -> settings.mcpServers == null
-            "command_tools" -> settings.commandTools == null
+            "custom_tools" -> settings.customTools == null
             else -> settings.props[key] == null
         }
     }
@@ -83,29 +83,29 @@ class App : Application() {
                 emptyList()
 //              listOf(JsonPrimitive("闹钟"), JsonPrimitive("清理"))
             ),
-            "command_tools" to JsonArray(
-                listOf(
-                    JsonObject(
-                        mapOf(
-                            "name" to JsonPrimitive("device_model"),
-                            "description" to JsonPrimitive("读取当前设备型号"),
-                            "enabled" to JsonPrimitive(true),
-                            "command" to JsonPrimitive("getprop ro.product.model")
-                        )
-                    )
-                )
-            ),
-            "mcp_servers" to JsonArray(
-                listOf(
-                    JsonObject(
-                        mapOf(
-                            "name" to JsonPrimitive("aslocate"),
-                            "url" to JsonPrimitive("http://127.0.0.1:51338/mcp"),
-                            "enabled" to JsonPrimitive(true)
-                        )
-                    )
-                )
-            )
+//            "custom_tools" to JsonArray(
+//                listOf(
+//                    JsonObject(
+//                        mapOf(
+//                            "name" to JsonPrimitive("device_model"),
+//                            "description" to JsonPrimitive("读取当前设备型号"),
+//                            "enabled" to JsonPrimitive(true),
+//                            "command" to JsonPrimitive("getprop ro.product.model")
+//                        )
+//                    )
+//                )
+//            ),
+//            "mcp_servers" to JsonArray(
+//                listOf(
+//                    JsonObject(
+//                        mapOf(
+//                            "name" to JsonPrimitive("aslocate"),
+//                            "url" to JsonPrimitive("http://127.0.0.1:51338/mcp"),
+//                            "enabled" to JsonPrimitive(true)
+//                        )
+//                    )
+//                )
+//            )
         )
     }
 }
