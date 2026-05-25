@@ -19,16 +19,16 @@ class RunCommandBuildin_WIP_SAFE(
     override val name: String = "run_command"
 
     override val description: String =
-        "Run a shell command through the shared shell runner. Each call starts in a fresh shell with cwd='/' by default, supports optional workdir/timeout/merge_stderr arguments, and blocks unsafe commands."
+        "Run a command in the Android device shell (`/system/bin/sh`), not in a desktop Linux or macOS shell. Each call starts in a fresh shell and defaults to cwd='/'. The environment is minimal: many desktop tools such as apt, python, pip, node, git, or bash may be unavailable. Prefer shell builtins, common Android shell commands, and absolute device paths. Unsafe commands may be blocked by safety policy."
 
     override fun configure(config: LocalToolConfig) {
         config.description = description
         config.string("command") {
-            description = "Shell command to execute."
+            description = "Command string to execute inside Android `/system/bin/sh -c`. Do not assume desktop package managers or scripting runtimes are available. Prefer shell builtins, Toybox or Toolbox commands, and Android-specific shell commands."
             required = true
         }
         config.string("workdir") {
-            description = "Optional working directory for the shell process. Defaults to '/'."
+            description = "Optional working directory inside the Android filesystem. Defaults to '/'. Prefer absolute device paths."
             required = false
         }
         config.rawJsonSchema(RUN_COMMAND_SCHEMA)
@@ -157,15 +157,15 @@ class RunCommandBuildin_WIP_SAFE(
               "properties": {
                 "command": {
                   "type": "string",
-                  "description": "Shell command to execute."
+                  "description": "Command string to execute inside Android `/system/bin/sh -c`. Do not assume desktop package managers or scripting runtimes are available. Prefer shell builtins, Toybox or Toolbox commands, and Android-specific shell commands."
                 },
                 "workdir": {
                   "type": "string",
-                  "description": "Optional working directory for the shell process. Defaults to '/'."
+                  "description": "Optional working directory inside the Android filesystem. Defaults to '/'. Prefer absolute device paths."
                 },
                 "timeout_ms": {
                   "type": "integer",
-                  "description": "Optional timeout override in milliseconds. Must be greater than 0."
+                  "description": "Optional timeout override in milliseconds for the Android shell command. Must be greater than 0."
                 },
                 "merge_stderr": {
                   "type": "boolean",

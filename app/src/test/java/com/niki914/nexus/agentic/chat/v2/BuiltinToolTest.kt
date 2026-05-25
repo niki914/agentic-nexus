@@ -97,6 +97,10 @@ class BuiltinToolTest {
         tool.configure(config)
 
         assertEquals(tool.description, config.description)
+        assertEquals(
+            "Run a shell command through the shared shell runner. Each call starts in a fresh shell with cwd='/' by default, supports optional workdir/timeout/merge_stderr arguments, and blocks unsafe commands.",
+            tool.description,
+        )
     }
 
     private class FakeBuiltinTool(

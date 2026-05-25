@@ -1,6 +1,5 @@
 package a0.a0.a0.a0.a0.a0
 
-import androidx.annotation.Keep
 import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiChatHook
@@ -22,7 +21,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-@Keep
 class Entrance : IXposed() {
     companion object {
         private val scope by lazy { CoroutineScope(Dispatchers.Default + SupervisorJob()) }

@@ -10,6 +10,7 @@ import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.CustomToolExecutor
+import com.niki914.nexus.agentic.chat.agentic.ShellCommandRunner
 import com.niki914.nexus.agentic.chat.agentic.ToolCallDispatcher
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.test.runTest
@@ -17,6 +18,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class ToolCallDispatcherTest {
@@ -112,7 +114,10 @@ class ToolCallDispatcherTest {
     fun executeLocalTool_fallsBackToCustomToolWhenBuiltinIsNotEnabled() = runTest {
         val dispatcher = ToolCallDispatcher(
             builtinToolExecutor = BuiltinToolExecutor(BuiltinToolRegistry(emptyList())),
-            customToolExecutor = CustomToolExecutor(timeoutMs = 1),
+            customToolExecutor = CustomToolExecutor(
+                timeoutMs = 1_000,
+                shellCommandRunner = ShellCommandRunner("/bin/sh"),
+            ),
             currentTools = {
                 ResolvedTools(
                     customTools = listOf(
@@ -120,7 +125,7 @@ class ToolCallDispatcherTest {
                             name = "device_model",
                             description = "Read device model",
                             enabled = true,
-                            command = "getprop ro.product.model",
+                            command = "printf sample_model",
                         )
                     )
                 )
@@ -134,7 +139,37 @@ class ToolCallDispatcherTest {
         )
 
         val json = Json.parseToJsonElement(resultJson).jsonObject
-        assertEquals("getprop ro.product.model", json["command"]!!.jsonPrimitive.content)
+        assertEquals("printf sample_model", json["command"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun executeLocalTool_returnsStructuredErrorForBlockedCustomCommand() = runTest {
+        val dispatcher = ToolCallDispatcher(
+            builtinToolExecutor = BuiltinToolExecutor(BuiltinToolRegistry(emptyList())),
+            customToolExecutor = CustomToolExecutor(),
+            currentTools = {
+                ResolvedTools(
+                    customTools = listOf(
+                        LocalTool.Custom(
+                            name = "wipe_data",
+                            description = "Blocked command",
+                            enabled = true,
+                            command = "rm -rf /data/local/tmp/cache",
+                        )
+                    )
+                )
+            },
+        )
+
+        val resultJson = dispatcher.executeLocalTool(
+            context = context,
+            name = "wipe_data",
+            argumentsJson = "{}",
+        )
+
+        val json = Json.parseToJsonElement(resultJson).jsonObject
+        assertFalse(json["ok"]!!.jsonPrimitive.content.toBoolean())
+        assertEquals("rm -rf /data/local/tmp/cache", json["command"]!!.jsonPrimitive.content)
     }
 
     private class RecordingBuiltinTool(

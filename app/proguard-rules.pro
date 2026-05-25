@@ -24,6 +24,11 @@
 # FreeReflection
 -keep class me.weishu.reflection.** {*;}
 
+# Xposed 入口类名必须与 assets/xposed_init 保持一致，仅保护类名与无参构造。
+-keep class a0.a0.a0.a0.a0.a0.Entrance {
+    <init>();
+}
+
 -assumenosideeffects class kotlin.jvm.internal.Intrinsics {
     public static *** throwUninitializedProperty(...);
     public static *** throwUninitializedPropertyAccessException(...);
