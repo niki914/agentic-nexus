@@ -8,7 +8,8 @@
 ## Current Phase
 
 - Phase 3 completed
-- Implementation finished and awaiting user review
+- Implementation accepted by user
+- ASC-01 completed
 
 ## Context
 
@@ -44,5 +45,5 @@
 
 ## Next Step
 
-- Wait for user review and acceptance of ASC-01 implementation
-- If accepted, move to the next ASC in `ASC_may_25.md`
+- Move to the next ASC in `ASC_may_25.md`
+- Start a new planning cycle for ASC-02

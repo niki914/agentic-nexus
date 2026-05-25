@@ -49,6 +49,9 @@ class LocalSettings(props: JsonObject = JsonObject(emptyMap())) : XSettings(prop
     val onboardingCompleted: Boolean
         get() = getBoolean("onboarding_completed")
 
+    val provider: String
+        get() = getString("provider")
+
     val endpoint: String
         get() = getString("endpoint")
 

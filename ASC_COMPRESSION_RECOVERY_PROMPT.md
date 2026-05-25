@@ -93,27 +93,78 @@ Use this branch when compression happened after one ASC was completed and accept
 - `UI-PRD.md` was intentionally deleted because it was outdated and misleading.
 - `ASC_may_25.md` replaced it as the current execution constraint summary.
 - ASC-01 is `asc_01_strings_baseline`.
-- At the time this recovery prompt was written, ASC-01 had finished Phase 2 and was waiting for explicit approval before implementation.
+- ASC-01 has been implemented, reviewed by the user, and accepted.
+- ASC-01 removed all `nexus_*` string resource keys from `app/src/main`.
+- ASC-02 is `asc_02_onboarding_form`.
+- ASC-02 has been implemented through Phase 3.
+- ASC-02 turned `ConfigurePage` into a real provider-aware onboarding form page.
+- The next ASC in the queue is ASC-03, which focuses on de-shelling `DonePage`.
 
-## Exact files for ASC-01
+## ASC-01 completion files
 
-If the active ASC is `asc_01_strings_baseline`, read:
+If the user reopens ASC-01 or asks for verification, read:
 
 - `docs/.asc_task/asc_01_strings_baseline/progress.md`
 - `docs/.asc_task/asc_01_strings_baseline/tech_survey.md`
 - `docs/.asc_task/asc_01_strings_baseline/tech_design.md`
 - `docs/.asc_task/asc_01_strings_baseline/plan.md`
 
-### ASC-01 implementation boundary
+### ASC-01 final boundary
 
 - In scope:
   - `app/src/main/res/values/strings.xml`
   - `app/src/main/res/values-en/strings.xml`
-- Out of scope by default:
-  - Kotlin source changes
+  - Kotlin references that had to be updated to match the renamed resource keys
+- Out of scope:
   - page structure changes
-  - global string key rename
+  - business logic changes
   - English resource rebuild
+
+## ASC-02 completion files
+
+If the user reopens ASC-02 or asks for verification, read:
+
+- `docs/.asc_task/asc_02_onboarding_form/progress.md`
+- `docs/.asc_task/asc_02_onboarding_form/tech_survey.md`
+- `docs/.asc_task/asc_02_onboarding_form/tech_design.md`
+- `docs/.asc_task/asc_02_onboarding_form/plan.md`
+
+### ASC-02 final boundary
+
+- In scope:
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/NexusPages.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/ConfigurePageContent.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/ConfigureState.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/ProviderSpec.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/component/LiquidSecretTextField.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/mod/SettingModels.kt`
+  - `app/src/main/res/values/strings.xml`
+  - `app/src/main/res/values/colors.xml`
+  - `docs/.asc_task/asc_02_onboarding_form/progress.md`
+- Out of scope:
+  - `DonePage` de-shelling
+  - `ChatOnly` path fixes
+  - provider screen background skinning
+  - `values-en/strings.xml` rebuild
+
+## ASC-03 recovery entry
+
+If ASC-02 is complete enough to leave behind, and the user wants to proceed, treat ASC-03 as the next active work item.
+
+### ASC-03 recovery steps
+
+1. Read `ASC_may_25.md`
+2. Read `docs/.asc_task/asc_02_onboarding_form/progress.md`
+3. Confirm ASC-02 implementation is already landed
+4. Identify ASC-03 from the queue as the next planning target
+5. Start ASC-03 at Phase 0 rather than assuming any design or implementation already exists
+
+### ASC-03 initial constraints
+
+- Goal: give `DonePage` its own content and visual structure instead of reusing `ConfigurePageContent`
+- Navigation structure stays as-is
+- `DonePage` remains a presentational page; do not add a page ViewModel just for symmetry
+- Do not bundle `ChatOnly` path fixes or settings work into ASC-03 unless the user explicitly expands scope
 
 ## Negative examples
 
@@ -122,12 +173,14 @@ Bad recovery:
 - “I remember we wanted cleaner naming, so I will rename all `nexus_*` keys now.”
 - “Phase 2 is done, so I can start editing immediately.”
 - “The deleted PRD probably had the intended navigation, I should reconstruct it.”
+- “ASC-02 is implemented, so ASC-03 coding must be next.”
 
 Good recovery:
 
 - “I will read `AGENTS.md`, `ASC_may_25.md`, and the active ASC documents before deciding anything.”
 - “Implementation is next, but I still need explicit user approval before Phase 3.”
 - “This ASC only changes resource files, so Kotlin changes stay out of scope unless verification disproves that.”
+- “ASC-02 is already landed, so ASC-03 should begin from Phase 0 planning unless the files show otherwise.”
 
 ## Recovery response template
 
@@ -140,4 +193,4 @@ After reading the required files, respond to the user with a short Chinese statu
 
 Do not dump the entire recovery chain to the user.
 
-当前进度：asc-01 phase2 finished。即将进入 3。回答语言：中文
+当前进度：asc-02 phase3 finished；下一步进入 asc-03 phase0。回答语言：中文

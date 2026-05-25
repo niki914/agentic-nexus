@@ -1,16 +1,23 @@
 package com.niki914.nexus.agentic.app.ui.nexus
 
-import androidx.compose.runtime.rememberCoroutineScope
+import android.content.Context
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.nav.NavigationEntry
-import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.mod.XService
+import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigurePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.HomePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SelectionOption
@@ -18,6 +25,12 @@ import com.niki914.nexus.agentic.app.ui.nexus.content.SelectionPageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SettingsDetailPageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SettingsHomePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.StartupPageContent
+import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureEffect
+import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureIntent
+import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.model.ProviderButtonTokens
+import com.niki914.nexus.agentic.app.ui.nexus.model.ProviderSpec
+import com.niki914.nexus.agentic.app.ui.nexus.model.ProviderSpecs
 import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
 import com.niki914.nexus.agentic.app.ui.nexus.nav.ConfigurePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.DonePage
@@ -27,6 +40,8 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.ProviderPickPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsHomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.StartupPage
+import com.niki914.nexus.agentic.mod.LocalSettings
+import com.niki914.nexus.agentic.mod.XService
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
@@ -58,70 +73,71 @@ fun NexusPageContent(
         )
 
         ProviderPickPage -> {
-            val deepSeekColors = providerButtonColors("deepseek")
-            val openAiColors = providerButtonColors("openai")
-            val claudeColors = providerButtonColors("anthropic")
-            val geminiColors = providerButtonColors("google")
-
             SelectionPageContent(
                 topPadding = topPadding,
                 hazeState = hazeState,
-                options = listOf(
+                options = ProviderSpecs.all.map { spec ->
+                    val colors = providerButtonColors(spec)
                     SelectionOption(
-                        id = "deepseek",
-                        title = stringResource(R.string.ui_onboard_provider_pick_option_deepseek),
-                        leadingIconRes = R.drawable.deepseek,
-                        darkContainerColor = deepSeekColors.darkContainerColor,
-                        lightContainerColor = deepSeekColors.lightContainerColor,
-                        darkContentColor = deepSeekColors.darkContentColor,
-                        lightContentColor = deepSeekColors.lightContentColor,
-                        onClick = { onPush(ConfigurePage(providerId = "deepseek")) },
-                    ),
-                    SelectionOption(
-                        id = "openai",
-                        title = stringResource(R.string.ui_onboard_provider_pick_option_openai),
-                        leadingIconRes = R.drawable.openai,
-                        darkContainerColor = openAiColors.darkContainerColor,
-                        lightContainerColor = openAiColors.lightContainerColor,
-                        darkContentColor = openAiColors.darkContentColor,
-                        lightContentColor = openAiColors.lightContentColor,
-                        onClick = { onPush(ConfigurePage(providerId = "openai")) },
-                    ),
-                    SelectionOption(
-                        id = "anthropic",
-                        title = stringResource(R.string.ui_onboard_provider_pick_option_anthropic),
-                        leadingIconRes = R.drawable.anthropic,
-                        darkContainerColor = claudeColors.darkContainerColor,
-                        lightContainerColor = claudeColors.lightContainerColor,
-                        darkContentColor = claudeColors.darkContentColor,
-                        lightContentColor = claudeColors.lightContentColor,
-                        onClick = { onPush(ConfigurePage(providerId = "anthropic")) },
-                    ),
-                    SelectionOption(
-                        id = "google",
-                        title = stringResource(R.string.ui_onboard_provider_pick_option_google),
-                        leadingIconRes = R.drawable.gemini,
-                        tintLeadingIcon = false,
-                        darkContainerColor = geminiColors.darkContainerColor,
-                        lightContainerColor = geminiColors.lightContainerColor,
-                        darkContentColor = geminiColors.darkContentColor,
-                        lightContentColor = geminiColors.lightContentColor,
-                        onClick = { onPush(ConfigurePage(providerId = "google")) },
-                    ),
-                ),
+                        id = spec.id,
+                        title = spec.brandName,
+                        leadingIconRes = spec.iconRes,
+                        tintLeadingIcon = spec.tintIcon,
+                        darkContainerColor = colors.darkContainerColor,
+                        lightContainerColor = colors.lightContainerColor,
+                        darkContentColor = colors.darkContentColor,
+                        lightContentColor = colors.lightContentColor,
+                        onClick = { onPush(ConfigurePage(providerId = spec.id)) },
+                    )
+                },
             )
         }
 
         is ConfigurePage -> {
-            val colors = providerButtonColors(page.providerId)
+            val context = LocalContext.current.applicationContext
+            val factory = remember(context) { createConfigureViewModelFactory(context) }
+            val viewModel = pageViewModel<ConfigureViewModel>(
+                key = page.providerId,
+                factory = factory,
+            )
+            val uiState by viewModel.uiStateFlow.collectAsState()
+            val colors = providerButtonColors(uiState.providerSpec)
+
+            LaunchedEffect(page.providerId) {
+                viewModel.sendIntent(ConfigureIntent.Initialize(page.providerId))
+            }
+            LaunchedEffect(viewModel) {
+                viewModel.uiEffect.collect { effect ->
+                    if (effect is ConfigureEffect.SaveSucceeded) {
+                        onPush(DonePage)
+                    }
+                }
+            }
+
             ConfigurePageContent(
                 topPadding = topPadding,
                 hazeState = hazeState,
+                uiState = uiState,
                 buttonDarkContainerColor = colors.darkContainerColor,
                 buttonLightContainerColor = colors.lightContainerColor,
                 buttonDarkContentColor = colors.darkContentColor,
                 buttonLightContentColor = colors.lightContentColor,
-                onComplete = { onPush(DonePage) },
+                onEndpointOverrideChange = { enabled ->
+                    viewModel.sendIntent(ConfigureIntent.SetEndpointOverride(enabled))
+                },
+                onEndpointChange = { endpoint ->
+                    viewModel.sendIntent(ConfigureIntent.UpdateEndpoint(endpoint))
+                },
+                onModelChange = { model ->
+                    viewModel.sendIntent(ConfigureIntent.UpdateModel(model))
+                },
+                onApiKeyChange = { apiKey ->
+                    viewModel.sendIntent(ConfigureIntent.UpdateApiKey(apiKey))
+                },
+                onToggleApiKeyVisibility = {
+                    viewModel.sendIntent(ConfigureIntent.ToggleApiKeyVisibility)
+                },
+                onComplete = { viewModel.sendIntent(ConfigureIntent.Save) },
             )
         }
 
@@ -177,44 +193,33 @@ private data class ProviderButtonColors(
 )
 
 @Composable
-private fun providerButtonColors(providerId: String?): ProviderButtonColors {
-    val black = colorResource(R.color.black)
-    val white = colorResource(R.color.white)
-    return when (providerId) {
-        "deepseek" -> {
-            val container = colorResource(R.color.provider_deepseek)
-            ProviderButtonColors(
-                darkContainerColor = container,
-                lightContainerColor = container,
-                darkContentColor = white,
-                lightContentColor = white,
-            )
+private fun providerButtonColors(spec: ProviderSpec): ProviderButtonColors {
+    return spec.visualTokens.button.toProviderButtonColors()
+}
+
+@Composable
+private fun ProviderButtonTokens.toProviderButtonColors(): ProviderButtonColors {
+    val colorScheme = MaterialTheme.colorScheme
+    return ProviderButtonColors(
+        darkContainerColor = darkContainerColorRes?.let { id -> colorResource(id) } ?: colorScheme.primary,
+        lightContainerColor = lightContainerColorRes?.let { id -> colorResource(id) } ?: colorScheme.primary,
+        darkContentColor = darkContentColorRes?.let { id -> colorResource(id) } ?: colorScheme.onPrimary,
+        lightContentColor = lightContentColorRes?.let { id -> colorResource(id) } ?: colorScheme.onPrimary,
+    )
+}
+
+private fun createConfigureViewModelFactory(
+    context: Context,
+): ViewModelProvider.Factory {
+    return object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            require(modelClass == ConfigureViewModel::class.java)
+            return ConfigureViewModel(
+                loadSettings = { XService.getLocalSettings(context) },
+                saveSettings = { settings -> XService.putLocalSettings(context, settings) },
+            ) as T
         }
-
-        "openai" -> ProviderButtonColors(
-            darkContainerColor = colorResource(R.color.provider_openai_dark),
-            lightContainerColor = colorResource(R.color.provider_openai_light),
-            darkContentColor = black,
-            lightContentColor = white,
-        )
-
-        "anthropic" -> {
-            val container = colorResource(R.color.provider_claude)
-            val content = colorResource(R.color.provider_claude_content)
-            ProviderButtonColors(
-                darkContainerColor = container,
-                lightContainerColor = container,
-                darkContentColor = content,
-                lightContentColor = content,
-            )
-        }
-
-        else -> ProviderButtonColors(
-            darkContainerColor = MaterialTheme.colorScheme.primary,
-            lightContainerColor = MaterialTheme.colorScheme.primary,
-            darkContentColor = MaterialTheme.colorScheme.onPrimary,
-            lightContentColor = MaterialTheme.colorScheme.onPrimary,
-        )
     }
 }
 

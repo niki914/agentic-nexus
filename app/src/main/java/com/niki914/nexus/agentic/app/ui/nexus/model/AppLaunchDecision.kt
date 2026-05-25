@@ -27,6 +27,11 @@ data class AppLaunchDecision(
             } else {
                 startupPage
             }
+            return AppLaunchDecision( // TODO remove
+                initialPage = startupPage,
+                onboardingCompleted = false,
+                endpointPresent = endpointPresent
+            )
             return AppLaunchDecision(
                 initialPage = initialPage,
                 onboardingCompleted = onboardingCompleted,
