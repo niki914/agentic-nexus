@@ -88,4 +88,24 @@
     <string name="nexus_custom_tools_delete_success">Custom tool deleted.</string>
     <string name="nexus_custom_tools_save_failed">Save failed: %1$s</string>
     <string name="nexus_custom_tools_duplicate_name">Tool names must be unique. Choose a different name.</string>
+
+    <string name="nexus_mcp_page_description">Manage MCP servers here. Saving writes back to `mcp_servers`, which the runtime can refresh and use to register external tools and context services.</string>
+    <string name="nexus_mcp_list_title">Configured MCP servers</string>
+    <string name="nexus_mcp_loading">Loading saved MCP servers...</string>
+    <string name="nexus_mcp_empty">No MCP servers yet. Add one and save it first.</string>
+    <string name="nexus_mcp_summary_fallback">No URL yet, so the list summary is empty.</string>
+    <string name="nexus_mcp_state_enabled">Enabled</string>
+    <string name="nexus_mcp_state_disabled">Disabled</string>
+    <string name="nexus_mcp_add_action">Add MCP server</string>
+    <string name="nexus_mcp_editor_title_create">Create MCP server</string>
+    <string name="nexus_mcp_editor_title_edit">Edit MCP server</string>
+    <string name="nexus_mcp_field_name">Server name</string>
+    <string name="nexus_mcp_field_name_placeholder">For example aslocate</string>
+    <string name="nexus_mcp_field_url">Server URL</string>
+    <string name="nexus_mcp_field_url_placeholder">For example http://127.0.0.1:51338/mcp</string>
+    <string name="nexus_mcp_field_enabled">Enable this server</string>
+    <string name="nexus_mcp_field_enabled_description">Disabled servers stay in settings but are not registered into the current session.</string>
+    <string name="nexus_mcp_save_action">Save MCP server</string>
+    <string name="nexus_mcp_delete_action">Delete current MCP server</string>
+    <string name="nexus_mcp_duplicate_name">MCP server names must be unique. Choose a different name.</string>
 </resources>

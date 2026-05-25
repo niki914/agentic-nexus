@@ -53,6 +53,14 @@ fun SettingsDetailPageContent(
         return
     }
 
+    if (group == NexusSettingsGroup.Mcp) {
+        McpSettingsContent(
+            topPadding = topPadding,
+            hazeState = hazeState,
+        )
+        return
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()

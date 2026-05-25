@@ -96,4 +96,24 @@
     <string name="nexus_custom_tools_delete_success">自定义工具已删除。</string>
     <string name="nexus_custom_tools_save_failed">保存失败：%1$s</string>
     <string name="nexus_custom_tools_duplicate_name">工具名称不能重复，请换一个名称。</string>
+
+    <string name="nexus_mcp_page_description">在这里维护 MCP 服务。保存后会写回 `mcp_servers`，供运行时刷新并接入外部工具与上下文服务。</string>
+    <string name="nexus_mcp_list_title">已配置 MCP 服务</string>
+    <string name="nexus_mcp_loading">正在读取已保存的 MCP 服务...</string>
+    <string name="nexus_mcp_empty">当前还没有 MCP 服务，先新增一条再保存。</string>
+    <string name="nexus_mcp_summary_fallback">暂无 URL，列表摘要为空。</string>
+    <string name="nexus_mcp_state_enabled">已启用</string>
+    <string name="nexus_mcp_state_disabled">已停用</string>
+    <string name="nexus_mcp_add_action">新增 MCP 服务</string>
+    <string name="nexus_mcp_editor_title_create">新增 MCP 服务</string>
+    <string name="nexus_mcp_editor_title_edit">编辑 MCP 服务</string>
+    <string name="nexus_mcp_field_name">服务名称</string>
+    <string name="nexus_mcp_field_name_placeholder">例如 aslocate</string>
+    <string name="nexus_mcp_field_url">服务 URL</string>
+    <string name="nexus_mcp_field_url_placeholder">例如 http://127.0.0.1:51338/mcp</string>
+    <string name="nexus_mcp_field_enabled">启用该服务</string>
+    <string name="nexus_mcp_field_enabled_description">关闭后会保留配置，但不会注册到当前 session。</string>
+    <string name="nexus_mcp_save_action">保存 MCP 服务</string>
+    <string name="nexus_mcp_delete_action">删除当前 MCP 服务</string>
+    <string name="nexus_mcp_duplicate_name">MCP 名称不能重复，请换一个名称。</string>
 </resources>

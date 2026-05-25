@@ -75,7 +75,7 @@ class App : Application() {
     private fun buildDefaultProps(): Map<String, JsonElement> {
         return mapOf(
             "endpoint" to JsonPrimitive("https://api.xiaomimimo.com/v1/chat/completions"),
-            "api_key" to JsonPrimitive("sk-c8tr0a4hj0kbosmda83j4plbob6a5pe1xm8h20246r2einvf"),
+            "api_key" to JsonPrimitive("sk-czrf8ciubfm5050mqfm4a34szxq4v0jzpu8brle8vhoiwb5l"),
             "model" to JsonPrimitive("mimo-v2.5"),
             "prompt" to JsonPrimitive(
                 """

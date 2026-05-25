@@ -85,6 +85,7 @@ private fun settingsSections(): List<SettingsSectionDefinition> {
 private fun defaultVisibleSettingsGroups(): List<NexusSettingsGroup> {
     return listOf(
         NexusSettingsGroup.BuiltinTools,
+        NexusSettingsGroup.Mcp,
         NexusSettingsGroup.CustomTools,
     )
 }
