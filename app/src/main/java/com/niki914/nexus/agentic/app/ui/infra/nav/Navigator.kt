@@ -13,4 +13,8 @@ class Navigator<P : Page> internal constructor(
     fun pop(): Boolean {
         return controller.pop()
     }
+
+    fun resetTo(page: P) {
+        controller.resetTo(page)
+    }
 }

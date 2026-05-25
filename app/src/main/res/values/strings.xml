@@ -8,7 +8,7 @@
     <string name="nexus_startup_status_chat_only">不支持的系统：仅聊天模式</string>
     <string name="nexus_startup_continue">开始配置</string>
 
-    <string name="nexus_provider_pick_title">供应商选择</string>
+    <string name="nexus_provider_pick_title">没做完，直接点下一步</string>
     <string name="nexus_provider_pick_headline">选择大模型提供商</string>
     <string name="nexus_provider_pick_description">选择你期望使用的大模型提供商，选完后直接进入下一步。</string>
     <string name="nexus_provider_pick_option_deepseek">DeepSeek</string>
@@ -20,12 +20,12 @@
     <string name="nexus_provider_pick_option_google">Google</string>
     <string name="nexus_provider_pick_option_google_summary">用于 Gemini 系列模型或 Google 生态接入。</string>
 
-    <string name="nexus_configure_title">基础配置</string>
+    <string name="nexus_configure_title">没做完，直接点下一步</string>
     <string name="nexus_configure_headline">配置入口占位</string>
     <string name="nexus_configure_description">后续会在这里接入真实的 endpoint、model 和 prompt 配置表单。</string>
     <string name="nexus_configure_complete">完成并继续</string>
 
-    <string name="nexus_done_headline">准备完成</string>
+    <string name="nexus_done_headline">没做完，直接点下一步</string>
     <string name="nexus_done_description">最小引导流程已经走通，接下来进入主页继续验证导航树。</string>
     <string name="nexus_done_enter_home">进入主页</string>
 

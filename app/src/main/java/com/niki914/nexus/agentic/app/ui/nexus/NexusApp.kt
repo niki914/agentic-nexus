@@ -38,22 +38,24 @@ import com.niki914.nexus.agentic.app.ui.infra.nav.rememberNavigationController
 import com.niki914.nexus.agentic.app.ui.infra.rememberLiquidScreenState
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.model.AppLaunchDecision
 import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
 import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsHomePage
-import com.niki914.nexus.agentic.app.ui.nexus.nav.StartupPage
 
 @Composable
 fun NexusApp(
     startupAssistantUi: StartupAssistantUi,
+    launchDecision: AppLaunchDecision,
 ) {
     val isDarkTheme = isSystemInDarkTheme()
     val actionIconTint = if (isDarkTheme) Color.White else Color.Black
-    val controller = rememberNavigationController<NexusPage>(initialPage = StartupPage)
+    val controller = rememberNavigationController<NexusPage>(initialPage = launchDecision.initialPage)
     val navigator = controller.navigator
     val currentEntry = controller.currentEntry
     val currentPage = currentEntry.page
+    val canNavigateBack = currentPage.showLeftButton && controller.canGoBack
     val currentHomeChatViewModel = if (currentPage == HomePage) {
         remember(currentEntry) {
             val viewModelClass = HomeChatViewModel::class.java
@@ -70,7 +72,7 @@ fun NexusApp(
     val settingsMenuLabel = stringResource(R.string.nexus_settings_menu_entry)
     val screenState = rememberLiquidScreenState(
         title = currentTitle,
-        showLeftButton = currentPage.showLeftButton,
+        showLeftButton = canNavigateBack,
         showRightButton = currentPage.showRightButton,
         showBlurLayer = currentPage.showBlurLayer,
     )
@@ -97,7 +99,7 @@ fun NexusApp(
         if (currentPage != HomePage) {
             closeHomeMenu()
         }
-        val onLeftClick = if (currentPage.showLeftButton) {
+        val onLeftClick = if (canNavigateBack) {
             { navigator.pop(); Unit }
         } else {
             null
@@ -111,7 +113,7 @@ fun NexusApp(
         when (controller.lastDirection) {
             TitleDirection.Forward -> screenState.navigateForward(
                 title = currentTitle,
-                showLeftButton = currentPage.showLeftButton,
+                showLeftButton = canNavigateBack,
                 showRightButton = currentPage.showRightButton,
                 showBlurLayer = currentPage.showBlurLayer,
                 onLeftClick = onLeftClick,
@@ -120,7 +122,7 @@ fun NexusApp(
 
             TitleDirection.Back -> screenState.navigateBack(
                 title = currentTitle,
-                showLeftButton = currentPage.showLeftButton,
+                showLeftButton = canNavigateBack,
                 showRightButton = currentPage.showRightButton,
                 showBlurLayer = currentPage.showBlurLayer,
                 onLeftClick = onLeftClick,
@@ -129,7 +131,7 @@ fun NexusApp(
 
             TitleDirection.None -> screenState.update(
                 title = currentTitle,
-                showLeftButton = currentPage.showLeftButton,
+                showLeftButton = canNavigateBack,
                 showRightButton = currentPage.showRightButton,
                 showBlurLayer = currentPage.showBlurLayer,
                 onLeftClick = onLeftClick,
@@ -166,6 +168,7 @@ fun NexusApp(
                         hazeState = hazeState,
                         startupAssistantUi = startupAssistantUi,
                         onPush = ::push,
+                        onResetTo = navigator::resetTo,
                     )
                 }
             }

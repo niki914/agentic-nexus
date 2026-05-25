@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import com.niki914.nexus.agentic.app.ui.nexus.NexusApp
+import com.niki914.nexus.agentic.app.ui.nexus.model.AppLaunchDecision
 import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.cb.BaseTheme
 import com.niki914.nexus.h.util.ContextProvider
@@ -14,6 +15,7 @@ import com.niki914.nexus.h.util.OsUtils
 import com.niki914.nexus.h.util.xlog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 // tag:niki914 | tag:nexus-x-log | message:niki914 | message:nexus-x-log
 class MainActivity : ComponentActivity() {
@@ -31,10 +33,19 @@ class MainActivity : ComponentActivity() {
 
         requestNotificationPermissionIfNeeded(notificationPermissionLauncher)
         val startupAssistantUi = resolveStartupAssistantUi()
+        val launchDecision = runBlocking {
+            AppLaunchDecision.resolve(
+                settings = XService.getLocalSettings(this@MainActivity),
+                startupAssistantUi = startupAssistantUi,
+            )
+        }
 
         setContent {
             BaseTheme {
-                NexusApp(startupAssistantUi = startupAssistantUi)
+                NexusApp(
+                    startupAssistantUi = startupAssistantUi,
+                    launchDecision = launchDecision,
+                )
             }
         }
     }

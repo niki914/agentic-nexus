@@ -59,6 +59,14 @@ class NavigationController<P : Page>(
         return true
     }
 
+    fun resetTo(page: P) {
+        if (!tryConsumeNavigationDebounce()) return
+        entryStack.forEach { entry -> entry.viewModelStore.clear() }
+        entryStack.clear()
+        entryStack += createEntry(page)
+        lastDirection = TitleDirection.Forward
+    }
+
     fun clear() {
         entryStack.forEach { entry -> entry.viewModelStore.clear() }
         entryStack.clear()

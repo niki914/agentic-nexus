@@ -1,5 +1,6 @@
 package com.niki914.nexus.agentic.app.ui.nexus
 
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -8,6 +9,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.nav.NavigationEntry
+import com.niki914.nexus.agentic.mod.LocalSettings
+import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigurePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.HomePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SelectionOption
@@ -25,6 +28,8 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsHomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.StartupPage
 import dev.chrisbanes.haze.HazeState
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonPrimitive
 
 @Composable
 fun NexusPageContent(
@@ -33,7 +38,10 @@ fun NexusPageContent(
     hazeState: HazeState,
     startupAssistantUi: StartupAssistantUi,
     onPush: (NexusPage) -> Unit,
+    onResetTo: (NexusPage) -> Unit,
 ) {
+    val scope = rememberCoroutineScope()
+
     when (val page = entry.page) {
         StartupPage -> StartupPageContent(
             topPadding = topPadding,
@@ -120,7 +128,12 @@ fun NexusPageContent(
         DonePage -> DonePageContent(
             topPadding = topPadding,
             hazeState = hazeState,
-            onEnterHome = { onPush(HomePage) },
+            onEnterHome = {
+                scope.launch {
+                    completeOnboarding()
+                    onResetTo(HomePage)
+                }
+            },
         )
 
         HomePage -> HomePageContent(
@@ -140,6 +153,20 @@ fun NexusPageContent(
             hazeState = hazeState,
         )
     }
+}
+
+private suspend fun completeOnboarding() {
+    val latestSettings = XService.getLocalSettings(context = com.niki914.nexus.h.util.ContextProvider.await())
+    if (latestSettings.onboardingCompleted) {
+        return
+    }
+    val updatedProps = latestSettings.props.toMutableMap().apply {
+        this["onboarding_completed"] = JsonPrimitive(true)
+    }
+    XService.putLocalSettings(
+        context = com.niki914.nexus.h.util.ContextProvider.await(),
+        settings = LocalSettings(kotlinx.serialization.json.JsonObject(updatedProps)),
+    )
 }
 
 private data class ProviderButtonColors(
