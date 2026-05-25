@@ -138,7 +138,7 @@ wiki 面向读者，不面向下一位写文档的人。
 Bad:
 
 ```md
-- [UI-PRD.md](../../../../../UI-PRD.md)
+- [ASC_may_25.md](../../../../../ASC_may_25.md)
 - [BreenoChatHook.kt](file:///Users/xxx/.../BreenoChatHook.kt)
 - app/src/main/java/.../Entrance.kt
 ```
@@ -146,7 +146,7 @@ Bad:
 Good:
 
 ```md
-- `UI-PRD.md`
+- `ASC_may_25.md`
 - `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt`
 - `app/src/main/java/a0/a0/a0/a0/a0/a0/Entrance.kt`
 ```

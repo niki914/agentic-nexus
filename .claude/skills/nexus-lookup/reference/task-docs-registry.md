@@ -2,12 +2,11 @@
 
 ## UI 与导航系列
 
-### `UI-PRD.md`
+### `ASC_may_25.md`
 
-- **主题**：定义 App Shell 的信息架构和页面流，涵盖 Startup、Home、Configure、Selection、Settings 树以及 Liquid Glass UI 方向。
-- **状态**：`部分落地`
-- **已落地**：`NexusApp`、主要页面 content、Liquid 基础组件、导航控制器、Settings 主页/详情页、自定义工具设置页。
-- **仍需核对**：PRD 中的完整动效、极端状态、细粒度设置树覆盖情况。
+- **主题**：记录当前 UI 收敛结论、ASC 任务拆分、strings 命名规则与模块层级文案约束。
+- **状态**：`当前执行约束`
+- **适用范围**：UI 页面开发、strings 整理、设置页补齐、ASC 批次推进。
 - **源码核对入口**：
   - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/`
   - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/`

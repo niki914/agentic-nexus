@@ -54,3 +54,4 @@ pnpm-debug.log*
 *.kotlin_builtins
 
 openhook.zip
+/server/server.pid

@@ -87,5 +87,5 @@
 
 - `README.md`: 主 README
 - `SESSION.md`: S3ss10n / LLM / MCP 相关记录
-- `UI-PRD.md`: UI 与 PRD
+- `ASC_may_25.md`: 当前 UI 收敛结论、ASC 任务与 strings 约束
 - `apple-liquid-glass-philosophy.md`: 苹果 Liquid Glass 设计理念

@@ -3,14 +3,14 @@
 ## 现实状态与目标状态
 
 - **现实状态**：已基于 `app/src/main/java/com/niki914/nexus/agentic/app/ui/` 实现 `NexusApp` 壳层，包含基于 `NavigationController` 的自定义栈式状态机，落地了 Startup、Home、Configure、Selection、Settings 树状导航和自定义工具设置页。
-- **目标状态**：继续核对 `UI-PRD.md` 中的完整动效、极端状态、细粒度设置树覆盖情况，并把配置持久化与运行时能力接入更多设置页面。
+- **目标状态**：保持当前源码中的导航结构不变，继续补齐 Configure 表单、DonePage 独立内容、隐藏 settings 分组和 strings 资源体系。
 
-## 基础设施与 PRD 对应关系
+## 基础设施与当前约束
 
 - **已落地的 UI 能力**：`LiquidScreen` 及状态管理、`LiquidScreenSwipeContent` 转场、`NavigationController` 导航机、`SettingsGroupCard`、`SettingsNavigationRow`、`CustomToolsSettingsContent` 等组件与页面。
 - **已落地的业务能力**：自定义工具设置页已读写 `custom_tools` 配置，运行时侧已有 `CustomToolExecutor` 执行链路。
 - **半落地的业务能力**：builtin tool flags 仍以配置解析和 prompt 暴露为主。
-- **`UI-PRD.md` 解决的问题**：定义 App Shell 的视觉原则、用户场景、页面信息架构以及组件规范，指导页面流的设计。
+- **当前执行约束**：以 `ASC_may_25.md` 中收敛后的导航结论、ASC 拆分和 strings 规则为准，不再依据过时 PRD 调整页面流。
 
 ## 阅读建议
 
@@ -32,7 +32,7 @@
 
 ## 核心源码引用
 
-- `UI-PRD.md`
+- `ASC_may_25.md`
 - `app/src/main/java/com/niki914/nexus/agentic/app/MainActivity.kt`
 - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/nav/NavigationController.kt`
 - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/nav/Page.kt`

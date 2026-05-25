@@ -14,7 +14,7 @@
 ## 半落地能力
 
 - **Builtin Tool Flags**：已解析 builtin tool flags 并生成 prompt lines，未看到独立 builtin 执行链路。
-- **UI PRD 完整态**：App Shell 主体页面和导航已存在，但 PRD 中的细节状态、动效和设置树完整覆盖仍需逐项核对源码。
+- **UI 完整态**：当前导航结构已经固定为源码现状，剩余工作集中在 onboarding 表单化、DonePage 去套壳、隐藏 settings 分组落地和 strings 体系收口。
 
 ## 提案
 
