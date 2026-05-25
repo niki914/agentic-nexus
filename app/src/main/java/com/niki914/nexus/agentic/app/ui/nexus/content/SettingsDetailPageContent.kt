@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -16,6 +18,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.model.SettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusSettingsGroup
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
@@ -26,6 +30,13 @@ fun SettingsDetailPageContent(
     topPadding: Dp,
     hazeState: HazeState,
 ) {
+    val viewModel = pageViewModel<SettingsViewModel>()
+    val uiState by viewModel.uiStateFlow.collectAsState()
+    val visibleGroups = uiState.sections.flatMap { it.groups }.toSet()
+    if (group !in visibleGroups) {
+        return
+    }
+
     if (group == NexusSettingsGroup.BuiltinTools) {
         BuiltinToolsSettingsContent(
             topPadding = topPadding,

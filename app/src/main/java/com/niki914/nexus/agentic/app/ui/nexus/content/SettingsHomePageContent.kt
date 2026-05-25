@@ -9,18 +9,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsNavigationRow
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleRow
+import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.model.SettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusSettingsGroup
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
@@ -31,6 +29,9 @@ fun SettingsHomePageContent(
     hazeState: HazeState,
     onOpenGroup: (NexusSettingsGroup) -> Unit,
 ) {
+    val viewModel = pageViewModel<SettingsViewModel>()
+    val uiState by viewModel.uiStateFlow.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -40,48 +41,11 @@ fun SettingsHomePageContent(
             .padding(horizontal = 16.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        SettingsSection(
-            title = stringResource(R.string.nexus_settings_section_model),
-            groups = listOf(
-                NexusSettingsGroup.ProviderModel,
-                NexusSettingsGroup.Network,
-                NexusSettingsGroup.Memory,
-            ),
-            onOpenGroup = onOpenGroup,
-        )
-        SettingsSection(
-            title = stringResource(R.string.nexus_settings_section_execution),
-            groups = listOf(
-                NexusSettingsGroup.BuiltinTools,
-                NexusSettingsGroup.ShellRules,
-            ),
-            onOpenGroup = onOpenGroup,
-        )
-        // Integration 段：手写展开（含 About），并在 About 后追加一个 demo toggle
-        var demoToggleChecked by remember { mutableStateOf(false) }
-        SettingsGroupCard(title = stringResource(R.string.nexus_settings_section_integration)) {
-            val integrationGroups = listOf(
-                NexusSettingsGroup.Mcp,
-                NexusSettingsGroup.CustomTools,
-                NexusSettingsGroup.About,
-            )
-            integrationGroups.forEach { group ->
-                SettingsNavigationRow(
-                    title = stringResource(group.titleRes),
-                    summary = stringResource(group.summaryRes),
-                    onClick = { onOpenGroup(group) },
-                )
-                HorizontalDivider(
-                    thickness = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                )
-            }
-            SettingsToggleRow(
-                label = "Demo Toggle",
-                description = "临时调试用：体感对齐 ui/settings/StyledToggle",
-                checked = demoToggleChecked,
-                onCheckedChange = { demoToggleChecked = it },
+        uiState.sections.forEach { section ->
+            SettingsSection(
+                title = stringResource(section.titleRes),
+                groups = section.groups,
+                onOpenGroup = onOpenGroup,
             )
         }
     }
