@@ -12,7 +12,9 @@
 - Batch 1 accepted
 - Batch 2 completed
 - Batch 2 patch completed
-- Waiting for Batch 2 acceptance
+- Batch 2 accepted
+- Batch 3 completed
+- Waiting for Batch 3 acceptance
 - `tech_survey.md` / `tech_design.md` / `plan.md` 已产出
 - Batch Pause Mode: 每个 Batch 完成后暂停，等待用户验收
 
@@ -56,6 +58,8 @@
 - Batch 1 已由用户人工回归并验收通过
 - Batch 2 通过源码 diff、限定文件范围检查与 IDE diagnostics 人工校验完成
 - Batch 2 补丁通过定向单测、残留引用检查与 IDE diagnostics 人工校验完成
+- Batch 2 与 Batch 2 补丁已由用户确认符合预期
+- Batch 3 通过源码 diff、主线残留引用检查与 IDE diagnostics 人工校验完成
 
 ## Batch Progress
 
@@ -73,10 +77,14 @@
 - [x] T-10 `ui/nexus/content/HomeChatComponents.kt`
 - [x] T-11 `ui/nexus/content/ConfigurePageContent.kt`
 - [x] Batch 2 Patch: 删除 `StyledTextField` 并统一 settings detail 输入组件
-- [ ] Batch 3: F-03 Toggle 正式化与 demo 断引用
+- [x] Batch 3: F-03 Toggle 正式化与 demo 断引用
+- [x] T-12 `ui/infra/component/LiquidToggle.kt`
+- [x] T-13 `ui/infra/component/StyledSwitch.kt`
+- [x] T-14 `ui/nexus/content/ConfigurePageContent.kt`
+- [x] T-15 `app/ui` 主线 `liquid_example` 引用清零
 - [ ] Batch 4: F-04 Shape 原语统一与删除收尾
 
 ## Next Step
 
-- 等待用户验收 Batch 2 与 Batch 2 Patch
-- 用户确认后再进入 Batch 3：Toggle 正式化与 demo 断引用
+- 等待用户验收 Batch 3
+- 用户确认后再进入 Batch 4：Shape 原语统一与删除收尾

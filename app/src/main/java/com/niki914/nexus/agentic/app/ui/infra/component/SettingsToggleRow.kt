@@ -111,7 +111,7 @@ fun SettingsToggleRow(
             }
         }
 
-        StyledSwitch(
+        LiquidToggle(
             checked = checked,
             enabled = enabled,
             onCheckedChange = { newChecked ->

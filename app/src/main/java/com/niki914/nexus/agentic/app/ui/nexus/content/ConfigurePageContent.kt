@@ -25,9 +25,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.rememberCanvasBackdrop
 import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.agentic.app.liquid_example.components.LiquidToggle
+import com.niki914.nexus.agentic.app.ui.infra.component.LiquidToggle
 import com.niki914.nexus.agentic.app.ui.infra.component.LiquidSecretTextField
 import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
@@ -265,10 +264,6 @@ private fun EndpointOverrideRow(
     enabled: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
-    val color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-    val backdrop = rememberCanvasBackdrop {
-        drawRect(color)
-    }
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -290,9 +285,9 @@ private fun EndpointOverrideRow(
             )
         }
         LiquidToggle(
-            selected = { checked },
-            onSelect = onCheckedChange,
-            backdrop = backdrop,
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            enabled = enabled,
             modifier = Modifier.alpha(if (enabled) 1f else 0.5f),
         )
     }

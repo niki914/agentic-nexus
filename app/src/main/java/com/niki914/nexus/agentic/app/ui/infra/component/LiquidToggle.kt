@@ -58,17 +58,14 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 /**
- * 抄自 ui/settings/StyledSwitch，仅将硬编码颜色替换为 MaterialTheme.colorScheme.*
- * - track 开启色：primary
- * - track 关闭色：surfaceVariant
- * - 禁用态：onSurface.copy(alpha = 0.12f)
- * - thumb backdrop 回退色：surface（lens 折射时呈现的"基底"色）
- * 其余 lens / 内阴影 / 拖拽手势 / 触感 / 动画完全保留。
+ * 正式的 infra toggle 入口。
+ * 具体视觉和交互继续复用 StyledSwitch 的稳定实现，避免 settings 与主线分叉。
  */
 @Composable
-fun StyledSwitch(
+fun LiquidToggle(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -127,7 +124,7 @@ fun StyledSwitch(
     }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .width(trackWidth)
             .height(trackHeight),
         contentAlignment = Alignment.CenterStart
@@ -145,55 +142,82 @@ fun StyledSwitch(
             modifier = Modifier
                 .padding(horizontal = 2.dp)
                 .graphicsLayer {
-                    translationX = animatedFraction.value * (trackWidthPx.floatValue - with(density) { thumbWidth.toPx() + 4.dp.toPx() })
+                    translationX =
+                        animatedFraction.value * (trackWidthPx.floatValue - with(density) { thumbWidth.toPx() + 4.dp.toPx() })
                 }
-                .then(if (enabled) Modifier.draggable(
-                    rememberDraggableState { delta ->
-                        if (trackWidthPx.floatValue > 0f) {
-                            val oldFraction = animatedFraction.value
-                            val newFraction = (animatedFraction.value + delta / trackWidthPx.floatValue).fastCoerceIn(-0.3f, 1.3f)
+                .then(
+                    if (enabled) Modifier.draggable(
+                        rememberDraggableState { delta ->
+                            if (trackWidthPx.floatValue > 0f) {
+                                val oldFraction = animatedFraction.value
+                                val newFraction =
+                                    (animatedFraction.value + delta / trackWidthPx.floatValue).fastCoerceIn(
+                                        -0.3f,
+                                        1.3f
+                                    )
+                                scope.launch {
+                                    animatedFraction.snapTo(newFraction)
+                                }
+                                totalDrag.floatValue += abs(delta)
+                                val newChecked = newFraction >= 0.5f
+                                if (newChecked != checked) {
+                                    onCheckedChange(newChecked)
+                                }
+                                if ((oldFraction < 0.5f && newFraction >= 0.5f) || (oldFraction >= 0.5f && newFraction < 0.5f)) {
+                                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                }
+                            }
+                        },
+                        Orientation.Horizontal,
+                        startDragImmediately = true,
+                        onDragStarted = {
+                            totalDrag.floatValue = 0f
                             scope.launch {
-                                animatedFraction.snapTo(newFraction)
+                                progressAnimation.animateTo(1f, progressAnimationSpec)
                             }
-                            totalDrag.floatValue += abs(delta)
-                            val newChecked = newFraction >= 0.5f
-                            if (newChecked != checked) {
-                                onCheckedChange(newChecked)
-                            }
-                            if ((oldFraction < 0.5f && newFraction >= 0.5f) || (oldFraction >= 0.5f && newFraction < 0.5f)) {
-                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                            }
-                        }
-                    },
-                    Orientation.Horizontal,
-                    startDragImmediately = true,
-                    onDragStarted = {
-                        totalDrag.floatValue = 0f
-                        scope.launch {
-                            progressAnimation.animateTo(1f, progressAnimationSpec)
-                        }
-                    },
-                    onDragStopped = {
-                        scope.launch {
-                            if (totalDrag.floatValue < tapThreshold) {
-                                val newChecked = !checked
-                                onCheckedChange(newChecked)
-                                val snappedFraction = if (newChecked) 1f else 0f
-                                coroutineScope {
-                                    launch { progressAnimation.animateTo(0f, progressAnimationSpec) }
-                                    launch { animatedFraction.animateTo(snappedFraction, progressAnimationSpec) }
+                        },
+                        onDragStopped = {
+                            scope.launch {
+                                if (totalDrag.floatValue < tapThreshold) {
+                                    val newChecked = !checked
+                                    onCheckedChange(newChecked)
+                                    val snappedFraction = if (newChecked) 1f else 0f
+                                    coroutineScope {
+                                        launch {
+                                            progressAnimation.animateTo(
+                                                0f,
+                                                progressAnimationSpec
+                                            )
+                                        }
+                                        launch {
+                                            animatedFraction.animateTo(
+                                                snappedFraction,
+                                                progressAnimationSpec
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    val snappedFraction =
+                                        if (animatedFraction.value >= 0.5f) 1f else 0f
+                                    onCheckedChange(snappedFraction >= 0.5f)
+                                    coroutineScope {
+                                        launch {
+                                            progressAnimation.animateTo(
+                                                0f,
+                                                progressAnimationSpec
+                                            )
+                                        }
+                                        launch {
+                                            animatedFraction.animateTo(
+                                                snappedFraction,
+                                                progressAnimationSpec
+                                            )
+                                        }
+                                    }
                                 }
-                            } else {
-                                val snappedFraction = if (animatedFraction.value >= 0.5f) 1f else 0f
-                                onCheckedChange(snappedFraction >= 0.5f)
-                                coroutineScope {
-                                    launch { progressAnimation.animateTo(0f, progressAnimationSpec) }
-                                    launch { animatedFraction.animateTo(snappedFraction, progressAnimationSpec) }
-                                }
                             }
                         }
-                    }
-                ) else Modifier)
+                    ) else Modifier)
                 .drawBackdrop(
                     rememberCombinedBackdrop(backdrop, switchBackdrop),
                     { RoundedCornerShape(thumbHeight / 2) },
