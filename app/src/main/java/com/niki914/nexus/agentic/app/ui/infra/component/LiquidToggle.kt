@@ -2,13 +2,13 @@ package com.niki914.nexus.agentic.app.ui.infra.component
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.drag
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,12 +17,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +40,8 @@ import androidx.compose.ui.graphics.layer.CompositingStrategy
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -55,7 +57,7 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.Shadow
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlin.math.abs
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * 正式的 infra toggle 入口。
@@ -70,6 +72,8 @@ fun LiquidToggle(
 ) {
     val haptics = LocalHapticFeedback.current
     val colorScheme = MaterialTheme.colorScheme
+    val currentChecked by rememberUpdatedState(checked)
+    val currentOnCheckedChange by rememberUpdatedState(onCheckedChange)
 
     val onColor = if (enabled) colorScheme.primary
     else colorScheme.onSurface.copy(alpha = 0.12f)
@@ -84,43 +88,93 @@ fun LiquidToggle(
 
     val backdrop = rememberLayerBackdrop()
     val switchBackdrop = rememberLayerBackdrop()
-    val fraction by remember {
-        derivedStateOf { if (checked) 1f else 0f }
-    }
-    val animatedFraction = remember { Animatable(fraction) }
+    val animatedFraction = remember { Animatable(if (checked) 1f else 0f) }
     val trackWidthPx = remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
-    val scope = rememberCoroutineScope()
     val progressAnimationSpec = spring(0.5f, 300f, 0.001f)
     val progressAnimation = remember { Animatable(0f) }
+    val stateMachine = remember { LiquidToggleStateMachine(initialChecked = checked) }
+    var interactionState by remember {
+        mutableStateOf<LiquidToggleInteractionState>(
+            LiquidToggleInteractionState.Settled(checked = checked)
+        )
+    }
     val innerShadowLayer = rememberGraphicsLayer().apply {
         compositingStrategy = CompositingStrategy.Offscreen
     }
-    val targetColor = if (checked) onColor else offColor
+    val visualChecked = liquidToggleVisualChecked(checked = checked, state = interactionState)
+    val targetColor = if (visualChecked) onColor else offColor
     val animatedTrackColor by animateColorAsState(targetColor, label = "trackColor")
-    val totalDrag = remember { mutableFloatStateOf(0f) }
-    val tapThreshold = 10f
-    val isFirstComposition = remember { mutableStateOf(true) }
-    LaunchedEffect(checked) {
-        if (!isFirstComposition.value) {
-            if (checked) {
-                haptics.performHapticFeedback(HapticFeedbackType.ToggleOn)
-            } else {
-                haptics.performHapticFeedback(HapticFeedbackType.ToggleOff)
+    fun applyTransition(transition: LiquidToggleTransition) {
+        interactionState = transition.state
+        if (transition.emitThresholdTick) {
+            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        }
+        transition.commitChecked?.let { nextChecked ->
+            if (nextChecked != currentChecked) {
+                haptics.performHapticFeedback(
+                    if (nextChecked) HapticFeedbackType.ToggleOn
+                    else HapticFeedbackType.ToggleOff
+                )
+                currentOnCheckedChange(nextChecked)
             }
-            coroutineScope {
-                launch {
-                    val targetFrac = if (checked) 1f else 0f
-                    animatedFraction.animateTo(targetFrac, progressAnimationSpec)
+        }
+    }
+    LaunchedEffect(checked) {
+        interactionState = stateMachine.onExternalCheckedChange(checked).state
+    }
+    LaunchedEffect(interactionState) {
+        when (val current = interactionState) {
+            is LiquidToggleInteractionState.Settled -> {
+                coroutineScope {
+                    launch {
+                        animatedFraction.animateTo(
+                            if (current.checked) 1f else 0f,
+                            progressAnimationSpec
+                        )
+                    }
+                    launch {
+                        progressAnimation.animateTo(0f, progressAnimationSpec)
+                    }
                 }
-                if (progressAnimation.value > 0f) return@coroutineScope
-                launch {
-                    progressAnimation.animateTo(1f, tween(175, easing = FastOutSlowInEasing))
-                    progressAnimation.animateTo(0f, tween(175, easing = FastOutSlowInEasing))
+            }
+
+            is LiquidToggleInteractionState.Pressed -> {
+                coroutineScope {
+                    launch {
+                        animatedFraction.animateTo(current.fraction, progressAnimationSpec)
+                    }
+                    launch {
+                        progressAnimation.animateTo(1f, progressAnimationSpec)
+                    }
+                }
+            }
+
+            is LiquidToggleInteractionState.Dragging -> {
+                coroutineScope {
+                    launch {
+                        animatedFraction.snapTo(current.fraction)
+                    }
+                    launch {
+                        progressAnimation.animateTo(1f, progressAnimationSpec)
+                    }
+                }
+            }
+
+            is LiquidToggleInteractionState.Releasing -> {
+                coroutineScope {
+                    launch {
+                        animatedFraction.animateTo(current.targetFraction, progressAnimationSpec)
+                    }
+                    launch {
+                        progressAnimation.animateTo(0f, progressAnimationSpec)
+                    }
+                }
+                if (interactionState == current) {
+                    applyTransition(stateMachine.onReleaseAnimationFinished())
                 }
             }
         }
-        isFirstComposition.value = false
     }
 
     Box(
@@ -146,78 +200,97 @@ fun LiquidToggle(
                         animatedFraction.value * (trackWidthPx.floatValue - with(density) { thumbWidth.toPx() + 4.dp.toPx() })
                 }
                 .then(
-                    if (enabled) Modifier.draggable(
-                        rememberDraggableState { delta ->
-                            if (trackWidthPx.floatValue > 0f) {
-                                val oldFraction = animatedFraction.value
-                                val newFraction =
-                                    (animatedFraction.value + delta / trackWidthPx.floatValue).fastCoerceIn(
-                                        -0.3f,
-                                        1.3f
+                    if (enabled) {
+                        Modifier
+                            .pointerInput(enabled) {
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(requireUnconsumed = false)
+                                    val draggableWidth =
+                                        trackWidthPx.floatValue -
+                                            with(density) { thumbWidth.toPx() + 4.dp.toPx() }
+                                    if (draggableWidth <= 0f) {
+                                        waitForUpOrCancellation()
+                                        return@awaitEachGesture
+                                    }
+
+                                    var pointerId = down.id
+                                    var dragStarted = false
+
+                                    fun startDragIfNeeded() {
+                                        if (!dragStarted) {
+                                            dragStarted = true
+                                            applyTransition(
+                                                stateMachine.onDragStart(
+                                                    fraction = animatedFraction.value.fastCoerceIn(0f, 1f)
+                                                )
+                                            )
+                                        }
+                                    }
+
+                                    fun dragBy(delta: Float) {
+                                        val newFraction =
+                                            (animatedFraction.value + delta / draggableWidth).fastCoerceIn(
+                                                -0.3f,
+                                                1.3f
+                                            )
+                                        applyTransition(stateMachine.onDragProgress(newFraction))
+                                    }
+
+                                    val slopChange =
+                                        withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                            awaitTouchSlopOrCancellation(pointerId) { change, overSlop ->
+                                                pointerId = change.id
+                                                startDragIfNeeded()
+                                                dragBy(overSlop.x)
+                                                change.consume()
+                                            }
+                                        }
+
+                                    if (slopChange != null) {
+                                        drag(pointerId) { change ->
+                                            dragBy(change.positionChange().x)
+                                            change.consume()
+                                        }
+                                        applyTransition(stateMachine.onDragStop())
+                                        return@awaitEachGesture
+                                    }
+
+                                    val isStillPressed =
+                                        currentEvent.changes.any { it.id == pointerId && it.pressed }
+                                    if (!isStillPressed) {
+                                        applyTransition(stateMachine.onThumbTap())
+                                        return@awaitEachGesture
+                                    }
+
+                                    applyTransition(
+                                        stateMachine.onPress(
+                                            fraction = animatedFraction.value.fastCoerceIn(0f, 1f)
+                                        )
                                     )
-                                scope.launch {
-                                    animatedFraction.snapTo(newFraction)
-                                }
-                                totalDrag.floatValue += abs(delta)
-                                val newChecked = newFraction >= 0.5f
-                                if (newChecked != checked) {
-                                    onCheckedChange(newChecked)
-                                }
-                                if ((oldFraction < 0.5f && newFraction >= 0.5f) || (oldFraction >= 0.5f && newFraction < 0.5f)) {
-                                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                                }
-                            }
-                        },
-                        Orientation.Horizontal,
-                        startDragImmediately = true,
-                        onDragStarted = {
-                            totalDrag.floatValue = 0f
-                            scope.launch {
-                                progressAnimation.animateTo(1f, progressAnimationSpec)
-                            }
-                        },
-                        onDragStopped = {
-                            scope.launch {
-                                if (totalDrag.floatValue < tapThreshold) {
-                                    val newChecked = !checked
-                                    onCheckedChange(newChecked)
-                                    val snappedFraction = if (newChecked) 1f else 0f
-                                    coroutineScope {
-                                        launch {
-                                            progressAnimation.animateTo(
-                                                0f,
-                                                progressAnimationSpec
-                                            )
+
+                                    val pressedSlopChange =
+                                        awaitTouchSlopOrCancellation(pointerId) { change, overSlop ->
+                                            pointerId = change.id
+                                            startDragIfNeeded()
+                                            dragBy(overSlop.x)
+                                            change.consume()
                                         }
-                                        launch {
-                                            animatedFraction.animateTo(
-                                                snappedFraction,
-                                                progressAnimationSpec
-                                            )
+
+                                    if (pressedSlopChange != null) {
+                                        drag(pointerId) { change ->
+                                            dragBy(change.positionChange().x)
+                                            change.consume()
                                         }
-                                    }
-                                } else {
-                                    val snappedFraction =
-                                        if (animatedFraction.value >= 0.5f) 1f else 0f
-                                    onCheckedChange(snappedFraction >= 0.5f)
-                                    coroutineScope {
-                                        launch {
-                                            progressAnimation.animateTo(
-                                                0f,
-                                                progressAnimationSpec
-                                            )
-                                        }
-                                        launch {
-                                            animatedFraction.animateTo(
-                                                snappedFraction,
-                                                progressAnimationSpec
-                                            )
-                                        }
+                                        applyTransition(stateMachine.onDragStop())
+                                    } else {
+                                        applyTransition(stateMachine.onPressEnd())
                                     }
                                 }
                             }
-                        }
-                    ) else Modifier)
+                    } else {
+                        Modifier
+                    }
+                )
                 .drawBackdrop(
                     rememberCombinedBackdrop(backdrop, switchBackdrop),
                     { RoundedCornerShape(thumbHeight / 2) },
