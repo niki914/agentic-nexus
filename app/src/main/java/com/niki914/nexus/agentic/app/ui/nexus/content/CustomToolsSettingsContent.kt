@@ -23,11 +23,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
 import com.niki914.nexus.agentic.app.ui.infra.component.MaterialTintLiquidButton
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsNavigationRow
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleRow
-import com.niki914.nexus.agentic.app.ui.infra.component.StyledTextField
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolConfig
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolManager
@@ -157,32 +157,37 @@ fun CustomToolsSettingsContent(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                StyledTextField(
-                    value = formState.name,
-                    onValueChange = { formState = formState.copy(name = it) },
-                    label = stringResource(R.string.custom_tool_field_name),
-                    placeholder = stringResource(R.string.custom_tool_field_name_placeholder),
-                )
-                StyledTextField(
-                    value = formState.description,
-                    onValueChange = { formState = formState.copy(description = it) },
-                    label = stringResource(R.string.custom_tool_field_description),
-                    placeholder = stringResource(R.string.custom_tool_field_description_placeholder),
-                )
+                SettingsEditorField(label = stringResource(R.string.custom_tool_field_name)) {
+                    LiquidTextField(
+                        value = formState.name,
+                        onValueChange = { formState = formState.copy(name = it) },
+                        placeholder = stringResource(R.string.custom_tool_field_name_placeholder),
+                        singleLine = true,
+                    )
+                }
+                SettingsEditorField(label = stringResource(R.string.custom_tool_field_description)) {
+                    LiquidTextField(
+                        value = formState.description,
+                        onValueChange = { formState = formState.copy(description = it) },
+                        placeholder = stringResource(R.string.custom_tool_field_description_placeholder),
+                        singleLine = true,
+                    )
+                }
                 SettingsToggleRow(
                     label = stringResource(R.string.custom_tool_field_enabled),
                     description = stringResource(R.string.custom_tool_field_enabled_description),
                     checked = formState.enabled,
                     onCheckedChange = { formState = formState.copy(enabled = it) },
                 )
-                StyledTextField(
-                    value = formState.command,
-                    onValueChange = { formState = formState.copy(command = it) },
-                    label = stringResource(R.string.custom_tool_field_command),
-                    placeholder = stringResource(R.string.custom_tool_field_command_placeholder),
-                    singleLine = false,
-                    minLines = 4,
-                )
+                SettingsEditorField(label = stringResource(R.string.custom_tool_field_command)) {
+                    LiquidTextField(
+                        value = formState.command,
+                        onValueChange = { formState = formState.copy(command = it) },
+                        placeholder = stringResource(R.string.custom_tool_field_command_placeholder),
+                        singleLine = false,
+                        minLines = 4,
+                    )
+                }
                 statusMessage?.let { message ->
                     Text(
                         text = message,
@@ -274,6 +279,23 @@ fun CustomToolsSettingsContent(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SettingsEditorField(
+    label: String,
+    content: @Composable () -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        content()
     }
 }
 

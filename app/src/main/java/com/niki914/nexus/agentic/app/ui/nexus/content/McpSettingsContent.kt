@@ -23,11 +23,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
 import com.niki914.nexus.agentic.app.ui.infra.component.MaterialTintLiquidButton
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsNavigationRow
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleRow
-import com.niki914.nexus.agentic.app.ui.infra.component.StyledTextField
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsViewModel
@@ -133,20 +133,23 @@ fun McpSettingsContent(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                StyledTextField(
-                    value = uiState.formState.name,
-                    onValueChange = { viewModel.sendIntent(McpSettingsIntent.NameChanged(it)) },
-                    label = stringResource(R.string.mcp_field_name),
-                    placeholder = stringResource(R.string.mcp_field_name_placeholder),
-                )
-                StyledTextField(
-                    value = uiState.formState.url,
-                    onValueChange = { viewModel.sendIntent(McpSettingsIntent.UrlChanged(it)) },
-                    label = stringResource(R.string.mcp_field_url),
-                    placeholder = stringResource(R.string.mcp_field_url_placeholder),
-                    singleLine = false,
-                    minLines = 3,
-                )
+                SettingsEditorField(label = stringResource(R.string.mcp_field_name)) {
+                    LiquidTextField(
+                        value = uiState.formState.name,
+                        onValueChange = { viewModel.sendIntent(McpSettingsIntent.NameChanged(it)) },
+                        placeholder = stringResource(R.string.mcp_field_name_placeholder),
+                        singleLine = true,
+                    )
+                }
+                SettingsEditorField(label = stringResource(R.string.mcp_field_url)) {
+                    LiquidTextField(
+                        value = uiState.formState.url,
+                        onValueChange = { viewModel.sendIntent(McpSettingsIntent.UrlChanged(it)) },
+                        placeholder = stringResource(R.string.mcp_field_url_placeholder),
+                        singleLine = false,
+                        minLines = 3,
+                    )
+                }
                 SettingsToggleRow(
                     label = stringResource(R.string.mcp_field_enabled),
                     description = stringResource(R.string.mcp_field_enabled_description),
@@ -186,6 +189,23 @@ fun McpSettingsContent(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SettingsEditorField(
+    label: String,
+    content: @Composable () -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        content()
     }
 }
 

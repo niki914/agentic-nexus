@@ -9,7 +9,10 @@
 
 - Phase 3 in progress
 - Batch 1 completed
-- Waiting for Batch 1 acceptance
+- Batch 1 accepted
+- Batch 2 completed
+- Batch 2 patch completed
+- Waiting for Batch 2 acceptance
 - `tech_survey.md` / `tech_design.md` / `plan.md` 已产出
 - Batch Pause Mode: 每个 Batch 完成后暂停，等待用户验收
 
@@ -50,6 +53,9 @@
 - Phase 0 通过源码阅读与用户澄清完成
 - Phase 1 / Phase 2 通过设计完整性和批次依赖人工校验完成
 - Batch 1 通过源码 diff、限定文件范围检查与 IDE diagnostics 人工校验完成
+- Batch 1 已由用户人工回归并验收通过
+- Batch 2 通过源码 diff、限定文件范围检查与 IDE diagnostics 人工校验完成
+- Batch 2 补丁通过定向单测、残留引用检查与 IDE diagnostics 人工校验完成
 
 ## Batch Progress
 
@@ -60,20 +66,17 @@
 - [x] T-04 `ui/infra/component/TintLiquidButton.kt`
 - [x] T-05 `ui/infra/component/MaterialTintLiquidButton.kt`
 - [x] T-06 `ui/infra/ActionBarButton.kt`
-- [ ] Batch 2: F-02 输入区容器统一
+- [x] Batch 2: F-02 输入区容器统一
+- [x] T-07 `ui/infra/component/LiquidTextFieldContainer.kt`
+- [x] T-08 `ui/infra/component/LiquidTextField.kt`
+- [x] T-09 `ui/infra/component/LiquidSecretTextField.kt`
+- [x] T-10 `ui/nexus/content/HomeChatComponents.kt`
+- [x] T-11 `ui/nexus/content/ConfigurePageContent.kt`
+- [x] Batch 2 Patch: 删除 `StyledTextField` 并统一 settings detail 输入组件
 - [ ] Batch 3: F-03 Toggle 正式化与 demo 断引用
 - [ ] Batch 4: F-04 Shape 原语统一与删除收尾
 
-## Modified Files
-
-- `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/interaction/LiquidInteractiveStyle.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/interaction/LiquidInteractiveLayer.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/component/LiquidButton.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/component/TintLiquidButton.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/component/MaterialTintLiquidButton.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/ActionBarButton.kt`
-
 ## Next Step
 
-- 等待用户验收 Batch 1
-- 用户确认后再进入 Batch 2：输入区容器统一
+- 等待用户验收 Batch 2 与 Batch 2 Patch
+- 用户确认后再进入 Batch 3：Toggle 正式化与 demo 断引用
