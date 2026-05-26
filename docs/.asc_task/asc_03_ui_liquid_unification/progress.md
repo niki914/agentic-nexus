@@ -14,7 +14,9 @@
 - Batch 2 patch completed
 - Batch 2 accepted
 - Batch 3 completed
-- Waiting for Batch 3 acceptance
+- Batch 3 accepted
+- Batch 4 completed
+- Waiting for Batch 4 acceptance
 - `tech_survey.md` / `tech_design.md` / `plan.md` 已产出
 - Batch Pause Mode: 每个 Batch 完成后暂停，等待用户验收
 
@@ -60,6 +62,8 @@
 - Batch 2 补丁通过定向单测、残留引用检查与 IDE diagnostics 人工校验完成
 - Batch 2 与 Batch 2 补丁已由用户确认符合预期
 - Batch 3 通过源码 diff、主线残留引用检查与 IDE diagnostics 人工校验完成
+- Batch 3 已由用户人工回归并验收通过
+- Batch 4 通过源码 diff、命名约束检查、残留引用检查、IDE diagnostics 与 `:app:compileDebugKotlin` 校验完成
 
 ## Batch Progress
 
@@ -82,9 +86,16 @@
 - [x] T-13 `ui/infra/component/StyledSwitch.kt`
 - [x] T-14 `ui/nexus/content/ConfigurePageContent.kt`
 - [x] T-15 `app/ui` 主线 `liquid_example` 引用清零
-- [ ] Batch 4: F-04 Shape 原语统一与删除收尾
+- [x] Batch 4: F-04 Shape 原语统一与删除收尾
+- [x] T-16 `ui/infra/shape/G2Shapes.kt`
+- [x] T-17 `ui/infra/component/SettingsGroupCard.kt`
+- [x] T-18 `ui/infra/component/LiquidTextFieldContainer.kt`
+- [x] T-19 `ui/infra/component/LiquidSecretTextField.kt` 经共享容器完成 shape 迁移
+- [x] T-20 `ui/infra/component/StyledTextField.kt` 当前源码已不存在，无需迁移
+- [x] T-21 `ui/nexus/content/HomeChatComponents.kt`
+- [x] T-22 `app/src/main/java/com/niki914/nexus/agentic/app/liquid_example/`
 
 ## Next Step
 
-- 等待用户验收 Batch 3
-- 用户确认后再进入 Batch 4：Shape 原语统一与删除收尾
+- 等待用户验收 Batch 4
+- 用户确认后执行 Phase 3 全量 reviewer 校验

@@ -35,15 +35,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kyant.capsule.ContinuousCapsule
-import com.kyant.capsule.continuities.G2Continuity
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownTypography
 import com.mikepenz.markdown.model.rememberMarkdownState
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.cb.BaseTheme
-import com.niki914.nexus.agentic.app.ui.infra.component.G2RoundedCornerShape
 import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
+import com.niki914.nexus.agentic.app.ui.infra.shape.G2BubbleShape
+import com.niki914.nexus.agentic.app.ui.infra.shape.G2CapsuleShape
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolState
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolStatus
 
@@ -181,7 +180,7 @@ fun UserMessageBubble(
     modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val bubbleShape = G2RoundedCornerShape(24.dp)
+    val bubbleShape = G2BubbleShape(24.dp)
 
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth(),
@@ -213,7 +212,7 @@ fun ToolStatusPill(
     val colorScheme = MaterialTheme.colorScheme
     val containerColor = colorScheme.surfaceVariant.copy(alpha = 0.72f)
     val contentColor = colorScheme.onSurfaceVariant.copy(alpha = 0.82f)
-    val shape = ContinuousCapsule(G2Continuity())
+    val shape = G2CapsuleShape()
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -318,11 +317,12 @@ private fun ToolStatusIndicator(
                 HomeToolState.Failed -> ToolFailedIndicatorColor
                 HomeToolState.Running -> color
             }
+            val indicatorShape = G2CapsuleShape()
             Box(
                 modifier = Modifier
                     .size(10.dp)
-                    .clip(ContinuousCapsule(G2Continuity()))
-                    .background(indicatorColor.copy(alpha = 0.82f)),
+                    .clip(indicatorShape)
+                    .background(indicatorColor.copy(alpha = 0.82f), indicatorShape),
             )
         }
     }

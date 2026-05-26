@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -42,8 +41,7 @@ import com.kyant.backdrop.effects.vibrancy
 import com.niki914.nexus.agentic.app.ui.infra.interaction.InteractiveHighlight
 import com.niki914.nexus.agentic.app.ui.infra.interaction.LiquidInteractiveStyle
 import com.niki914.nexus.agentic.app.ui.infra.interaction.applyLiquidInteractiveTransform
-
-private val LiquidTextFieldContainerShape = RoundedCornerShape(28.dp)
+import com.niki914.nexus.agentic.app.ui.infra.shape.G2FieldShape
 
 private val LiquidTextFieldInteractiveStyle =
     LiquidInteractiveStyle(
@@ -74,6 +72,7 @@ internal fun LiquidTextFieldContainer(
     var imeWasVisibleWhileFocused by remember { mutableStateOf(false) }
     val interactiveEffectsEnabled = enabled && !isFocused
     val imeVisible = WindowInsets.ime.getBottom(density) > 0
+    val fieldShape = G2FieldShape(28.dp)
 
     LaunchedEffect(isFocused, imeVisible) {
         syncLiquidTextFieldFocusWithImeVisibility(
@@ -123,7 +122,7 @@ internal fun LiquidTextFieldContainer(
             }
             .drawBackdrop(
                 backdrop = backdrop,
-                shape = { LiquidTextFieldContainerShape },
+                shape = { fieldShape },
                 effects = {
                     vibrancy()
                     blur(2.dp.toPx())
@@ -148,7 +147,7 @@ internal fun LiquidTextFieldContainer(
                     drawRect(surfaceColor)
                 },
             )
-            .clip(LiquidTextFieldContainerShape)
+            .clip(fieldShape)
             .then(
                 if (interactiveEffectsEnabled && LiquidTextFieldInteractiveStyle.highlightEnabled) {
                     interactiveHighlight.modifier

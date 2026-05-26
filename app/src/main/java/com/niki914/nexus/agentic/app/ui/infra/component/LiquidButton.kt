@@ -22,11 +22,10 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
-import com.kyant.capsule.ContinuousCapsule
-import com.kyant.capsule.continuities.G2Continuity
 import com.niki914.nexus.agentic.app.ui.infra.interaction.LiquidButtonInteractiveStyle
 import com.niki914.nexus.agentic.app.ui.infra.interaction.InteractiveHighlight
 import com.niki914.nexus.agentic.app.ui.infra.interaction.applyLiquidInteractiveTransform
+import com.niki914.nexus.agentic.app.ui.infra.shape.G2CapsuleShape
 
 @Composable
 fun LiquidButton(
@@ -51,7 +50,7 @@ fun LiquidButton(
         modifier
             .drawBackdrop(
                 backdrop = backdrop,
-                shape = { ContinuousCapsule(G2Continuity()) },
+                shape = { G2CapsuleShape() },
                 effects = {
                     vibrancy()
                     blur(2f.dp.toPx())
