@@ -58,7 +58,7 @@ fun TintLiquidButton(
         else -> Color.Unspecified
     }
     val resolvedSurfaceColor = if (resolvedContainerColor.isSpecified) {
-        resolvedContainerColor.copy(alpha = 0.18f)
+        liquidButtonSurfaceColor(resolvedContainerColor)
     } else {
         Color.Unspecified
     }

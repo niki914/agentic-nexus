@@ -39,7 +39,7 @@ fun MaterialTintLiquidButton(
             modifier = Modifier.fillMaxWidth(),
             isInteractive = enabled,
             tint = if (enabled) containerColor else disabledContainerColor,
-            surfaceColor = if (enabled) containerColor.copy(alpha = 0.18f) else Color.Transparent,
+            surfaceColor = if (enabled) liquidButtonSurfaceColor(containerColor) else Color.Transparent,
         ) {
             Text(
                 text = text,

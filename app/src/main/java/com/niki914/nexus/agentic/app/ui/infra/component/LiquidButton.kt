@@ -17,8 +17,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastCoerceAtMost
-import androidx.compose.ui.util.lerp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
@@ -26,12 +24,9 @@ import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.capsule.ContinuousCapsule
 import com.kyant.capsule.continuities.G2Continuity
+import com.niki914.nexus.agentic.app.ui.infra.interaction.LiquidButtonInteractiveStyle
 import com.niki914.nexus.agentic.app.ui.infra.interaction.InteractiveHighlight
-import kotlin.math.abs
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.tanh
+import com.niki914.nexus.agentic.app.ui.infra.interaction.applyLiquidInteractiveTransform
 
 @Composable
 fun LiquidButton(
@@ -44,6 +39,7 @@ fun LiquidButton(
     content: @Composable RowScope.() -> Unit
 ) {
     val animationScope = rememberCoroutineScope()
+    val interactiveStyle = LiquidButtonInteractiveStyle
 
     val interactiveHighlight = remember(animationScope) {
         InteractiveHighlight(
@@ -63,28 +59,12 @@ fun LiquidButton(
                 },
                 layerBlock = if (isInteractive) {
                     {
-                        val width = size.width
-                        val height = size.height
-
-                        val progress = interactiveHighlight.pressProgress
-                        val scale = lerp(1f, 1f + 4f.dp.toPx() / size.height, progress)
-
-                        val maxOffset = size.minDimension
-                        val initialDerivative = 0.05f
-                        val offset = interactiveHighlight.offset
-                        translationX = maxOffset * tanh(initialDerivative * offset.x / maxOffset)
-                        translationY = maxOffset * tanh(initialDerivative * offset.y / maxOffset)
-
-                        val maxDragScale = 4f.dp.toPx() / size.height
-                        val offsetAngle = atan2(offset.y, offset.x)
-                        scaleX =
-                            scale +
-                                    maxDragScale * abs(cos(offsetAngle) * offset.x / size.maxDimension) *
-                                    (width / height).fastCoerceAtMost(1f)
-                        scaleY =
-                            scale +
-                                    maxDragScale * abs(sin(offsetAngle) * offset.y / size.maxDimension) *
-                                    (height / width).fastCoerceAtMost(1f)
+                        applyLiquidInteractiveTransform(
+                            style = interactiveStyle,
+                            pressProgress = interactiveHighlight.pressProgress,
+                            offset = interactiveHighlight.offset,
+                            size = size,
+                        )
                     }
                 } else {
                     null
@@ -108,8 +88,14 @@ fun LiquidButton(
             .then(
                 if (isInteractive) {
                     Modifier
-                        .then(interactiveHighlight.modifier)
                         .then(interactiveHighlight.gestureModifier)
+                        .then(
+                            if (interactiveStyle.highlightEnabled) {
+                                interactiveHighlight.modifier
+                            } else {
+                                Modifier
+                            }
+                        )
                 } else {
                     Modifier
                 }
@@ -121,3 +107,10 @@ fun LiquidButton(
         content = content
     )
 }
+
+internal fun liquidButtonSurfaceColor(containerColor: Color): Color =
+    if (containerColor.isSpecified) {
+        containerColor.copy(alpha = 0.18f)
+    } else {
+        Color.Unspecified
+    }
