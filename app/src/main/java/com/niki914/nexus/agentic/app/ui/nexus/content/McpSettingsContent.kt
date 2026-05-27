@@ -1,6 +1,5 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content
 
-import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -10,8 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -24,7 +21,6 @@ import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleListItemCa
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsViewModel
-import com.niki914.nexus.agentic.mod.XService
 import dev.chrisbanes.haze.HazeState
 
 @Composable
@@ -33,9 +29,7 @@ fun McpSettingsContent(
     hazeState: HazeState,
     onOpenServerDetail: (serverName: String, serverIndex: Int) -> Unit,
 ) {
-    val context = LocalContext.current.applicationContext
-    val factory = remember(context) { createMcpSettingsViewModelFactory(context) }
-    val viewModel = pageViewModel<McpSettingsViewModel>(factory = factory)
+    val viewModel = pageViewModel<McpSettingsViewModel>(factory = McpSettingsViewModelFactory)
     val uiState by viewModel.uiStateFlow.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -87,17 +81,10 @@ private fun McpListMessage(text: String) {
     )
 }
 
-private fun createMcpSettingsViewModelFactory(
-    context: Context,
-): ViewModelProvider.Factory {
-    return object : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            require(modelClass == McpSettingsViewModel::class.java)
-            return McpSettingsViewModel(
-                loadSettings = { XService.getLocalSettings(context) },
-                saveSettings = { settings -> XService.putLocalSettings(context, settings) },
-            ) as T
-        }
+private object McpSettingsViewModelFactory : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        require(modelClass == McpSettingsViewModel::class.java)
+        return McpSettingsViewModel() as T
     }
 }

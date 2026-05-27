@@ -1,12 +1,11 @@
 package com.niki914.nexus.agentic.app.ui.nexus.model
 
-import com.niki914.nexus.agentic.mod.LocalSettings
+import com.niki914.nexus.agentic.repo.LlmConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -22,8 +21,8 @@ class ConfigureViewModelTest {
     fun save_withIncompleteFields_staysOnPageAndRequestsFieldFocus() = runTest {
         var saveCalled = false
         val viewModel = ConfigureViewModel(
-            loadSettings = { LocalSettings(JsonObject(emptyMap())) },
-            saveSettings = { saveCalled = true },
+            loadLlmConfig = { LlmConfig() },
+            saveLlmAccess = { _, _, _, _ -> saveCalled = true },
         )
         val effectDeferred = async { viewModel.uiEffect.first() }
 
@@ -41,10 +40,17 @@ class ConfigureViewModelTest {
 
     @Test
     fun save_withCompleteFields_persistsSettings() = runTest {
-        var savedSettings: LocalSettings? = null
+        var savedConfig: LlmConfig? = null
         val viewModel = ConfigureViewModel(
-            loadSettings = { LocalSettings(JsonObject(emptyMap())) },
-            saveSettings = { settings -> savedSettings = settings },
+            loadLlmConfig = { LlmConfig() },
+            saveLlmAccess = { provider, endpoint, model, apiKey ->
+                savedConfig = LlmConfig(
+                    provider = provider,
+                    endpoint = endpoint,
+                    model = model,
+                    apiKey = apiKey,
+                )
+            },
         )
 
         viewModel.sendIntent(ConfigureIntent.Initialize("deepseek"))
@@ -54,18 +60,25 @@ class ConfigureViewModelTest {
         viewModel.sendIntent(ConfigureIntent.Save)
         advanceUntilIdle()
 
-        assertEquals("deepseek", savedSettings?.provider)
-        assertEquals("deepseek-chat", savedSettings?.model)
-        assertEquals("sk-demo", savedSettings?.apiKey)
+        assertEquals("deepseek", savedConfig?.provider)
+        assertEquals("deepseek-chat", savedConfig?.model)
+        assertEquals("sk-demo", savedConfig?.apiKey)
         assertNull(viewModel.uiStateFlow.value.inlineError)
     }
 
     @Test
     fun endpointOverrideToggle_usesDefaultWhenDisabledAndRestoresCustomWhenEnabled() = runTest {
-        var savedSettings: LocalSettings? = null
+        var savedConfig: LlmConfig? = null
         val viewModel = ConfigureViewModel(
-            loadSettings = { LocalSettings(JsonObject(emptyMap())) },
-            saveSettings = { settings -> savedSettings = settings },
+            loadLlmConfig = { LlmConfig() },
+            saveLlmAccess = { provider, endpoint, model, apiKey ->
+                savedConfig = LlmConfig(
+                    provider = provider,
+                    endpoint = endpoint,
+                    model = model,
+                    apiKey = apiKey,
+                )
+            },
         )
         val officialEndpoint = ProviderSpecs.find("openai").officialEndpoint
 
@@ -85,7 +98,7 @@ class ConfigureViewModelTest {
         assertEquals(officialEndpoint, viewModel.uiStateFlow.value.endpointInput)
         viewModel.sendIntent(ConfigureIntent.Save)
         advanceUntilIdle()
-        assertEquals(officialEndpoint, savedSettings?.endpoint)
+        assertEquals(officialEndpoint, savedConfig?.endpoint)
 
         viewModel.sendIntent(ConfigureIntent.SetEndpointOverride(true))
         advanceUntilIdle()

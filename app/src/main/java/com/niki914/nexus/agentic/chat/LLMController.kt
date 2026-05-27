@@ -9,8 +9,10 @@ import com.niki914.nexus.agentic.chat.agentic.PromptComposerInput
 import com.niki914.nexus.agentic.chat.agentic.SessionToolBinder
 import com.niki914.nexus.agentic.chat.agentic.ToolCallDispatcher
 import com.niki914.nexus.agentic.chat.agentic.ToolManager
-import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.mod.LocalSettings
+import com.niki914.nexus.agentic.repo.LlmConfig
+import com.niki914.nexus.agentic.repo.LocalSettingsCodec
+import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.nexus.h.util.xlog
 import com.niki914.s3ss10n.Session
@@ -44,26 +46,35 @@ object LLMController {
     suspend fun refresh(context: Context): LlmRuntimeSnapshot {
         val previousSnapshot = runtimeState?.snapshot
         sessionContext = context.applicationContext
-        val settings = HookLocalSettings.update(context)
-        val resolvedTools = toolManager.resolve(context, settings)
+        XRepo.init(context)
+        val llmConfig = XRepo.llm()
+        val mcpServers = XRepo.mcp.list()
+        val resolvedTools = toolManager.resolve(
+            customTools = XRepo.customTools.list(),
+            mcpServers = mcpServers,
+            builtinSettings = XRepo.builtinTools.list(),
+            mcpCachedTools = mcpServers.associate { server ->
+                server.name to XRepo.mcp.cachedTools(server)
+            },
+        )
         val prompt = promptComposer.compose(
             PromptComposerInput(
-                baseSystemPrompt = settings.prompt,
-                memorySections = buildMemorySections(settings),
+                baseSystemPrompt = llmConfig.prompt,
+                memorySections = buildMemorySections(llmConfig),
                 toolSections = resolvedTools.promptLines,
-                runtimeSections = buildRuntimeSections(settings),
+                runtimeSections = buildRuntimeSections(llmConfig),
             )
         )
         val config = ResolvedLlmConfig(
-            endpoint = settings.endpoint,
-            apiKey = settings.apiKey,
-            model = settings.model,
-            baseSystemPrompt = settings.prompt,
+            endpoint = llmConfig.endpoint,
+            apiKey = llmConfig.apiKey,
+            model = llmConfig.model,
+            baseSystemPrompt = llmConfig.prompt,
             finalSystemPrompt = prompt.finalSystemPrompt,
-            proxy = settings.proxy,
+            proxy = llmConfig.proxy,
         )
         val isNewSession = session == null
-        val currentMcpServersFingerprint = settings.mcpServers?.toString().orEmpty()
+        val currentMcpServersFingerprint = XRepo.mcp.fingerprint()
         val activeSession = obtainSession()
         activeSession.update {
             applyRuntimeConfig(
@@ -80,6 +91,11 @@ object LLMController {
                 xlog(
                     "LLMController.refreshMcpTools refreshed=${refreshResult.refreshedServers} failed=${refreshResult.failedServers} count=${refreshResult.discoveredToolCount}"
                 )
+                if (refreshResult.failedServers.isNotEmpty()) {
+                    XRepo.mcp.clearCacheByServerNames(
+                        refreshResult.failedServers.map { it.serverName }.toSet()
+                    )
+                }
             } catch (throwable: Throwable) {
                 if (throwable is CancellationException) {
                     throw throwable
@@ -89,7 +105,8 @@ object LLMController {
         }
         lastMcpServersFingerprint = currentMcpServersFingerprint
 
-        return LlmRuntimeSnapshot(settings, config, resolvedTools, prompt).also { snapshot ->
+        val snapshotSettings = LocalSettingsCodec.withLlm(LocalSettings(), llmConfig)
+        return LlmRuntimeSnapshot(snapshotSettings, config, resolvedTools, prompt).also { snapshot ->
             runtimeState = RuntimeState(snapshot = snapshot, session = activeSession)
         }
     }
@@ -172,10 +189,10 @@ object LLMController {
         }
     }
 
-    private fun buildMemorySections(settings: LocalSettings): List<String> =
-        listOfNotNull(settings.memoryPrompt.trim().takeIf { it.isNotBlank() })
+    private fun buildMemorySections(config: LlmConfig): List<String> =
+        listOfNotNull(config.memoryPrompt.trim().takeIf { it.isNotBlank() })
 
-    private fun buildRuntimeSections(settings: LocalSettings): List<String> = emptyList()
+    private fun buildRuntimeSections(config: LlmConfig): List<String> = emptyList()
 
     private fun SessionConfig.Builder.applyRuntimeConfig(
         config: ResolvedLlmConfig,

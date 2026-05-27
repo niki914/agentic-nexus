@@ -27,7 +27,6 @@ import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolSettingItem
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolSettingsManager
-import com.niki914.nexus.agentic.mod.XService
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.CancellationException
@@ -192,7 +191,7 @@ private suspend fun loadBuiltinToolItems(
     context: Context,
     manager: BuiltinToolSettingsManager,
 ): List<BuiltinToolSettingItem> {
-    return manager.list(XService.getLocalSettings(context))
+    return manager.load(context)
 }
 
 private suspend fun refreshBuiltinToolItemsOrFallback(

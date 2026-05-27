@@ -9,6 +9,7 @@ import androidx.lifecycle.lifecycleScope
 import com.niki914.nexus.agentic.app.ui.nexus.NexusApp
 import com.niki914.nexus.agentic.app.ui.nexus.model.AppLaunchDecision
 import com.niki914.nexus.agentic.mod.XService
+import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.cb.BaseTheme
 import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.nexus.h.util.OsUtils
@@ -30,6 +31,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         ContextProvider.provide(applicationContext)
+        XRepo.init(applicationContext)
 
         requestNotificationPermissionIfNeeded(notificationPermissionLauncher)
         val startupAssistantUi = resolveStartupAssistantUi()

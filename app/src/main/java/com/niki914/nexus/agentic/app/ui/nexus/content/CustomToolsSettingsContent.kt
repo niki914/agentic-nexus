@@ -1,6 +1,5 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content
 
-import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
@@ -12,7 +11,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -20,17 +18,10 @@ import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleListItemCard
-import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
-import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolConfig
-import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolManager
-import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.mod.XService
+import com.niki914.nexus.agentic.repo.CustomTool
+import com.niki914.nexus.agentic.repo.XRepo
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 @Composable
 fun CustomToolsSettingsContent(
@@ -38,7 +29,6 @@ fun CustomToolsSettingsContent(
     hazeState: HazeState,
     onOpenToolDetail: (toolName: String, toolIndex: Int) -> Unit,
 ) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     var items by remember { mutableStateOf<List<CustomToolItem>>(emptyList()) }
@@ -49,8 +39,7 @@ fun CustomToolsSettingsContent(
     val saveFailedTemplate = stringResource(R.string.custom_tool_save_failed)
 
     LaunchedEffect(Unit) {
-        val settings = XService.getLocalSettings(context)
-        items = parseCustomToolItems(settings)
+        items = XRepo.customTools.list().map { it.toItem() }
         isLoading = false
     }
     val pageDescription = when {
@@ -87,14 +76,10 @@ fun CustomToolsSettingsContent(
                             scope.launch {
                                 isSaving = true
                                 runCatching {
-                                    saveCustomTools(context, updatedItems)
-                                }.onSuccess { result ->
-                                    if (result.ok) {
-                                        items = updatedItems
-                                        statusMessage = null
-                                    } else {
-                                        statusMessage = result.message
-                                    }
+                                    XRepo.customTools.setEnabled(item.name, enabled)
+                                }.onSuccess {
+                                    items = updatedItems
+                                    statusMessage = null
                                 }.onFailure { throwable ->
                                     statusMessage = saveFailedTemplate.format(
                                         throwable.message ?: throwable::class.java.simpleName
@@ -128,38 +113,11 @@ private data class CustomToolItem(
     val command: String,
 )
 
-private fun parseCustomToolItems(settings: LocalSettings): List<CustomToolItem> {
-    return settings.customTools
-        ?.mapNotNull { element ->
-            val obj = element as? JsonObject ?: return@mapNotNull null
-            val name = obj["name"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
-            val command = obj["command"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
-            if (name.isBlank() && command.isBlank()) {
-                return@mapNotNull null
-            }
-            CustomToolItem(
-                name = name,
-                description = obj["description"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                enabled = obj["enabled"]?.jsonPrimitive?.booleanOrNull ?: true,
-                command = command,
-            )
-        }
-        ?: emptyList()
-}
-
-private suspend fun saveCustomTools(
-    context: Context,
-    items: List<CustomToolItem>,
-): BuiltinToolResult {
-    return CustomToolManager().saveAll(
-        context = context,
-        items = items.map { item ->
-            CustomToolConfig(
-                name = item.name,
-                description = item.description,
-                enabled = item.enabled,
-                command = item.command,
-            )
-        },
+private fun CustomTool.toItem(): CustomToolItem {
+    return CustomToolItem(
+        name = name,
+        description = description,
+        enabled = enabled,
+        command = command,
     )
 }

@@ -1,6 +1,5 @@
 package com.niki914.nexus.agentic.app.ui.nexus
 
-import android.content.Context
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -8,12 +7,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -54,11 +51,9 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsHomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.StartupPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TextTitle
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
-import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.mod.XService
+import com.niki914.nexus.agentic.repo.XRepo
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonPrimitive
 
 @Composable
 fun NexusPageContent(
@@ -117,11 +112,9 @@ fun NexusPageContent(
         }
 
         is ConfigurePage -> {
-            val context = LocalContext.current.applicationContext
-            val factory = remember(context) { createConfigureViewModelFactory(context) }
             val viewModel = pageViewModel<ConfigureViewModel>(
                 key = page.providerId,
-                factory = factory,
+                factory = ConfigureViewModelFactory,
             )
             val uiState by viewModel.uiStateFlow.collectAsState()
             val colors = providerButtonColors(uiState.providerSpec)
@@ -278,17 +271,10 @@ private fun settingsDetailRightAction(
 }
 
 private suspend fun completeOnboarding() {
-    val latestSettings = XService.getLocalSettings(context = com.niki914.nexus.h.util.ContextProvider.await())
-    if (latestSettings.onboardingCompleted) {
+    if (XRepo.onboardingCompleted()) {
         return
     }
-    val updatedProps = latestSettings.props.toMutableMap().apply {
-        this["onboarding_completed"] = JsonPrimitive(true)
-    }
-    XService.putLocalSettings(
-        context = com.niki914.nexus.h.util.ContextProvider.await(),
-        settings = LocalSettings(kotlinx.serialization.json.JsonObject(updatedProps)),
-    )
+    XRepo.setOnboardingCompleted(true)
 }
 
 private data class ProviderButtonColors(
@@ -314,18 +300,11 @@ private fun ProviderButtonTokens.toProviderButtonColors(): ProviderButtonColors 
     )
 }
 
-private fun createConfigureViewModelFactory(
-    context: Context,
-): ViewModelProvider.Factory {
-    return object : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            require(modelClass == ConfigureViewModel::class.java)
-            return ConfigureViewModel(
-                loadSettings = { XService.getLocalSettings(context) },
-                saveSettings = { settings -> XService.putLocalSettings(context, settings) },
-            ) as T
-        }
+private object ConfigureViewModelFactory : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        require(modelClass == ConfigureViewModel::class.java)
+        return ConfigureViewModel() as T
     }
 }
 

@@ -1,19 +1,15 @@
 package com.niki914.nexus.agentic.app.ui.nexus.model
 
-import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.cb.ComposeMVIViewModel
+import com.niki914.nexus.agentic.repo.McpServer
+import com.niki914.nexus.agentic.repo.XRepo
 import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 data class McpServerItem(
     val name: String,
     val url: String,
     val enabled: Boolean,
+    val headers: Map<String, String> = emptyMap(),
 )
 
 data class McpServerFormState(
@@ -45,8 +41,12 @@ sealed interface McpSettingsIntent {
 sealed interface McpSettingsEffect
 
 class McpSettingsViewModel internal constructor(
-    private val loadSettings: suspend () -> LocalSettings,
-    private val saveSettings: suspend (LocalSettings) -> Unit,
+    private val listServers: suspend () -> List<McpServer> = { XRepo.mcp.list() },
+    private val saveServer: suspend (McpServer) -> Unit = { server -> XRepo.mcp.save(server) },
+    private val deleteServer: suspend (String) -> Unit = { name -> XRepo.mcp.delete(name) },
+    private val setServerEnabled: suspend (String, Boolean) -> Unit = { name, enabled ->
+        XRepo.mcp.setEnabled(name, enabled)
+    },
 ) : ComposeMVIViewModel<McpSettingsIntent, McpSettingsUiState, McpSettingsEffect>() {
 
     override fun initUiState(): McpSettingsUiState = McpSettingsUiState()
@@ -79,10 +79,10 @@ class McpSettingsViewModel internal constructor(
     private suspend fun load() {
         updateState { copy(isLoading = true) }
         try {
-            val settings = loadSettings()
+            val loadedItems = listServers().map { it.toItem() }
             updateState {
                 copy(
-                    items = parseMcpServerItems(settings),
+                    items = loadedItems,
                     isLoading = false,
                 )
             }
@@ -128,8 +128,7 @@ class McpSettingsViewModel internal constructor(
             )
         }
         try {
-            val latestSettings = loadSettings()
-            saveSettings(buildUpdatedLocalSettings(latestSettings, updatedItems))
+            setServerEnabled(currentItem.name, enabled)
             updateState {
                 copy(
                     isSaving = false,
@@ -164,10 +163,15 @@ class McpSettingsViewModel internal constructor(
 
         updateState { copy(isSaving = true) }
         try {
+            val previousName = editingIndex
+                ?.let { currentState.items.getOrNull(it)?.name }
             val nextItem = McpServerItem(
                 name = trimmedName,
                 url = trimmedUrl,
                 enabled = currentState.formState.enabled,
+                headers = editingIndex
+                    ?.let { currentState.items.getOrNull(it)?.headers }
+                    ?: emptyMap(),
             )
             val updatedItems = currentState.items.toMutableList().also { mutableItems ->
                 if (editingIndex == null || editingIndex !in mutableItems.indices) {
@@ -176,8 +180,10 @@ class McpSettingsViewModel internal constructor(
                     mutableItems[editingIndex] = nextItem
                 }
             }
-            val latestSettings = loadSettings()
-            saveSettings(buildUpdatedLocalSettings(latestSettings, updatedItems))
+            if (previousName != null && previousName != nextItem.name) {
+                deleteServer(previousName)
+            }
+            saveServer(nextItem.toRepo())
             updateState {
                 copy(
                     items = updatedItems,
@@ -200,8 +206,7 @@ class McpSettingsViewModel internal constructor(
         updateState { copy(isSaving = true) }
         try {
             val updatedItems = currentState.items.filterIndexed { index, _ -> index != editingIndex }
-            val latestSettings = loadSettings()
-            saveSettings(buildUpdatedLocalSettings(latestSettings, updatedItems))
+            deleteServer(currentState.items[editingIndex].name)
             updateState {
                 copy(
                     items = updatedItems,
@@ -220,43 +225,6 @@ class McpSettingsViewModel internal constructor(
     }
 }
 
-internal fun parseMcpServerItems(settings: LocalSettings): List<McpServerItem> {
-    return settings.mcpServers
-        ?.mapNotNull { element ->
-            val obj = element as? JsonObject ?: return@mapNotNull null
-            val name = obj["name"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
-            val url = obj["url"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
-            if (name.isBlank() && url.isBlank()) {
-                return@mapNotNull null
-            }
-            McpServerItem(
-                name = name,
-                url = url,
-                enabled = obj["enabled"]?.jsonPrimitive?.booleanOrNull ?: true,
-            )
-        }
-        ?: emptyList()
-}
-
-internal fun buildUpdatedLocalSettings(
-    settings: LocalSettings,
-    items: List<McpServerItem>,
-): LocalSettings {
-    val updatedProps = settings.props.toMutableMap()
-    updatedProps["mcp_servers"] = JsonArray(
-        items.map { item ->
-            JsonObject(
-                mapOf(
-                    "name" to JsonPrimitive(item.name),
-                    "url" to JsonPrimitive(item.url),
-                    "enabled" to JsonPrimitive(item.enabled),
-                )
-            )
-        }
-    )
-    return LocalSettings(JsonObject(updatedProps))
-}
-
 private inline fun <T> List<T>.anyIndexed(predicate: (Int, T) -> Boolean): Boolean {
     forEachIndexed { index, item ->
         if (predicate(index, item)) {
@@ -264,4 +232,22 @@ private inline fun <T> List<T>.anyIndexed(predicate: (Int, T) -> Boolean): Boole
         }
     }
     return false
+}
+
+private fun McpServer.toItem(): McpServerItem {
+    return McpServerItem(
+        name = name,
+        url = url,
+        enabled = enabled,
+        headers = headers,
+    )
+}
+
+private fun McpServerItem.toRepo(): McpServer {
+    return McpServer(
+        name = name,
+        url = url,
+        enabled = enabled,
+        headers = headers,
+    )
 }

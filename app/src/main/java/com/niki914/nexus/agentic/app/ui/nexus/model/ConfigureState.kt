@@ -1,10 +1,9 @@
 package com.niki914.nexus.agentic.app.ui.nexus.model
 
-import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.cb.ComposeMVIViewModel
+import com.niki914.nexus.agentic.repo.LlmConfig
+import com.niki914.nexus.agentic.repo.XRepo
 import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 
 data class ConfigureUiState(
     val providerSpec: ProviderSpec = ProviderSpecs.default,
@@ -48,8 +47,13 @@ sealed interface ConfigureEffect {
 }
 
 class ConfigureViewModel internal constructor(
-    private val loadSettings: suspend () -> LocalSettings,
-    private val saveSettings: suspend (LocalSettings) -> Unit,
+    private val loadLlmConfig: suspend () -> LlmConfig = { XRepo.llm() },
+    private val saveLlmAccess: suspend (
+        provider: String,
+        endpoint: String,
+        model: String,
+        apiKey: String,
+    ) -> Unit = XRepo::saveLlmAccess,
 ) : ComposeMVIViewModel<ConfigureIntent, ConfigureUiState, ConfigureEffect>() {
 
     override fun initUiState(): ConfigureUiState = ConfigureUiState()
@@ -68,8 +72,8 @@ class ConfigureViewModel internal constructor(
 
     private suspend fun initialize(initialProviderId: String?) {
         try {
-            val settings = loadSettings()
-            val savedProviderId = settings.provider.takeIf { it.isNotBlank() }
+            val llmConfig = loadLlmConfig()
+            val savedProviderId = llmConfig.provider.takeIf { it.isNotBlank() }
             val resolvedProviderId = initialProviderId
                 ?.takeIf { it.isNotBlank() }
                 ?: savedProviderId
@@ -79,9 +83,9 @@ class ConfigureViewModel internal constructor(
             } else {
                 savedProviderId == providerSpec.id
             }
-            val savedEndpoint = if (shouldReuseSavedValues) settings.endpoint.trim() else ""
-            val savedModel = if (shouldReuseSavedValues) settings.model else ""
-            val savedApiKey = if (shouldReuseSavedValues) settings.apiKey else ""
+            val savedEndpoint = if (shouldReuseSavedValues) llmConfig.endpoint.trim() else ""
+            val savedModel = if (shouldReuseSavedValues) llmConfig.model else ""
+            val savedApiKey = if (shouldReuseSavedValues) llmConfig.apiKey else ""
             val endpointOverrideEnabled = savedEndpoint.isNotBlank() &&
                 savedEndpoint != providerSpec.officialEndpoint
             val endpointInput = if (endpointOverrideEnabled) {
@@ -226,8 +230,12 @@ class ConfigureViewModel internal constructor(
             )
         }
         try {
-            val latestSettings = loadSettings()
-            saveSettings(buildUpdatedLocalSettings(latestSettings, currentState))
+            saveLlmAccess(
+                currentState.providerSpec.id,
+                currentState.resolvedEndpoint(),
+                currentState.modelInput,
+                currentState.apiKeyInput,
+            )
             updateState {
                 copy(
                     isSaving = false,
@@ -250,18 +258,6 @@ class ConfigureViewModel internal constructor(
             sendEffect(ConfigureEffect.SaveFailed(reason))
         }
     }
-}
-
-internal fun buildUpdatedLocalSettings(
-    settings: LocalSettings,
-    state: ConfigureUiState,
-): LocalSettings {
-    val updatedProps = settings.props.toMutableMap()
-    updatedProps["provider"] = JsonPrimitive(state.providerSpec.id)
-    updatedProps["endpoint"] = JsonPrimitive(state.resolvedEndpoint())
-    updatedProps["model"] = JsonPrimitive(state.modelInput)
-    updatedProps["api_key"] = JsonPrimitive(state.apiKeyInput)
-    return LocalSettings(JsonObject(updatedProps))
 }
 
 private fun ConfigureUiState.resolvedEndpoint(): String {

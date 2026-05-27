@@ -46,7 +46,7 @@ Manual validation after each Batch
 | B-01 | F-01 | Completed | - |
 | B-02 | F-02 | Completed | B-01 |
 | B-03 | F-03 | Completed | B-01 |
-| B-04 | F-04 | Pending | B-02, B-03 |
+| B-04 | F-04 | Completed | B-02, B-03 |
 
 ## Task Progress
 | Task ID | Batch ID | 目标文件 | 状态 |
@@ -65,12 +65,12 @@ Manual validation after each Batch
 | T-12 | B-03 | `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolSettingsManager.kt` | Completed |
 | T-13 | B-03 | `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/CreateCustomToolBuiltin.kt` | Completed |
 | T-14 | B-03 | `app/src/test/java/com/niki914/nexus/agentic/chat/v2/CommandToolManagerTest.kt`, `app/src/test/java/com/niki914/nexus/agentic/chat/v2/BuiltinToolSettingsManagerTest.kt`, `app/src/test/java/com/niki914/nexus/agentic/chat/v2/CreateCommandToolBuiltinTest.kt` | Completed |
-| T-15 | B-04 | `app/src/main/java/com/niki914/nexus/agentic/chat/LLMController.kt` | Pending |
-| T-16 | B-04 | `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/ConfigureState.kt` | Pending |
-| T-17 | B-04 | `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/McpSettingsState.kt` | Pending |
-| T-18 | B-04 | `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/CustomToolsSettingsContent.kt` | Pending |
-| T-19 | B-04 | `app/src/main/java/com/niki914/nexus/agentic/app/MainActivity.kt` | Pending |
-| T-20 | B-04 | `app/src/test/java/com/niki914/nexus/agentic/app/ui/nexus/model/McpSettingsViewModelTest.kt` | Pending |
+| T-15 | B-04 | `app/src/main/java/com/niki914/nexus/agentic/chat/LLMController.kt` | Completed |
+| T-16 | B-04 | `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/ConfigureState.kt` | Completed |
+| T-17 | B-04 | `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/McpSettingsState.kt` | Completed |
+| T-18 | B-04 | `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/CustomToolsSettingsContent.kt` | Completed |
+| T-19 | B-04 | `app/src/main/java/com/niki914/nexus/agentic/app/MainActivity.kt` | Completed |
+| T-20 | B-04 | `app/src/test/java/com/niki914/nexus/agentic/app/ui/nexus/model/McpSettingsViewModelTest.kt` | Completed |
 
 ## Batch Implementation Notes
 
@@ -121,3 +121,26 @@ Manual validation after each Batch
 - Notes:
   - 并行实现时 B-02 曾因检测到 B-03 文件变更暂停；确认来源为并行 B-03 后继续收尾。
   - Controller 验收发现 `ToolManager.resolve(settings)` 一度丢失 builtin `defaultEnabled` 兼容行为；已补派 B-02 修复，并新增测试覆盖空 flags 使用默认启用与显式 false 覆盖默认启用。
+
+### B-04
+- Status: Completed
+- Modified files:
+  - `app/src/main/java/com/niki914/nexus/agentic/chat/LLMController.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/ConfigureState.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/McpSettingsState.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/BuiltinToolsSettingsContent.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/CustomToolsSettingsContent.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/McpSettingsContent.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/NexusPages.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/MainActivity.kt`
+  - `app/src/test/java/com/niki914/nexus/agentic/app/ui/nexus/model/McpSettingsViewModelTest.kt`
+  - `app/src/test/java/com/niki914/nexus/agentic/app/ui/nexus/model/ConfigureViewModelTest.kt`
+- Verification:
+  - `./gradlew :app:testDebugUnitTest --tests 'com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureViewModelTest' --tests 'com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsViewModelTest'` passed.
+  - `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest --tests 'com.niki914.nexus.agentic.chat.v2.BuiltinToolSettingsManagerTest'` passed.
+  - IDE diagnostics for B-04 edited production/test files returned no diagnostics.
+  - Grep confirmed B-04 target migration files no longer reference direct `XService`/raw `LocalSettings` JSON read-write paths, except `MainActivity` retaining unrelated launch/remote settings calls.
+- Notes:
+  - `LLMController.refresh` now reads LLM/tools/MCP/builtin settings from `XRepo` and clears failed MCP cache entries by `McpServerRefreshFailure.serverName`.
+  - `McpSettingsViewModel` preserves MCP headers in UI state so edit/toggle does not drop codec-managed headers.
+  - Gap fix: `BuiltinToolsSettingsContent` loading now uses `BuiltinToolSettingsManager.load(context)` instead of `XService.getLocalSettings(context)` + `manager.list(settings)`.
