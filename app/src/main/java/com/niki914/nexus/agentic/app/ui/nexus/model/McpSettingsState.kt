@@ -35,6 +35,7 @@ sealed interface McpSettingsIntent {
     data object Load : McpSettingsIntent
     data object StartCreate : McpSettingsIntent
     data class StartEdit(val index: Int) : McpSettingsIntent
+    data class ItemEnabledChanged(val index: Int, val value: Boolean) : McpSettingsIntent
     data class NameChanged(val value: String) : McpSettingsIntent
     data class UrlChanged(val value: String) : McpSettingsIntent
     data class EnabledChanged(val value: Boolean) : McpSettingsIntent
@@ -62,6 +63,10 @@ class McpSettingsViewModel internal constructor(
                 )
             }
             is McpSettingsIntent.StartEdit -> startEdit(intent.index)
+            is McpSettingsIntent.ItemEnabledChanged -> toggleItemEnabled(
+                index = intent.index,
+                enabled = intent.value,
+            )
             is McpSettingsIntent.NameChanged -> updateState {
                 copy(
                     formState = formState.copy(name = intent.value),
@@ -120,6 +125,54 @@ class McpSettingsViewModel internal constructor(
                 ),
                 statusMessage = null,
             )
+        }
+    }
+
+    private suspend fun toggleItemEnabled(index: Int, enabled: Boolean) {
+        val currentItem = currentState.items.getOrNull(index) ?: return
+        val previousItems = currentState.items
+        val updatedItems = previousItems.toMutableList().apply {
+            this[index] = currentItem.copy(enabled = enabled)
+        }
+        updateState {
+            copy(
+                items = updatedItems,
+                formState = if (formState.editingIndex == index) {
+                    formState.copy(enabled = enabled)
+                } else {
+                    formState
+                },
+                isSaving = true,
+                statusMessage = null,
+            )
+        }
+        try {
+            val latestSettings = loadSettings()
+            saveSettings(buildUpdatedLocalSettings(latestSettings, updatedItems))
+            updateState {
+                copy(
+                    isSaving = false,
+                    statusMessage = if (enabled) {
+                        "MCP 服务已启用。"
+                    } else {
+                        "MCP 服务已停用。"
+                    },
+                )
+            }
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            updateState {
+                copy(
+                    items = previousItems,
+                    formState = if (formState.editingIndex == index) {
+                        formState.copy(enabled = previousItems[index].enabled)
+                    } else {
+                        formState
+                    },
+                    isSaving = false,
+                    statusMessage = "保存 MCP 配置失败：${throwable.message ?: throwable::class.java.simpleName}",
+                )
+            }
         }
     }
 

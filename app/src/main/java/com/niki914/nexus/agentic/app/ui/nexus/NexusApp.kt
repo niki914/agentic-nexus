@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
@@ -24,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -42,7 +42,12 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.AppLaunchDecision
 import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
 import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.NoTitle
+import com.niki914.nexus.agentic.app.ui.nexus.nav.PageTitleSpec
+import com.niki914.nexus.agentic.app.ui.nexus.nav.ResTitle
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsHomePage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.TextTitle
+import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 
 @Composable
 fun NexusApp(
@@ -55,7 +60,10 @@ fun NexusApp(
     val navigator = controller.navigator
     val currentEntry = controller.currentEntry
     val currentPage = currentEntry.page
-    val canNavigateBack = currentPage.showLeftButton && controller.canGoBack
+    val currentLeftAction = currentPage.leftAction
+    val currentRightAction = currentPage.rightAction
+    val showLeftButton = currentLeftAction != null && (currentLeftAction.onClick != null || controller.canGoBack)
+    val showRightButton = currentRightAction != null
     val currentHomeChatViewModel = if (currentPage == HomePage) {
         remember(currentEntry) {
             val viewModelClass = HomeChatViewModel::class.java
@@ -67,13 +75,13 @@ fun NexusApp(
     } else {
         null
     }
-    val currentTitle = currentPage.titleRes?.let { stringResource(it) }.orEmpty()
+    val currentTitle = resolveTitle(currentPage.titleSpec)
     val clearMenuLabel = stringResource(R.string.ui_home_menu_clear)
     val settingsMenuLabel = stringResource(R.string.ui_settings_menu_entry)
     val screenState = rememberLiquidScreenState(
         title = currentTitle,
-        showLeftButton = canNavigateBack,
-        showRightButton = currentPage.showRightButton,
+        showLeftButton = showLeftButton,
+        showRightButton = showRightButton,
         showBlurLayer = currentPage.showBlurLayer,
     )
     var homeMenuExpanded by remember { mutableStateOf(false) }
@@ -99,22 +107,18 @@ fun NexusApp(
         if (currentPage != HomePage) {
             closeHomeMenu()
         }
-        val onLeftClick = if (canNavigateBack) {
-            { navigator.pop(); Unit }
-        } else {
-            null
-        }
-        val onRightClick = if (currentPage == HomePage) {
-            { homeMenuExpanded = true }
-        } else {
-            null
+        val onLeftClick = bindAction(currentLeftAction) { navigator.pop() }
+        val onRightClick = bindAction(currentRightAction) {
+            if (currentPage == HomePage) {
+                homeMenuExpanded = true
+            }
         }
 
         when (controller.lastDirection) {
             TitleDirection.Forward -> screenState.navigateForward(
                 title = currentTitle,
-                showLeftButton = canNavigateBack,
-                showRightButton = currentPage.showRightButton,
+                showLeftButton = showLeftButton,
+                showRightButton = showRightButton,
                 showBlurLayer = currentPage.showBlurLayer,
                 onLeftClick = onLeftClick,
                 onRightClick = onRightClick,
@@ -122,8 +126,8 @@ fun NexusApp(
 
             TitleDirection.Back -> screenState.navigateBack(
                 title = currentTitle,
-                showLeftButton = canNavigateBack,
-                showRightButton = currentPage.showRightButton,
+                showLeftButton = showLeftButton,
+                showRightButton = showRightButton,
                 showBlurLayer = currentPage.showBlurLayer,
                 onLeftClick = onLeftClick,
                 onRightClick = onRightClick,
@@ -131,8 +135,8 @@ fun NexusApp(
 
             TitleDirection.None -> screenState.update(
                 title = currentTitle,
-                showLeftButton = canNavigateBack,
-                showRightButton = currentPage.showRightButton,
+                showLeftButton = showLeftButton,
+                showRightButton = showRightButton,
                 showBlurLayer = currentPage.showBlurLayer,
                 onLeftClick = onLeftClick,
                 onRightClick = onRightClick,
@@ -142,17 +146,21 @@ fun NexusApp(
 
     LiquidScreen(
         state = screenState,
-        leftButton = {
-            ActionBarImage(
-                painter = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack),
-                tint = actionIconTint,
-            )
+        leftButton = currentLeftAction?.let { action ->
+            {
+                ActionBarVectorIcon(
+                    imageVector = action.icon,
+                    tint = actionIconTint,
+                )
+            }
         },
-        rightButton = {
-            ActionBarImage(
-                painter = rememberVectorPainter(Icons.Default.MoreHoriz),
-                tint = actionIconTint,
-            )
+        rightButton = currentRightAction?.let { action ->
+            {
+                ActionBarVectorIcon(
+                    imageVector = action.icon,
+                    tint = actionIconTint,
+                )
+            }
         },
     ) { hazeState ->
         Box(modifier = Modifier.fillMaxSize()) {
@@ -200,13 +208,29 @@ fun NexusApp(
 }
 
 @Composable
-private fun ActionBarImage(
-    painter: androidx.compose.ui.graphics.painter.Painter,
+private fun resolveTitle(titleSpec: PageTitleSpec): String {
+    return when (titleSpec) {
+        NoTitle -> ""
+        is ResTitle -> stringResource(titleSpec.resId)
+        is TextTitle -> titleSpec.value
+    }
+}
+
+private fun bindAction(
+    action: TopBarActionSpec?,
+    fallback: (() -> Unit)? = null,
+): (() -> Unit)? {
+    return action?.onClick ?: fallback
+}
+
+@Composable
+private fun ActionBarVectorIcon(
+    imageVector: ImageVector,
     tint: Color,
     size: Dp = 20.dp,
 ) {
     Image(
-        painter = painter,
+        painter = rememberVectorPainter(imageVector),
         contentDescription = null,
         modifier = Modifier.size(size),
         colorFilter = ColorFilter.tint(tint),

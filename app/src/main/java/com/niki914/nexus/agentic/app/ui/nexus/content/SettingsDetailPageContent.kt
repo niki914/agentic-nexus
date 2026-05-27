@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.SettingsViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusSettingsGroup
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
@@ -29,6 +31,7 @@ fun SettingsDetailPageContent(
     group: NexusSettingsGroup,
     topPadding: Dp,
     hazeState: HazeState,
+    onPush: (NexusPage) -> Unit,
 ) {
     val viewModel = pageViewModel<SettingsViewModel>()
     val uiState by viewModel.uiStateFlow.collectAsState()
@@ -57,6 +60,9 @@ fun SettingsDetailPageContent(
         McpSettingsContent(
             topPadding = topPadding,
             hazeState = hazeState,
+            onOpenServerDetail = { name, index ->
+                onPush(McpServerDetailPage(name, index))
+            },
         )
         return
     }

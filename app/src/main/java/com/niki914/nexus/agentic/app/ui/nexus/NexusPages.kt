@@ -20,6 +20,7 @@ import com.niki914.nexus.agentic.app.ui.infra.nav.NavigationEntry
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigurePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.HomePageContent
+import com.niki914.nexus.agentic.app.ui.nexus.content.McpServerDetailContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SelectionOption
 import com.niki914.nexus.agentic.app.ui.nexus.content.SelectionPageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SettingsDetailPageContent
@@ -35,6 +36,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
 import com.niki914.nexus.agentic.app.ui.nexus.nav.ConfigurePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.DonePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.ProviderPickPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsDetailPage
@@ -165,6 +167,12 @@ fun NexusPageContent(
 
         is SettingsDetailPage -> SettingsDetailPageContent(
             group = page.group,
+            topPadding = topPadding,
+            hazeState = hazeState,
+            onPush = onPush,
+        )
+
+        is McpServerDetailPage -> McpServerDetailContent(
             topPadding = topPadding,
             hazeState = hazeState,
         )

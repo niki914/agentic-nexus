@@ -3,11 +3,7 @@ package com.niki914.nexus.agentic.app.ui.nexus.content
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,7 +22,8 @@ import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
 import com.niki914.nexus.agentic.app.ui.infra.component.MaterialTintLiquidButton
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingNavigationItem
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleListItemCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolConfig
@@ -34,7 +31,6 @@ import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolManager
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.mod.XService
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
@@ -48,7 +44,6 @@ fun CustomToolsSettingsContent(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val scrollState = rememberScrollState()
 
     var items by remember { mutableStateOf<List<CustomToolItem>>(emptyList()) }
     var formState by remember { mutableStateOf(CustomToolFormState()) }
@@ -56,9 +51,6 @@ fun CustomToolsSettingsContent(
     var isSaving by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
 
-    val enabledStateText = stringResource(R.string.custom_tool_state_enabled)
-    val disabledStateText = stringResource(R.string.custom_tool_state_disabled)
-    val summaryFallback = stringResource(R.string.custom_tool_summary_fallback)
     val duplicateNameError = stringResource(R.string.custom_tool_duplicate_name)
     val saveSuccessText = stringResource(R.string.custom_tool_save_success)
     val deleteSuccessText = stringResource(R.string.custom_tool_delete_success)
@@ -74,46 +66,64 @@ fun CustomToolsSettingsContent(
         isLoading = false
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .hazeSource(hazeState)
-            .verticalScroll(scrollState)
-            .padding(top = topPadding)
-            .padding(horizontal = 16.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+    SettingsListPageContent(
+        topPadding = topPadding,
+        hazeState = hazeState,
+        description = stringResource(R.string.custom_tool_page_description),
     ) {
-        Text(
-            text = stringResource(R.string.ui_settings_custom_tools),
-            style = MaterialTheme.typography.headlineSmall,
-        )
-        Text(
-            text = stringResource(R.string.custom_tool_page_description),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        SettingsGroupCard(title = stringResource(R.string.custom_tool_list_title)) {
-            if (isLoading) {
+        if (isLoading) {
+            SettingsGroupCard {
                 Text(
                     text = stringResource(R.string.custom_tool_loading),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
                 )
-            } else if (items.isEmpty()) {
+            }
+        } else if (items.isEmpty()) {
+            SettingsGroupCard {
                 Text(
                     text = stringResource(R.string.custom_tool_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
                 )
-            } else {
+            }
+        } else {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 items.forEachIndexed { index, item ->
-                    SettingNavigationItem(
+                    SettingsToggleListItemCard(
                         title = item.name,
-                        summary = item.description.ifBlank { item.command.ifBlank { summaryFallback } },
-                        currentState = if (item.enabled) enabledStateText else disabledStateText,
+                        checked = item.enabled,
+                        enabled = !isSaving,
+                        onCheckedChange = { enabled ->
+                            val updatedItems = items.toMutableList().also { mutableItems ->
+                                mutableItems[index] = item.copy(enabled = enabled)
+                            }
+                            scope.launch {
+                                isSaving = true
+                                runCatching {
+                                    saveCustomTools(context, updatedItems)
+                                }.onSuccess { result ->
+                                    if (result.ok) {
+                                        items = updatedItems
+                                        if (formState.editingIndex == index) {
+                                            formState = formState.copy(enabled = enabled)
+                                        }
+                                        statusMessage = null
+                                    } else {
+                                        statusMessage = result.message
+                                    }
+                                }.onFailure { throwable ->
+                                    statusMessage = saveFailedTemplate.format(
+                                        throwable.message ?: throwable::class.java.simpleName
+                                    )
+                                }
+                                isSaving = false
+                            }
+                        },
                         onClick = {
                             formState = CustomToolFormState(
                                 editingIndex = index,
@@ -125,13 +135,6 @@ fun CustomToolsSettingsContent(
                             statusMessage = null
                         },
                     )
-                    if (index != items.lastIndex) {
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.padding(horizontal = 12.dp),
-                        )
-                    }
                 }
             }
         }
