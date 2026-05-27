@@ -92,7 +92,7 @@ class ConfigureViewModel internal constructor(
             val lastCustomEndpointInput = if (endpointOverrideEnabled) {
                 savedEndpoint
             } else {
-                ""
+                providerSpec.officialEndpoint
             }
             updateState {
                 copy(

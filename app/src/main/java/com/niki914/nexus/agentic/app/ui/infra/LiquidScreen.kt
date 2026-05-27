@@ -27,7 +27,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,6 +51,7 @@ import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.delay
 
 @Composable
 fun LiquidScreen(
@@ -110,6 +116,33 @@ fun LiquidScreen(
             // Title — always centered in the full bar width
             val buttonDuration = 280
             val titleDuration = 320
+            var retainedLeftButton by remember { mutableStateOf(leftButton) }
+            var retainedRightButton by remember { mutableStateOf(rightButton) }
+            val displayedLeftButton = leftButton ?: retainedLeftButton
+            val displayedRightButton = rightButton ?: retainedRightButton
+
+            LaunchedEffect(leftButton, state.showLeftButton) {
+                if (leftButton != null) {
+                    retainedLeftButton = leftButton
+                } else if (!state.showLeftButton) {
+                    delay(buttonDuration.toLong())
+                    if (!state.showLeftButton) {
+                        retainedLeftButton = null
+                    }
+                }
+            }
+
+            LaunchedEffect(rightButton, state.showRightButton) {
+                if (rightButton != null) {
+                    retainedRightButton = rightButton
+                } else if (!state.showRightButton) {
+                    delay(buttonDuration.toLong())
+                    if (!state.showRightButton) {
+                        retainedRightButton = null
+                    }
+                }
+            }
+
             AnimatedContent(
                 targetState = state.title,
                 modifier = Modifier
@@ -170,7 +203,7 @@ fun LiquidScreen(
                 }
             }
 
-            leftButton?.let { buttonContent ->
+            displayedLeftButton?.let { buttonContent ->
                 // Left button
                 val leftButtonScale = animateFloatAsState(
                     targetValue = if (state.showLeftButton) 1f else 0f,
@@ -200,7 +233,7 @@ fun LiquidScreen(
                 }
             }
 
-            rightButton?.let { buttonContent ->
+            displayedRightButton?.let { buttonContent ->
                 // Right button
                 val rightButtonScale = animateFloatAsState(
                     targetValue = if (state.showRightButton) 1f else 0f,

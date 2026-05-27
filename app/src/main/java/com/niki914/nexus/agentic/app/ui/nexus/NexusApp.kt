@@ -1,6 +1,14 @@
 package com.niki914.nexus.agentic.app.ui.nexus
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -158,18 +166,58 @@ fun NexusApp(
         state = screenState,
         leftButton = currentLeftAction?.let { action ->
             {
-                ActionBarVectorIcon(
-                    imageVector = action.icon,
-                    tint = actionIconTint,
-                )
+                AnimatedContent(
+                    targetState = action.icon,
+                    transitionSpec = {
+                        val iconAnimationSpec = tween<Float>(
+                            durationMillis = 280,
+                            easing = FastOutSlowInEasing,
+                        )
+                        (scaleIn(
+                            initialScale = 1.18f,
+                            animationSpec = iconAnimationSpec,
+                        ) + fadeIn(animationSpec = iconAnimationSpec)).togetherWith(
+                            scaleOut(
+                                targetScale = 0.78f,
+                                animationSpec = iconAnimationSpec,
+                            ) + fadeOut(animationSpec = iconAnimationSpec)
+                        )
+                    },
+                    label = "leftActionIcon",
+                ) { imageVector ->
+                    ActionBarVectorIcon(
+                        imageVector = imageVector,
+                        tint = actionIconTint,
+                    )
+                }
             }
         },
         rightButton = currentRightAction?.let { action ->
             {
-                ActionBarVectorIcon(
-                    imageVector = action.icon,
-                    tint = actionIconTint,
-                )
+                AnimatedContent(
+                    targetState = action.icon,
+                    transitionSpec = {
+                        val iconAnimationSpec = tween<Float>(
+                            durationMillis = 280,
+                            easing = FastOutSlowInEasing,
+                        )
+                        (scaleIn(
+                            initialScale = 1.18f,
+                            animationSpec = iconAnimationSpec,
+                        ) + fadeIn(animationSpec = iconAnimationSpec)).togetherWith(
+                            scaleOut(
+                                targetScale = 0.78f,
+                                animationSpec = iconAnimationSpec,
+                            ) + fadeOut(animationSpec = iconAnimationSpec)
+                        )
+                    },
+                    label = "rightActionIcon",
+                ) { imageVector ->
+                    ActionBarVectorIcon(
+                        imageVector = imageVector,
+                        tint = actionIconTint,
+                    )
+                }
             }
         },
     ) { hazeState ->

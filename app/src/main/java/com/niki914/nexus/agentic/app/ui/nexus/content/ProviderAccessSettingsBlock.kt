@@ -26,7 +26,7 @@ internal fun ProviderAccessSettingsBlock(
     onToggleApiKeyVisibility: () -> Unit,
     onClearActiveField: () -> Unit,
 ) {
-    SettingsGroupCard(title = uiState.providerSpec.brandName) {
+    SettingsGroupCard {
         if (policy.showEndpointSection) {
             if (policy.showEndpointOverrideToggle) {
                 SettingToggleItem(

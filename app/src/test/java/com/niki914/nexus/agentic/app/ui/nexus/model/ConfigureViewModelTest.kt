@@ -72,6 +72,9 @@ class ConfigureViewModelTest {
         viewModel.sendIntent(ConfigureIntent.Initialize("openai"))
         advanceUntilIdle()
         viewModel.sendIntent(ConfigureIntent.SetEndpointOverride(true))
+        advanceUntilIdle()
+        assertEquals(officialEndpoint, viewModel.uiStateFlow.value.endpointInput)
+
         viewModel.sendIntent(ConfigureIntent.UpdateEndpoint("abc"))
         viewModel.sendIntent(ConfigureIntent.UpdateModel("gpt-5.4"))
         viewModel.sendIntent(ConfigureIntent.UpdateApiKey("sk-demo"))
