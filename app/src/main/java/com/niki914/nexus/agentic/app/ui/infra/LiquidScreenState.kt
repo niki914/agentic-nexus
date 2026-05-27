@@ -23,7 +23,6 @@ class LiquidScreenState(
 ) {
     private val _actionBarHeight = mutableStateOf(0.dp)
     val actionBarHeight: State<Dp> = _actionBarHeight
-    internal val relocationState = LiquidRelocationState()
 
     internal var title by mutableStateOf(initialTitle)
     internal var showLeftButton by mutableStateOf(initialShowLeftButton)
