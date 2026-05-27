@@ -23,10 +23,13 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -37,6 +40,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -62,6 +67,7 @@ fun LiquidScreen(
     content: @Composable (hazeState: HazeState) -> Unit,
 ) {
     val isDarkTheme = isSystemInDarkTheme()
+    val density = LocalDensity.current
     val hazeState = rememberHazeState(blurEnabled = true)
     val chromeBackdrop = rememberLayerBackdrop()
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -69,12 +75,50 @@ fun LiquidScreen(
     val buttonSlotHeight = 72.dp
     val actionBarHeight = topInset + titleBarHeight
     val chromeHeight = topInset + buttonSlotHeight
+    val activeAvoidanceRequest = state.viewportAvoidanceController.activeRequest
+    val imeBottomPx = WindowInsets.ime.getBottom(density)
+    val navigationBottomPx = WindowInsets.navigationBars.getBottom(density)
+    var screenHeightPx by remember { mutableStateOf(0) }
+    val targetAvoidanceOffsetPx = with(density) {
+        calculateLiquidViewportAvoidanceOffsetPx(
+            screenHeightPx = screenHeightPx.toFloat(),
+            topSafePx = actionBarHeight.toPx(),
+            bottomBlockedInsetPx = maxOf(imeBottomPx, navigationBottomPx).toFloat(),
+            request = activeAvoidanceRequest,
+            topMarginPx = activeAvoidanceRequest?.topMargin?.toPx() ?: 0f,
+            bottomMarginPx = activeAvoidanceRequest?.bottomMargin?.toPx() ?: 0f,
+        )
+    }
+    val avoidanceOffsetPx by animateFloatAsState(
+        targetValue = targetAvoidanceOffsetPx,
+        animationSpec = tween(33, easing = FastOutSlowInEasing),
+        label = "viewportAvoidanceOffset",
+    )
 
-    SideEffect { state.setActionBarHeight(actionBarHeight) }
+    SideEffect {
+        state.setActionBarHeight(actionBarHeight)
+        state.viewportAvoidanceController.setContentOffsetPx(avoidanceOffsetPx)
+    }
 
-    Box(modifier.fillMaxSize()) {
+    Box(
+        modifier
+            .fillMaxSize()
+            .onSizeChanged { size -> screenHeightPx = size.height },
+    ) {
         // Layer 1: page content owns the haze source placement.
-        content(hazeState)
+        CompositionLocalProvider(
+            LocalLiquidViewportAvoidanceController provides state.viewportAvoidanceController,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        translationY = avoidanceOffsetPx
+                    },
+            ) {
+                content(hazeState)
+            }
+        }
 
         // Layer 2: action bar progressive blur background
         AnimatedVisibility(
@@ -263,5 +307,30 @@ fun LiquidScreen(
                 }
             }
         }
+    }
+}
+
+private fun calculateLiquidViewportAvoidanceOffsetPx(
+    screenHeightPx: Float,
+    topSafePx: Float,
+    bottomBlockedInsetPx: Float,
+    request: LiquidViewportAvoidanceRequest?,
+    topMarginPx: Float,
+    bottomMarginPx: Float,
+): Float {
+    if (request == null || screenHeightPx <= 0f) {
+        return 0f
+    }
+
+    val safeTopPx = topSafePx + topMarginPx
+    val safeBottomPx = screenHeightPx - bottomBlockedInsetPx - bottomMarginPx
+    if (safeBottomPx <= safeTopPx) {
+        return 0f
+    }
+
+    return when {
+        request.boundsInRoot.bottom > safeBottomPx -> safeBottomPx - request.boundsInRoot.bottom
+        request.boundsInRoot.top < safeTopPx -> safeTopPx - request.boundsInRoot.top
+        else -> 0f
     }
 }

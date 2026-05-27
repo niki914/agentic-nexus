@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +29,9 @@ import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
@@ -40,6 +44,7 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
+import com.niki914.nexus.agentic.app.ui.infra.LocalLiquidViewportAvoidanceController
 import com.niki914.nexus.agentic.app.ui.infra.interaction.InteractiveHighlight
 import com.niki914.nexus.agentic.app.ui.infra.interaction.LiquidInteractiveStyle
 import com.niki914.nexus.agentic.app.ui.infra.interaction.applyLiquidInteractiveTransform
@@ -72,8 +77,11 @@ internal fun LiquidTextFieldContainer(
     }
     val focusManager = LocalFocusManager.current
     val density = LocalDensity.current
+    val viewportAvoidanceController = LocalLiquidViewportAvoidanceController.current
+    val viewportAvoidanceRequestId = remember { Any() }
     var isFocused by remember { mutableStateOf(false) }
     var imeWasVisibleWhileFocused by remember { mutableStateOf(false) }
+    var boundsInRoot by remember { mutableStateOf<Rect?>(null) }
     var textFieldValue by remember {
         mutableStateOf(
             TextFieldValue(
@@ -103,6 +111,31 @@ internal fun LiquidTextFieldContainer(
             onImeVisibilityTracked = { imeWasVisibleWhileFocused = it },
             focusManager = focusManager,
         )
+    }
+
+    LaunchedEffect(
+        enabled,
+        isFocused,
+        imeVisible,
+        boundsInRoot,
+        viewportAvoidanceController,
+        viewportAvoidanceRequestId,
+    ) {
+        val currentBounds = boundsInRoot
+        if (enabled && isFocused && imeVisible && currentBounds != null) {
+            viewportAvoidanceController?.request(
+                id = viewportAvoidanceRequestId,
+                boundsInRoot = currentBounds,
+            )
+        } else {
+            viewportAvoidanceController?.release(viewportAvoidanceRequestId)
+        }
+    }
+
+    DisposableEffect(viewportAvoidanceController, viewportAvoidanceRequestId) {
+        onDispose {
+            viewportAvoidanceController?.release(viewportAvoidanceRequestId)
+        }
     }
 
     val colorScheme = MaterialTheme.colorScheme
@@ -155,6 +188,9 @@ internal fun LiquidTextFieldContainer(
                         )
                     }
                 }
+            }
+            .onGloballyPositioned { coordinates ->
+                boundsInRoot = coordinates.boundsInRoot()
             }
             .drawBackdrop(
                 backdrop = backdrop,
