@@ -124,17 +124,15 @@ class App : Application() {
                     )
                 )
             ),
-//            "mcp_servers" to JsonArray(
-//                listOf(
-//                    JsonObject(
-//                        mapOf(
-//                            "name" to JsonPrimitive("aslocate"),
-//                            "url" to JsonPrimitive("http://127.0.0.1:51338/mcp"),
-//                            "enabled" to JsonPrimitive(true)
-//                        )
-//                    )
-//                )
-//            )
+            "mcp_servers" to JsonArray((0..10).map { mockMCP(it) })
         )
     }
 }
+
+fun mockMCP(num: Int) = JsonObject(
+    mapOf(
+        "name" to JsonPrimitive("mcp-server-$num"),
+        "url" to JsonPrimitive("http://127.0.0.1:51338/mcp"),
+        "enabled" to JsonPrimitive(true)
+    )
+)
