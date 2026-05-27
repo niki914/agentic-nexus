@@ -71,7 +71,7 @@ internal fun LiquidTextFieldContainer(
     val density = LocalDensity.current
     var isFocused by remember { mutableStateOf(false) }
     var imeWasVisibleWhileFocused by remember { mutableStateOf(false) }
-    val interactiveEffectsEnabled = enabled && !isFocused
+    val interactiveEffectsEnabled = enabled && (!isFocused || value.isEmpty())
     val imeVisible = WindowInsets.ime.getBottom(density) > 0
     val fieldShape = G2FieldShape(28.dp)
 
