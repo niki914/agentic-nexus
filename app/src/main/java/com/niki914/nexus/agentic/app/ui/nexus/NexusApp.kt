@@ -1,5 +1,9 @@
 package com.niki914.nexus.agentic.app.ui.nexus
 
+import android.app.Activity
+import android.os.SystemClock
+import android.widget.Toast
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -33,6 +37,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
@@ -62,9 +67,14 @@ fun NexusApp(
     startupAssistantUi: StartupAssistantUi,
     launchDecision: AppLaunchDecision,
 ) {
+    val context = LocalContext.current
+    val activity = context as? Activity
     val isDarkTheme = isSystemInDarkTheme()
     val actionIconTint = if (isDarkTheme) Color.White else Color.Black
+    val rootBackToHomeWindowMillis = 2_000L
+    val rootBackToHomeHint = stringResource(R.string.ui_root_back_to_home_hint)
     var homeMenuExpanded by remember { mutableStateOf(false) }
+    var lastRootBackPressedAt by remember { mutableStateOf(0L) }
     fun openHomeMenu() {
         homeMenuExpanded = true
     }
@@ -117,11 +127,19 @@ fun NexusApp(
         navigator.resetTo(attachPageActions(page = page, onOpenHomeMenu = ::openHomeMenu))
     }
 
-    BackHandler(enabled = homeMenuExpanded || controller.canGoBack) {
+    BackHandler(enabled = true) {
         if (homeMenuExpanded) {
             closeHomeMenu()
-        } else {
+        } else if (controller.canGoBack) {
             navigator.pop()
+        } else {
+            val now = SystemClock.elapsedRealtime()
+            if (now - lastRootBackPressedAt <= rootBackToHomeWindowMillis) {
+                activity?.moveTaskToBack(true)
+            } else {
+                lastRootBackPressedAt = now
+                Toast.makeText(context.applicationContext, rootBackToHomeHint, Toast.LENGTH_SHORT).show() // TODO rm
+            }
         }
     }
 
