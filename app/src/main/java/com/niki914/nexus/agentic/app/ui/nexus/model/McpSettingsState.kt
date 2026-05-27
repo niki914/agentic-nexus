@@ -1,7 +1,5 @@
 package com.niki914.nexus.agentic.app.ui.nexus.model
 
-import android.content.Context
-import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.cb.ComposeMVIViewModel
 import kotlinx.coroutines.CancellationException
@@ -30,7 +28,6 @@ data class McpSettingsUiState(
     val formState: McpServerFormState = McpServerFormState(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
-    val statusMessage: String? = null,
 )
 
 sealed interface McpSettingsIntent {
@@ -43,30 +40,13 @@ sealed interface McpSettingsIntent {
     data class EnabledChanged(val value: Boolean) : McpSettingsIntent
     data object Save : McpSettingsIntent
     data object DeleteCurrent : McpSettingsIntent
-    data object DismissStatus : McpSettingsIntent
 }
 
 sealed interface McpSettingsEffect
 
-class McpSettingsStrings(
-    private val context: Context,
-) {
-    fun loadFailed(message: String): String = context.getString(R.string.mcp_load_failed, message)
-    fun toggleSucceeded(enabled: Boolean): String = context.getString(
-        if (enabled) R.string.mcp_save_success_enabled else R.string.mcp_save_success_disabled
-    )
-    fun saveFailed(message: String): String = context.getString(R.string.mcp_save_failed, message)
-    fun nameRequired(): String = context.getString(R.string.mcp_name_required)
-    fun urlRequired(): String = context.getString(R.string.mcp_url_required)
-    fun duplicateName(): String = context.getString(R.string.mcp_duplicate_name)
-    fun saveSucceeded(): String = context.getString(R.string.mcp_save_success)
-    fun deleteSucceeded(): String = context.getString(R.string.mcp_delete_success)
-}
-
 class McpSettingsViewModel internal constructor(
     private val loadSettings: suspend () -> LocalSettings,
     private val saveSettings: suspend (LocalSettings) -> Unit,
-    private val strings: McpSettingsStrings,
 ) : ComposeMVIViewModel<McpSettingsIntent, McpSettingsUiState, McpSettingsEffect>() {
 
     override fun initUiState(): McpSettingsUiState = McpSettingsUiState()
@@ -75,10 +55,7 @@ class McpSettingsViewModel internal constructor(
         when (intent) {
             McpSettingsIntent.Load -> load()
             McpSettingsIntent.StartCreate -> updateState {
-                copy(
-                    formState = McpServerFormState(),
-                    statusMessage = null,
-                )
+                copy(formState = McpServerFormState())
             }
             is McpSettingsIntent.StartEdit -> startEdit(intent.index)
             is McpSettingsIntent.ItemEnabledChanged -> toggleItemEnabled(
@@ -86,38 +63,27 @@ class McpSettingsViewModel internal constructor(
                 enabled = intent.value,
             )
             is McpSettingsIntent.NameChanged -> updateState {
-                copy(
-                    formState = formState.copy(name = intent.value),
-                    statusMessage = null,
-                )
+                copy(formState = formState.copy(name = intent.value))
             }
             is McpSettingsIntent.UrlChanged -> updateState {
-                copy(
-                    formState = formState.copy(url = intent.value),
-                    statusMessage = null,
-                )
+                copy(formState = formState.copy(url = intent.value))
             }
             is McpSettingsIntent.EnabledChanged -> updateState {
-                copy(
-                    formState = formState.copy(enabled = intent.value),
-                    statusMessage = null,
-                )
+                copy(formState = formState.copy(enabled = intent.value))
             }
             McpSettingsIntent.Save -> save()
             McpSettingsIntent.DeleteCurrent -> deleteCurrent()
-            McpSettingsIntent.DismissStatus -> updateState { copy(statusMessage = null) }
         }
     }
 
     private suspend fun load() {
-        updateState { copy(isLoading = true, statusMessage = null) }
+        updateState { copy(isLoading = true) }
         try {
             val settings = loadSettings()
             updateState {
                 copy(
                     items = parseMcpServerItems(settings),
                     isLoading = false,
-                    statusMessage = null,
                 )
             }
         } catch (throwable: Throwable) {
@@ -125,7 +91,6 @@ class McpSettingsViewModel internal constructor(
             updateState {
                 copy(
                     isLoading = false,
-                    statusMessage = strings.loadFailed(throwable.message ?: throwable::class.java.simpleName),
                 )
             }
         }
@@ -141,7 +106,6 @@ class McpSettingsViewModel internal constructor(
                     url = item.url,
                     enabled = item.enabled,
                 ),
-                statusMessage = null,
             )
         }
     }
@@ -161,7 +125,6 @@ class McpSettingsViewModel internal constructor(
                     formState
                 },
                 isSaving = true,
-                statusMessage = null,
             )
         }
         try {
@@ -170,7 +133,6 @@ class McpSettingsViewModel internal constructor(
             updateState {
                 copy(
                     isSaving = false,
-                    statusMessage = strings.toggleSucceeded(enabled),
                 )
             }
         } catch (throwable: Throwable) {
@@ -184,7 +146,6 @@ class McpSettingsViewModel internal constructor(
                         formState
                     },
                     isSaving = false,
-                    statusMessage = strings.saveFailed(throwable.message ?: throwable::class.java.simpleName),
                 )
             }
         }
@@ -194,23 +155,14 @@ class McpSettingsViewModel internal constructor(
         val trimmedName = currentState.formState.name.trim()
         val trimmedUrl = currentState.formState.url.trim()
         val editingIndex = currentState.formState.editingIndex
-        if (trimmedName.isBlank()) {
-            updateState { copy(statusMessage = strings.nameRequired()) }
-            return
-        }
-        if (trimmedUrl.isBlank()) {
-            updateState { copy(statusMessage = strings.urlRequired()) }
-            return
-        }
+        if (trimmedName.isBlank()) return
+        if (trimmedUrl.isBlank()) return
         val hasDuplicateName = currentState.items.anyIndexed { index, item ->
             item.name == trimmedName && index != editingIndex
         }
-        if (hasDuplicateName) {
-            updateState { copy(statusMessage = strings.duplicateName()) }
-            return
-        }
+        if (hasDuplicateName) return
 
-        updateState { copy(isSaving = true, statusMessage = null) }
+        updateState { copy(isSaving = true) }
         try {
             val nextItem = McpServerItem(
                 name = trimmedName,
@@ -231,7 +183,6 @@ class McpSettingsViewModel internal constructor(
                     items = updatedItems,
                     formState = formState.copy(editingIndex = updatedItems.indexOf(nextItem)),
                     isSaving = false,
-                    statusMessage = strings.saveSucceeded(),
                 )
             }
         } catch (throwable: Throwable) {
@@ -239,7 +190,6 @@ class McpSettingsViewModel internal constructor(
             updateState {
                 copy(
                     isSaving = false,
-                    statusMessage = strings.saveFailed(throwable.message ?: throwable::class.java.simpleName),
                 )
             }
         }
@@ -247,7 +197,7 @@ class McpSettingsViewModel internal constructor(
 
     private suspend fun deleteCurrent() {
         val editingIndex = currentState.formState.editingIndex ?: return
-        updateState { copy(isSaving = true, statusMessage = null) }
+        updateState { copy(isSaving = true) }
         try {
             val updatedItems = currentState.items.filterIndexed { index, _ -> index != editingIndex }
             val latestSettings = loadSettings()
@@ -257,7 +207,6 @@ class McpSettingsViewModel internal constructor(
                     items = updatedItems,
                     formState = McpServerFormState(),
                     isSaving = false,
-                    statusMessage = strings.deleteSucceeded(),
                 )
             }
         } catch (throwable: Throwable) {
@@ -265,7 +214,6 @@ class McpSettingsViewModel internal constructor(
             updateState {
                 copy(
                     isSaving = false,
-                    statusMessage = strings.saveFailed(throwable.message ?: throwable::class.java.simpleName),
                 )
             }
         }

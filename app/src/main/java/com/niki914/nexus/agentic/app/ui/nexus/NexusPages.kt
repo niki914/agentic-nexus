@@ -7,8 +7,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
@@ -20,6 +23,7 @@ import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.nav.NavigationEntry
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigurePageContent
+import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigureEditableField
 import com.niki914.nexus.agentic.app.ui.nexus.content.CustomToolDetailContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.HomePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.McpServerDetailContent
@@ -48,6 +52,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.ResTitle
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsHomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.StartupPage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.TextTitle
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.mod.XService
@@ -98,7 +103,14 @@ fun NexusPageContent(
                         lightContainerColor = colors.lightContainerColor,
                         darkContentColor = colors.darkContentColor,
                         lightContentColor = colors.lightContentColor,
-                        onClick = { onPush(ConfigurePage(providerId = spec.id)) },
+                        onClick = {
+                            onPush(
+                                ConfigurePage(
+                                    providerId = spec.id,
+                                    explicitTitleSpec = TextTitle(spec.brandName),
+                                ),
+                            )
+                        },
                     )
                 },
             )
@@ -113,14 +125,27 @@ fun NexusPageContent(
             )
             val uiState by viewModel.uiStateFlow.collectAsState()
             val colors = providerButtonColors(uiState.providerSpec)
+            var pendingFocusField by rememberSaveable {
+                mutableStateOf<ConfigureEditableField?>(null)
+            }
 
             LaunchedEffect(page.providerId) {
                 viewModel.sendIntent(ConfigureIntent.Initialize(page.providerId))
             }
             LaunchedEffect(viewModel) {
                 viewModel.uiEffect.collect { effect ->
-                    if (effect is ConfigureEffect.SaveSucceeded) {
-                        onPush(DonePage)
+                    when (effect) {
+                        ConfigureEffect.SaveSucceeded -> onPush(DonePage)
+                        ConfigureEffect.FocusModel -> {
+                            pendingFocusField = ConfigureEditableField.Model
+                        }
+                        ConfigureEffect.FocusApiKey -> {
+                            pendingFocusField = ConfigureEditableField.ApiKey
+                        }
+                        ConfigureEffect.FocusEndpoint -> {
+                            pendingFocusField = ConfigureEditableField.Endpoint
+                        }
+                        is ConfigureEffect.SaveFailed -> Unit
                     }
                 }
             }
@@ -149,6 +174,10 @@ fun NexusPageContent(
                     viewModel.sendIntent(ConfigureIntent.ToggleApiKeyVisibility)
                 },
                 onComplete = { viewModel.sendIntent(ConfigureIntent.Save) },
+                requestedFocusField = pendingFocusField,
+                onRequestedFocusHandled = {
+                    pendingFocusField = null
+                },
             )
         }
 

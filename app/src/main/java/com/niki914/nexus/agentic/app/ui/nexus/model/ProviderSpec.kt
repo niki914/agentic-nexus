@@ -8,6 +8,8 @@ sealed interface ProviderSpec {
     val id: String
     val brandName: String
     val officialEndpoint: String
+    val onboardingModelHint: String
+    val showEndpointConfigInOnboarding: Boolean
     @get:DrawableRes
     val iconRes: Int
     val tintIcon: Boolean
@@ -66,6 +68,8 @@ private data object DeepSeekSpec : ProviderSpec {
     override val id: String = "deepseek"
     override val brandName: String = "DeepSeek"
     override val officialEndpoint: String = "https://api.deepseek.com/chat/completions"
+    override val onboardingModelHint: String = "如：deepseek-v4-pro"
+    override val showEndpointConfigInOnboarding: Boolean = false
     override val iconRes: Int = R.drawable.deepseek
     override val tintIcon: Boolean = true
     override val visualTokens: ProviderVisualTokens = ProviderVisualTokens(
@@ -82,6 +86,8 @@ private data object OpenAiSpec : ProviderSpec {
     override val id: String = "openai"
     override val brandName: String = "OpenAI"
     override val officialEndpoint: String = "https://api.openai.com/v1/chat/completions"
+    override val onboardingModelHint: String = "如：gpt-5.4"
+    override val showEndpointConfigInOnboarding: Boolean = true
     override val iconRes: Int = R.drawable.openai
     override val tintIcon: Boolean = true
     override val visualTokens: ProviderVisualTokens = ProviderVisualTokens(
@@ -98,6 +104,8 @@ private data object AnthropicSpec : ProviderSpec {
     override val id: String = "anthropic"
     override val brandName: String = "Anthropic"
     override val officialEndpoint: String = "https://api.anthropic.com/v1/messages"
+    override val onboardingModelHint: String = "如：claude-sonnet-4-6"
+    override val showEndpointConfigInOnboarding: Boolean = true
     override val iconRes: Int = R.drawable.anthropic
     override val tintIcon: Boolean = true
     override val visualTokens: ProviderVisualTokens = ProviderVisualTokens(
@@ -114,6 +122,8 @@ private data object GoogleSpec : ProviderSpec {
     override val id: String = "google"
     override val brandName: String = "Google"
     override val officialEndpoint: String = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+    override val onboardingModelHint: String = "如：gemini-3.5-flash"
+    override val showEndpointConfigInOnboarding: Boolean = true
     override val iconRes: Int = R.drawable.gemini
     override val tintIcon: Boolean = false
     override val visualTokens: ProviderVisualTokens = ProviderVisualTokens(

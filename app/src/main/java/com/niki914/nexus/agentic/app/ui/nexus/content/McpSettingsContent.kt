@@ -23,7 +23,6 @@ import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleListItemCard
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsIntent
-import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsStrings
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsViewModel
 import com.niki914.nexus.agentic.mod.XService
 import dev.chrisbanes.haze.HazeState
@@ -75,13 +74,6 @@ fun McpSettingsContent(
                 }
             }
         }
-        uiState.statusMessage?.let { message ->
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
     }
 }
 
@@ -105,7 +97,6 @@ private fun createMcpSettingsViewModelFactory(
             return McpSettingsViewModel(
                 loadSettings = { XService.getLocalSettings(context) },
                 saveSettings = { settings -> XService.putLocalSettings(context, settings) },
-                strings = McpSettingsStrings(context),
             ) as T
         }
     }

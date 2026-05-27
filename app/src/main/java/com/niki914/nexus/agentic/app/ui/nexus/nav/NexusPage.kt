@@ -53,9 +53,10 @@ data object ProviderPickPage : NexusPage {
 
 data class ConfigurePage(
     val providerId: String? = null,
+    val explicitTitleSpec: PageTitleSpec? = null,
 ) : NexusPage {
     override val routeKey: String = if (providerId == null) "configure" else "configure:$providerId"
-    override val titleSpec: PageTitleSpec = ResTitle(R.string.ui_onboard_configure_title)
+    override val titleSpec: PageTitleSpec = explicitTitleSpec ?: ResTitle(R.string.ui_onboard_configure_title)
     override val leftAction: TopBarActionSpec = TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
     override val rightAction: TopBarActionSpec? = null
 }

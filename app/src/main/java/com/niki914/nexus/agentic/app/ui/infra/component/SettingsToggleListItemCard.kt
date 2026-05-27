@@ -1,5 +1,7 @@
 package com.niki914.nexus.agentic.app.ui.infra.component
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -65,11 +67,16 @@ private fun SettingsToggleListItemRow(
     val pressedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
 
     var backgroundColor by remember { mutableStateOf(restingColor) }
+    val animatedBackgroundColor by animateColorAsState(
+        targetValue = backgroundColor,
+        animationSpec = tween(durationMillis = 500),
+        label = "settingsToggleListItemBackground",
+    )
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(backgroundColor)
+            .background(animatedBackgroundColor)
             .heightIn(min = 64.dp)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,

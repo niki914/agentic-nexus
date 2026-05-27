@@ -1,7 +1,5 @@
 package com.niki914.nexus.agentic.app.ui.nexus.model
 
-import androidx.annotation.StringRes
-import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.cb.ComposeMVIViewModel
 import kotlinx.coroutines.CancellationException
@@ -12,6 +10,7 @@ data class ConfigureUiState(
     val providerSpec: ProviderSpec = ProviderSpecs.default,
     val endpointOverrideEnabled: Boolean = false,
     val endpointInput: String = ProviderSpecs.default.officialEndpoint,
+    val lastCustomEndpointInput: String = "",
     val modelInput: String = "",
     val apiKeyInput: String = "",
     val apiKeyVisible: Boolean = false,
@@ -23,7 +22,6 @@ data class ConfigureUiState(
 sealed interface ConfigureInlineError {
     data class LoadFailed(val reason: ConfigureErrorReason.LoadSettingsFailed) : ConfigureInlineError
     data class SaveFailed(val reason: ConfigureErrorReason.SaveSettingsFailed) : ConfigureInlineError
-    data class Validation(@StringRes val messageRes: Int) : ConfigureInlineError
 }
 
 sealed interface ConfigureErrorReason {
@@ -44,6 +42,9 @@ sealed interface ConfigureIntent {
 sealed interface ConfigureEffect {
     data object SaveSucceeded : ConfigureEffect
     data class SaveFailed(val reason: ConfigureErrorReason) : ConfigureEffect
+    data object FocusModel : ConfigureEffect
+    data object FocusApiKey : ConfigureEffect
+    data object FocusEndpoint : ConfigureEffect
 }
 
 class ConfigureViewModel internal constructor(
@@ -88,11 +89,17 @@ class ConfigureViewModel internal constructor(
             } else {
                 providerSpec.officialEndpoint
             }
+            val lastCustomEndpointInput = if (endpointOverrideEnabled) {
+                savedEndpoint
+            } else {
+                ""
+            }
             updateState {
                 copy(
                     providerSpec = providerSpec,
                     endpointOverrideEnabled = endpointOverrideEnabled,
                     endpointInput = endpointInput,
+                    lastCustomEndpointInput = lastCustomEndpointInput,
                     modelInput = savedModel,
                     apiKeyInput = savedApiKey,
                     apiKeyVisible = false,
@@ -123,13 +130,18 @@ class ConfigureViewModel internal constructor(
     private fun setEndpointOverride(enabled: Boolean) {
         updateState {
             val nextEndpointInput = if (enabled) {
-                endpointInput
+                lastCustomEndpointInput.ifBlank { providerSpec.officialEndpoint }
             } else {
                 providerSpec.officialEndpoint
             }
             copy(
                 endpointOverrideEnabled = enabled,
                 endpointInput = nextEndpointInput,
+                lastCustomEndpointInput = if (enabled) {
+                    lastCustomEndpointInput
+                } else {
+                    endpointInput.trim()
+                },
                 saveEnabled = !isSaving && canSave(
                     endpointOverrideEnabled = enabled,
                     endpointInput = nextEndpointInput,
@@ -143,6 +155,11 @@ class ConfigureViewModel internal constructor(
         updateState {
             copy(
                 endpointInput = value,
+                lastCustomEndpointInput = if (endpointOverrideEnabled) {
+                    value
+                } else {
+                    lastCustomEndpointInput
+                },
                 saveEnabled = !isSaving && canSave(endpointInput = value),
                 inlineError = null,
             )
@@ -182,6 +199,24 @@ class ConfigureViewModel internal constructor(
         if (currentState.isSaving) {
             return
         }
+        when (currentState.firstIncompleteField()) {
+            ConfigureFieldTarget.Model -> {
+                updateState { copy(inlineError = null) }
+                sendEffect(ConfigureEffect.FocusModel)
+                return
+            }
+            ConfigureFieldTarget.ApiKey -> {
+                updateState { copy(inlineError = null) }
+                sendEffect(ConfigureEffect.FocusApiKey)
+                return
+            }
+            ConfigureFieldTarget.Endpoint -> {
+                updateState { copy(inlineError = null) }
+                sendEffect(ConfigureEffect.FocusEndpoint)
+                return
+            }
+            null -> Unit
+        }
         updateState {
             copy(
                 isSaving = true,
@@ -190,17 +225,6 @@ class ConfigureViewModel internal constructor(
             )
         }
         try {
-            val validationError = currentState.validationError()
-            if (validationError != null) {
-                updateState {
-                    copy(
-                        isSaving = false,
-                        saveEnabled = canSave(),
-                        inlineError = validationError,
-                    )
-                }
-                return
-            }
             val latestSettings = loadSettings()
             saveSettings(buildUpdatedLocalSettings(latestSettings, currentState))
             updateState {
@@ -259,17 +283,17 @@ private fun ConfigureUiState.canSave(
         apiKeyInput.trim().isNotBlank()
 }
 
-private fun ConfigureUiState.validationError(): ConfigureInlineError.Validation? {
+private enum class ConfigureFieldTarget {
+    Endpoint,
+    Model,
+    ApiKey,
+}
+
+private fun ConfigureUiState.firstIncompleteField(): ConfigureFieldTarget? {
     return when {
-        endpointOverrideEnabled && endpointInput.trim().isBlank() -> {
-            ConfigureInlineError.Validation(R.string.ui_onboard_configure_error_endpoint_required)
-        }
-        modelInput.trim().isBlank() -> {
-            ConfigureInlineError.Validation(R.string.ui_onboard_configure_error_model_required)
-        }
-        apiKeyInput.trim().isBlank() -> {
-            ConfigureInlineError.Validation(R.string.ui_onboard_configure_error_api_key_required)
-        }
+        modelInput.trim().isBlank() -> ConfigureFieldTarget.Model
+        apiKeyInput.trim().isBlank() -> ConfigureFieldTarget.ApiKey
+        endpointOverrideEnabled && endpointInput.trim().isBlank() -> ConfigureFieldTarget.Endpoint
         else -> null
     }
 }

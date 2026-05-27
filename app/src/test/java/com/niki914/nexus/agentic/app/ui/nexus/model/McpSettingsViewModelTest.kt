@@ -60,7 +60,6 @@ class McpSettingsViewModelTest {
         assertEquals(1, state.items.size)
         assertEquals("demo", state.items.single().name)
         assertEquals("http://127.0.0.1:51338/mcp", state.items.single().url)
-        assertTrue(state.statusMessage?.isNotBlank() == true)
         assertTrue(savedSettings?.props?.containsKey("mcp_servers") == true)
     }
 
@@ -85,7 +84,7 @@ class McpSettingsViewModelTest {
 
         val state = viewModel.uiStateFlow.value
         assertEquals(1, state.items.size)
-        assertTrue(state.statusMessage?.contains("重复") == true)
+        assertFalse(state.isSaving)
     }
 
     private fun buildLocalSettings(items: List<McpServerItem>): LocalSettings {
