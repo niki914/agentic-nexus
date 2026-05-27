@@ -20,7 +20,7 @@ import com.niki914.nexus.agentic.app.ui.infra.shape.G2CardShape
  * 排版抄自 ui/settings/StyledToggle 的 independent=true 分支，颜色走 MaterialTheme，
  * 深浅色由 colorScheme.surfaceContainer / onSurfaceVariant 自动适配。
  *
- * 卡片本身 clip 成圆角，方便子项（如 SettingsNavigationRow）在按压渐变时
+ * 卡片本身 clip 成圆角，方便子项（如 `SettingNavigationItem`）在按压渐变时
  * 不会溢出圆角边界。
  */
 @Composable

@@ -26,8 +26,8 @@ import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
 import com.niki914.nexus.agentic.app.ui.infra.component.MaterialTintLiquidButton
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsNavigationRow
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleRow
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingNavigationItem
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolConfig
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolManager
@@ -110,7 +110,7 @@ fun CustomToolsSettingsContent(
                 )
             } else {
                 items.forEachIndexed { index, item ->
-                    SettingsNavigationRow(
+                    SettingNavigationItem(
                         title = item.name,
                         summary = item.description.ifBlank { item.command.ifBlank { summaryFallback } },
                         currentState = if (item.enabled) enabledStateText else disabledStateText,
@@ -173,8 +173,8 @@ fun CustomToolsSettingsContent(
                         singleLine = true,
                     )
                 }
-                SettingsToggleRow(
-                    label = stringResource(R.string.custom_tool_field_enabled),
+                SettingToggleItem(
+                    title = stringResource(R.string.custom_tool_field_enabled),
                     description = stringResource(R.string.custom_tool_field_enabled_description),
                     checked = formState.enabled,
                     onCheckedChange = { formState = formState.copy(enabled = it) },

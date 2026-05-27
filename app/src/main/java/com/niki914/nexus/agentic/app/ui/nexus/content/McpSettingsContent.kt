@@ -26,8 +26,8 @@ import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
 import com.niki914.nexus.agentic.app.ui.infra.component.MaterialTintLiquidButton
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsNavigationRow
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleRow
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingNavigationItem
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsViewModel
@@ -96,7 +96,7 @@ fun McpSettingsContent(
                 )
             } else {
                 uiState.items.forEachIndexed { index, item ->
-                    SettingsNavigationRow(
+                    SettingNavigationItem(
                         title = item.name,
                         summary = item.url.ifBlank { summaryFallback },
                         currentState = if (item.enabled) enabledStateText else disabledStateText,
@@ -150,8 +150,8 @@ fun McpSettingsContent(
                         minLines = 3,
                     )
                 }
-                SettingsToggleRow(
-                    label = stringResource(R.string.mcp_field_enabled),
+                SettingToggleItem(
+                    title = stringResource(R.string.mcp_field_enabled),
                     description = stringResource(R.string.mcp_field_enabled_description),
                     checked = uiState.formState.enabled,
                     onCheckedChange = { viewModel.sendIntent(McpSettingsIntent.EnabledChanged(it)) },

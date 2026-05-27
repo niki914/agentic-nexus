@@ -16,7 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsNavigationRow
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingNavigationItem
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.SettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusSettingsGroup
@@ -59,7 +59,7 @@ private fun SettingsSection(
 ) {
     SettingsGroupCard(title = title) {
         groups.forEachIndexed { index, group ->
-            SettingsNavigationRow(
+            SettingNavigationItem(
                 title = stringResource(group.titleRes),
                 summary = stringResource(group.summaryRes),
                 onClick = { onOpenGroup(group) },
