@@ -1,7 +1,7 @@
 # XRepo Unified Config Progress
 
 ## Current Phase
-Phase 3 - Ready for Batch Implementation
+Phase 3 - Completed
 
 ## Project
 - Name: `xrepo_unified_config`
@@ -29,7 +29,7 @@ Phase 3 - Ready for Batch Implementation
 | Phase 0 - 技术调研文档 | Completed |
 | Phase 1 - 架构设计 | Completed |
 | Phase 2 - 任务规划 | Completed |
-| Phase 3 - 分批实现 | Pending |
+| Phase 3 - 分批实现 | Completed |
 
 ## Context
 - `XRepo` 包位置：`com.niki914.nexus.agentic.repo`
@@ -144,3 +144,21 @@ Manual validation after each Batch
   - `LLMController.refresh` now reads LLM/tools/MCP/builtin settings from `XRepo` and clears failed MCP cache entries by `McpServerRefreshFailure.serverName`.
   - `McpSettingsViewModel` preserves MCP headers in UI state so edit/toggle does not drop codec-managed headers.
   - Gap fix: `BuiltinToolsSettingsContent` loading now uses `BuiltinToolSettingsManager.load(context)` instead of `XService.getLocalSettings(context)` + `manager.list(settings)`.
+
+## Review Notes
+
+### ASC Full Review
+- Status: Completed
+- Reviewer result:
+  - 初次审查发现 4 项问题：MCP refresh 失败 fingerprint/stale cache、`CustomToolManager.saveAll()` 部分写入、MCP rename 先删后存、CustomTool detail UI scope 缺口。
+  - 已修复前 3 项运行时/一致性问题，并补充回归测试。
+  - 第 4 项中 `BuiltinToolsSettingsContent` direct `XService` 遗漏已修复；`CustomToolDetailContent` 仍是空页面，按本次任务边界保留为后续新增/修改页实现范围。
+- Fixes:
+  - `LLMController.refresh` partial failed 会清 cache、重建 `resolvedTools` 并重新 update session；异常/partial failed 不再固化 fingerprint。
+  - `XRepo.customTools.replaceAll()` 提供单次 replace-all 写回，`CustomToolManager.saveAll()` 改用该 API。
+  - `XRepo.mcp.replace(previousName, server)` 提供单次 rename/upsert 写回，`McpSettingsViewModel` rename 保存改用该 API。
+- Verification:
+  - `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest --tests 'com.niki914.nexus.agentic.repo.*' --tests 'com.niki914.nexus.agentic.chat.v2.ToolManagerTest' --tests 'com.niki914.nexus.agentic.chat.agentic.mcp.McpDiscoveryCacheStoreTest' --tests 'com.niki914.nexus.agentic.chat.v2.CustomToolManagerTest' --tests 'com.niki914.nexus.agentic.chat.v2.BuiltinToolSettingsManagerTest' --tests 'com.niki914.nexus.agentic.chat.v2.CreateCustomToolBuiltinTest' --tests 'com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureViewModelTest' --tests 'com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsViewModelTest'` passed.
+  - Review-fix regression tests passed: `CustomToolManagerTest.saveAll_writeFailureDoesNotPartiallyReplaceExistingTools` and `McpSettingsViewModelTest.save_renameFailureDoesNotDeleteExistingServer`.
+  - `git diff --check` passed.
+  - Reviewer re-check reported no remaining blockers.

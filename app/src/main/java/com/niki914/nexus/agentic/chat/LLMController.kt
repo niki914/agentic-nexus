@@ -49,10 +49,12 @@ object LLMController {
         XRepo.init(context)
         val llmConfig = XRepo.llm()
         val mcpServers = XRepo.mcp.list()
-        val resolvedTools = toolManager.resolve(
-            customTools = XRepo.customTools.list(),
+        val customTools = XRepo.customTools.list()
+        val builtinSettings = XRepo.builtinTools.list()
+        var resolvedTools = toolManager.resolve(
+            customTools = customTools,
             mcpServers = mcpServers,
-            builtinSettings = XRepo.builtinTools.list(),
+            builtinSettings = builtinSettings,
             mcpCachedTools = mcpServers.associate { server ->
                 server.name to XRepo.mcp.cachedTools(server)
             },
@@ -86,8 +88,10 @@ object LLMController {
         val shouldRefreshMcp = resolvedTools.mcpServers.isNotEmpty() &&
                 (isNewSession || currentMcpServersFingerprint != lastMcpServersFingerprint)
         if (shouldRefreshMcp) {
+            var refreshSucceeded = false
             try {
                 val refreshResult = activeSession.refreshMcpTools()
+                refreshSucceeded = refreshResult.failedServers.isEmpty()
                 xlog(
                     "LLMController.refreshMcpTools refreshed=${refreshResult.refreshedServers} failed=${refreshResult.failedServers} count=${refreshResult.discoveredToolCount}"
                 )
@@ -95,6 +99,21 @@ object LLMController {
                     XRepo.mcp.clearCacheByServerNames(
                         refreshResult.failedServers.map { it.serverName }.toSet()
                     )
+                    resolvedTools = toolManager.resolve(
+                        customTools = customTools,
+                        mcpServers = mcpServers,
+                        builtinSettings = builtinSettings,
+                        mcpCachedTools = mcpServers.associate { server ->
+                            server.name to XRepo.mcp.cachedTools(server)
+                        },
+                    )
+                    activeSession.update {
+                        applyRuntimeConfig(
+                            config = config,
+                            tools = resolvedTools,
+                            previousTools = previousSnapshot?.tools,
+                        )
+                    }
                 }
             } catch (throwable: Throwable) {
                 if (throwable is CancellationException) {
@@ -102,8 +121,14 @@ object LLMController {
                 }
                 xlog("LLMController.refreshMcpTools failed: ${throwable.message}")
             }
+            lastMcpServersFingerprint = if (refreshSucceeded) {
+                currentMcpServersFingerprint
+            } else {
+                null
+            }
+        } else {
+            lastMcpServersFingerprint = currentMcpServersFingerprint
         }
-        lastMcpServersFingerprint = currentMcpServersFingerprint
 
         val snapshotSettings = LocalSettingsCodec.withLlm(LocalSettings(), llmConfig)
         return LlmRuntimeSnapshot(snapshotSettings, config, resolvedTools, prompt).also { snapshot ->

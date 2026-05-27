@@ -43,6 +43,9 @@ sealed interface McpSettingsEffect
 class McpSettingsViewModel internal constructor(
     private val listServers: suspend () -> List<McpServer> = { XRepo.mcp.list() },
     private val saveServer: suspend (McpServer) -> Unit = { server -> XRepo.mcp.save(server) },
+    private val replaceServer: suspend (String?, McpServer) -> Unit = { previousName, server ->
+        XRepo.mcp.replace(previousName, server)
+    },
     private val deleteServer: suspend (String) -> Unit = { name -> XRepo.mcp.delete(name) },
     private val setServerEnabled: suspend (String, Boolean) -> Unit = { name, enabled ->
         XRepo.mcp.setEnabled(name, enabled)
@@ -181,9 +184,10 @@ class McpSettingsViewModel internal constructor(
                 }
             }
             if (previousName != null && previousName != nextItem.name) {
-                deleteServer(previousName)
+                replaceServer(previousName, nextItem.toRepo())
+            } else {
+                saveServer(nextItem.toRepo())
             }
-            saveServer(nextItem.toRepo())
             updateState {
                 copy(
                     items = updatedItems,

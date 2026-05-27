@@ -6,6 +6,7 @@ import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolManager
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.repo.CustomTool
+import com.niki914.nexus.agentic.repo.LocalSettingsCodec
 import com.niki914.nexus.agentic.repo.LocalSettingsStore
 import com.niki914.nexus.agentic.repo.XRepo
 import kotlinx.coroutines.test.runTest
@@ -205,6 +206,37 @@ class CustomToolManagerTest {
         )
     }
 
+    @Test
+    fun saveAll_writeFailureDoesNotPartiallyReplaceExistingTools() = runTest {
+        val existing = CustomTool(
+            name = "old_tool",
+            description = "Old custom tool.",
+            command = "getprop ro.product.model",
+            enabled = true,
+        )
+        val store = FakeLocalSettingsStore(
+            initialSettings = LocalSettingsCodec.withCustomTools(LocalSettings(), listOf(existing)),
+            failOnWriteNumber = 1,
+        )
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        val result = manager.saveAll(
+            context = context,
+            items = listOf(
+                com.niki914.nexus.agentic.chat.agentic.custom.CustomToolConfig(
+                    name = "new_tool",
+                    description = "New custom tool.",
+                    enabled = true,
+                    command = "getprop ro.build.version.release",
+                )
+            ),
+        )
+
+        assertFalse(result.ok)
+        assertEquals(listOf(existing), LocalSettingsCodec.parseCustomTools(store.settings))
+    }
+
     private fun assertUnsafe(command: String) {
         val result = manager.validate(
             request = request(command = command),
@@ -225,6 +257,7 @@ class CustomToolManagerTest {
 
     private class FakeLocalSettingsStore(
         initialSettings: LocalSettings,
+        private val failOnWriteNumber: Int? = null,
     ) : LocalSettingsStore {
         var settings: LocalSettings = initialSettings
             private set
@@ -234,6 +267,9 @@ class CustomToolManagerTest {
         override suspend fun read(context: Context): LocalSettings = settings
 
         override suspend fun write(context: Context, settings: LocalSettings) {
+            if (failOnWriteNumber == writeCount + 1) {
+                throw IllegalStateException("write failed")
+            }
             this.settings = settings
             writeCount++
         }

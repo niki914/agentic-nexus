@@ -15,6 +15,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Rule
 import org.junit.Test
 
@@ -98,6 +99,35 @@ class McpSettingsViewModelTest {
         assertEquals(1, state.items.size)
         assertFalse(state.isSaving)
         assertEquals(1, XRepo.mcp.list().size)
+    }
+
+    @Test
+    fun save_renameFailureDoesNotDeleteExistingServer() = runTest {
+        val existing = McpServer(name = "old", url = "http://127.0.0.1:1/mcp", enabled = true)
+        installStore(buildLocalSettings(listOf(existing)))
+        var deleteCalled = false
+        val viewModel = McpSettingsViewModel(
+            listServers = { XRepo.mcp.list() },
+            saveServer = { fail("saveServer should not be called for rename") },
+            replaceServer = { _, _ -> error("replace failed") },
+            deleteServer = {
+                deleteCalled = true
+                XRepo.mcp.delete(it)
+            },
+            setServerEnabled = { _, _ -> fail("setServerEnabled should not be called") },
+        )
+
+        viewModel.sendIntent(McpSettingsIntent.Load)
+        advanceUntilIdle()
+        viewModel.sendIntent(McpSettingsIntent.StartEdit(0))
+        viewModel.sendIntent(McpSettingsIntent.NameChanged("new"))
+        viewModel.sendIntent(McpSettingsIntent.UrlChanged("http://127.0.0.1:2/mcp"))
+        viewModel.sendIntent(McpSettingsIntent.Save)
+        advanceUntilIdle()
+
+        assertFalse(deleteCalled)
+        assertEquals(listOf(existing), XRepo.mcp.list())
+        assertFalse(viewModel.uiStateFlow.value.isSaving)
     }
 
     private fun installStore(initialSettings: LocalSettings) {

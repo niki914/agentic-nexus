@@ -116,6 +116,23 @@ class McpApi internal constructor(
         }
     }
 
+    suspend fun replace(previousName: String?, server: McpServer) {
+        repo.updateLocal { settings ->
+            val servers = LocalSettingsCodec.parseMcpServers(settings)
+            val withoutPrevious = if (previousName != null && previousName != server.name) {
+                servers.filterNot { it.name == previousName }
+            } else {
+                servers
+            }
+            val updated = if (withoutPrevious.any { it.name == server.name }) {
+                withoutPrevious.map { if (it.name == server.name) server else it }
+            } else {
+                withoutPrevious + server
+            }
+            LocalSettingsCodec.withMcpServers(settings, updated)
+        }
+    }
+
     suspend fun delete(name: String) {
         repo.updateLocal { settings ->
             val servers = LocalSettingsCodec.parseMcpServers(settings)
@@ -209,6 +226,26 @@ class CustomToolApi internal constructor(
                 tools + normalized
             }
             LocalSettingsCodec.withCustomTools(settings, updated)
+        }
+        return null
+    }
+
+    suspend fun replaceAll(tools: List<CustomTool>): CustomToolValidation? {
+        val normalizedTools = tools.map { it.normalized() }
+        val duplicateName = normalizedTools
+            .groupingBy { it.name }
+            .eachCount()
+            .entries
+            .firstOrNull { it.value > 1 }
+            ?.key
+        if (duplicateName != null) {
+            return CustomToolValidation("name", "Duplicate name in custom_tools.")
+        }
+        normalizedTools.forEach { tool ->
+            validate(tool, overwrite = true)?.let { return it }
+        }
+        repo.updateLocal { settings ->
+            LocalSettingsCodec.withCustomTools(settings, normalizedTools)
         }
         return null
     }

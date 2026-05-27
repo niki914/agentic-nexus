@@ -78,15 +78,9 @@ class CustomToolManager(
                 return@withSettingsFailure validationError
             }
 
-            val targetNames = normalizedItems.map { it.name }.toSet()
-            load(context)
-                .filterNot { it.name in targetNames }
-                .forEach { XRepo.customTools.delete(it.name) }
-            normalizedItems.forEach { item ->
-                val repoValidation = XRepo.customTools.save(item.toRepo(), overwrite = true)
-                if (repoValidation != null) {
-                    return@withSettingsFailure repoValidation.toFailure()
-                }
+            val repoValidation = XRepo.customTools.replaceAll(normalizedItems.map { it.toRepo() })
+            if (repoValidation != null) {
+                return@withSettingsFailure repoValidation.toFailure()
             }
 
             BuiltinToolResult.success(
