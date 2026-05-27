@@ -130,18 +130,19 @@ class ConfigureViewModel internal constructor(
     private fun setEndpointOverride(enabled: Boolean) {
         updateState {
             val nextEndpointInput = if (enabled) {
-                lastCustomEndpointInput.ifBlank { providerSpec.officialEndpoint }
+                lastCustomEndpointInput
             } else {
                 providerSpec.officialEndpoint
+            }
+            val nextLastCustomEndpointInput = if (enabled) {
+                lastCustomEndpointInput
+            } else {
+                endpointInput
             }
             copy(
                 endpointOverrideEnabled = enabled,
                 endpointInput = nextEndpointInput,
-                lastCustomEndpointInput = if (enabled) {
-                    lastCustomEndpointInput
-                } else {
-                    endpointInput.trim()
-                },
+                lastCustomEndpointInput = nextLastCustomEndpointInput,
                 saveEnabled = !isSaving && canSave(
                     endpointOverrideEnabled = enabled,
                     endpointInput = nextEndpointInput,

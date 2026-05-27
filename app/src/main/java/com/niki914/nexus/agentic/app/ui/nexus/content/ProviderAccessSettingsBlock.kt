@@ -24,6 +24,7 @@ internal fun ProviderAccessSettingsBlock(
     onModelChange: (String) -> Unit,
     onApiKeyChange: (String) -> Unit,
     onToggleApiKeyVisibility: () -> Unit,
+    onClearActiveField: () -> Unit,
 ) {
     SettingsGroupCard(title = uiState.providerSpec.brandName) {
         if (policy.showEndpointSection) {
@@ -41,6 +42,7 @@ internal fun ProviderAccessSettingsBlock(
                     enabled = !uiState.isSaving,
                     onCheckedChange = { enabled ->
                         if (!uiState.isSaving) {
+                            onClearActiveField()
                             onEndpointOverrideChange(enabled)
                         }
                     },
@@ -51,8 +53,12 @@ internal fun ProviderAccessSettingsBlock(
                 title = stringResource(R.string.ui_onboard_configure_endpoint_label),
                 value = uiState.endpointInput,
                 onValueChange = onEndpointChange,
-                placeholder = uiState.endpointInput,
-                description = null,
+                placeholder = stringResource(R.string.ui_onboard_configure_endpoint_placeholder),
+                description = if (uiState.endpointOverrideEnabled) {
+                    null
+                } else {
+                    uiState.endpointInput
+                },
                 enabled = uiState.endpointOverrideEnabled && !uiState.isSaving,
                 minLines = 3,
                 maxLines = 6,
@@ -69,7 +75,7 @@ internal fun ProviderAccessSettingsBlock(
             title = stringResource(R.string.ui_onboard_configure_model_label),
             value = uiState.modelInput,
             onValueChange = onModelChange,
-            placeholder = uiState.providerSpec.onboardingModelHint,
+            placeholder = stringResource(R.string.ui_onboard_configure_model_placeholder),
             description = uiState.providerSpec.onboardingModelHint,
             enabled = !uiState.isSaving,
             minLines = 1,

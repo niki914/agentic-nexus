@@ -30,14 +30,13 @@
     <string name="ui_onboard_configure_endpoint_override_description_off">使用默认端点</string>
     <string name="ui_onboard_configure_endpoint_override_description_on">将使用自定义端点</string>
     <string name="ui_onboard_configure_endpoint_label">接口地址</string>
-    <string name="ui_onboard_configure_endpoint_placeholder">例如 https://api.example.com/v1/chat/completions</string>
+    <string name="ui_onboard_configure_endpoint_placeholder">输入你的接口地址</string>
     <string name="ui_onboard_configure_model_label">模型代号</string>
-    <string name="ui_onboard_configure_model_placeholder">例如 deepseek-chat</string>
+    <string name="ui_onboard_configure_model_placeholder">输入你的模型代号</string>
     <string name="ui_onboard_configure_api_key_label">API Key</string>
-    <string name="ui_onboard_configure_api_key_placeholder">输入你的 provider API key</string>
+    <string name="ui_onboard_configure_api_key_placeholder">输入你的 API Key</string>
     <string name="ui_onboard_configure_api_key_show">显示 API Key</string>
     <string name="ui_onboard_configure_api_key_hide">隐藏 API Key</string>
-    <string name="ui_onboard_configure_error_endpoint_required">已开启自定义 endpoint，地址不能为空。</string>
     <string name="ui_onboard_configure_error_load_failed">读取配置失败：%1$s</string>
     <string name="ui_onboard_configure_error_save_failed">保存配置失败：%1$s</string>
     <string name="ui_onboard_done_headline">没做完，直接点下一步</string>

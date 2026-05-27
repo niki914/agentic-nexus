@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +22,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -55,8 +58,14 @@ fun ConfigurePageContent(
     onRequestedFocusHandled: () -> Unit = {},
 ) {
     val scrollState = rememberScrollState()
+    val focusManager = LocalFocusManager.current
     val policy = onboardingConfigurePolicy(uiState.providerSpec)
     var expandedField by rememberSaveable { mutableStateOf<ConfigureEditableField?>(null) }
+
+    fun clearActiveField() {
+        expandedField = null
+        focusManager.clearFocus()
+    }
 
     LaunchedEffect(uiState.endpointOverrideEnabled) {
         if (!uiState.endpointOverrideEnabled && expandedField == ConfigureEditableField.Endpoint) {
@@ -79,7 +88,15 @@ fun ConfigurePageContent(
             .padding(horizontal = 20.dp, vertical = 24.dp),
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = {
+                            clearActiveField()
+                        },
+                    )
+                },
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             Column(
@@ -102,6 +119,7 @@ fun ConfigurePageContent(
                     onModelChange = onModelChange,
                     onApiKeyChange = onApiKeyChange,
                     onToggleApiKeyVisibility = onToggleApiKeyVisibility,
+                    onClearActiveField = ::clearActiveField,
                 )
 
                 configureInlineErrorText(uiState.inlineError)?.let { errorText ->
