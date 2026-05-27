@@ -1,6 +1,7 @@
 package com.niki914.nexus.agentic.app.ui.infra.component
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -13,9 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,10 +29,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -46,7 +46,6 @@ fun SettingExpandableTextCard(
     placeholder: String,
     modifier: Modifier = Modifier,
     description: String? = null,
-    preview: String = value,
     enabled: Boolean = true,
     initiallyExpanded: Boolean = false,
     expanded: Boolean? = null,
@@ -77,20 +76,14 @@ fun SettingExpandableTextCard(
         onValueChange = onValueChange,
         placeholder = placeholder,
         description = description,
-        preview = preview,
         expanded = isExpanded,
         enabled = enabled,
         minLines = minLines,
         maxLines = maxLines,
         focusRequester = focusRequester,
-        onExpand = {
-            if (!isExpanded && enabled) {
-                updateExpanded(true)
-            }
-        },
-        onCollapse = {
-            if (isExpanded && enabled) {
-                updateExpanded(false)
+        onToggleExpanded = {
+            if (enabled) {
+                updateExpanded(!isExpanded)
             }
         },
         modifier = modifier,
@@ -104,18 +97,21 @@ private fun SettingExpandableTextCardContent(
     onValueChange: (String) -> Unit,
     placeholder: String,
     description: String?,
-    preview: String,
     expanded: Boolean,
     enabled: Boolean,
     minLines: Int,
     maxLines: Int,
     focusRequester: FocusRequester,
-    onExpand: () -> Unit,
-    onCollapse: () -> Unit,
+    onToggleExpanded: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val animationSpec = tween<IntSize>(durationMillis = 320, easing = FastOutSlowInEasing)
     val cardShape = G2CardShape(28.dp)
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (expanded) 90f else 0f,
+        animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+        label = "settingExpandableTextCardArrowRotation",
+    )
     val colorScheme = MaterialTheme.colorScheme
     val cardColor = if (enabled) {
         colorScheme.surfaceContainer
@@ -132,7 +128,6 @@ private fun SettingExpandableTextCardContent(
     } else {
         colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
     }
-    val previewText = preview.ifBlank { placeholder }
 
     Column(
         modifier = modifier
@@ -140,54 +135,40 @@ private fun SettingExpandableTextCardContent(
             .clip(cardShape)
             .background(cardColor, cardShape)
             .animateContentSize(animationSpec = animationSpec)
-            .then(
-                if (!expanded && enabled) {
-                    Modifier.pointerInput(Unit) {
-                        detectTapGestures(onTap = { onExpand() })
-                    }
-                } else {
-                    Modifier
-                },
-            )
             .padding(16.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (enabled) {
+                        Modifier.pointerInput(expanded) {
+                            detectTapGestures(onTap = { onToggleExpanded() })
+                        }
+                    } else {
+                        Modifier
+                    }
+                ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 color = titleColor,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
             )
-            if (!expanded) {
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = previewText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = secondaryTextColor,
-                    textAlign = TextAlign.End,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-            } else {
-                Spacer(modifier = Modifier.weight(1f))
-                Icon(
-                    imageVector = Icons.Filled.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = secondaryTextColor,
-                    modifier = Modifier
-                        .size(22.dp)
-                        .pointerInput(enabled) {
-                            detectTapGestures {
-                                if (enabled) {
-                                    onCollapse()
-                                }
-                            }
-                        },
-                )
-            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = secondaryTextColor,
+                modifier = Modifier
+                    .size(22.dp)
+                    .graphicsLayer {
+                        rotationZ = arrowRotation
+                    },
+            )
         }
 
         if (description != null) {

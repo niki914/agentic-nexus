@@ -94,6 +94,8 @@ fun SettingToggleItem(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
             if (description != null) {
                 Text(

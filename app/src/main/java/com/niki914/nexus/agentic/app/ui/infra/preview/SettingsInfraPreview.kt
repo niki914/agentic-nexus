@@ -59,9 +59,9 @@ private fun SettingsInfraPreviewContent() {
 
         SettingsGroupCard(title = "长文案与 Disabled") {
             SettingNavigationItem(
-                title = "这是一个很长很长的导航标题，用来确认标题在真实页面宽度下的观感是否还能保持稳定",
-                summary = "这里是一段更长的摘要文案，用来验证 summary 在默认规则下会被限制为两行并正确省略，而不是把整个卡片撑到不可控的高度。",
-                currentState = "已选择一个很长的当前状态值",
+                title = "这是一个很长很长的导航标题，用来确认标题最多显示两行，同时左侧标题区不会无限挤占整行宽度",
+                summary = "这里是一段更长的摘要文案，用来验证副标题同样最多显示两行，并且当右侧状态文案很长时，优先保证左侧标题区稳定展示。",
+                currentState = "已选择一个特别长的当前状态值",
                 enabled = false,
                 onClick = {},
             )
@@ -71,8 +71,8 @@ private fun SettingsInfraPreviewContent() {
                 modifier = Modifier.padding(horizontal = 12.dp),
             )
             SettingToggleItem(
-                title = "同步远程配置",
-                description = "这是一个很长的说明文案，用来验证 description 在禁用状态下仍然遵循两行截断，同时观察整体透明 item 语义没有被误改成独立卡片。",
+                title = "同步远程配置并在需要时自动回退到本地缓存",
+                description = "这是一个很长的说明文案，用来验证开关项的标题和副标题都被限制在两行以内，同时观察整行点击和透明 item 语义保持不变。",
                 checked = false,
                 enabled = false,
                 onCheckedChange = {},
@@ -91,17 +91,16 @@ private fun SettingsInfraPreviewContent() {
         }
 
         SettingExpandableTextCard(
-            title = "折叠态可展开卡片",
-            description = "折叠态需要展示单行预览，并保持与组容器接近的排版节奏。",
+            title = "折叠态可展开卡片，标题最多显示两行并保留常驻箭头",
+            description = "折叠态不再展示 preview，只保留标题和右侧箭头，同时说明文案仍然最多显示两行。",
             value = "https://api.example.com/v1/chat/completions",
             onValueChange = {},
             placeholder = "请输入地址",
-            preview = "这是一个非常长的折叠态预览文本，用来验证 preview 在默认规则下只保留一行并以省略号结尾，避免和正文段落风格混淆。",
             expanded = false,
         )
 
         SettingExpandableTextCard(
-            title = "展开态可展开卡片",
+            title = "展开态可展开卡片，箭头会随展开状态旋转",
             description = "展开后展示输入区域，说明文案仍然保持两行以内，避免和输入内容争抢层级。",
             value = "第一行内容\n第二行内容\n第三行内容",
             onValueChange = {},
@@ -115,7 +114,6 @@ private fun SettingsInfraPreviewContent() {
             value = "已存在但不可编辑的内容",
             onValueChange = {},
             placeholder = "不可编辑",
-            preview = "当前内容不可编辑",
             enabled = false,
             expanded = false,
             modifier = Modifier.fillMaxWidth(),
