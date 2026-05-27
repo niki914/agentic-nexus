@@ -39,24 +39,63 @@
 - `agentic/LlmStreamEventMapper.kt`: `SessionEvent` 到 `LlmStreamEvent` 的映射
 - `agentic/ToolEventFormatter.kt`: 工具事件格式化
 
-## app/src/main/java/com/niki914/nexus/agentic/app/ui/
+## app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/
 
-- `nexus/NexusApp.kt`: 主 App Shell 入口
-- `nexus/NexusPages.kt`: Nexus 页面装配
-- `nexus/nav/NexusPage.kt`: Nexus 页面定义
-- `nexus/nav/NexusSettingsGroup.kt`: 设置组模型
-- `nexus/content/StartupPageContent.kt`: 启动页内容
-- `nexus/content/HomePageContent.kt`: 首页内容
-- `nexus/content/ConfigurePageContent.kt`: 配置页内容
-- `nexus/content/SelectionPageContent.kt`: 选择页内容
-- `nexus/content/SettingsHomePageContent.kt`: 设置首页内容
-- `nexus/content/SettingsDetailPageContent.kt`: 设置详情内容
-- `nexus/content/CustomToolsSettingsContent.kt`: 自定义工具设置页
-- `infra/nav/NavigationController.kt`: 导航控制器
-- `infra/nav/Navigator.kt`: 导航能力接口
-- `infra/nav/Page.kt`: 页面接口
-- `infra/nav/PageViewModel.kt`: 页面 ViewModel 基类
-- `infra/component/`: Liquid 与设置项基础组件
+- `NexusApp.kt`: 主 App Shell 入口
+- `NexusPages.kt`: 页面装配与路由分发
+- `model/AppLaunchDecision.kt`: 初始页面判定
+- `nav/NexusPage.kt`: 页面定义
+- `nav/NexusSettingsGroup.kt`: 设置组模型
+- `content/StartupPageContent.kt`: 启动页内容
+- `content/SelectionPageContent.kt`: Provider 选择页内容
+- `content/ConfigurePageContent.kt`: 配置页与 DonePage 复用布局
+- `content/HomePageContent.kt`: 首页内容
+- `content/HomeChatComponents.kt`: 首页对话组件
+- `content/SettingsHomePageContent.kt`: 设置首页内容
+- `content/SettingsDetailPageContent.kt`: 设置详情分发入口
+- `content/BuiltinToolsSettingsContent.kt`: Builtin Tools 设置页
+- `content/McpSettingsContent.kt`: MCP 设置页
+- `content/CustomToolsSettingsContent.kt`: 自定义工具设置页
+- `content/StartupPosterBackground.kt`: 启动页背景
+
+## app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/
+
+- `LiquidScreen.kt`: 顶层 Liquid Shell
+- `LiquidScreenState.kt`: 标题、按钮、blur layer 状态
+- `LiquidScreenSwipeContent.kt`: 页面转场容器
+- `ActionBarButton.kt`: 顶栏按钮基建
+
+## app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/nav/
+
+- `NavigationController.kt`: 导航控制器
+- `Navigator.kt`: 导航能力接口
+- `Page.kt`: 页面接口
+- `PageViewModel.kt`: 页面 ViewModel 基类
+
+## app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/component/
+
+- `LiquidButton.kt`: 基础 Liquid 按钮
+- `TintLiquidButton.kt`: 可着色 Liquid 按钮
+- `MaterialTintLiquidButton.kt`: Material 风格着色按钮
+- `LiquidTextField.kt`: 基础文本输入
+- `LiquidSecretTextField.kt`: 密码输入
+- `ExpandableLiquidTextFieldCard.kt`: 可展开多行表单卡片
+- `LiquidToggle.kt`: 自定义 Toggle
+- `LiquidToggleStateMachine.kt`: Toggle 状态机
+- `SettingsGroupCard.kt`: 设置分组卡片
+- `SettingsNavigationRow.kt`: 设置导航行
+- `SettingsToggleRow.kt`: 设置开关行
+
+## app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/interaction/
+
+- `LiquidInteractiveLayer.kt`: 液态交互层
+- `LiquidInteractiveStyle.kt`: 交互参数模型
+- `DragGestureInspector.kt`: 拖拽手势检测
+- `InteractiveHighlight.kt`: 交互高亮
+
+## app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/shape/
+
+- `G2Shapes.kt`: G2 系列形状定义
 
 ## app/src/main/java/a0/a0/a0/a0/a0/a0/
 

@@ -9,12 +9,15 @@
 - **LLM Runtime**：`LLMController` 持有单例 `Session` 与 runtime snapshot，支持配置刷新、流式请求、会话重置和统一事件映射。
 - **HTTP MCP**：MCP server 配置解析、Session 注册、discovered tools cache 与 HTTP interceptor 已落地。
 - **CustomTool**：`custom_tools` 从 `LocalSettings` 解析到 `LocalTool.Custom`、local tool 注册、`ToolCallDispatcher` 与 `CustomToolExecutor` 执行链路已落地；builtin 入口使用 `create_custom_tool`。
-- **UI Shell**：`NexusApp`、startup/home/configure/selection/settings 页面、Liquid 组件与导航控制器已落地，自定义工具设置页已接入 `custom_tools` 读写闭环。
+- **UI Shell 与导航**：`NexusApp`、`NexusPages`、`NexusPage`、`NavigationController` 与 `LiquidScreen` 壳层已落地，页面覆盖 Startup、ProviderPick、Configure、Done、Home、SettingsHome、SettingsDetail。
+- **UI 基建组件**：`LiquidScreenState`、`LiquidScreenSwipeContent`、`SettingsGroupCard`、`SettingsNavigationRow`、`SettingsToggleRow`、`LiquidTextField`、`LiquidSecretTextField`、`ExpandableLiquidTextFieldCard` 以及 liquid 交互层已落地，形成统一风格的 Compose 基建层。
+- **UI 设置页能力**：`BuiltinToolsSettingsContent`、`McpSettingsContent`、`CustomToolsSettingsContent` 均已接入真实配置读写，不再只有自定义工具设置页落地。
 
 ## 半落地能力
 
 - **Builtin Tool Flags**：已解析 builtin tool flags 并生成 prompt lines，未看到独立 builtin 执行链路。
-- **UI 完整态**：当前导航结构已经固定为源码现状，剩余工作集中在 onboarding 表单化、DonePage 去套壳、隐藏 settings 分组落地和 strings 体系收口。
+- **UI 完整态**：Settings 分组模型已定义 ProviderModel、Network、Memory、BuiltinTools、ShellRules、Mcp、CustomTools、About，但默认可见分组目前只有 BuiltinTools、Mcp、CustomTools，未接入独立内容的分组仍是隐藏或占位状态。
+- **DonePage**：`DonePage` 仍复用 `ConfigurePageContent`，未形成独立页面实现。
 
 ## 提案
 
@@ -26,3 +29,4 @@
 - `BaseConfigProvider` / `BreenoConfigProvider`：需引入 Dataclass 描述 hook spot，并将下游读参方式重构为 `suspend`。
 - `AbstractAssistantHook`：需统一所有业务分支的 subhooks 命名、云 config 结构及生命周期方法名。
 - `LLMController`：需补充前置配置检查与快速失败逻辑。
+- `AppLaunchDecision`：当前仍被临时返回固定到 `StartupPage`，实际启动流与已计算的 `initialPage` 不一致。
