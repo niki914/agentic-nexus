@@ -58,6 +58,7 @@ internal fun LiquidTextFieldContainer(
     enabled: Boolean = true,
     singleLine: Boolean = false,
     minLines: Int = 1,
+    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
@@ -160,6 +161,7 @@ internal fun LiquidTextFieldContainer(
         enabled = enabled,
         singleLine = singleLine,
         minLines = minLines,
+        maxLines = maxLines,
         visualTransformation = visualTransformation,
         textStyle = MaterialTheme.typography.bodyLarge.merge(
             TextStyle(color = textColor),

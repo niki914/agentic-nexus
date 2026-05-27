@@ -13,6 +13,7 @@ fun LiquidTextField(
     enabled: Boolean = true,
     singleLine: Boolean = false,
     minLines: Int = 1,
+    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
     trailingContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
     LiquidTextFieldContainer(
@@ -23,6 +24,7 @@ fun LiquidTextField(
         enabled = enabled,
         singleLine = singleLine,
         minLines = minLines,
+        maxLines = maxLines,
         trailingContent = trailingContent,
     )
 }
