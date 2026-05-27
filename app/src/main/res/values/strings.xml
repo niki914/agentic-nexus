@@ -5,11 +5,12 @@
     <string name="xposed_desc">允许系统级语音助手换源自定义大模型供应商\n\n现支持: ColorOS 小布 | HyperOS 小爱同学</string>
 
     <!-- Onboarding -->
-    <string name="ui_onboard_startup_headline">让系统助手接入你自己的模型</string>
-    <string name="ui_onboard_startup_status_breeno">已支持助手：Breeno</string>
-    <string name="ui_onboard_startup_status_xiaoai">已支持助手：小爱同学</string>
-    <string name="ui_onboard_startup_status_chat_only">不支持的系统：仅聊天模式</string>
-    <string name="ui_onboard_startup_continue">开始配置</string>
+    <string name="ui_onboard_startup_headline">让语音助手，接入您自己的模型能力</string>
+    <string name="ui_onboard_startup_status_breeno">Nexus 已支持小布助手</string>
+    <string name="ui_onboard_startup_status_xiaoai">Nexus 已支持小爱同学</string>
+    <string name="ui_onboard_startup_status_chat_only">Nexus 暂不支持当前设备，仍可使用对话功能</string>
+    <string name="ui_onboard_startup_continue">开始接入</string>
+    <string name="ui_onboard_startup_continue_chat_only">继续</string>
     <string name="ui_onboard_provider_pick_title">选择提供商</string>
     <string name="ui_onboard_provider_pick_headline">选择大模型提供商</string>
     <string name="ui_onboard_provider_pick_description">从这里开始接入您的模型能力。\n选择一个提供商以继续。</string>

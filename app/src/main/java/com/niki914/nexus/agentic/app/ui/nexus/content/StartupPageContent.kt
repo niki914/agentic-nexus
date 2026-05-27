@@ -71,9 +71,9 @@ fun StartupPageContent(
                 Text(
                     text = stringResource(R.string.ui_onboard_startup_headline),
                     style = TextStyle(
-                        fontSize = 42.sp,
-                        lineHeight = 46.sp,
-                        letterSpacing = (-1.5).sp,
+                        fontSize = 36.sp,
+                        lineHeight = 40.sp,
+                        letterSpacing = (-1.2).sp,
                         fontWeight = FontWeight.SemiBold,
                         color = headlineColor,
                         shadow = headlineShadow,

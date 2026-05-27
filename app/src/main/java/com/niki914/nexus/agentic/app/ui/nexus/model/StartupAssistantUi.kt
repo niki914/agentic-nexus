@@ -23,7 +23,7 @@ sealed interface StartupAssistantUi {
 
     data object ChatOnly : StartupAssistantUi {
         override val statusTextRes: Int = R.string.ui_onboard_startup_status_chat_only
-        override val buttonTextRes: Int = R.string.ui_onboard_startup_continue
+        override val buttonTextRes: Int = R.string.ui_onboard_startup_continue_chat_only
     }
 
     companion object {
