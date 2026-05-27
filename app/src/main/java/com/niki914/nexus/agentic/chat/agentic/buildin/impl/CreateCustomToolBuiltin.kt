@@ -4,7 +4,9 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
-import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolManager
+import com.niki914.nexus.agentic.repo.CustomTool
+import com.niki914.nexus.agentic.repo.CustomToolValidation
+import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerializationException
@@ -15,9 +17,7 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
-class CreateCustomToolBuiltin(
-    private val manager: CustomToolManager = CustomToolManager(),
-) : BuiltinTool() {
+class CreateCustomToolBuiltin : BuiltinTool() {
     override val name: String = "create_custom_tool"
 
     override val description: String = "Create or update a custom tool in LocalSettings.custom_tools."
@@ -64,7 +64,31 @@ class CreateCustomToolBuiltin(
             )
         }
 
-        return manager.createOrUpdate(request.context, createRequest)
+        return try {
+            XRepo.init(request.context)
+            val normalized = createRequest.normalized()
+            val tool = CustomTool(
+                name = normalized.name,
+                description = normalized.description,
+                command = normalized.command,
+                enabled = normalized.enabled,
+            )
+            val validation = XRepo.customTools.save(tool, overwrite = normalized.overwrite)
+            if (validation != null) {
+                validation.toFailure(tool.name)
+            } else {
+                successForTool(tool)
+            }
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) {
+                throw throwable
+            }
+            BuiltinToolResult.failure(
+                code = "SETTINGS_WRITE_FAILED",
+                message = "Failed to write LocalSettings.custom_tools: ${throwable.message ?: throwable::class.java.simpleName}.",
+                hint = "Retry after confirming the settings provider is available.",
+            )
+        }
     }
 
     private fun parseArguments(argumentsJson: String): CustomToolCreateRequest {
@@ -92,6 +116,51 @@ class CreateCustomToolBuiltin(
 
     private fun JsonObject.boolean(key: String, default: Boolean): Boolean {
         return (this[key] as? JsonPrimitive)?.booleanOrNull ?: default
+    }
+
+    private fun CustomToolCreateRequest.normalized(): CustomToolCreateRequest {
+        return copy(
+            name = name.trim(),
+            description = description.trim(),
+            command = command.trim(),
+        )
+    }
+
+    private fun successForTool(tool: CustomTool): BuiltinToolResult {
+        return BuiltinToolResult.success(
+            message = "Custom tool '${tool.name}' was saved.",
+            hint = "The tool is available after the next runtime refresh.",
+            data = JsonObject(
+                mapOf(
+                    "available_next_turn" to JsonPrimitive(true),
+                    "tool" to JsonObject(
+                        mapOf(
+                            "name" to JsonPrimitive(tool.name),
+                            "enabled" to JsonPrimitive(tool.enabled),
+                        )
+                    ),
+                )
+            ),
+        )
+    }
+
+    private fun CustomToolValidation.toFailure(toolName: String): BuiltinToolResult {
+        return BuiltinToolResult.failure(
+            code = when (message) {
+                "Reserved builtin tool name." -> "RESERVED_NAME"
+                "Already exists in custom_tools." -> "NAME_CONFLICT"
+                "Unsafe command pattern was rejected." -> "UNSAFE_COMMAND"
+                else -> "INVALID_CUSTOM_TOOL"
+            },
+            message = when (message) {
+                "Reserved builtin tool name." -> "Custom tool name '$toolName' is reserved by a builtin tool."
+                "Already exists in custom_tools." -> "Custom tool name '$toolName' already exists."
+                "Unsafe command pattern was rejected." -> "Custom tool '$toolName' uses a command blocked by the basic safety policy."
+                else -> "Custom tool validation failed."
+            },
+            hint = message,
+            fieldErrors = mapOf(field to message),
+        )
     }
 
     companion object {

@@ -5,15 +5,18 @@ import com.niki914.nexus.agentic.chat.LocalTool
 import com.niki914.nexus.agentic.chat.McpCachedTool
 import com.niki914.nexus.agentic.chat.McpServerDefinition
 import com.niki914.nexus.agentic.chat.ResolvedTools
+import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
-import com.niki914.nexus.agentic.chat.mcpCacheKey
 import com.niki914.nexus.agentic.mod.LocalSettings
-import kotlinx.serialization.json.JsonArray
+import com.niki914.nexus.agentic.repo.BuiltinToolSetting
+import com.niki914.nexus.agentic.repo.CustomTool
+import com.niki914.nexus.agentic.repo.LocalSettingsCodec
+import com.niki914.nexus.agentic.repo.McpServer
+import com.niki914.nexus.agentic.repo.McpTool
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.jsonObject
 
 class ToolManager(
     private val builtinToolRegistry: BuiltinToolRegistry = BuiltinToolRegistry.default(),
@@ -24,50 +27,85 @@ class ToolManager(
     ): ResolvedTools = resolve(settings)
 
     fun resolve(settings: LocalSettings): ResolvedTools {
-        val builtinTools = buildBuiltinTools(settings)
-        val customTools = buildCustomTools(settings)
-        val mcpServers = buildMcpServers(settings)
+        val mcpServers = LocalSettingsCodec.parseMcpServers(settings)
+        return resolve(
+            customTools = LocalSettingsCodec.parseCustomTools(settings),
+            mcpServers = mcpServers,
+            builtinSettings = buildBuiltinSettings(settings),
+            mcpCachedTools = mcpServers.associate { server ->
+                server.name to LocalSettingsCodec.parseMcpCache(settings, server)
+            },
+        )
+    }
+
+    fun resolve(
+        customTools: List<CustomTool>,
+        mcpServers: List<McpServer>,
+        builtinSettings: List<BuiltinToolSetting>,
+        mcpCachedTools: Map<String, List<McpTool>> = emptyMap(),
+    ): ResolvedTools {
+        val builtinTools = buildBuiltinTools(builtinSettings)
+        val customRuntimeTools = buildCustomTools(customTools)
+        val mcpRuntimeServers = buildMcpServers(
+            servers = mcpServers,
+            cachedTools = mcpCachedTools,
+        )
 
         return ResolvedTools(
             builtinTools = builtinTools,
-            customTools = customTools,
-            mcpServers = mcpServers,
+            customTools = customRuntimeTools,
+            mcpServers = mcpRuntimeServers,
             promptLines = buildPromptLines(
                 builtinTools = builtinTools,
-                customTools = customTools,
-                mcpServers = mcpServers,
+                customTools = customRuntimeTools,
+                mcpServers = mcpRuntimeServers,
             ),
         )
     }
 
-    private fun buildBuiltinTools(settings: LocalSettings): List<LocalTool.Builtin> {
-        return builtinToolRegistry
-            .resolveEnabled(settings)
+    private fun buildBuiltinSettings(settings: LocalSettings): List<BuiltinToolSetting> {
+        val flags = LocalSettingsCodec.parseBuiltinFlags(settings)
+        return builtinToolRegistry.all()
+            .sortedBy { it.name }
             .map { tool ->
-                LocalTool.Builtin(
+                BuiltinToolSetting(
                     name = tool.name,
                     description = tool.description,
+                    enabled = flags[tool.name]
+                        ?: flags[tool::class.simpleName]
+                        ?: tool.defaultEnabled,
+                )
+            }
+    }
+
+    private fun buildBuiltinTools(settings: List<BuiltinToolSetting>): List<LocalTool.Builtin> {
+        return settings
+            .filter { it.enabled }
+            .sortedBy { it.name }
+            .mapNotNull { setting ->
+                val tool = findBuiltinTool(setting.name) ?: return@mapNotNull null
+                LocalTool.Builtin(
+                    name = setting.name,
+                    description = setting.description,
                     tool = tool,
                 )
             }
     }
 
-    private fun buildCustomTools(settings: LocalSettings): List<LocalTool.Custom> {
-        return settings.customTools
-            .orEmptyObjects()
-            .mapNotNull { obj ->
-                val enabled = obj.boolean("enabled", default = true)
-                val name = obj.string("name").trim()
-                val command = obj.string("command").trim()
-                if (!enabled || name.isBlank() || command.isBlank()) {
-                    return@mapNotNull null
-                }
-                val description = obj.string("description").ifBlank { "Custom tool: $name" }
+    private fun findBuiltinTool(name: String): BuiltinTool? {
+        return builtinToolRegistry.find(name)
+            ?: builtinToolRegistry.all().firstOrNull { it::class.simpleName == name }
+    }
+
+    private fun buildCustomTools(tools: List<CustomTool>): List<LocalTool.Custom> {
+        return tools
+            .filter { it.enabled }
+            .map { tool ->
                 LocalTool.Custom(
-                    name = name,
-                    description = description,
-                    enabled = enabled,
-                    command = command,
+                    name = tool.name,
+                    description = tool.description,
+                    enabled = tool.enabled,
+                    command = tool.command,
                 )
             }
             .associateBy(LocalTool.Custom::name)
@@ -75,53 +113,40 @@ class ToolManager(
             .toList()
     }
 
-    private fun buildMcpServers(settings: LocalSettings): List<McpServerDefinition> {
-        val cache = settings.mcpDiscoveredToolsCache
-        return settings.mcpServers
-            .orEmptyObjects()
-            .mapNotNull { obj ->
-                val name = obj.string("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
-                val url = obj.string("url").ifBlank {
-                    obj.obj("transport")?.string("url").orEmpty()
-                }
-                if (url.isBlank()) {
-                    null
-                } else {
-                    val headers = obj.obj("headers")
-                        ?.mapValues { (_, value) -> value.jsonPrimitive.contentOrNull.orEmpty() }
-                        ?: emptyMap()
-                    McpServerDefinition.Http(
-                        name = name,
-                        url = url,
-                        enabled = obj.boolean("enabled", default = true),
-                        headers = headers,
-                        cachedTools = parseCachedTools(
-                            cache = cache?.get(
-                                mcpCacheKey(
-                                    url = url,
-                                    headers = headers
-                                )
-                            ) as? JsonObject,
-                        ),
-                    )
-                }
-            }
+    private fun buildMcpServers(
+        servers: List<McpServer>,
+        cachedTools: Map<String, List<McpTool>>,
+    ): List<McpServerDefinition> {
+        return servers.map { server ->
+            McpServerDefinition.Http(
+                name = server.name,
+                url = server.url,
+                enabled = server.enabled,
+                headers = server.headers,
+                cachedTools = cachedTools[server.name].orEmpty().map(::toCachedTool),
+            )
+        }
     }
 
-    private fun parseCachedTools(
-        cache: JsonObject?,
-    ): List<McpCachedTool> {
-        return cache?.array("tools")
-            .orEmptyObjects()
-            .mapNotNull { tool ->
-                val name = tool.string("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
-                val inputSchema = tool.obj("inputSchema") ?: return@mapNotNull null
-                McpCachedTool(
-                    name = name,
-                    description = tool.string("description"),
-                    inputSchema = inputSchema,
-                )
-            }
+    private fun toCachedTool(tool: McpTool): McpCachedTool {
+        return McpCachedTool(
+            name = tool.name,
+            description = tool.description,
+            inputSchema = tool.inputSchemaJson.asJsonObjectOrEmpty(),
+        )
+    }
+
+    private fun String.asJsonObjectOrEmpty(): JsonObject {
+        if (isBlank()) {
+            return JsonObject(emptyMap())
+        }
+        return try {
+            Json.parseToJsonElement(this).jsonObject
+        } catch (_: SerializationException) {
+            JsonObject(emptyMap())
+        } catch (_: IllegalArgumentException) {
+            JsonObject(emptyMap())
+        }
     }
 
     fun buildPromptLines(
@@ -151,18 +176,4 @@ class ToolManager(
         return lines
     }
 
-    private fun JsonArray?.orEmptyObjects(): List<JsonObject> =
-        this?.mapNotNull { it as? JsonObject } ?: emptyList()
-
-    private fun JsonObject.string(key: String): String =
-        (this[key] as? JsonPrimitive)?.contentOrNull.orEmpty()
-
-    private fun JsonObject.boolean(key: String, default: Boolean = false): Boolean =
-        (this[key] as? JsonPrimitive)?.booleanOrNull ?: default
-
-    private fun JsonObject.array(key: String): JsonArray? =
-        this[key] as? JsonArray
-
-    private fun JsonObject.obj(key: String): JsonObject? =
-        this[key] as? JsonObject
 }

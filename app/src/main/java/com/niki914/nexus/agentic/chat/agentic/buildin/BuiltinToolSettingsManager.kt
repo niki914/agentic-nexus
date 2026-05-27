@@ -2,9 +2,9 @@ package com.niki914.nexus.agentic.chat.agentic.buildin
 
 import android.content.Context
 import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.mod.XService
+import com.niki914.nexus.agentic.repo.BuiltinToolSetting
+import com.niki914.nexus.agentic.repo.XRepo
 import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -18,6 +18,11 @@ data class BuiltinToolSettingItem(
 class BuiltinToolSettingsManager(
     private val registry: BuiltinToolRegistry = BuiltinToolRegistry.default(),
 ) {
+    suspend fun load(context: Context): List<BuiltinToolSettingItem> {
+        XRepo.init(context)
+        return XRepo.builtinTools.list().map { it.toItem() }
+    }
+
     fun list(settings: LocalSettings): List<BuiltinToolSettingItem> {
         return registry.all()
             .sortedBy { it.name }
@@ -36,13 +41,16 @@ class BuiltinToolSettingsManager(
         enabled: Boolean,
     ): BuiltinToolResult {
         return try {
-            val settings = XService.getLocalSettings(context)
-            val result = withEnabled(settings, name, enabled)
-            if (!result.ok) {
-                return result
+            XRepo.init(context)
+            val validation = XRepo.builtinTools.setEnabled(name, enabled)
+            if (validation != null) {
+                return BuiltinToolResult.failure(
+                    code = "UNKNOWN_BUILTIN_TOOL",
+                    message = "Unknown builtin tool: $name.",
+                    fieldErrors = mapOf(validation.field to validation.message),
+                )
             }
-            XService.putLocalSettings(context, buildUpdatedSettings(settings, name, enabled))
-            successResult(name = name, enabled = enabled, settings = null)
+            successResult(name = name, enabled = enabled)
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) {
                 throw throwable
@@ -55,39 +63,20 @@ class BuiltinToolSettingsManager(
         }
     }
 
-    fun withEnabled(
-        settings: LocalSettings,
-        name: String,
-        enabled: Boolean,
-    ): BuiltinToolResult {
-        if (registry.find(name) == null) {
-            return BuiltinToolResult.failure(
-                code = "UNKNOWN_BUILTIN_TOOL",
-                message = "Unknown builtin tool: $name.",
-                fieldErrors = mapOf("name" to "Builtin tool is not registered."),
-            )
-        }
-
-        val updatedSettings = buildUpdatedSettings(settings, name, enabled)
-        return successResult(name = name, enabled = enabled, settings = updatedSettings)
-    }
-
     private fun successResult(
         name: String,
         enabled: Boolean,
-        settings: LocalSettings?,
     ): BuiltinToolResult {
-        val data = mutableMapOf<String, JsonElement>(
-            "available_next_turn" to JsonPrimitive(true),
-            "name" to JsonPrimitive(name),
-            "enabled" to JsonPrimitive(enabled),
+        val data = JsonObject(
+            mapOf(
+                "available_next_turn" to JsonPrimitive(true),
+                "name" to JsonPrimitive(name),
+                "enabled" to JsonPrimitive(enabled),
+            )
         )
-        if (settings != null) {
-            data["settings"] = settings.props
-        }
         return BuiltinToolResult.success(
             message = "Builtin tool setting updated.",
-            data = JsonObject(data),
+            data = data,
         )
     }
 
@@ -100,16 +89,11 @@ class BuiltinToolSettingsManager(
         }
     }
 
-    private fun buildUpdatedSettings(
-        settings: LocalSettings,
-        name: String,
-        enabled: Boolean,
-    ): LocalSettings {
-        val props = settings.props.toMutableMap()
-        val flags = settings.builtinToolFlags?.toMutableMap()
-            ?: mutableMapOf<String, JsonElement>()
-        flags[name] = JsonPrimitive(enabled)
-        props["builtin_tool_flags"] = JsonObject(flags)
-        return LocalSettings(JsonObject(props))
+    private fun BuiltinToolSetting.toItem(): BuiltinToolSettingItem {
+        return BuiltinToolSettingItem(
+            name = name,
+            description = description,
+            enabled = enabled,
+        )
     }
 }

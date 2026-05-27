@@ -1,13 +1,31 @@
 package com.niki914.nexus.agentic.chat.v2
 
+import android.content.Context
+import android.content.ContextWrapper
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolManager
+import com.niki914.nexus.agentic.mod.LocalSettings
+import com.niki914.nexus.agentic.repo.CustomTool
+import com.niki914.nexus.agentic.repo.LocalSettingsStore
+import com.niki914.nexus.agentic.repo.XRepo
+import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CustomToolManagerTest {
+    private val context: Context = object : ContextWrapper(null) {
+        override fun getApplicationContext(): Context = this
+    }
     private val manager = CustomToolManager(reservedToolNames = { emptySet() })
+
+    @After
+    fun tearDown() {
+        XRepo.resetForTest()
+    }
 
     @Test
     fun validate_rejectsDangerousCommandsWithExecutablePathsOrAliases() {
@@ -83,6 +101,110 @@ class CustomToolManagerTest {
         assertNull(result)
     }
 
+    @Test
+    fun createOrUpdate_writesThroughXRepoCustomTools() = runTest {
+        val store = FakeLocalSettingsStore(LocalSettings())
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        val result = manager.createOrUpdate(
+            context = context,
+            request = request(command = "getprop ro.product.model").copy(enabled = true),
+        )
+
+        assertTrue(result.ok)
+        assertEquals(1, store.writeCount)
+        assertEquals(
+            listOf(
+                CustomTool(
+                    name = "sample_tool",
+                    description = "Sample custom tool.",
+                    command = "getprop ro.product.model",
+                    enabled = true,
+                )
+            ),
+            XRepo.customTools.list(),
+        )
+    }
+
+    @Test
+    fun createOrUpdate_rejectsDuplicateNameWithoutWriting() = runTest {
+        val store = FakeLocalSettingsStore(LocalSettings())
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+        assertTrue(
+            manager.createOrUpdate(
+                context = context,
+                request = request(command = "getprop ro.product.model"),
+            ).ok
+        )
+
+        val result = manager.createOrUpdate(
+            context = context,
+            request = request(command = "getprop ro.build.version.release"),
+        )
+
+        assertFalse(result.ok)
+        assertEquals("NAME_CONFLICT", result.code)
+        assertEquals(1, store.writeCount)
+        assertEquals("getprop ro.product.model", XRepo.customTools.list().single().command)
+    }
+
+    @Test
+    fun createOrUpdate_rejectsUnsafeCommandWithoutWriting() = runTest {
+        val store = FakeLocalSettingsStore(LocalSettings())
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        val result = manager.createOrUpdate(
+            context = context,
+            request = request(command = "rm -rf /data/local/tmp/cache"),
+        )
+
+        assertFalse(result.ok)
+        assertEquals("UNSAFE_COMMAND", result.code)
+        assertEquals(0, store.writeCount)
+        assertEquals(emptyList<CustomTool>(), XRepo.customTools.list())
+    }
+
+    @Test
+    fun saveAll_replacesRepoCustomTools() = runTest {
+        val store = FakeLocalSettingsStore(LocalSettings())
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+        assertTrue(
+            manager.createOrUpdate(
+                context = context,
+                request = request(command = "getprop ro.product.model").copy(name = "old_tool"),
+            ).ok
+        )
+
+        val result = manager.saveAll(
+            context = context,
+            items = listOf(
+                com.niki914.nexus.agentic.chat.agentic.custom.CustomToolConfig(
+                    name = "new_tool",
+                    description = "New custom tool.",
+                    enabled = true,
+                    command = "getprop ro.build.version.release",
+                )
+            ),
+        )
+
+        assertTrue(result.ok)
+        assertEquals(
+            listOf(
+                CustomTool(
+                    name = "new_tool",
+                    description = "New custom tool.",
+                    command = "getprop ro.build.version.release",
+                    enabled = true,
+                )
+            ),
+            XRepo.customTools.list(),
+        )
+    }
+
     private fun assertUnsafe(command: String) {
         val result = manager.validate(
             request = request(command = command),
@@ -99,5 +221,21 @@ class CustomToolManagerTest {
             description = "Sample custom tool.",
             command = command,
         )
+    }
+
+    private class FakeLocalSettingsStore(
+        initialSettings: LocalSettings,
+    ) : LocalSettingsStore {
+        var settings: LocalSettings = initialSettings
+            private set
+        var writeCount: Int = 0
+            private set
+
+        override suspend fun read(context: Context): LocalSettings = settings
+
+        override suspend fun write(context: Context, settings: LocalSettings) {
+            this.settings = settings
+            writeCount++
+        }
     }
 }

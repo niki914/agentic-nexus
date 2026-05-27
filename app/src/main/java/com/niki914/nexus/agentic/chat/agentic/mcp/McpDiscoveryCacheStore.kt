@@ -2,19 +2,14 @@ package com.niki914.nexus.agentic.chat.agentic.mcp
 
 import android.content.Context
 import com.niki914.nexus.agentic.chat.McpCachedTool
-import com.niki914.nexus.agentic.chat.mcpCacheKey
-import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.mod.XService
+import com.niki914.nexus.agentic.repo.McpTool
+import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.nexus.h.util.xTry
 import com.niki914.nexus.h.util.xlog
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -24,7 +19,6 @@ class McpDiscoveryCacheStore(
     private val contextProvider: suspend () -> Context = { ContextProvider.await() },
 ) {
     private val json = Json { ignoreUnknownKeys = true }
-    private val writeMutex = Mutex()
 
     suspend fun onToolsDiscovered(
         url: String,
@@ -50,17 +44,18 @@ class McpDiscoveryCacheStore(
         headers: Map<String, String>,
         tools: List<McpCachedTool>,
     ) {
-        val context = contextProvider()
-        writeMutex.withLock {
-            val latestSettings = XService.getLocalSettings(context)
-            val latestCache =
-                latestSettings.mcpDiscoveredToolsCache?.toMutableMap() ?: mutableMapOf()
-            latestCache[mcpCacheKey(url = url, headers = headers)] = buildMcpCacheEntry(tools)
-
-            val updatedProps = latestSettings.props.toMutableMap()
-            updatedProps[MCP_DISCOVERED_TOOLS_CACHE_KEY] = JsonObject(latestCache)
-            XService.putLocalSettings(context, LocalSettings(JsonObject(updatedProps)))
-        }
+        XRepo.init(contextProvider())
+        XRepo.mcp.saveDiscoveredTools(
+            url = url,
+            headers = headers,
+            tools = tools.map { tool ->
+                McpTool(
+                    name = tool.name,
+                    description = tool.description,
+                    inputSchemaJson = tool.inputSchema.toString(),
+                )
+            },
+        )
     }
 
     private fun extractDiscoveredTools(responseJson: String): List<McpCachedTool> {
@@ -80,24 +75,6 @@ class McpDiscoveryCacheStore(
                 inputSchema = inputSchema,
             )
         }
-    }
-
-    private fun buildMcpCacheEntry(tools: List<McpCachedTool>): JsonObject {
-        return JsonObject(
-            mapOf(
-                "tools" to JsonArray(
-                    tools.map { tool ->
-                        JsonObject(
-                            mapOf(
-                                "name" to JsonPrimitive(tool.name),
-                                "description" to JsonPrimitive(tool.description),
-                                "inputSchema" to tool.inputSchema,
-                            )
-                        )
-                    }
-                ),
-            )
-        )
     }
 
     companion object {

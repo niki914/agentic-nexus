@@ -4,16 +4,12 @@ import android.content.Context
 import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
-import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.mod.XService
+import com.niki914.nexus.agentic.repo.CustomTool
+import com.niki914.nexus.agentic.repo.CustomToolValidation
+import com.niki914.nexus.agentic.repo.XRepo
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.contentOrNull
 
 data class CustomToolCreateRequest(
     val name: String,
@@ -36,31 +32,34 @@ class CustomToolManager(
     },
     private val safetyPolicy: ShellCommandSafetyPolicy = ShellCommandSafetyPolicy(),
 ) {
+    suspend fun load(context: Context): List<CustomToolConfig> {
+        XRepo.init(context)
+        return XRepo.customTools.list().map { it.toConfig() }
+    }
+
     suspend fun createOrUpdate(
         context: Context,
         request: CustomToolCreateRequest,
     ): BuiltinToolResult {
-        return persist(context) { settings ->
-            val existingItems = parseCustomTools(settings)
+        return withSettingsFailure {
+            XRepo.init(context)
+            val existingItems = load(context)
             val validationError = validate(
                 request = request,
                 existingNames = existingItems.map { it.name }.toSet(),
                 reservedNames = reservedNames(),
             )
             if (validationError != null) {
-                return@persist validationError to null
+                return@withSettingsFailure validationError
             }
 
             val normalized = request.toConfig()
-            val updatedItems = if (existingItems.any { it.name == normalized.name }) {
-                existingItems.map { item ->
-                    if (item.name == normalized.name) normalized else item
-                }
-            } else {
-                existingItems + normalized
+            val repoValidation = XRepo.customTools.save(normalized.toRepo(), overwrite = true)
+            if (repoValidation != null) {
+                return@withSettingsFailure repoValidation.toFailure()
             }
 
-            successForTool(normalized) to updatedItems
+            successForTool(normalized)
         }
     }
 
@@ -68,14 +67,26 @@ class CustomToolManager(
         context: Context,
         items: List<CustomToolConfig>,
     ): BuiltinToolResult {
-        return persist(context) {
+        return withSettingsFailure {
+            XRepo.init(context)
             val normalizedItems = items.map { it.normalized() }
             val validationError = validateAll(
                 items = normalizedItems,
                 reservedNames = reservedNames(),
             )
             if (validationError != null) {
-                return@persist validationError to null
+                return@withSettingsFailure validationError
+            }
+
+            val targetNames = normalizedItems.map { it.name }.toSet()
+            load(context)
+                .filterNot { it.name in targetNames }
+                .forEach { XRepo.customTools.delete(it.name) }
+            normalizedItems.forEach { item ->
+                val repoValidation = XRepo.customTools.save(item.toRepo(), overwrite = true)
+                if (repoValidation != null) {
+                    return@withSettingsFailure repoValidation.toFailure()
+                }
             }
 
             BuiltinToolResult.success(
@@ -87,7 +98,42 @@ class CustomToolManager(
                         "count" to JsonPrimitive(normalizedItems.size),
                     )
                 ),
-            ) to normalizedItems
+            )
+        }
+    }
+
+    suspend fun delete(context: Context, name: String): BuiltinToolResult {
+        return withSettingsFailure {
+            XRepo.init(context)
+            XRepo.customTools.delete(name)
+            BuiltinToolResult.success(
+                message = "Custom tool '$name' was deleted.",
+                hint = "The updated custom tools are available after the next runtime refresh.",
+                data = JsonObject(
+                    mapOf(
+                        "available_next_turn" to JsonPrimitive(true),
+                        "name" to JsonPrimitive(name),
+                    )
+                ),
+            )
+        }
+    }
+
+    suspend fun setEnabled(context: Context, name: String, enabled: Boolean): BuiltinToolResult {
+        return withSettingsFailure {
+            XRepo.init(context)
+            XRepo.customTools.setEnabled(name, enabled)
+            BuiltinToolResult.success(
+                message = "Custom tool setting updated.",
+                hint = "The updated custom tools are available after the next runtime refresh.",
+                data = JsonObject(
+                    mapOf(
+                        "available_next_turn" to JsonPrimitive(true),
+                        "name" to JsonPrimitive(name),
+                        "enabled" to JsonPrimitive(enabled),
+                    )
+                ),
+            )
         }
     }
 
@@ -152,64 +198,6 @@ class CustomToolManager(
         }
 
         return null
-    }
-
-    private suspend fun persist(
-        context: Context,
-        build: (LocalSettings) -> Pair<BuiltinToolResult, List<CustomToolConfig>?>,
-    ): BuiltinToolResult {
-        return writeMutex.withLock {
-            try {
-                val latestSettings = XService.getLocalSettings(context)
-                val (result, updatedItems) = build(latestSettings)
-                if (updatedItems == null) {
-                    return@withLock result
-                }
-
-                val updatedProps = latestSettings.props.toMutableMap()
-                updatedProps[CUSTOM_TOOLS_KEY] = buildCustomToolsJson(updatedItems)
-                XService.putLocalSettings(context, LocalSettings(JsonObject(updatedProps)))
-                result
-            } catch (throwable: Throwable) {
-                if (throwable is CancellationException) {
-                    throw throwable
-                }
-                BuiltinToolResult.failure(
-                    code = "SETTINGS_WRITE_FAILED",
-                    message = "Failed to write LocalSettings.custom_tools: ${throwable.message ?: throwable::class.java.simpleName}.",
-                    hint = "Retry after confirming the settings provider is available.",
-                )
-            }
-        }
-    }
-
-    private fun parseCustomTools(settings: LocalSettings): List<CustomToolConfig> {
-        return settings.customTools
-            ?.mapNotNull { element ->
-                val obj = element as? JsonObject ?: return@mapNotNull null
-                CustomToolConfig(
-                    name = obj.string("name").trim(),
-                    description = obj.string("description").trim(),
-                    enabled = obj.boolean("enabled", default = true),
-                    command = obj.string("command").trim(),
-                )
-            }
-            ?: emptyList()
-    }
-
-    private fun buildCustomToolsJson(items: List<CustomToolConfig>): JsonArray {
-        return JsonArray(
-            items.map { item ->
-                JsonObject(
-                    mapOf(
-                        "name" to JsonPrimitive(item.name),
-                        "description" to JsonPrimitive(item.description),
-                        "enabled" to JsonPrimitive(item.enabled),
-                        "command" to JsonPrimitive(item.command),
-                    )
-                )
-            }
-        )
     }
 
     private fun validateAll(
@@ -295,17 +283,54 @@ class CustomToolManager(
         )
     }
 
-    private fun JsonObject.string(key: String): String {
-        return (this[key] as? JsonPrimitive)?.contentOrNull.orEmpty()
+    private fun CustomToolConfig.toRepo(): CustomTool {
+        return CustomTool(
+            name = name,
+            description = description,
+            command = command,
+            enabled = enabled,
+        )
     }
 
-    private fun JsonObject.boolean(key: String, default: Boolean): Boolean {
-        return (this[key] as? JsonPrimitive)?.booleanOrNull ?: default
+    private fun CustomTool.toConfig(): CustomToolConfig {
+        return CustomToolConfig(
+            name = name,
+            description = description,
+            enabled = enabled,
+            command = command,
+        )
+    }
+
+    private suspend inline fun withSettingsFailure(block: suspend () -> BuiltinToolResult): BuiltinToolResult {
+        return try {
+            block()
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) {
+                throw throwable
+            }
+            BuiltinToolResult.failure(
+                code = "SETTINGS_WRITE_FAILED",
+                message = "Failed to write LocalSettings.custom_tools: ${throwable.message ?: throwable::class.java.simpleName}.",
+                hint = "Retry after confirming the settings provider is available.",
+            )
+        }
+    }
+
+    private fun CustomToolValidation.toFailure(): BuiltinToolResult {
+        return BuiltinToolResult.failure(
+            code = when (message) {
+                "Reserved builtin tool name." -> "RESERVED_NAME"
+                "Already exists in custom_tools." -> "NAME_CONFLICT"
+                "Unsafe command pattern was rejected." -> "UNSAFE_COMMAND"
+                else -> "INVALID_CUSTOM_TOOL"
+            },
+            message = "Custom tool validation failed.",
+            hint = message,
+            fieldErrors = mapOf(field to message),
+        )
     }
 
     companion object {
-        private const val CUSTOM_TOOLS_KEY = "custom_tools"
         private val NAME_PATTERN = Regex("^[a-zA-Z_][a-zA-Z0-9_]{1,63}$")
-        private val writeMutex = Mutex()
     }
 }

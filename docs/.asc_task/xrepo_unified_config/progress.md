@@ -44,8 +44,8 @@ Manual validation after each Batch
 | Batch ID | Feature | 状态 | 前置 Batch |
 |:---------|:--------|:-----|:-----------|
 | B-01 | F-01 | Completed | - |
-| B-02 | F-02 | Pending | B-01 |
-| B-03 | F-03 | Pending | B-01 |
+| B-02 | F-02 | Completed | B-01 |
+| B-03 | F-03 | Completed | B-01 |
 | B-04 | F-04 | Pending | B-02, B-03 |
 
 ## Task Progress
@@ -57,14 +57,14 @@ Manual validation after each Batch
 | T-04 | B-01 | `app/src/main/java/com/niki914/nexus/agentic/repo/XRepo.kt` | Completed |
 | T-05 | B-01 | `app/src/test/java/com/niki914/nexus/agentic/repo/LocalSettingsCodecTest.kt` | Completed |
 | T-06 | B-01 | `app/src/test/java/com/niki914/nexus/agentic/repo/XRepoTest.kt` | Completed |
-| T-07 | B-02 | `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStore.kt` | Pending |
-| T-08 | B-02 | `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolManager.kt` | Pending |
-| T-09 | B-02 | `app/src/test/java/com/niki914/nexus/agentic/chat/v2/ToolManagerTest.kt` | Pending |
-| T-10 | B-02 | `app/src/test/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStoreTest.kt` | Pending |
-| T-11 | B-03 | `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/CustomToolManager.kt` | Pending |
-| T-12 | B-03 | `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolSettingsManager.kt` | Pending |
-| T-13 | B-03 | `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/CreateCustomToolBuiltin.kt` | Pending |
-| T-14 | B-03 | `app/src/test/java/com/niki914/nexus/agentic/chat/agentic/custom/CustomToolManagerTest.kt` | Pending |
+| T-07 | B-02 | `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStore.kt` | Completed |
+| T-08 | B-02 | `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolManager.kt` | Completed |
+| T-09 | B-02 | `app/src/test/java/com/niki914/nexus/agentic/chat/v2/ToolManagerTest.kt` | Completed |
+| T-10 | B-02 | `app/src/test/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStoreTest.kt` | Completed |
+| T-11 | B-03 | `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/CustomToolManager.kt` | Completed |
+| T-12 | B-03 | `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolSettingsManager.kt` | Completed |
+| T-13 | B-03 | `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/CreateCustomToolBuiltin.kt` | Completed |
+| T-14 | B-03 | `app/src/test/java/com/niki914/nexus/agentic/chat/v2/CommandToolManagerTest.kt`, `app/src/test/java/com/niki914/nexus/agentic/chat/v2/BuiltinToolSettingsManagerTest.kt`, `app/src/test/java/com/niki914/nexus/agentic/chat/v2/CreateCommandToolBuiltinTest.kt` | Completed |
 | T-15 | B-04 | `app/src/main/java/com/niki914/nexus/agentic/chat/LLMController.kt` | Pending |
 | T-16 | B-04 | `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/ConfigureState.kt` | Pending |
 | T-17 | B-04 | `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/McpSettingsState.kt` | Pending |
@@ -88,3 +88,36 @@ Manual validation after each Batch
   - IDE diagnostics for edited repo files returned no diagnostics.
 - Notes:
   - 初次验证发现 `XRepoTest` 使用 `android.test.mock.MockContext` 导致 JVM test compile 失败；已改为 `ContextWrapper(null)` 测试 Context，并保持 `LocalSettingsStore` 的 non-null `Context` 签名与设计一致。
+
+### B-03
+- Status: Completed
+- Modified files:
+  - `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/CustomToolManager.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolSettingsManager.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/CreateCustomToolBuiltin.kt`
+  - `app/src/test/java/com/niki914/nexus/agentic/chat/v2/CommandToolManagerTest.kt`
+  - `app/src/test/java/com/niki914/nexus/agentic/chat/v2/BuiltinToolSettingsManagerTest.kt`
+  - `app/src/test/java/com/niki914/nexus/agentic/chat/v2/CreateCommandToolBuiltinTest.kt`
+- Verification:
+  - `./gradlew :app:testDebugUnitTest --tests 'com.niki914.nexus.agentic.chat.v2.CustomToolManagerTest' --tests 'com.niki914.nexus.agentic.chat.v2.BuiltinToolSettingsManagerTest' --tests 'com.niki914.nexus.agentic.chat.v2.CreateCustomToolBuiltinTest'` passed.
+  - IDE diagnostics for edited production/test files returned no diagnostics.
+  - Grep confirmed B-03 target production files no longer reference `XService`, `getLocalSettings`, `putLocalSettings`, or raw custom/builtin JSON builder helpers.
+- Notes:
+  - 现有测试文件位于 `app/src/test/java/com/niki914/nexus/agentic/chat/v2/`，不是计划中的 `chat/agentic/custom/CustomToolManagerTest.kt` 路径；本批按实际测试布局扩展。
+  - `BuiltinToolRegistry.default()` 当前包含 `notify`，本批测试断言已按源码事实更新。
+  - Controller 合并验收已通过，包含 B-02/B-03 目标测试同跑与 IDE diagnostics 检查。
+
+### B-02
+- Status: Completed
+- Modified files:
+  - `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolManager.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStore.kt`
+  - `app/src/test/java/com/niki914/nexus/agentic/chat/v2/ToolManagerTest.kt`
+  - `app/src/test/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStoreTest.kt`
+- Verification:
+  - `./gradlew :app:testDebugUnitTest --tests 'com.niki914.nexus.agentic.chat.v2.ToolManagerTest' --tests 'com.niki914.nexus.agentic.chat.agentic.mcp.McpDiscoveryCacheStoreTest' --tests 'com.niki914.nexus.agentic.chat.v2.CustomToolManagerTest' --tests 'com.niki914.nexus.agentic.chat.v2.BuiltinToolSettingsManagerTest' --tests 'com.niki914.nexus.agentic.chat.v2.CreateCustomToolBuiltinTest'` passed.
+  - IDE diagnostics for B-02/B-03 edited production/test files returned no diagnostics.
+  - Grep confirmed `McpDiscoveryCacheStore.kt` no longer references `XService`, `getLocalSettings`, or `putLocalSettings`.
+- Notes:
+  - 并行实现时 B-02 曾因检测到 B-03 文件变更暂停；确认来源为并行 B-03 后继续收尾。
+  - Controller 验收发现 `ToolManager.resolve(settings)` 一度丢失 builtin `defaultEnabled` 兼容行为；已补派 B-02 修复，并新增测试覆盖空 flags 使用默认启用与显式 false 覆盖默认启用。

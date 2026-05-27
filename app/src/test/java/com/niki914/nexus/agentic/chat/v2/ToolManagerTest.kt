@@ -1,12 +1,17 @@
 package com.niki914.nexus.agentic.chat.v2
 
 import com.niki914.nexus.agentic.chat.LocalTool
+import com.niki914.nexus.agentic.chat.McpServerDefinition
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.ToolManager
 import com.niki914.nexus.agentic.mod.LocalSettings
+import com.niki914.nexus.agentic.repo.BuiltinToolSetting
+import com.niki914.nexus.agentic.repo.CustomTool
+import com.niki914.nexus.agentic.repo.McpServer
+import com.niki914.nexus.agentic.repo.McpTool
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -82,14 +87,14 @@ class ToolManagerTest {
     }
 
     @Test
-    fun resolveFromSettings_defaultRegistryResolvesCreateCustomTool() {
+    fun resolveFromSettings_defaultRegistryResolvesEnabledBuiltins() {
         val settings = LocalSettings(
             Json.parseToJsonElement(
                 """
                 {
                   "builtin_tool_flags": {
                     "create_custom_tool": true,
-                    "RunCommandBuildin_WIP_SAFE": true,
+                    "run_command": true,
                     "unknown": true
                   }
                 }
@@ -100,17 +105,17 @@ class ToolManagerTest {
         val resolved = ToolManager().resolve(settings)
 
         assertEquals(
-            listOf("RunCommandBuildin_WIP_SAFE", "create_custom_tool"),
+            listOf("create_custom_tool", "notify", "run_command"),
             resolved.builtinTools.map { it.name }.sorted()
         )
         assertEquals(
-            "Available builtin tools: RunCommandBuildin_WIP_SAFE, create_custom_tool",
+            "Available builtin tools: create_custom_tool, notify, run_command",
             resolved.promptLines.first(),
         )
     }
 
     @Test
-    fun resolveFromSettings_missingBuiltinFlagDoesNotExposeBuiltinPromptLine() {
+    fun resolveFromSettings_missingBuiltinFlagUsesDefaultEnabled() {
         val settings = LocalSettings(
             Json.parseToJsonElement(
                 """
@@ -123,8 +128,97 @@ class ToolManagerTest {
 
         val resolved = ToolManager().resolve(settings)
 
-        assertTrue(resolved.builtinTools.isEmpty())
-        assertTrue(resolved.promptLines.none { it.startsWith("Available builtin tools:") })
+        assertEquals(
+            listOf("create_custom_tool", "notify", "run_command"),
+            resolved.builtinTools.map { it.name }.sorted()
+        )
+        assertEquals(
+            "Available builtin tools: create_custom_tool, notify, run_command",
+            resolved.promptLines.first(),
+        )
+    }
+
+    @Test
+    fun resolveFromSettings_explicitFalseOverridesDefaultEnabled() {
+        val settings = LocalSettings(
+            Json.parseToJsonElement(
+                """
+                {
+                  "builtin_tool_flags": {
+                    "notify": false
+                  }
+                }
+                """.trimIndent()
+            ).jsonObject
+        )
+
+        val resolved = ToolManager().resolve(settings)
+
+        assertEquals(
+            listOf("create_custom_tool", "run_command"),
+            resolved.builtinTools.map { it.name }.sorted()
+        )
+        assertEquals(
+            "Available builtin tools: create_custom_tool, run_command",
+            resolved.promptLines.first(),
+        )
+    }
+
+    @Test
+    fun resolveFromTypedConfig_preservesMcpHeadersAndCache() {
+        val resolved = ToolManager(
+            builtinToolRegistry = BuiltinToolRegistry(
+                listOf(FakeBuiltinTool(name = "time", description = "Read current time."))
+            )
+        ).resolve(
+            customTools = listOf(
+                CustomTool(
+                    name = "current_time",
+                    description = "Get current timestamp",
+                    command = "date +%s",
+                    enabled = true,
+                )
+            ),
+            mcpServers = listOf(
+                McpServer(
+                    name = "aslocate",
+                    url = "http://127.0.0.1:51338/mcp",
+                    enabled = true,
+                    headers = mapOf("Authorization" to "Bearer token"),
+                )
+            ),
+            builtinSettings = listOf(
+                BuiltinToolSetting(
+                    name = "time",
+                    description = "Read current time.",
+                    enabled = true,
+                )
+            ),
+            mcpCachedTools = mapOf(
+                "aslocate" to listOf(
+                    McpTool(
+                        name = "lookupSymbol",
+                        description = "Lookup symbol definition",
+                        inputSchemaJson = """{"type":"object"}""",
+                    )
+                )
+            ),
+        )
+
+        assertEquals(listOf("time"), resolved.builtinTools.map { it.name })
+        assertEquals(listOf("current_time"), resolved.customTools.map { it.name })
+        val mcpServer = resolved.mcpServers.single() as McpServerDefinition.Http
+        assertEquals(mapOf("Authorization" to "Bearer token"), mcpServer.headers)
+        assertEquals("lookupSymbol", mcpServer.cachedTools.single().name)
+        assertEquals("""{"type":"object"}""", mcpServer.cachedTools.single().inputSchema.toString())
+        assertEquals(
+            listOf(
+                "Available builtin tools: time",
+                "Available custom tools: current_time",
+                "Available MCP servers: aslocate",
+            ),
+            resolved.promptLines,
+        )
     }
 
     private class FakeBuiltinTool(
