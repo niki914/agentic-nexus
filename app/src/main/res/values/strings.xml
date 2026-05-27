@@ -10,9 +10,9 @@
     <string name="ui_onboard_startup_status_xiaoai">已支持助手：小爱同学</string>
     <string name="ui_onboard_startup_status_chat_only">不支持的系统：仅聊天模式</string>
     <string name="ui_onboard_startup_continue">开始配置</string>
-    <string name="ui_onboard_provider_pick_title">没做完，直接点下一步</string>
+    <string name="ui_onboard_provider_pick_title">选择提供商</string>
     <string name="ui_onboard_provider_pick_headline">选择大模型提供商</string>
-    <string name="ui_onboard_provider_pick_description">选择你期望使用的大模型提供商，选完后直接进入下一步。</string>
+    <string name="ui_onboard_provider_pick_description">从这里开始接入您的模型能力。\n选择一个提供商以继续。</string>
     <string name="ui_onboard_provider_pick_option_deepseek">DeepSeek</string>
     <string name="ui_onboard_provider_pick_option_deepseek_summary">适合优先接入 DeepSeek 系列模型。</string>
     <string name="ui_onboard_provider_pick_option_openai">OpenAI</string>

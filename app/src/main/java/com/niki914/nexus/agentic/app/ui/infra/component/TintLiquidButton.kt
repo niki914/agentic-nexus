@@ -1,5 +1,6 @@
 package com.niki914.nexus.agentic.app.ui.infra.component
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -16,13 +17,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.annotation.DrawableRes
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 
 @Composable
@@ -43,6 +44,7 @@ fun TintLiquidButton(
     darkContentColor: Color = Color.Unspecified,
     lightContentColor: Color = Color.Unspecified,
     contentColor: Color = Color.Unspecified,
+    buttonHeight: Dp = 48.dp,
 ) {
     val isDarkTheme = isSystemInDarkTheme()
     val backdrop = rememberLayerBackdrop()
@@ -67,11 +69,13 @@ fun TintLiquidButton(
         darkContentColor.isSpecified && lightContentColor.isSpecified -> {
             if (isDarkTheme) darkContentColor else lightContentColor
         }
+
         darkContentColor.isSpecified -> darkContentColor
         lightContentColor.isSpecified -> lightContentColor
         resolvedContainerColor.isSpecified -> {
             if (resolvedContainerColor.luminance() > 0.42f) Color(0xFF0F172A) else Color.White
         }
+
         else -> {
             if (isDarkTheme) MaterialTheme.colorScheme.onSurface else Color(0xFF111827)
         }
@@ -80,7 +84,7 @@ fun TintLiquidButton(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 56.dp)
+            .heightIn(min = buttonHeight + 8.dp)
             .then(modifier),
         contentAlignment = Alignment.Center,
     ) {
@@ -91,6 +95,7 @@ fun TintLiquidButton(
             isInteractive = enabled,
             tint = if (enabled) resolvedContainerColor else disabledContainerColor,
             surfaceColor = if (enabled) resolvedSurfaceColor else Color.Transparent,
+            height = buttonHeight,
         ) {
             val currentContentColor = if (enabled) resolvedContentColor else disabledContentColor
             if (leadingIconRes == null && trailingIconRes == null && trailingIcon == null) {

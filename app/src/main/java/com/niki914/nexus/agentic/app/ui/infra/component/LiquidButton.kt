@@ -16,14 +16,15 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
-import com.niki914.nexus.agentic.app.ui.infra.interaction.LiquidButtonInteractiveStyle
 import com.niki914.nexus.agentic.app.ui.infra.interaction.InteractiveHighlight
+import com.niki914.nexus.agentic.app.ui.infra.interaction.LiquidButtonInteractiveStyle
 import com.niki914.nexus.agentic.app.ui.infra.interaction.applyLiquidInteractiveTransform
 import com.niki914.nexus.agentic.app.ui.infra.shape.G2CapsuleShape
 
@@ -35,6 +36,7 @@ fun LiquidButton(
     isInteractive: Boolean = true,
     tint: Color = Color.Unspecified,
     surfaceColor: Color = Color.Unspecified,
+    height: Dp = 48.dp,
     content: @Composable RowScope.() -> Unit
 ) {
     val animationScope = rememberCoroutineScope()
@@ -99,7 +101,7 @@ fun LiquidButton(
                     Modifier
                 }
             )
-            .height(48f.dp)
+            .height(height)
             .padding(horizontal = 16f.dp),
         horizontalArrangement = Arrangement.spacedBy(8f.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,

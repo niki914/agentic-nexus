@@ -163,7 +163,7 @@ private fun ExpandableLiquidTextFieldCardContent(
                 color = titleColor,
             )
             if (!expanded) {
-                Spacer(modifier = Modifier.width(32.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = previewText,
                     style = MaterialTheme.typography.bodyLarge,
