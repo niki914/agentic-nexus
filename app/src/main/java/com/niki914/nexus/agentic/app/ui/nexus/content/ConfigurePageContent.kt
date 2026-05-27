@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,9 +14,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -25,10 +28,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.agentic.app.ui.infra.component.LiquidToggle
-import com.niki914.nexus.agentic.app.ui.infra.component.LiquidSecretTextField
-import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.TintLiquidButton
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureInlineError
@@ -38,6 +41,9 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 
+// TODO P1 ViewModel
+// TODO P0 改描述文案和自定义标题“DeepSeek”之类的。并且根据选择的供应商可决定是否将自定义 Endpoint 和 Endpoint 干掉，像 DeepSeek 这种就不需要展示
+// TODO P0 文案 hint 重设计
 @Composable
 fun ConfigurePageContent(
     topPadding: Dp,
@@ -55,12 +61,30 @@ fun ConfigurePageContent(
     onComplete: () -> Unit,
 ) {
     val scrollState = rememberScrollState()
+    var expandedField by rememberSaveable { mutableStateOf<ConfigureExpandableField?>(null) }
+
+    LaunchedEffect(uiState.endpointOverrideEnabled) {
+        if (!uiState.endpointOverrideEnabled && expandedField == ConfigureExpandableField.Endpoint) {
+            expandedField = null
+        }
+    }
+
+    fun updateExpandedField(field: ConfigureExpandableField, expanded: Boolean) {
+        expandedField = if (expanded) {
+            field
+        } else if (expandedField == field) {
+            null
+        } else {
+            expandedField
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .hazeSource(hazeState)
             .padding(top = topPadding)
-            .padding(horizontal = 16.dp, vertical = 24.dp),
+            .padding(horizontal = 20.dp, vertical = 24.dp),
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -70,100 +94,110 @@ fun ConfigurePageContent(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.ui_onboard_configure_headline),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.ui_onboard_configure_description,
-                            uiState.providerSpec.brandName,
-                        ),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                Text(
+                    text = stringResource(
+                        R.string.ui_onboard_configure_description,
+                        uiState.providerSpec.brandName,
+                    ),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = 18.sp,
+                        lineHeight = 28.sp,
+                    ),
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
 
                 SettingsGroupCard(title = uiState.providerSpec.brandName) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        Text(
-                            text = uiState.providerSpec.officialEndpoint,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        EndpointOverrideRow(
-                            label = stringResource(R.string.ui_onboard_configure_endpoint_override_title),
-                            description = stringResource(R.string.ui_onboard_configure_endpoint_override_description),
-                            checked = uiState.endpointOverrideEnabled,
-                            enabled = !uiState.isSaving,
-                            onCheckedChange = { enabled ->
-                                if (!uiState.isSaving) {
-                                    onEndpointOverrideChange(enabled)
-                                }
-                            },
-                        )
+                    SettingToggleItem(
+                        title = stringResource(R.string.ui_onboard_configure_endpoint_override_title),
+                        description = stringResource(R.string.ui_onboard_configure_endpoint_override_description),
+                        checked = uiState.endpointOverrideEnabled,
+                        enabled = !uiState.isSaving,
+                        onCheckedChange = { enabled ->
+                            if (!uiState.isSaving) {
+                                onEndpointOverrideChange(enabled)
+                            }
+                        },
+                    )
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
+                    SettingExpandableTextItem(
+                        title = stringResource(R.string.ui_onboard_configure_endpoint_label),
+                        value = uiState.endpointInput,
+                        onValueChange = onEndpointChange,
+                        placeholder = stringResource(R.string.ui_onboard_configure_endpoint_placeholder),
+                        description = uiState.providerSpec.officialEndpoint,
+                        enabled = uiState.endpointOverrideEnabled && !uiState.isSaving,
+                        minLines = 3,
+                        maxLines = 6,
+                        expanded = expandedField == ConfigureExpandableField.Endpoint,
+                        onExpandedChange = { isExpanded ->
+                            updateExpandedField(ConfigureExpandableField.Endpoint, isExpanded)
+                        },
+                    )
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
+                    SettingExpandableTextItem(
+                        title = stringResource(R.string.ui_onboard_configure_model_label),
+                        value = uiState.modelInput,
+                        onValueChange = onModelChange,
+                        placeholder = stringResource(R.string.ui_onboard_configure_model_placeholder),
+                        description = stringResource(R.string.ui_onboard_configure_model_placeholder),
+                        enabled = !uiState.isSaving,
+                        minLines = 1,
+                        maxLines = 1,
+                        expanded = expandedField == ConfigureExpandableField.Model,
+                        onExpandedChange = { isExpanded ->
+                            updateExpandedField(ConfigureExpandableField.Model, isExpanded)
+                        },
+                    )
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
+                    SettingExpandableTextItem(
+                        title = stringResource(R.string.ui_onboard_configure_api_key_label),
+                        value = uiState.apiKeyInput,
+                        onValueChange = onApiKeyChange,
+                        placeholder = stringResource(R.string.ui_onboard_configure_api_key_placeholder),
+                        description = stringResource(R.string.ui_onboard_configure_api_key_placeholder),
+                        enabled = !uiState.isSaving,
+                        minLines = 1,
+                        maxLines = 1,
+                        secretVisible = uiState.apiKeyVisible,
+                        onToggleSecretVisibility = onToggleApiKeyVisibility,
+                        toggleSecretVisibleContentDescription = stringResource(
+                            R.string.ui_onboard_configure_api_key_show,
+                        ),
+                        toggleSecretHiddenContentDescription = stringResource(
+                            R.string.ui_onboard_configure_api_key_hide,
+                        ),
+                        expanded = expandedField == ConfigureExpandableField.ApiKey,
+                        onExpandedChange = { isExpanded ->
+                            updateExpandedField(ConfigureExpandableField.ApiKey, isExpanded)
+                        },
+                    )
+                    configureInlineErrorText(uiState.inlineError)?.let { errorText ->
                         HorizontalDivider(
                             thickness = 1.dp,
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.padding(horizontal = 12.dp),
                         )
-                        ConfigureField(
-                            label = stringResource(R.string.ui_onboard_configure_endpoint_label),
-                        ) {
-                            LiquidTextField(
-                                value = uiState.endpointInput,
-                                onValueChange = onEndpointChange,
-                                placeholder = stringResource(R.string.ui_onboard_configure_endpoint_placeholder),
-                                enabled = uiState.endpointOverrideEnabled && !uiState.isSaving,
-                                singleLine = true,
-                            )
-                        }
-                        ConfigureField(
-                            label = stringResource(R.string.ui_onboard_configure_model_label),
-                        ) {
-                            LiquidTextField(
-                                value = uiState.modelInput,
-                                onValueChange = onModelChange,
-                                placeholder = stringResource(R.string.ui_onboard_configure_model_placeholder),
-                                enabled = !uiState.isSaving,
-                                singleLine = true,
-                            )
-                        }
-                        ConfigureField(
-                            label = stringResource(R.string.ui_onboard_configure_api_key_label),
-                        ) {
-                            LiquidSecretTextField(
-                                value = uiState.apiKeyInput,
-                                onValueChange = onApiKeyChange,
-                                placeholder = stringResource(R.string.ui_onboard_configure_api_key_placeholder),
-                                visible = uiState.apiKeyVisible,
-                                onToggleVisibility = onToggleApiKeyVisibility,
-                                toggleVisibleContentDescription = stringResource(
-                                    R.string.ui_onboard_configure_api_key_show,
-                                ),
-                                toggleHiddenContentDescription = stringResource(
-                                    R.string.ui_onboard_configure_api_key_hide,
-                                ),
-                                enabled = !uiState.isSaving,
-                            )
-                        }
-                        configureInlineErrorText(uiState.inlineError)?.let { errorText ->
-                            Text(
-                                text = errorText,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        }
+                        Text(
+                            text = errorText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -239,61 +273,6 @@ internal fun ConfigurePageContent(
 }
 
 @Composable
-private fun ConfigureField(
-    label: String,
-    content: @Composable () -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        content()
-    }
-}
-
-@Composable
-private fun EndpointOverrideRow(
-    label: String,
-    description: String,
-    checked: Boolean,
-    enabled: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        LiquidToggle(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            enabled = enabled,
-            modifier = Modifier.alpha(if (enabled) 1f else 0.5f),
-        )
-    }
-}
-
-@Composable
 private fun configureInlineErrorText(error: ConfigureInlineError?): String? {
     return when (error) {
         null -> null
@@ -307,6 +286,12 @@ private fun configureInlineErrorText(error: ConfigureInlineError?): String? {
         )
         is ConfigureInlineError.Validation -> stringResource(error.messageRes)
     }
+}
+
+private enum class ConfigureExpandableField {
+    Endpoint,
+    Model,
+    ApiKey,
 }
 
 @Preview(

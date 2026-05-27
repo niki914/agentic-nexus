@@ -25,7 +25,7 @@ import com.niki914.nexus.agentic.app.ui.infra.shape.G2CardShape
  */
 @Composable
 fun SettingsGroupCard(
-    title: String,
+    title: String? = null,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -34,13 +34,15 @@ fun SettingsGroupCard(
     val cardShape = G2CardShape(28.dp)
 
     Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            color = titleColor,
-            modifier = Modifier.padding(horizontal = 16.dp),
-        )
-        Spacer(modifier = Modifier.height(4.dp))
+        if (!title.isNullOrBlank()) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                color = titleColor,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+        }
         Column(
             modifier = Modifier
                 .fillMaxWidth()

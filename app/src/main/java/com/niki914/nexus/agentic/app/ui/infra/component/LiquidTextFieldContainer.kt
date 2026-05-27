@@ -31,6 +31,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -59,6 +61,7 @@ internal fun LiquidTextFieldContainer(
     singleLine: Boolean = false,
     minLines: Int = 1,
     maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
+    moveCursorToEndOnFocus: Boolean = false,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
@@ -71,9 +74,26 @@ internal fun LiquidTextFieldContainer(
     val density = LocalDensity.current
     var isFocused by remember { mutableStateOf(false) }
     var imeWasVisibleWhileFocused by remember { mutableStateOf(false) }
-    val interactiveEffectsEnabled = enabled && (!isFocused || value.isEmpty())
+    var textFieldValue by remember {
+        mutableStateOf(
+            TextFieldValue(
+                text = value,
+                selection = TextRange(value.length),
+            ),
+        )
+    }
+    val interactiveEffectsEnabled = enabled && (!isFocused || textFieldValue.text.isEmpty())
     val imeVisible = WindowInsets.ime.getBottom(density) > 0
     val fieldShape = G2FieldShape(28.dp)
+
+    LaunchedEffect(value) {
+        if (value != textFieldValue.text) {
+            textFieldValue = textFieldValue.copy(
+                text = value,
+                selection = TextRange(value.length),
+            )
+        }
+    }
 
     LaunchedEffect(isFocused, imeVisible) {
         syncLiquidTextFieldFocusWithImeVisibility(
@@ -113,13 +133,28 @@ internal fun LiquidTextFieldContainer(
     }
 
     BasicTextField(
-        value = value,
-        onValueChange = onValueChange,
+        value = textFieldValue,
+        onValueChange = { nextValue ->
+            textFieldValue = nextValue
+            if (nextValue.text != value) {
+                onValueChange(nextValue.text)
+            }
+        },
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 52.dp)
             .onFocusChanged { focusState ->
                 isFocused = focusState.isFocused
+                if (moveCursorToEndOnFocus && focusState.isFocused) {
+                    val textEnd = textFieldValue.text.length
+                    if (textFieldValue.selection.start != textEnd ||
+                        textFieldValue.selection.end != textEnd
+                    ) {
+                        textFieldValue = textFieldValue.copy(
+                            selection = TextRange(textEnd),
+                        )
+                    }
+                }
             }
             .drawBackdrop(
                 backdrop = backdrop,
@@ -177,7 +212,7 @@ internal fun LiquidTextFieldContainer(
                         .widthIn(min = 0.dp),
                     contentAlignment = Alignment.CenterStart,
                 ) {
-                    if (value.isBlank()) {
+                    if (textFieldValue.text.isBlank()) {
                         Text(
                             text = placeholder,
                             style = MaterialTheme.typography.bodyLarge,

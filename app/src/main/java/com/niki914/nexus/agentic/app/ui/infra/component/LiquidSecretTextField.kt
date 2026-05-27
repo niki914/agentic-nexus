@@ -25,6 +25,7 @@ fun LiquidSecretTextField(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     singleLine: Boolean = true,
+    moveCursorToEndOnFocus: Boolean = false,
 ) {
     val contentDescription = if (visible) {
         toggleHiddenContentDescription
@@ -39,6 +40,7 @@ fun LiquidSecretTextField(
         modifier = modifier,
         enabled = enabled,
         singleLine = singleLine,
+        moveCursorToEndOnFocus = moveCursorToEndOnFocus,
         visualTransformation = if (visible) {
             VisualTransformation.None
         } else {
