@@ -1,5 +1,7 @@
 package com.niki914.nexus.agentic.app.ui.nexus.model
 
+import android.content.Context
+import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.cb.ComposeMVIViewModel
 import kotlinx.coroutines.CancellationException
@@ -46,9 +48,25 @@ sealed interface McpSettingsIntent {
 
 sealed interface McpSettingsEffect
 
+class McpSettingsStrings(
+    private val context: Context,
+) {
+    fun loadFailed(message: String): String = context.getString(R.string.mcp_load_failed, message)
+    fun toggleSucceeded(enabled: Boolean): String = context.getString(
+        if (enabled) R.string.mcp_save_success_enabled else R.string.mcp_save_success_disabled
+    )
+    fun saveFailed(message: String): String = context.getString(R.string.mcp_save_failed, message)
+    fun nameRequired(): String = context.getString(R.string.mcp_name_required)
+    fun urlRequired(): String = context.getString(R.string.mcp_url_required)
+    fun duplicateName(): String = context.getString(R.string.mcp_duplicate_name)
+    fun saveSucceeded(): String = context.getString(R.string.mcp_save_success)
+    fun deleteSucceeded(): String = context.getString(R.string.mcp_delete_success)
+}
+
 class McpSettingsViewModel internal constructor(
     private val loadSettings: suspend () -> LocalSettings,
     private val saveSettings: suspend (LocalSettings) -> Unit,
+    private val strings: McpSettingsStrings,
 ) : ComposeMVIViewModel<McpSettingsIntent, McpSettingsUiState, McpSettingsEffect>() {
 
     override fun initUiState(): McpSettingsUiState = McpSettingsUiState()
@@ -107,7 +125,7 @@ class McpSettingsViewModel internal constructor(
             updateState {
                 copy(
                     isLoading = false,
-                    statusMessage = "读取 MCP 配置失败：${throwable.message ?: throwable::class.java.simpleName}",
+                    statusMessage = strings.loadFailed(throwable.message ?: throwable::class.java.simpleName),
                 )
             }
         }
@@ -152,11 +170,7 @@ class McpSettingsViewModel internal constructor(
             updateState {
                 copy(
                     isSaving = false,
-                    statusMessage = if (enabled) {
-                        "MCP 服务已启用。"
-                    } else {
-                        "MCP 服务已停用。"
-                    },
+                    statusMessage = strings.toggleSucceeded(enabled),
                 )
             }
         } catch (throwable: Throwable) {
@@ -170,7 +184,7 @@ class McpSettingsViewModel internal constructor(
                         formState
                     },
                     isSaving = false,
-                    statusMessage = "保存 MCP 配置失败：${throwable.message ?: throwable::class.java.simpleName}",
+                    statusMessage = strings.saveFailed(throwable.message ?: throwable::class.java.simpleName),
                 )
             }
         }
@@ -181,18 +195,18 @@ class McpSettingsViewModel internal constructor(
         val trimmedUrl = currentState.formState.url.trim()
         val editingIndex = currentState.formState.editingIndex
         if (trimmedName.isBlank()) {
-            updateState { copy(statusMessage = "MCP 名称不能为空。") }
+            updateState { copy(statusMessage = strings.nameRequired()) }
             return
         }
         if (trimmedUrl.isBlank()) {
-            updateState { copy(statusMessage = "MCP URL 不能为空。") }
+            updateState { copy(statusMessage = strings.urlRequired()) }
             return
         }
         val hasDuplicateName = currentState.items.anyIndexed { index, item ->
             item.name == trimmedName && index != editingIndex
         }
         if (hasDuplicateName) {
-            updateState { copy(statusMessage = "MCP 名称不能重复，请换一个名称。") }
+            updateState { copy(statusMessage = strings.duplicateName()) }
             return
         }
 
@@ -217,7 +231,7 @@ class McpSettingsViewModel internal constructor(
                     items = updatedItems,
                     formState = formState.copy(editingIndex = updatedItems.indexOf(nextItem)),
                     isSaving = false,
-                    statusMessage = "MCP 配置已保存。",
+                    statusMessage = strings.saveSucceeded(),
                 )
             }
         } catch (throwable: Throwable) {
@@ -225,7 +239,7 @@ class McpSettingsViewModel internal constructor(
             updateState {
                 copy(
                     isSaving = false,
-                    statusMessage = "保存 MCP 配置失败：${throwable.message ?: throwable::class.java.simpleName}",
+                    statusMessage = strings.saveFailed(throwable.message ?: throwable::class.java.simpleName),
                 )
             }
         }
@@ -243,7 +257,7 @@ class McpSettingsViewModel internal constructor(
                     items = updatedItems,
                     formState = McpServerFormState(),
                     isSaving = false,
-                    statusMessage = "MCP 配置已删除。",
+                    statusMessage = strings.deleteSucceeded(),
                 )
             }
         } catch (throwable: Throwable) {
@@ -251,7 +265,7 @@ class McpSettingsViewModel internal constructor(
             updateState {
                 copy(
                     isSaving = false,
-                    statusMessage = "保存 MCP 配置失败：${throwable.message ?: throwable::class.java.simpleName}",
+                    statusMessage = strings.saveFailed(throwable.message ?: throwable::class.java.simpleName),
                 )
             }
         }

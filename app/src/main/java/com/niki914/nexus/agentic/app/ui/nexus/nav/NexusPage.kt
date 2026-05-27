@@ -67,11 +67,16 @@ data object DonePage : NexusPage {
     override val rightAction: TopBarActionSpec? = null
 }
 
-data object HomePage : NexusPage {
+data class HomePage(
+    val onMenuClick: (() -> Unit)? = null,
+) : NexusPage {
     override val routeKey: String = "home"
     override val titleSpec: PageTitleSpec = ResTitle(R.string.ui_home_title)
     override val leftAction: TopBarActionSpec? = null
-    override val rightAction: TopBarActionSpec = TopBarActionSpec(Icons.Default.MoreHoriz)
+    override val rightAction: TopBarActionSpec = TopBarActionSpec(
+        icon = Icons.Default.MoreHoriz,
+        onClick = onMenuClick,
+    )
 }
 
 data object SettingsHomePage : NexusPage {
@@ -83,27 +88,33 @@ data object SettingsHomePage : NexusPage {
 
 data class SettingsDetailPage(
     val group: NexusSettingsGroup,
+    val explicitTitleSpec: PageTitleSpec? = null,
+    val explicitRightAction: TopBarActionSpec? = null,
 ) : NexusPage {
     override val routeKey: String = "settings-detail:${group.routeSuffix}"
-    override val titleSpec: PageTitleSpec = if (group == NexusSettingsGroup.Mcp) {
-        TextTitle("MCP 配置")
-    } else {
-        ResTitle(group.titleRes)
-    }
+    override val titleSpec: PageTitleSpec = explicitTitleSpec ?: ResTitle(group.titleRes)
     override val leftAction: TopBarActionSpec = TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
-    override val rightAction: TopBarActionSpec? = if (group == NexusSettingsGroup.Mcp) {
-        TopBarActionSpec(Icons.Default.Add)
-    } else {
-        null
-    }
+    override val rightAction: TopBarActionSpec? = explicitRightAction
 }
 
 data class McpServerDetailPage(
     val serverName: String,
     val serverIndex: Int,
+    val isCreating: Boolean = false,
 ) : NexusPage {
     override val routeKey: String = "mcp-server-detail:$serverIndex:$serverName"
     override val titleSpec: PageTitleSpec = TextTitle(serverName)
     override val leftAction: TopBarActionSpec = TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
-    override val rightAction: TopBarActionSpec = TopBarActionSpec(Icons.Default.Delete)
+    override val rightAction: TopBarActionSpec? = if (isCreating) null else TopBarActionSpec(Icons.Default.Delete)
+}
+
+data class CustomToolDetailPage(
+    val toolName: String,
+    val toolIndex: Int,
+    val isCreating: Boolean = false,
+) : NexusPage {
+    override val routeKey: String = "custom-tool-detail:$toolIndex:$toolName"
+    override val titleSpec: PageTitleSpec = TextTitle(toolName)
+    override val leftAction: TopBarActionSpec = TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
+    override val rightAction: TopBarActionSpec? = if (isCreating) null else TopBarActionSpec(Icons.Default.Delete)
 }

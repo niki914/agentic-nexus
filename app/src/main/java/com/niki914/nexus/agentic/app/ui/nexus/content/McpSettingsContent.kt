@@ -1,6 +1,8 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content
 
 import android.content.Context
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,6 +23,7 @@ import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleListItemCard
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsIntent
+import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsStrings
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsViewModel
 import com.niki914.nexus.agentic.mod.XService
 import dev.chrisbanes.haze.HazeState
@@ -39,18 +42,24 @@ fun McpSettingsContent(
     LaunchedEffect(Unit) {
         viewModel.sendIntent(McpSettingsIntent.Load)
     }
+    val pageDescription = when {
+        uiState.isLoading || uiState.items.isNotEmpty() -> stringResource(R.string.mcp_page_description)
+        else -> stringResource(R.string.mcp_page_empty_description)
+    }
 
     SettingsListPageContent(
         topPadding = topPadding,
         hazeState = hazeState,
-        description = stringResource(R.string.mcp_page_description),
+        description = pageDescription,
     ) {
-        SettingsGroupCard(title = stringResource(R.string.mcp_list_title)) {
-            if (uiState.isLoading) {
+        if (uiState.isLoading) {
+            SettingsGroupCard {
                 McpListMessage(text = stringResource(R.string.mcp_loading))
-            } else if (uiState.items.isEmpty()) {
-                McpListMessage(text = stringResource(R.string.mcp_empty))
-            } else {
+            }
+        } else if (uiState.items.isNotEmpty()) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 uiState.items.forEachIndexed { index, item ->
                     SettingsToggleListItemCard(
                         title = item.name,
@@ -96,6 +105,7 @@ private fun createMcpSettingsViewModelFactory(
             return McpSettingsViewModel(
                 loadSettings = { XService.getLocalSettings(context) },
                 saveSettings = { settings -> XService.putLocalSettings(context, settings) },
+                strings = McpSettingsStrings(context),
             ) as T
         }
     }

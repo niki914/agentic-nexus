@@ -1,6 +1,7 @@
 package com.niki914.nexus.agentic.app.ui.nexus
 
 import android.content.Context
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,6 +20,7 @@ import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.nav.NavigationEntry
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigurePageContent
+import com.niki914.nexus.agentic.app.ui.nexus.content.CustomToolDetailContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.HomePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.McpServerDetailContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SelectionOption
@@ -34,14 +36,19 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.ProviderSpec
 import com.niki914.nexus.agentic.app.ui.nexus.model.ProviderSpecs
 import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
 import com.niki914.nexus.agentic.app.ui.nexus.nav.ConfigurePage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.CustomToolDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.DonePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.PageTitleSpec
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusSettingsGroup
 import com.niki914.nexus.agentic.app.ui.nexus.nav.ProviderPickPage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.ResTitle
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsHomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.StartupPage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.mod.XService
 import dev.chrisbanes.haze.HazeState
@@ -58,6 +65,8 @@ fun NexusPageContent(
     onResetTo: (NexusPage) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val mcpCreateTitle = stringResource(R.string.mcp_editor_title_create)
+    val customToolCreateTitle = stringResource(R.string.custom_tool_editor_title_create)
 
     when (val page = entry.page) {
         StartupPage -> StartupPageContent(
@@ -68,7 +77,7 @@ fun NexusPageContent(
                     when (startupAssistantUi) {
                         StartupAssistantUi.Breeno,
                         StartupAssistantUi.XiaoAi -> ProviderPickPage
-                        StartupAssistantUi.ChatOnly -> HomePage
+                        StartupAssistantUi.ChatOnly -> HomePage()
                     }
                 )
             },
@@ -149,12 +158,12 @@ fun NexusPageContent(
             onEnterHome = {
                 scope.launch {
                     completeOnboarding()
-                    onResetTo(HomePage)
+                    onResetTo(HomePage())
                 }
             },
         )
 
-        HomePage -> HomePageContent(
+        is HomePage -> HomePageContent(
             topPadding = topPadding,
             hazeState = hazeState,
         )
@@ -162,7 +171,20 @@ fun NexusPageContent(
         SettingsHomePage -> SettingsHomePageContent(
             topPadding = topPadding,
             hazeState = hazeState,
-            onOpenGroup = { group -> onPush(SettingsDetailPage(group)) },
+            onOpenGroup = { group ->
+                onPush(
+                    SettingsDetailPage(
+                        group = group,
+                        explicitTitleSpec = settingsDetailTitleSpec(group),
+                        explicitRightAction = settingsDetailRightAction(
+                            group = group,
+                            mcpCreateTitle = mcpCreateTitle,
+                            customToolCreateTitle = customToolCreateTitle,
+                            onPush = onPush,
+                        ),
+                    )
+                )
+            },
         )
 
         is SettingsDetailPage -> SettingsDetailPageContent(
@@ -176,6 +198,53 @@ fun NexusPageContent(
             topPadding = topPadding,
             hazeState = hazeState,
         )
+
+        is CustomToolDetailPage -> CustomToolDetailContent(
+            topPadding = topPadding,
+            hazeState = hazeState,
+        )
+    }
+}
+
+private fun settingsDetailTitleSpec(group: NexusSettingsGroup): PageTitleSpec? {
+    return when (group) {
+        NexusSettingsGroup.Mcp -> ResTitle(R.string.ui_settings_mcp_config)
+        else -> null
+    }
+}
+
+private fun settingsDetailRightAction(
+    group: NexusSettingsGroup,
+    mcpCreateTitle: String,
+    customToolCreateTitle: String,
+    onPush: (NexusPage) -> Unit,
+): TopBarActionSpec? {
+    return when (group) {
+        NexusSettingsGroup.Mcp -> TopBarActionSpec(
+            icon = androidx.compose.material.icons.Icons.Default.Add,
+            onClick = {
+                onPush(
+                    McpServerDetailPage(
+                        serverName = mcpCreateTitle,
+                        serverIndex = -1,
+                        isCreating = true,
+                    )
+                )
+            },
+        )
+        NexusSettingsGroup.CustomTools -> TopBarActionSpec(
+            icon = androidx.compose.material.icons.Icons.Default.Add,
+            onClick = {
+                onPush(
+                    CustomToolDetailPage(
+                        toolName = customToolCreateTitle,
+                        toolIndex = -1,
+                        isCreating = true,
+                    )
+                )
+            },
+        )
+        else -> null
     }
 }
 

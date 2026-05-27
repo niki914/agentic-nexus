@@ -56,7 +56,17 @@ fun NexusApp(
 ) {
     val isDarkTheme = isSystemInDarkTheme()
     val actionIconTint = if (isDarkTheme) Color.White else Color.Black
-    val controller = rememberNavigationController<NexusPage>(initialPage = launchDecision.initialPage)
+    var homeMenuExpanded by remember { mutableStateOf(false) }
+    fun openHomeMenu() {
+        homeMenuExpanded = true
+    }
+    val initialPage = remember(launchDecision.initialPage) {
+        attachPageActions(
+            page = launchDecision.initialPage,
+            onOpenHomeMenu = ::openHomeMenu,
+        )
+    }
+    val controller = rememberNavigationController<NexusPage>(initialPage = initialPage)
     val navigator = controller.navigator
     val currentEntry = controller.currentEntry
     val currentPage = currentEntry.page
@@ -64,7 +74,7 @@ fun NexusApp(
     val currentRightAction = currentPage.rightAction
     val showLeftButton = currentLeftAction != null && (currentLeftAction.onClick != null || controller.canGoBack)
     val showRightButton = currentRightAction != null
-    val currentHomeChatViewModel = if (currentPage == HomePage) {
+    val currentHomeChatViewModel = if (currentPage is HomePage) {
         remember(currentEntry) {
             val viewModelClass = HomeChatViewModel::class.java
             ViewModelProvider(
@@ -84,7 +94,6 @@ fun NexusApp(
         showRightButton = showRightButton,
         showBlurLayer = currentPage.showBlurLayer,
     )
-    var homeMenuExpanded by remember { mutableStateOf(false) }
 
     fun closeHomeMenu() {
         homeMenuExpanded = false
@@ -92,7 +101,12 @@ fun NexusApp(
 
     fun push(page: NexusPage) {
         closeHomeMenu()
-        navigator.push(page)
+        navigator.push(attachPageActions(page = page, onOpenHomeMenu = ::openHomeMenu))
+    }
+
+    fun resetTo(page: NexusPage) {
+        closeHomeMenu()
+        navigator.resetTo(attachPageActions(page = page, onOpenHomeMenu = ::openHomeMenu))
     }
 
     BackHandler(enabled = homeMenuExpanded || controller.canGoBack) {
@@ -104,15 +118,11 @@ fun NexusApp(
     }
 
     LaunchedEffect(currentEntry.id, controller.lastDirection, currentTitle) {
-        if (currentPage != HomePage) {
+        if (currentPage !is HomePage) {
             closeHomeMenu()
         }
         val onLeftClick = bindAction(currentLeftAction) { navigator.pop() }
-        val onRightClick = bindAction(currentRightAction) {
-            if (currentPage == HomePage) {
-                homeMenuExpanded = true
-            }
-        }
+        val onRightClick = bindAction(currentRightAction)
 
         when (controller.lastDirection) {
             TitleDirection.Forward -> screenState.navigateForward(
@@ -176,7 +186,7 @@ fun NexusApp(
                         hazeState = hazeState,
                         startupAssistantUi = startupAssistantUi,
                         onPush = ::push,
-                        onResetTo = navigator::resetTo,
+                        onResetTo = ::resetTo,
                     )
                 }
             }
@@ -187,7 +197,7 @@ fun NexusApp(
                     .padding(top = screenState.actionBarHeight.value, end = 12.dp),
             ) {
                 DropdownMenu(
-                    expanded = currentPage == HomePage && homeMenuExpanded,
+                    expanded = currentPage is HomePage && homeMenuExpanded,
                     onDismissRequest = ::closeHomeMenu,
                 ) {
                     DropdownMenuItem(
@@ -221,6 +231,16 @@ private fun bindAction(
     fallback: (() -> Unit)? = null,
 ): (() -> Unit)? {
     return action?.onClick ?: fallback
+}
+
+private fun attachPageActions(
+    page: NexusPage,
+    onOpenHomeMenu: () -> Unit,
+): NexusPage {
+    return when (page) {
+        is HomePage -> page.copy(onMenuClick = onOpenHomeMenu)
+        else -> page
+    }
 }
 
 @Composable
