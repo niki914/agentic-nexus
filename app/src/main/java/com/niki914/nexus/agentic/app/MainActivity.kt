@@ -8,7 +8,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import com.niki914.nexus.agentic.app.ui.nexus.NexusApp
 import com.niki914.nexus.agentic.app.ui.nexus.model.AppLaunchDecision
-import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.cb.BaseTheme
 import com.niki914.nexus.h.util.ContextProvider
@@ -36,10 +35,7 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermissionIfNeeded(notificationPermissionLauncher)
         val startupAssistantUi = resolveStartupAssistantUi()
         val launchDecision = runBlocking {
-            AppLaunchDecision.resolve(
-                settings = XService.getLocalSettings(this@MainActivity),
-                startupAssistantUi = startupAssistantUi,
-            )
+            AppLaunchDecision.resolve(startupAssistantUi)
         }
 
         setContent {
@@ -65,7 +61,7 @@ class MainActivity : ComponentActivity() {
             val versionCode = getInstalledPackageVersionCode(targetPkg)
             if (versionCode != null) {
                 xlog("currApp=$targetPkg versionCode=$versionCode")
-                XService.refreshWebSettings(this@MainActivity, targetPkg, versionCode)
+                XRepo.refreshWebSettings(this@MainActivity, targetPkg, versionCode)
             } else {
                 xlog("MainActivity: failed to get version code for $targetPkg via PackageManager")
             }

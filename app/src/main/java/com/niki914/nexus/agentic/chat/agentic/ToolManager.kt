@@ -1,16 +1,13 @@
 package com.niki914.nexus.agentic.chat.agentic
 
-import android.content.Context
 import com.niki914.nexus.agentic.chat.LocalTool
 import com.niki914.nexus.agentic.chat.McpCachedTool
 import com.niki914.nexus.agentic.chat.McpServerDefinition
 import com.niki914.nexus.agentic.chat.ResolvedTools
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
-import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.repo.BuiltinToolSetting
 import com.niki914.nexus.agentic.repo.CustomTool
-import com.niki914.nexus.agentic.repo.LocalSettingsCodec
 import com.niki914.nexus.agentic.repo.McpServer
 import com.niki914.nexus.agentic.repo.McpTool
 import kotlinx.serialization.SerializationException
@@ -21,23 +18,6 @@ import kotlinx.serialization.json.jsonObject
 class ToolManager(
     private val builtinToolRegistry: BuiltinToolRegistry = BuiltinToolRegistry.default(),
 ) {
-    suspend fun resolve(
-        context: Context,
-        settings: LocalSettings,
-    ): ResolvedTools = resolve(settings)
-
-    fun resolve(settings: LocalSettings): ResolvedTools {
-        val mcpServers = LocalSettingsCodec.parseMcpServers(settings)
-        return resolve(
-            customTools = LocalSettingsCodec.parseCustomTools(settings),
-            mcpServers = mcpServers,
-            builtinSettings = buildBuiltinSettings(settings),
-            mcpCachedTools = mcpServers.associate { server ->
-                server.name to LocalSettingsCodec.parseMcpCache(settings, server)
-            },
-        )
-    }
-
     fun resolve(
         customTools: List<CustomTool>,
         mcpServers: List<McpServer>,
@@ -61,21 +41,6 @@ class ToolManager(
                 mcpServers = mcpRuntimeServers,
             ),
         )
-    }
-
-    private fun buildBuiltinSettings(settings: LocalSettings): List<BuiltinToolSetting> {
-        val flags = LocalSettingsCodec.parseBuiltinFlags(settings)
-        return builtinToolRegistry.all()
-            .sortedBy { it.name }
-            .map { tool ->
-                BuiltinToolSetting(
-                    name = tool.name,
-                    description = tool.description,
-                    enabled = flags[tool.name]
-                        ?: flags[tool::class.simpleName]
-                        ?: tool.defaultEnabled,
-                )
-            }
     }
 
     private fun buildBuiltinTools(settings: List<BuiltinToolSetting>): List<LocalTool.Builtin> {

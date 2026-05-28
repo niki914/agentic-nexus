@@ -7,14 +7,11 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.ToolManager
-import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.repo.BuiltinToolSetting
 import com.niki914.nexus.agentic.repo.CustomTool
 import com.niki914.nexus.agentic.repo.McpServer
 import com.niki914.nexus.agentic.repo.McpTool
 import com.niki914.s3ss10n.LocalToolConfig
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -22,44 +19,36 @@ import org.junit.Test
 class ToolManagerTest {
 
     @Test
-    fun resolveFromSettings_parsesBuiltinCustomAndMcpDefinitions() {
-        val settings = LocalSettings(
-            Json.parseToJsonElement(
-                """
-                {
-                  "builtin_tool_flags": {"time": true, "weather": false, "unknown": true},
-                  "custom_tools": [
-                    {
-                      "name": "current_time",
-                      "description": "Get current timestamp",
-                      "command": "date +%s",
-                      "enabled": true
-                    }
-                  ],
-                  "mcp_servers": [
-                    {"name": "aslocate", "url": "http://127.0.0.1:51338/mcp"}
-                  ],
-                  "mcp_discovered_tools_cache": {
-                    "http://127.0.0.1:51338/mcp#": {
-                      "tools": [
-                        {
-                          "name": "lookupSymbol",
-                          "description": "Lookup symbol definition",
-                          "inputSchema": {"type": "object"}
-                        }
-                      ]
-                    }
-                  }
-                }
-                """.trimIndent()
-            ).jsonObject
-        )
-
+    fun resolveFromTypedConfig_buildsBuiltinCustomAndMcpDefinitions() {
         val resolved = ToolManager(
             builtinToolRegistry = BuiltinToolRegistry(
                 listOf(FakeBuiltinTool(name = "time", description = "Read current time."))
             )
-        ).resolve(settings)
+        ).resolve(
+            customTools = listOf(
+                CustomTool(
+                    name = "current_time",
+                    description = "Get current timestamp",
+                    command = "date +%s",
+                    enabled = true,
+                )
+            ),
+            mcpServers = listOf(
+                McpServer(name = "aslocate", url = "http://127.0.0.1:51338/mcp")
+            ),
+            builtinSettings = listOf(
+                BuiltinToolSetting(name = "time", description = "Read current time.", enabled = true)
+            ),
+            mcpCachedTools = mapOf(
+                "aslocate" to listOf(
+                    McpTool(
+                        name = "lookupSymbol",
+                        description = "Lookup symbol definition",
+                        inputSchemaJson = """{"type":"object"}""",
+                    )
+                )
+            ),
+        )
 
         assertEquals(listOf("time"), resolved.builtinTools.map { it.name })
         assertTrue(resolved.builtinTools.single() is LocalTool.Builtin)
@@ -83,84 +72,6 @@ class ToolManagerTest {
                 "Available MCP servers: aslocate",
             ),
             resolved.promptLines,
-        )
-    }
-
-    @Test
-    fun resolveFromSettings_defaultRegistryResolvesEnabledBuiltins() {
-        val settings = LocalSettings(
-            Json.parseToJsonElement(
-                """
-                {
-                  "builtin_tool_flags": {
-                    "create_custom_tool": true,
-                    "run_command": true,
-                    "unknown": true
-                  }
-                }
-                """.trimIndent()
-            ).jsonObject
-        )
-
-        val resolved = ToolManager().resolve(settings)
-
-        assertEquals(
-            listOf("create_custom_tool", "notify", "run_command"),
-            resolved.builtinTools.map { it.name }.sorted()
-        )
-        assertEquals(
-            "Available builtin tools: create_custom_tool, notify, run_command",
-            resolved.promptLines.first(),
-        )
-    }
-
-    @Test
-    fun resolveFromSettings_missingBuiltinFlagUsesDefaultEnabled() {
-        val settings = LocalSettings(
-            Json.parseToJsonElement(
-                """
-                {
-                  "builtin_tool_flags": {}
-                }
-                """.trimIndent()
-            ).jsonObject
-        )
-
-        val resolved = ToolManager().resolve(settings)
-
-        assertEquals(
-            listOf("create_custom_tool", "notify", "run_command"),
-            resolved.builtinTools.map { it.name }.sorted()
-        )
-        assertEquals(
-            "Available builtin tools: create_custom_tool, notify, run_command",
-            resolved.promptLines.first(),
-        )
-    }
-
-    @Test
-    fun resolveFromSettings_explicitFalseOverridesDefaultEnabled() {
-        val settings = LocalSettings(
-            Json.parseToJsonElement(
-                """
-                {
-                  "builtin_tool_flags": {
-                    "notify": false
-                  }
-                }
-                """.trimIndent()
-            ).jsonObject
-        )
-
-        val resolved = ToolManager().resolve(settings)
-
-        assertEquals(
-            listOf("create_custom_tool", "run_command"),
-            resolved.builtinTools.map { it.name }.sorted()
-        )
-        assertEquals(
-            "Available builtin tools: create_custom_tool, run_command",
-            resolved.promptLines.first(),
         )
     }
 

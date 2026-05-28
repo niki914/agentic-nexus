@@ -6,7 +6,6 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.CreateCustomToolBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.RunCommandBuildin_WIP_SAFE
-import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -31,7 +30,7 @@ class BuiltinToolTest {
 
         tool.configure(config)
 
-        assertEquals("Create or update a custom tool in LocalSettings.custom_tools.", tool.description)
+        assertEquals("Create or update a custom tool setting.", tool.description)
         assertEquals(tool.description, config.description)
     }
 
@@ -55,49 +54,16 @@ class BuiltinToolTest {
     }
 
     @Test
-    fun resolveEnabled_ignoresUnknownToolsAndReadsBooleanOrObjectFlags() {
-        val registry = BuiltinToolRegistry(listOf(FakeBuiltinTool("known")))
-        val settings = LocalSettings(
-            Json.parseToJsonElement(
-                """
-                {
-                  "builtin_tool_flags": {
-                    "known": {"enabled": true},
-                    "disabled": false,
-                    "unknown": true
-                  }
-                }
-                """.trimIndent()
-            ).jsonObject
-        )
-
-        val resolved = registry.resolveEnabled(settings)
-
-        assertEquals(listOf("known"), resolved.map { it.name })
-        assertEquals("known", registry.find("known")?.name)
-    }
-
-    @Test
     fun defaultRegistry_containsExpectedTools() {
         val registry = BuiltinToolRegistry.default()
 
         assertEquals(
-            listOf("create_custom_tool", "run_command"),
+            listOf("create_custom_tool", "notify", "run_command"),
             registry.all().map { it.name }.sorted()
         )
         assertEquals("create_custom_tool", registry.find("create_custom_tool")?.name)
+        assertEquals("notify", registry.find("notify")?.name)
         assertEquals("run_command", registry.find("run_command")?.name)
-    }
-
-    @Test
-    fun resolveEnabled_usesDefaultEnabledWhenFlagMissing() {
-        val toolEnabled = FakeBuiltinTool("enabled", defaultEnabled = true)
-        val toolDisabled = FakeBuiltinTool("disabled", defaultEnabled = false)
-        val registry = BuiltinToolRegistry(listOf(toolEnabled, toolDisabled))
-
-        val resolved = registry.resolveEnabled(LocalSettings())
-
-        assertEquals(listOf("enabled"), resolved.map { it.name })
     }
 
     @Test

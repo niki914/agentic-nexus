@@ -29,17 +29,6 @@ class BuiltinToolSettingsManagerTest {
     }
 
     @Test
-    fun list_defaultsMissingFlagsToEnabled() {
-        val items = manager.list(LocalSettings())
-
-        assertEquals(
-            listOf("create_custom_tool", "notify", "run_command"),
-            items.map { it.name }.sorted()
-        )
-        assertTrue(items.all { it.enabled })
-    }
-
-    @Test
     fun load_readsThroughXRepoBuiltinTools() = runTest {
         val store = FakeLocalSettingsStore(LocalSettings())
         XRepo.installStoreForTest(store)

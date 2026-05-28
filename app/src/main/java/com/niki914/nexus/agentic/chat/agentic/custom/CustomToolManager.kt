@@ -304,7 +304,7 @@ class CustomToolManager(
             }
             BuiltinToolResult.failure(
                 code = "SETTINGS_WRITE_FAILED",
-                message = "Failed to write LocalSettings.custom_tools: ${throwable.message ?: throwable::class.java.simpleName}.",
+                message = "Failed to write custom tool settings: ${throwable.message ?: throwable::class.java.simpleName}.",
                 hint = "Retry after confirming the settings provider is available.",
             )
         }

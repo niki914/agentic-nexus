@@ -20,7 +20,7 @@ import kotlinx.serialization.json.jsonPrimitive
 class CreateCustomToolBuiltin : BuiltinTool() {
     override val name: String = "create_custom_tool"
 
-    override val description: String = "Create or update a custom tool in LocalSettings.custom_tools."
+    override val description: String = "Create or update a custom tool setting."
 
     override val defaultEnabled: Boolean = true
 
@@ -85,7 +85,7 @@ class CreateCustomToolBuiltin : BuiltinTool() {
             }
             BuiltinToolResult.failure(
                 code = "SETTINGS_WRITE_FAILED",
-                message = "Failed to write LocalSettings.custom_tools: ${throwable.message ?: throwable::class.java.simpleName}.",
+                message = "Failed to write custom tool settings: ${throwable.message ?: throwable::class.java.simpleName}.",
                 hint = "Retry after confirming the settings provider is available.",
             )
         }

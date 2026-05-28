@@ -6,7 +6,6 @@ import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolManager
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.repo.CustomTool
-import com.niki914.nexus.agentic.repo.LocalSettingsCodec
 import com.niki914.nexus.agentic.repo.LocalSettingsStore
 import com.niki914.nexus.agentic.repo.XRepo
 import kotlinx.coroutines.test.runTest
@@ -214,12 +213,11 @@ class CustomToolManagerTest {
             command = "getprop ro.product.model",
             enabled = true,
         )
-        val store = FakeLocalSettingsStore(
-            initialSettings = LocalSettingsCodec.withCustomTools(LocalSettings(), listOf(existing)),
-            failOnWriteNumber = 1,
-        )
+        val store = FakeLocalSettingsStore(LocalSettings())
         XRepo.installStoreForTest(store)
         XRepo.init(context)
+        XRepo.customTools.save(existing)
+        store.failOnWriteNumber = store.writeCount + 1
 
         val result = manager.saveAll(
             context = context,
@@ -234,7 +232,7 @@ class CustomToolManagerTest {
         )
 
         assertFalse(result.ok)
-        assertEquals(listOf(existing), LocalSettingsCodec.parseCustomTools(store.settings))
+        assertEquals(listOf(existing), XRepo.customTools.list())
     }
 
     private fun assertUnsafe(command: String) {
@@ -257,7 +255,7 @@ class CustomToolManagerTest {
 
     private class FakeLocalSettingsStore(
         initialSettings: LocalSettings,
-        private val failOnWriteNumber: Int? = null,
+        var failOnWriteNumber: Int? = null,
     ) : LocalSettingsStore {
         var settings: LocalSettings = initialSettings
             private set

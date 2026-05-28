@@ -9,9 +9,7 @@ import com.niki914.nexus.agentic.chat.agentic.PromptComposerInput
 import com.niki914.nexus.agentic.chat.agentic.SessionToolBinder
 import com.niki914.nexus.agentic.chat.agentic.ToolCallDispatcher
 import com.niki914.nexus.agentic.chat.agentic.ToolManager
-import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.repo.LlmConfig
-import com.niki914.nexus.agentic.repo.LocalSettingsCodec
 import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.nexus.h.util.xlog
@@ -130,8 +128,7 @@ object LLMController {
             lastMcpServersFingerprint = currentMcpServersFingerprint
         }
 
-        val snapshotSettings = LocalSettingsCodec.withLlm(LocalSettings(), llmConfig)
-        return LlmRuntimeSnapshot(snapshotSettings, config, resolvedTools, prompt).also { snapshot ->
+        return LlmRuntimeSnapshot(config, resolvedTools, prompt).also { snapshot ->
             runtimeState = RuntimeState(snapshot = snapshot, session = activeSession)
         }
     }

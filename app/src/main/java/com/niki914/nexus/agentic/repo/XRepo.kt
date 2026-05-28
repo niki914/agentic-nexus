@@ -4,6 +4,7 @@ import android.content.Context
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
 import com.niki914.nexus.agentic.mod.LocalSettings
+import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.h.util.ContextProvider
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -88,6 +89,14 @@ object XRepo {
         updateLocal { settings ->
             LocalSettingsCodec.withLlm(settings, config)
         }
+    }
+
+    suspend fun refreshWebSettings(
+        context: Context,
+        packageName: String,
+        versionCode: Long,
+    ) {
+        XService.refreshWebSettings(context, packageName, versionCode)
     }
 
     private const val ONBOARDING_COMPLETED_KEY = "onboarding_completed"

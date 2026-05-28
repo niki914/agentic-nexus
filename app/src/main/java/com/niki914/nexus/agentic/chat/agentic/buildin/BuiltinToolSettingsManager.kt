@@ -1,13 +1,11 @@
 package com.niki914.nexus.agentic.chat.agentic.buildin
 
 import android.content.Context
-import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.repo.BuiltinToolSetting
 import com.niki914.nexus.agentic.repo.XRepo
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 
 data class BuiltinToolSettingItem(
     val name: String,
@@ -21,18 +19,6 @@ class BuiltinToolSettingsManager(
     suspend fun load(context: Context): List<BuiltinToolSettingItem> {
         XRepo.init(context)
         return XRepo.builtinTools.list().map { it.toItem() }
-    }
-
-    fun list(settings: LocalSettings): List<BuiltinToolSettingItem> {
-        return registry.all()
-            .sortedBy { it.name }
-            .map { tool ->
-                BuiltinToolSettingItem(
-                    name = tool.name,
-                    description = tool.description,
-                    enabled = isEnabled(settings, tool),
-                )
-            }
     }
 
     suspend fun setEnabled(
@@ -78,15 +64,6 @@ class BuiltinToolSettingsManager(
             message = "Builtin tool setting updated.",
             data = data,
         )
-    }
-
-    private fun isEnabled(settings: LocalSettings, tool: BuiltinTool): Boolean {
-        val value = settings.builtinToolFlags?.get(tool.name) ?: return tool.defaultEnabled
-        return when (value) {
-            is JsonPrimitive -> value.booleanOrNull ?: tool.defaultEnabled
-            is JsonObject -> (value["enabled"] as? JsonPrimitive)?.booleanOrNull ?: tool.defaultEnabled
-            else -> tool.defaultEnabled
-        }
     }
 
     private fun BuiltinToolSetting.toItem(): BuiltinToolSettingItem {

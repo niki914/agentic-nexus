@@ -3,7 +3,7 @@ package com.niki914.nexus.agentic.app.ui.nexus.model
 import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.StartupPage
-import com.niki914.nexus.agentic.mod.LocalSettings
+import com.niki914.nexus.agentic.repo.XRepo
 
 data class AppLaunchDecision(
     val initialPage: NexusPage,
@@ -11,12 +11,11 @@ data class AppLaunchDecision(
     val endpointPresent: Boolean,
 ) {
     companion object {
-        fun resolve(
-            settings: LocalSettings,
+        suspend fun resolve(
             startupAssistantUi: StartupAssistantUi,
         ): AppLaunchDecision {
-            val onboardingCompleted = settings.onboardingCompleted
-            val endpointPresent = settings.endpoint.isNotBlank()
+            val onboardingCompleted = XRepo.onboardingCompleted()
+            val endpointPresent = XRepo.llm().endpoint.isNotBlank()
             val startupPage = when (startupAssistantUi) {
                 StartupAssistantUi.Breeno,
                 StartupAssistantUi.XiaoAi,
@@ -27,11 +26,6 @@ data class AppLaunchDecision(
             } else {
                 startupPage
             }
-            return AppLaunchDecision( // TODO remove
-                initialPage = startupPage,
-                onboardingCompleted = false,
-                endpointPresent = endpointPresent
-            )
             return AppLaunchDecision(
                 initialPage = initialPage,
                 onboardingCompleted = onboardingCompleted,
