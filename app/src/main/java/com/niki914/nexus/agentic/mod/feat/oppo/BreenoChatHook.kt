@@ -70,7 +70,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
                 turnId = turnId,
                 roomId = roomId,
                 query = query,
-                summary = "本轮用户请求已由系统助手处理：$query" // TODO Muti-Languages
+                summary = "This turn of user message has been handled by the system assistant：$query"
             )
         )
     }

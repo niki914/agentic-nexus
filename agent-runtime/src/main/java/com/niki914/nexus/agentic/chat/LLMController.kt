@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.flowOn
 // TODO P1 [Parse] HTTP 400 , body={"error":{"message":"Invalid assistant message: content or toolcalls must be set","type":"invalidrequesterror","param":null,"code":"invalidrequest_error"}}
 // TODO P0 rm caches when mcp server is inreachable
 // TODO P0 PromptComposer 添加 mcp 发现状态的提示，让 Agent 知道 mcp 是失败、加载中还是可用
-// TODO UI 认领你的 AI 伴侣
 // TODO impl a mcpHooks {} like hooks to make mcp update easier
 object LLMController {
     private val promptComposer =
@@ -152,7 +151,7 @@ object LLMController {
         val sink: SendChannel<LlmStreamEvent> = this
         try {
             xlog("LLMController.stream sessionSend begin")
-            state.session.send(query) { event -> // TODO 代 session 修复后使用 flow api
+            state.session.send(query).collect { event ->
                 val mapped = LlmStreamEventMapper.map(event, accumulator, startedAtMs)
                 xlog("LLMController.stream sessionEvent type=${event::class.simpleName} mapped=${mapped?.let(::eventName)}")
                 mapped?.let { sink.send(it) }
