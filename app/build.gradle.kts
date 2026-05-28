@@ -75,11 +75,8 @@ dependencies {
 
     // Android root
     compileOnly("de.robv.android.xposed:api:82")
-    implementation("org.luckypray:dexkit:2.1.0")
 
     // Third-party UI
-    implementation("com.github.Kyant0:Capsule:2.1.0")
-    implementation("io.github.kyant0:backdrop:2.0.0-alpha03")
     implementation("dev.chrisbanes.haze:haze:1.7.2")
     implementation("com.mikepenz:multiplatform-markdown-renderer-m3:0.37.0")
 
@@ -87,13 +84,9 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.annotation:annotation:1.9.1")
     implementation("androidx.activity:activity-compose:1.4.0")
-    implementation("androidx.annotation:annotation:1.7.0")
-    implementation("androidx.navigation:navigation-compose:2.7.7")
 
     // Compose
     implementation("androidx.compose.material3:material3:1.3.2")
-    implementation("androidx.compose.material3:material3-window-size-class:1.3.2")
-    implementation("androidx.compose.material3:material3-adaptive-navigation-suite:1.4.0-alpha16")
     implementation("androidx.compose.material:material-icons-core:1.7.8")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
     debugImplementation("androidx.compose.ui:ui-tooling:1.4.0")
