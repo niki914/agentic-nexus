@@ -7,13 +7,17 @@ import com.niki914.nexus.agentic.repo.LocalSettingsStore
 import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Rule
@@ -99,6 +103,144 @@ class McpSettingsViewModelTest {
         assertEquals(1, state.items.size)
         assertFalse(state.isSaving)
         assertEquals(1, XRepo.mcp.list().size)
+    }
+
+    @Test
+    fun save_withBlankName_setsNameErrorAndSkipsPersistence() = runTest {
+        installStore(LocalSettings())
+        val viewModel = McpSettingsViewModel()
+
+        viewModel.sendIntent(McpSettingsIntent.Load)
+        advanceUntilIdle()
+        viewModel.sendIntent(McpSettingsIntent.StartCreate)
+        viewModel.sendIntent(McpSettingsIntent.UrlChanged("http://127.0.0.1:51338/mcp"))
+        viewModel.sendIntent(McpSettingsIntent.Save)
+        advanceUntilIdle()
+
+        val state = viewModel.uiStateFlow.value
+        assertEquals("请输入名称", state.formState.nameError)
+        assertTrue(XRepo.mcp.list().isEmpty())
+        assertFalse(state.isSaving)
+    }
+
+    @Test
+    fun save_withInvalidHeadersJson_setsHeadersErrorAndSkipsPersistence() = runTest {
+        installStore(LocalSettings())
+        val viewModel = McpSettingsViewModel()
+
+        viewModel.sendIntent(McpSettingsIntent.Load)
+        advanceUntilIdle()
+        viewModel.sendIntent(McpSettingsIntent.StartCreate)
+        viewModel.sendIntent(McpSettingsIntent.NameChanged("demo"))
+        viewModel.sendIntent(McpSettingsIntent.UrlChanged("http://127.0.0.1:51338/mcp"))
+        viewModel.sendIntent(McpSettingsIntent.HeadersChanged("{"))
+        viewModel.sendIntent(McpSettingsIntent.Save)
+        advanceUntilIdle()
+
+        val state = viewModel.uiStateFlow.value
+        assertEquals("请求头不是合法 JSON", state.formState.headersError)
+        assertTrue(XRepo.mcp.list().isEmpty())
+        assertFalse(state.isSaving)
+    }
+
+    @Test
+    fun save_withHeaders_persistsHeadersAndEmitsExitDetail() = runTest {
+        installStore(LocalSettings())
+        val viewModel = McpSettingsViewModel()
+        val effectDeferred = async {
+            withTimeout(1_000) { viewModel.uiEffect.first() }
+        }
+
+        viewModel.sendIntent(McpSettingsIntent.Load)
+        advanceUntilIdle()
+        viewModel.sendIntent(McpSettingsIntent.StartCreate)
+        viewModel.sendIntent(McpSettingsIntent.NameChanged("demo"))
+        viewModel.sendIntent(McpSettingsIntent.UrlChanged("http://127.0.0.1:51338/mcp"))
+        viewModel.sendIntent(
+            McpSettingsIntent.HeadersChanged("""{"Authorization":"Bearer xxx"}""")
+        )
+        viewModel.sendIntent(McpSettingsIntent.Save)
+        advanceUntilIdle()
+
+        val state = viewModel.uiStateFlow.value
+        assertNull(state.formState.nameError)
+        assertNull(state.formState.urlError)
+        assertNull(state.formState.headersError)
+        assertEquals(
+            listOf(
+                McpServer(
+                    name = "demo",
+                    url = "http://127.0.0.1:51338/mcp",
+                    enabled = true,
+                    headers = mapOf("Authorization" to "Bearer xxx"),
+                )
+            ),
+            XRepo.mcp.list(),
+        )
+        assertEquals(McpSettingsEffect.ExitDetail, effectDeferred.await())
+    }
+
+    @Test
+    fun deleteCurrent_deletesServerAndEmitsExitDetail() = runTest {
+        installStore(
+            buildLocalSettings(
+                listOf(
+                    McpServer(
+                        name = "demo",
+                        url = "http://127.0.0.1:51338/mcp",
+                        enabled = true,
+                    )
+                )
+            )
+        )
+        val viewModel = McpSettingsViewModel()
+        val effectDeferred = async {
+            withTimeout(1_000) { viewModel.uiEffect.first() }
+        }
+
+        viewModel.sendIntent(McpSettingsIntent.Load)
+        advanceUntilIdle()
+        viewModel.sendIntent(McpSettingsIntent.StartEdit(0))
+        advanceUntilIdle()
+        viewModel.sendIntent(McpSettingsIntent.DeleteCurrent)
+        advanceUntilIdle()
+
+        assertTrue(XRepo.mcp.list().isEmpty())
+        assertEquals(McpSettingsEffect.ExitDetail, effectDeferred.await())
+    }
+
+    @Test
+    fun startEdit_formatsHeadersInputAsSortedMultilineJson() = runTest {
+        val viewModel = McpSettingsViewModel(
+            listServers = {
+                listOf(
+                    McpServer(
+                        name = "demo",
+                        url = "http://127.0.0.1:51338/mcp",
+                        enabled = true,
+                        headers = linkedMapOf(
+                            "X-Trace-Id" to "trace-1",
+                            "Authorization" to "Bearer xxx",
+                        ),
+                    )
+                )
+            }
+        )
+
+        viewModel.sendIntent(McpSettingsIntent.Load)
+        advanceUntilIdle()
+        viewModel.sendIntent(McpSettingsIntent.StartEdit(0))
+        advanceUntilIdle()
+
+        assertEquals(
+            """
+            {
+              "Authorization": "Bearer xxx",
+              "X-Trace-Id": "trace-1"
+            }
+            """.trimIndent(),
+            viewModel.uiStateFlow.value.formState.headersInput,
+        )
     }
 
     @Test

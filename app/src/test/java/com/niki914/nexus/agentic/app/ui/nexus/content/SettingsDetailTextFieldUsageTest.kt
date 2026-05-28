@@ -14,7 +14,7 @@ class SettingsDetailTextFieldUsageTest {
     private val mainSourceRoot: Path = Paths.get("src/main/java")
     private val mcpSettingsPath: Path =
         mainSourceRoot.resolve(
-            "com/niki914/nexus/agentic/app/ui/nexus/content/McpSettingsContent.kt"
+            "com/niki914/nexus/agentic/app/ui/nexus/content/mcp/McpSettingsContent.kt"
         )
     private val customToolsSettingsPath: Path =
         mainSourceRoot.resolve(

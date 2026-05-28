@@ -1,4 +1,4 @@
-package com.niki914.nexus.agentic.app.ui.nexus.content
+package com.niki914.nexus.agentic.app.ui.nexus.content.mcp
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,11 +9,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
@@ -77,14 +76,6 @@ private fun McpListMessage(text: String) {
         text = text,
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = androidx.compose.ui.Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
     )
-}
-
-private object McpSettingsViewModelFactory : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        require(modelClass == McpSettingsViewModel::class.java)
-        return McpSettingsViewModel() as T
-    }
 }

@@ -116,7 +116,7 @@
     <string name="custom_tool_duplicate_name">工具名称不能重复，请换一个名称。</string>
 
     <!-- MCP Module -->
-    <string name="mcp_page_description">管理已配置的 MCP 服务器。</string>
+    <string name="mcp_page_description">配置 MCP 服务的连接方式与鉴权信息。保存后，Nexus 会在运行时自动发现可用工具。</string>
     <string name="mcp_page_empty_description">点击右上方，添加你的第一个服务器。</string>
     <string name="mcp_list_title">已配置 MCP 服务</string>
     <string name="mcp_loading">正在读取已保存的 MCP 服务...</string>
@@ -127,12 +127,24 @@
     <string name="mcp_add_action">新增 MCP 服务</string>
     <string name="mcp_editor_title_create">新增 MCP 服务</string>
     <string name="mcp_editor_title_edit">编辑 MCP 服务</string>
-    <string name="mcp_field_name">服务名称</string>
-    <string name="mcp_field_name_placeholder">例如 aslocate</string>
-    <string name="mcp_field_url">服务 URL</string>
-    <string name="mcp_field_url_placeholder">例如 http://127.0.0.1:51338/mcp</string>
-    <string name="mcp_field_enabled">启用该服务</string>
+    <string name="mcp_field_name">名称</string>
+    <string name="mcp_field_name_placeholder">例如：my-xxx-mcp-server</string>
+    <string name="mcp_field_url">URL</string>
+    <string name="mcp_field_url_placeholder">例如：https://a.b.c/mcp</string>
+    <string name="mcp_field_enabled">启用服务</string>
     <string name="mcp_field_enabled_description">关闭后会保留配置，但不会注册到当前 session。</string>
+    <string name="mcp_field_headers">自定义请求头</string>
+    <string name="mcp_field_headers_placeholder">{
+  &quot;Authorization&quot;: &quot;Bearer xxx&quot;
+}</string>
     <string name="mcp_save_action">保存 MCP 服务</string>
     <string name="mcp_delete_action">删除当前 MCP 服务</string>
+    <string name="mcp_error_name_required">请输入名称</string>
+    <string name="mcp_error_name_duplicate">名称已存在，请更换后重试</string>
+    <string name="mcp_error_url_required">请输入 URL</string>
+    <string name="mcp_error_url_invalid">URL 格式不正确</string>
+    <string name="mcp_error_headers_invalid_json">请求头不是合法 JSON</string>
+    <string name="mcp_error_headers_not_object">请求头必须是 JSON 对象</string>
+    <string name="mcp_error_headers_empty_key">请求头名称不能为空</string>
+    <string name="mcp_error_headers_non_string">请求头的值必须是字符串</string>
 </resources>

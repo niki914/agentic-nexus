@@ -23,12 +23,12 @@ import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigurePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigureEditableField
 import com.niki914.nexus.agentic.app.ui.nexus.content.CustomToolDetailContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.HomePageContent
-import com.niki914.nexus.agentic.app.ui.nexus.content.McpServerDetailContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SelectionOption
 import com.niki914.nexus.agentic.app.ui.nexus.content.SelectionPageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SettingsDetailPageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SettingsHomePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.StartupPageContent
+import com.niki914.nexus.agentic.app.ui.nexus.content.mcp.McpServerDetailContent
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureEffect
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureViewModel
@@ -62,6 +62,7 @@ fun NexusPageContent(
     hazeState: HazeState,
     startupAssistantUi: StartupAssistantUi,
     onPush: (NexusPage) -> Unit,
+    onPop: () -> Unit,
     onResetTo: (NexusPage) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -217,8 +218,10 @@ fun NexusPageContent(
         )
 
         is McpServerDetailPage -> McpServerDetailContent(
+            page = page,
             topPadding = topPadding,
             hazeState = hazeState,
+            onBack = onPop,
         )
 
         is CustomToolDetailPage -> CustomToolDetailContent(

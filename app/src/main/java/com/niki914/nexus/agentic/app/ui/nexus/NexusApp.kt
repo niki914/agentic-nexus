@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
@@ -51,9 +52,13 @@ import com.niki914.nexus.agentic.app.ui.infra.nav.rememberNavigationController
 import com.niki914.nexus.agentic.app.ui.infra.rememberLiquidScreenState
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsIntent
+import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.AppLaunchDecision
 import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
+import com.niki914.nexus.agentic.app.ui.nexus.content.mcp.McpSettingsViewModelFactory
 import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NoTitle
 import com.niki914.nexus.agentic.app.ui.nexus.nav.PageTitleSpec
@@ -89,9 +94,6 @@ fun NexusApp(
     val currentEntry = controller.currentEntry
     val currentPage = currentEntry.page
     val currentLeftAction = currentPage.leftAction
-    val currentRightAction = currentPage.rightAction
-    val showLeftButton = currentLeftAction != null && (currentLeftAction.onClick != null || controller.canGoBack)
-    val showRightButton = currentRightAction != null
     val currentHomeChatViewModel = if (currentPage is HomePage) {
         remember(currentEntry) {
             val viewModelClass = HomeChatViewModel::class.java
@@ -103,6 +105,26 @@ fun NexusApp(
     } else {
         null
     }
+    val currentMcpSettingsViewModel = if (currentPage is McpServerDetailPage && !currentPage.isCreating) {
+        remember(currentEntry) {
+            val viewModelClass = McpSettingsViewModel::class.java
+            ViewModelProvider(currentEntry, McpSettingsViewModelFactory)[viewModelClass.name, viewModelClass]
+        }
+    } else {
+        null
+    }
+    val currentRightAction = if (currentPage is McpServerDetailPage && !currentPage.isCreating) {
+        TopBarActionSpec(
+            icon = Icons.Default.Delete,
+            onClick = {
+                currentMcpSettingsViewModel?.sendIntent(McpSettingsIntent.DeleteCurrent)
+            },
+        )
+    } else {
+        currentPage.rightAction
+    }
+    val showLeftButton = currentLeftAction != null && (currentLeftAction.onClick != null || controller.canGoBack)
+    val showRightButton = currentRightAction != null
     val currentTitle = resolveTitle(currentPage.titleSpec)
     val clearMenuLabel = stringResource(R.string.ui_home_menu_clear)
     val settingsMenuLabel = stringResource(R.string.ui_settings_menu_entry)
@@ -252,6 +274,7 @@ fun NexusApp(
                         hazeState = hazeState,
                         startupAssistantUi = startupAssistantUi,
                         onPush = ::push,
+                        onPop = { navigator.pop() },
                         onResetTo = ::resetTo,
                     )
                 }

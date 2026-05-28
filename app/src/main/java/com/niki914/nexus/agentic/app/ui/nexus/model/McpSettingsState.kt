@@ -4,6 +4,11 @@ import com.niki914.nexus.cb.ComposeMVIViewModel
 import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import java.net.URI
 
 data class McpServerItem(
     val name: String,
@@ -17,6 +22,10 @@ data class McpServerFormState(
     val name: String = "",
     val url: String = "",
     val enabled: Boolean = true,
+    val headersInput: String = "",
+    val nameError: String? = null,
+    val urlError: String? = null,
+    val headersError: String? = null,
 )
 
 data class McpSettingsUiState(
@@ -24,6 +33,7 @@ data class McpSettingsUiState(
     val formState: McpServerFormState = McpServerFormState(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
+    val inlineError: McpInlineError? = null,
 )
 
 sealed interface McpSettingsIntent {
@@ -33,12 +43,21 @@ sealed interface McpSettingsIntent {
     data class ItemEnabledChanged(val index: Int, val value: Boolean) : McpSettingsIntent
     data class NameChanged(val value: String) : McpSettingsIntent
     data class UrlChanged(val value: String) : McpSettingsIntent
+    data class HeadersChanged(val value: String) : McpSettingsIntent
     data class EnabledChanged(val value: Boolean) : McpSettingsIntent
     data object Save : McpSettingsIntent
     data object DeleteCurrent : McpSettingsIntent
 }
 
-sealed interface McpSettingsEffect
+sealed interface McpInlineError {
+    data class LoadFailed(val message: String) : McpInlineError
+    data class SaveFailed(val message: String) : McpInlineError
+    data class DeleteFailed(val message: String) : McpInlineError
+}
+
+sealed interface McpSettingsEffect {
+    data object ExitDetail : McpSettingsEffect
+}
 
 class McpSettingsViewModel internal constructor(
     private val listServers: suspend () -> List<McpServer> = { XRepo.mcp.list() },
@@ -57,22 +76,36 @@ class McpSettingsViewModel internal constructor(
     override suspend fun handleIntent(intent: McpSettingsIntent) {
         when (intent) {
             McpSettingsIntent.Load -> load()
-            McpSettingsIntent.StartCreate -> updateState {
-                copy(formState = McpServerFormState())
-            }
+            McpSettingsIntent.StartCreate -> startCreate()
             is McpSettingsIntent.StartEdit -> startEdit(intent.index)
             is McpSettingsIntent.ItemEnabledChanged -> toggleItemEnabled(
                 index = intent.index,
                 enabled = intent.value,
             )
             is McpSettingsIntent.NameChanged -> updateState {
-                copy(formState = formState.copy(name = intent.value))
+                copy(
+                    formState = formState.copy(
+                        name = intent.value,
+                        nameError = null,
+                    ),
+                    inlineError = null,
+                )
             }
             is McpSettingsIntent.UrlChanged -> updateState {
-                copy(formState = formState.copy(url = intent.value))
+                copy(
+                    formState = formState.copy(
+                        url = intent.value,
+                        urlError = null,
+                    ),
+                    inlineError = null,
+                )
             }
+            is McpSettingsIntent.HeadersChanged -> updateHeaders(intent.value)
             is McpSettingsIntent.EnabledChanged -> updateState {
-                copy(formState = formState.copy(enabled = intent.value))
+                copy(
+                    formState = formState.copy(enabled = intent.value),
+                    inlineError = null,
+                )
             }
             McpSettingsIntent.Save -> save()
             McpSettingsIntent.DeleteCurrent -> deleteCurrent()
@@ -87,6 +120,7 @@ class McpSettingsViewModel internal constructor(
                 copy(
                     items = loadedItems,
                     isLoading = false,
+                    inlineError = null,
                 )
             }
         } catch (throwable: Throwable) {
@@ -94,8 +128,20 @@ class McpSettingsViewModel internal constructor(
             updateState {
                 copy(
                     isLoading = false,
+                    inlineError = McpInlineError.LoadFailed(
+                        throwable.message ?: "读取 MCP 配置失败"
+                    ),
                 )
             }
+        }
+    }
+
+    private fun startCreate() {
+        updateState {
+            copy(
+                formState = McpServerFormState(),
+                inlineError = null,
+            )
         }
     }
 
@@ -108,7 +154,21 @@ class McpSettingsViewModel internal constructor(
                     name = item.name,
                     url = item.url,
                     enabled = item.enabled,
+                    headersInput = headersToInput(item.headers),
                 ),
+                inlineError = null,
+            )
+        }
+    }
+
+    private fun updateHeaders(value: String) {
+        updateState {
+            copy(
+                formState = formState.copy(
+                    headersInput = value,
+                    headersError = null,
+                ),
+                inlineError = null,
             )
         }
     }
@@ -128,6 +188,7 @@ class McpSettingsViewModel internal constructor(
                     formState
                 },
                 isSaving = true,
+                inlineError = null,
             )
         }
         try {
@@ -154,27 +215,63 @@ class McpSettingsViewModel internal constructor(
     }
 
     private suspend fun save() {
-        val trimmedName = currentState.formState.name.trim()
-        val trimmedUrl = currentState.formState.url.trim()
-        val editingIndex = currentState.formState.editingIndex
-        if (trimmedName.isBlank()) return
-        if (trimmedUrl.isBlank()) return
-        val hasDuplicateName = currentState.items.anyIndexed { index, item ->
-            item.name == trimmedName && index != editingIndex
+        val formState = currentState.formState
+        val trimmedName = formState.name.trim()
+        val trimmedUrl = formState.url.trim()
+        val editingIndex = formState.editingIndex
+        val headersResult = normalizedHeadersOrError(formState.headersInput)
+        val nameError = when {
+            trimmedName.isBlank() -> ERROR_NAME_REQUIRED
+            currentState.items.anyIndexed { index, item ->
+                item.name == trimmedName && index != editingIndex
+            } -> ERROR_NAME_DUPLICATE
+            else -> null
         }
-        if (hasDuplicateName) return
+        val urlError = when {
+            trimmedUrl.isBlank() -> ERROR_URL_REQUIRED
+            !isValidUrl(trimmedUrl) -> ERROR_URL_INVALID
+            else -> null
+        }
+        val headersError = (headersResult as? McpHeadersParseResult.Error)?.message
+        if (nameError != null || urlError != null || headersError != null) {
+            updateState {
+                copy(
+                    formState = formState.copy(
+                        name = trimmedName,
+                        url = trimmedUrl,
+                        nameError = nameError,
+                        urlError = urlError,
+                        headersError = headersError,
+                    ),
+                    isSaving = false,
+                    inlineError = null,
+                )
+            }
+            return
+        }
 
-        updateState { copy(isSaving = true) }
+        val headers = (headersResult as McpHeadersParseResult.Success).headers
+        updateState {
+            copy(
+                formState = formState.copy(
+                    name = trimmedName,
+                    url = trimmedUrl,
+                    nameError = null,
+                    urlError = null,
+                    headersError = null,
+                ),
+                isSaving = true,
+                inlineError = null,
+            )
+        }
         try {
             val previousName = editingIndex
                 ?.let { currentState.items.getOrNull(it)?.name }
             val nextItem = McpServerItem(
                 name = trimmedName,
                 url = trimmedUrl,
-                enabled = currentState.formState.enabled,
-                headers = editingIndex
-                    ?.let { currentState.items.getOrNull(it)?.headers }
-                    ?: emptyMap(),
+                enabled = formState.enabled,
+                headers = headers,
             )
             val updatedItems = currentState.items.toMutableList().also { mutableItems ->
                 if (editingIndex == null || editingIndex !in mutableItems.indices) {
@@ -191,15 +288,28 @@ class McpSettingsViewModel internal constructor(
             updateState {
                 copy(
                     items = updatedItems,
-                    formState = formState.copy(editingIndex = updatedItems.indexOf(nextItem)),
+                    formState = formState.copy(
+                        editingIndex = updatedItems.indexOf(nextItem),
+                        name = trimmedName,
+                        url = trimmedUrl,
+                        headersInput = headersToInput(headers),
+                        nameError = null,
+                        urlError = null,
+                        headersError = null,
+                    ),
                     isSaving = false,
+                    inlineError = null,
                 )
             }
+            sendEffect(McpSettingsEffect.ExitDetail)
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
             updateState {
                 copy(
                     isSaving = false,
+                    inlineError = McpInlineError.SaveFailed(
+                        throwable.message ?: "保存 MCP 配置失败"
+                    ),
                 )
             }
         }
@@ -207,27 +317,98 @@ class McpSettingsViewModel internal constructor(
 
     private suspend fun deleteCurrent() {
         val editingIndex = currentState.formState.editingIndex ?: return
+        val currentItem = currentState.items.getOrNull(editingIndex) ?: return
         updateState { copy(isSaving = true) }
         try {
             val updatedItems = currentState.items.filterIndexed { index, _ -> index != editingIndex }
-            deleteServer(currentState.items[editingIndex].name)
+            deleteServer(currentItem.name)
             updateState {
                 copy(
                     items = updatedItems,
                     formState = McpServerFormState(),
                     isSaving = false,
+                    inlineError = null,
                 )
             }
+            sendEffect(McpSettingsEffect.ExitDetail)
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
             updateState {
                 copy(
                     isSaving = false,
+                    inlineError = McpInlineError.DeleteFailed(
+                        throwable.message ?: "删除 MCP 配置失败"
+                    ),
                 )
             }
         }
     }
 }
+
+private sealed interface McpHeadersParseResult {
+    data class Success(val headers: Map<String, String>) : McpHeadersParseResult
+    data class Error(val message: String) : McpHeadersParseResult
+}
+
+private fun normalizedHeadersOrError(input: String): McpHeadersParseResult {
+    if (input.isBlank()) {
+        return McpHeadersParseResult.Success(emptyMap())
+    }
+    val element = try {
+        Json.parseToJsonElement(input)
+    } catch (_: Throwable) {
+        return McpHeadersParseResult.Error(ERROR_HEADERS_INVALID_JSON)
+    }
+    val jsonObject = element as? JsonObject
+        ?: return McpHeadersParseResult.Error(ERROR_HEADERS_NOT_OBJECT)
+    val headers = linkedMapOf<String, String>()
+    jsonObject.forEach { (key, value) ->
+        if (key.isBlank()) {
+            return McpHeadersParseResult.Error(ERROR_HEADERS_EMPTY_KEY)
+        }
+        val primitive = value as? JsonPrimitive
+            ?: return McpHeadersParseResult.Error(ERROR_HEADERS_NON_STRING)
+        val content = primitive.contentOrNull
+            ?: return McpHeadersParseResult.Error(ERROR_HEADERS_NON_STRING)
+        headers[key] = content
+    }
+    return McpHeadersParseResult.Success(headers.toSortedMap())
+}
+
+private fun headersToInput(headers: Map<String, String>): String {
+    if (headers.isEmpty()) return ""
+    val normalizedEntries = headers.toSortedMap().entries.toList()
+    return buildString {
+        appendLine("{")
+        normalizedEntries.forEachIndexed { index, (key, value) ->
+            append("  ")
+            append(JsonPrimitive(key).toString())
+            append(": ")
+            append(JsonPrimitive(value).toString())
+            if (index != normalizedEntries.lastIndex) {
+                append(',')
+            }
+            appendLine()
+        }
+        append("}")
+    }
+}
+
+private fun isValidUrl(value: String): Boolean {
+    return runCatching {
+        val uri = URI(value)
+        !uri.scheme.isNullOrBlank() && !uri.host.isNullOrBlank()
+    }.getOrDefault(false)
+}
+
+private const val ERROR_NAME_REQUIRED = "请输入名称"
+private const val ERROR_NAME_DUPLICATE = "名称已存在，请更换后重试"
+private const val ERROR_URL_REQUIRED = "请输入 URL"
+private const val ERROR_URL_INVALID = "URL 格式不正确"
+private const val ERROR_HEADERS_INVALID_JSON = "请求头不是合法 JSON"
+private const val ERROR_HEADERS_NOT_OBJECT = "请求头必须是 JSON 对象"
+private const val ERROR_HEADERS_EMPTY_KEY = "请求头名称不能为空"
+private const val ERROR_HEADERS_NON_STRING = "请求头的值必须是字符串"
 
 private inline fun <T> List<T>.anyIndexed(predicate: (Int, T) -> Boolean): Boolean {
     forEachIndexed { index, item ->

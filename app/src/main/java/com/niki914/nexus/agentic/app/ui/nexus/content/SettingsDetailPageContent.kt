@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.content.mcp.McpSettingsContent
 import com.niki914.nexus.agentic.app.ui.nexus.nav.CustomToolDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.model.SettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
