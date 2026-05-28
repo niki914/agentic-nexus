@@ -22,7 +22,7 @@ data class AppLaunchDecision(
                 StartupAssistantUi.ChatOnly -> StartupPage
             }
             val initialPage = if (onboardingCompleted && endpointPresent) {
-                HomePage()
+                HomePage
             } else {
                 startupPage
             }

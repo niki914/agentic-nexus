@@ -20,8 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
@@ -42,7 +41,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
-import androidx.lifecycle.ViewModelProvider
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.LiquidScreen
 import com.niki914.nexus.agentic.app.ui.infra.LiquidScreenSwipeContent
@@ -50,20 +48,12 @@ import com.niki914.nexus.agentic.app.ui.infra.TitleDirection
 import com.niki914.nexus.agentic.app.ui.infra.nav.LocalNavigationEntry
 import com.niki914.nexus.agentic.app.ui.infra.nav.rememberNavigationController
 import com.niki914.nexus.agentic.app.ui.infra.rememberLiquidScreenState
-import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatIntent
-import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatViewModel
-import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsIntent
-import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.AppLaunchDecision
 import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
-import com.niki914.nexus.agentic.app.ui.nexus.content.mcp.McpSettingsViewModelFactory
-import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
-import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NoTitle
 import com.niki914.nexus.agentic.app.ui.nexus.nav.PageTitleSpec
 import com.niki914.nexus.agentic.app.ui.nexus.nav.ResTitle
-import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsHomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TextTitle
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 
@@ -78,56 +68,32 @@ fun NexusApp(
     val actionIconTint = if (isDarkTheme) Color.White else Color.Black
     val rootBackToHomeWindowMillis = 2_000L
     val rootBackToHomeHint = stringResource(R.string.ui_root_back_to_home_hint)
-    var homeMenuExpanded by remember { mutableStateOf(false) }
+    val pageChromeHost = rememberPageChromeHost()
+    var chromeMenuExpanded by remember { mutableStateOf(false) }
     var lastRootBackPressedAt by remember { mutableStateOf(0L) }
-    fun openHomeMenu() {
-        homeMenuExpanded = true
-    }
-    val initialPage = remember(launchDecision.initialPage) {
-        attachPageActions(
-            page = launchDecision.initialPage,
-            onOpenHomeMenu = ::openHomeMenu,
-        )
-    }
+    val initialPage = launchDecision.initialPage
     val controller = rememberNavigationController<NexusPage>(initialPage = initialPage)
     val navigator = controller.navigator
     val currentEntry = controller.currentEntry
     val currentPage = currentEntry.page
     val currentLeftAction = currentPage.leftAction
-    val currentHomeChatViewModel = if (currentPage is HomePage) {
-        remember(currentEntry) {
-            val viewModelClass = HomeChatViewModel::class.java
-            ViewModelProvider(
-                currentEntry,
-                ViewModelProvider.NewInstanceFactory(),
-            )[viewModelClass.name, viewModelClass]
+    val currentChrome = pageChromeHost.stateFor(currentEntry.id)
+    fun closeChromeMenu() {
+        chromeMenuExpanded = false
+    }
+    fun openChromeMenu() {
+        if (currentChrome.menuItems.isNotEmpty()) {
+            chromeMenuExpanded = true
         }
-    } else {
-        null
     }
-    val currentMcpSettingsViewModel = if (currentPage is McpServerDetailPage && !currentPage.isCreating) {
-        remember(currentEntry) {
-            val viewModelClass = McpSettingsViewModel::class.java
-            ViewModelProvider(currentEntry, McpSettingsViewModelFactory)[viewModelClass.name, viewModelClass]
-        }
-    } else {
-        null
-    }
-    val currentRightAction = if (currentPage is McpServerDetailPage && !currentPage.isCreating) {
-        TopBarActionSpec(
-            icon = Icons.Default.Delete,
-            onClick = {
-                currentMcpSettingsViewModel?.sendIntent(McpSettingsIntent.DeleteCurrent)
-            },
-        )
-    } else {
-        currentPage.rightAction
-    }
+    val currentRightAction = resolveRightAction(
+        baseAction = currentPage.rightAction,
+        chrome = currentChrome,
+        onOpenChromeMenu = ::openChromeMenu,
+    )
     val showLeftButton = currentLeftAction != null && (currentLeftAction.onClick != null || controller.canGoBack)
     val showRightButton = currentRightAction != null
     val currentTitle = resolveTitle(currentPage.titleSpec)
-    val clearMenuLabel = stringResource(R.string.ui_home_menu_clear)
-    val settingsMenuLabel = stringResource(R.string.ui_settings_menu_entry)
     val screenState = rememberLiquidScreenState(
         title = currentTitle,
         showLeftButton = showLeftButton,
@@ -135,23 +101,19 @@ fun NexusApp(
         showBlurLayer = currentPage.showBlurLayer,
     )
 
-    fun closeHomeMenu() {
-        homeMenuExpanded = false
-    }
-
     fun push(page: NexusPage) {
-        closeHomeMenu()
-        navigator.push(attachPageActions(page = page, onOpenHomeMenu = ::openHomeMenu))
+        closeChromeMenu()
+        navigator.push(page)
     }
 
     fun resetTo(page: NexusPage) {
-        closeHomeMenu()
-        navigator.resetTo(attachPageActions(page = page, onOpenHomeMenu = ::openHomeMenu))
+        closeChromeMenu()
+        navigator.resetTo(page)
     }
 
     BackHandler(enabled = true) {
-        if (homeMenuExpanded) {
-            closeHomeMenu()
+        if (chromeMenuExpanded) {
+            closeChromeMenu()
         } else if (controller.canGoBack) {
             navigator.pop()
         } else {
@@ -165,9 +127,9 @@ fun NexusApp(
         }
     }
 
-    LaunchedEffect(currentEntry.id, controller.lastDirection, currentTitle) {
-        if (currentPage !is HomePage) {
-            closeHomeMenu()
+    LaunchedEffect(currentEntry.id, controller.lastDirection, currentTitle, currentRightAction, currentChrome.menuItems) {
+        if (currentChrome.menuItems.isEmpty()) {
+            closeChromeMenu()
         }
         val onLeftClick = bindAction(currentLeftAction) { navigator.pop() }
         val onRightClick = bindAction(currentRightAction)
@@ -267,7 +229,13 @@ fun NexusApp(
                 direction = controller.lastDirection,
                 modifier = Modifier.fillMaxSize(),
             ) { entry ->
-                CompositionLocalProvider(LocalNavigationEntry provides entry) {
+                val pageChromeRegistrar = remember(entry.id, pageChromeHost) {
+                    pageChromeHost.registrarFor(entry.id)
+                }
+                CompositionLocalProvider(
+                    LocalNavigationEntry provides entry,
+                    LocalPageChrome provides pageChromeRegistrar,
+                ) {
                     NexusPageContent(
                         entry = entry,
                         topPadding = screenState.actionBarHeight.value,
@@ -286,20 +254,18 @@ fun NexusApp(
                     .padding(top = screenState.actionBarHeight.value, end = 12.dp),
             ) {
                 DropdownMenu(
-                    expanded = currentPage is HomePage && homeMenuExpanded,
-                    onDismissRequest = ::closeHomeMenu,
+                    expanded = chromeMenuExpanded && currentChrome.menuItems.isNotEmpty(),
+                    onDismissRequest = ::closeChromeMenu,
                 ) {
-                    DropdownMenuItem(
-                        text = { Text(clearMenuLabel) },
-                        onClick = {
-                            closeHomeMenu()
-                            currentHomeChatViewModel?.sendIntent(HomeChatIntent.ClearConversation)
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(settingsMenuLabel) },
-                        onClick = { push(SettingsHomePage) },
-                    )
+                    currentChrome.menuItems.forEach { item ->
+                        DropdownMenuItem(
+                            text = { Text(item.title) },
+                            onClick = {
+                                closeChromeMenu()
+                                item.onClick()
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -322,13 +288,16 @@ private fun bindAction(
     return action?.onClick ?: fallback
 }
 
-private fun attachPageActions(
-    page: NexusPage,
-    onOpenHomeMenu: () -> Unit,
-): NexusPage {
-    return when (page) {
-        is HomePage -> page.copy(onMenuClick = onOpenHomeMenu)
-        else -> page
+private fun resolveRightAction(
+    baseAction: TopBarActionSpec?,
+    chrome: PageChromeContribution,
+    onOpenChromeMenu: () -> Unit,
+): TopBarActionSpec? {
+    return when {
+        chrome.rightAction != null -> chrome.rightAction
+        chrome.menuItems.isNotEmpty() -> baseAction?.copy(onClick = onOpenChromeMenu)
+            ?: TopBarActionSpec(icon = Icons.Default.MoreHoriz, onClick = onOpenChromeMenu)
+        else -> baseAction
     }
 }
 

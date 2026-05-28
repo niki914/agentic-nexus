@@ -68,15 +68,12 @@ data object DonePage : NexusPage {
     override val rightAction: TopBarActionSpec? = null
 }
 
-data class HomePage(
-    val onMenuClick: (() -> Unit)? = null,
-) : NexusPage {
+data object HomePage : NexusPage {
     override val routeKey: String = "home"
     override val titleSpec: PageTitleSpec = ResTitle(R.string.ui_home_title)
     override val leftAction: TopBarActionSpec? = null
     override val rightAction: TopBarActionSpec = TopBarActionSpec(
         icon = Icons.Default.MoreHoriz,
-        onClick = onMenuClick,
     )
 }
 

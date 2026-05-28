@@ -259,22 +259,56 @@ class McpSettingsViewModelTest {
     }
 
     @Test
-    fun startEdit_formatsHeadersInputAsSortedMultilineJson() = runTest {
-        val viewModel = McpSettingsViewModel(
-            listServers = {
+    fun deleteCurrent_refreshesOtherLoadedMcpSettingsViewModels() = runTest {
+        installStore(
+            buildLocalSettings(
                 listOf(
                     McpServer(
                         name = "demo",
                         url = "http://127.0.0.1:51338/mcp",
                         enabled = true,
-                        headers = linkedMapOf(
-                            "X-Trace-Id" to "trace-1",
-                            "Authorization" to "Bearer xxx",
-                        ),
                     )
                 )
-            }
+            )
         )
+        val listViewModel = McpSettingsViewModel()
+        val detailViewModel = McpSettingsViewModel()
+
+        listViewModel.sendIntent(McpSettingsIntent.Load)
+        detailViewModel.sendIntent(McpSettingsIntent.Load)
+        advanceUntilIdle()
+        assertEquals(1, listViewModel.uiStateFlow.value.items.size)
+
+        detailViewModel.sendIntent(McpSettingsIntent.StartEdit(0))
+        detailViewModel.sendIntent(McpSettingsIntent.DeleteCurrent)
+        advanceUntilIdle()
+
+        assertTrue(XRepo.mcp.list().isEmpty())
+        assertTrue(listViewModel.uiStateFlow.value.items.isEmpty())
+    }
+
+    @Test
+    fun startEdit_formatsHeadersInputAsSortedMultilineJson() = runTest {
+        installStore(
+            localSettings(
+                """
+                {
+                  "mcp_servers": [
+                    {
+                      "name": "demo",
+                      "url": "http://127.0.0.1:51338/mcp",
+                      "enabled": true,
+                      "headers": {
+                        "X-Trace-Id": "trace-1",
+                        "Authorization": "Bearer xxx"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+        )
+        val viewModel = McpSettingsViewModel()
 
         viewModel.sendIntent(McpSettingsIntent.Load)
         advanceUntilIdle()
@@ -295,18 +329,8 @@ class McpSettingsViewModelTest {
     @Test
     fun save_renameFailureDoesNotDeleteExistingServer() = runTest {
         val existing = McpServer(name = "old", url = "http://127.0.0.1:1/mcp", enabled = true)
-        installStore(buildLocalSettings(listOf(existing)))
-        var deleteCalled = false
-        val viewModel = McpSettingsViewModel(
-            listServers = { XRepo.mcp.list() },
-            saveServer = { fail("saveServer should not be called for rename") },
-            replaceServer = { _, _ -> error("replace failed") },
-            deleteServer = {
-                deleteCalled = true
-                XRepo.mcp.delete(it)
-            },
-            setServerEnabled = { _, _ -> fail("setServerEnabled should not be called") },
-        )
+        installStore(buildLocalSettings(listOf(existing)), failWrites = true)
+        val viewModel = McpSettingsViewModel()
 
         viewModel.sendIntent(McpSettingsIntent.Load)
         advanceUntilIdle()
@@ -316,13 +340,15 @@ class McpSettingsViewModelTest {
         viewModel.sendIntent(McpSettingsIntent.Save)
         advanceUntilIdle()
 
-        assertFalse(deleteCalled)
         assertEquals(listOf(existing), XRepo.mcp.list())
         assertFalse(viewModel.uiStateFlow.value.isSaving)
     }
 
-    private fun installStore(initialSettings: LocalSettings) {
-        XRepo.installStoreForTest(FakeLocalSettingsStore(initialSettings))
+    private fun installStore(
+        initialSettings: LocalSettings,
+        failWrites: Boolean = false,
+    ) {
+        XRepo.installStoreForTest(FakeLocalSettingsStore(initialSettings, failWrites))
         XRepo.init(context)
     }
 
@@ -339,12 +365,16 @@ class McpSettingsViewModelTest {
 
     private class FakeLocalSettingsStore(
         initialSettings: LocalSettings,
+        private val failWrites: Boolean,
     ) : LocalSettingsStore {
         private var settings: LocalSettings = initialSettings
 
         override suspend fun read(context: Context): LocalSettings = settings
 
         override suspend fun write(context: Context, settings: LocalSettings) {
+            if (failWrites) {
+                error("write failed")
+            }
             this.settings = settings
         }
     }

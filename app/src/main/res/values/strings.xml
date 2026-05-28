@@ -142,7 +142,7 @@
     <string name="mcp_field_url_hint">例如：https://a.b.c/mcp</string>
     <string name="mcp_field_enabled">启用服务</string>
     <string name="mcp_field_headers">自定义请求头</string>
-    <string name="mcp_field_headers_hint">{\n  &quot;Authorization&quot;: &quot;Bearer xxx&quot;\n}</string>
+    <string name="mcp_field_headers_hint">{\n  \"Authorization\": \"Bearer xxx\"\n}</string>
     <string name="mcp_save_action">保存 MCP 服务</string>
     <string name="mcp_delete_action">删除当前 MCP 服务</string>
     <string name="mcp_error_name_required">请输入名称</string>

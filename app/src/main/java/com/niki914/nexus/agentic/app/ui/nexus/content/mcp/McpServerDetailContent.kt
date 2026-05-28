@@ -1,11 +1,15 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content.mcp
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalFocusManager
@@ -13,8 +17,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
@@ -22,12 +24,15 @@ import com.niki914.nexus.agentic.app.ui.infra.component.SettingsDetailFormScaffo
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
+import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpInlineError
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsEffect
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.rememberHazeState
 
@@ -38,9 +43,26 @@ fun McpServerDetailContent(
     hazeState: HazeState,
     onBack: () -> Unit,
 ) {
-    val viewModel = pageViewModel<McpSettingsViewModel>(factory = McpSettingsViewModelFactory)
+    val viewModel = pageViewModel<McpSettingsViewModel>()
     val uiState by viewModel.uiStateFlow.collectAsState()
+    val latestViewModel by rememberUpdatedState(viewModel)
     var requestedFocusField by rememberSaveable { mutableStateOf<McpEditableField?>(null) }
+
+    val pageChromeContribution = remember(page.isCreating) {
+        if (page.isCreating) {
+            PageChromeContribution.Empty
+        } else {
+            PageChromeContribution(
+                rightAction = TopBarActionSpec(
+                    icon = Icons.Default.Delete,
+                    onClick = {
+                        latestViewModel.sendIntent(McpSettingsIntent.DeleteCurrent)
+                    },
+                ),
+            )
+        }
+    }
+    RegisterPageChrome(pageChromeContribution)
 
     LaunchedEffect(page.routeKey) {
         if (page.isCreating) {
@@ -253,14 +275,6 @@ private fun mcpInlineErrorText(error: McpInlineError?): String? {
         is McpInlineError.LoadFailed -> error.message
         is McpInlineError.SaveFailed -> error.message
         is McpInlineError.DeleteFailed -> error.message
-    }
-}
-
-internal object McpSettingsViewModelFactory : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        require(modelClass == McpSettingsViewModel::class.java)
-        return McpSettingsViewModel() as T
     }
 }
 

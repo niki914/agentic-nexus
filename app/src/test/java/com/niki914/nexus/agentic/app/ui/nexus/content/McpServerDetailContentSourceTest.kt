@@ -21,7 +21,7 @@ class McpServerDetailContentSourceTest {
         assertTrue(source.contains("onBack: () -> Unit"))
         assertTrue(
             source.contains(
-                "pageViewModel<McpSettingsViewModel>(factory = McpSettingsViewModelFactory)",
+                "pageViewModel<McpSettingsViewModel>()",
             ),
         )
         assertTrue(source.contains("LaunchedEffect(page.routeKey)"))

@@ -28,7 +28,7 @@ fun McpSettingsContent(
     hazeState: HazeState,
     onOpenServerDetail: (serverName: String, serverIndex: Int) -> Unit,
 ) {
-    val viewModel = pageViewModel<McpSettingsViewModel>(factory = McpSettingsViewModelFactory)
+    val viewModel = pageViewModel<McpSettingsViewModel>()
     val uiState by viewModel.uiStateFlow.collectAsState()
 
     LaunchedEffect(Unit) {

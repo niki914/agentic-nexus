@@ -26,6 +26,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -33,9 +34,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
+import com.niki914.nexus.agentic.app.ui.nexus.PageChromeMenuItem
+import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatBlock
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatTurn
@@ -48,8 +54,13 @@ import kotlinx.coroutines.flow.collectLatest
 fun HomePageContent(
     topPadding: Dp,
     hazeState: HazeState,
+    onOpenSettings: () -> Unit,
 ) {
     val viewModel = pageViewModel<HomeChatViewModel>()
+    val clearMenuLabel = stringResource(R.string.ui_home_menu_clear)
+    val settingsMenuLabel = stringResource(R.string.ui_settings_menu_entry)
+    val latestViewModel by rememberUpdatedState(viewModel)
+    val latestOnOpenSettings by rememberUpdatedState(onOpenSettings)
     val uiState by viewModel.uiStateFlow.collectAsState()
     val density = LocalDensity.current
     val focusManager = LocalFocusManager.current
@@ -115,6 +126,26 @@ fun HomePageContent(
             listState.scrollToItem(uiState.turns.size)
         }
     }
+
+    val pageChromeContribution = remember(clearMenuLabel, settingsMenuLabel) {
+        PageChromeContribution(
+            menuItems = listOf(
+                PageChromeMenuItem(
+                    key = "clear",
+                    title = clearMenuLabel,
+                    onClick = {
+                        latestViewModel.sendIntent(HomeChatIntent.ClearConversation)
+                    },
+                ),
+                PageChromeMenuItem(
+                    key = "settings",
+                    title = settingsMenuLabel,
+                    onClick = { latestOnOpenSettings() },
+                ),
+            ),
+        )
+    }
+    RegisterPageChrome(pageChromeContribution)
 
     Box(
         modifier = Modifier

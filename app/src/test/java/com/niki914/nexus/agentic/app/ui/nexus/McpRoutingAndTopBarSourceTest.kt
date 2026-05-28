@@ -36,12 +36,12 @@ class McpRoutingAndTopBarSourceTest {
         )
         assertTrue(
             listSource.contains(
-                "pageViewModel<McpSettingsViewModel>(factory = McpSettingsViewModelFactory)",
+                "pageViewModel<McpSettingsViewModel>()",
             ),
         )
         assertTrue(listSource.contains("LaunchedEffect(Unit)"))
         assertTrue(listSource.contains("McpSettingsIntent.Load"))
-        assertTrue(detailSource.contains("object McpSettingsViewModelFactory"))
+        assertFalse(detailSource.contains("McpSettingsViewModelFactory"))
     }
 
     @Test
@@ -72,10 +72,9 @@ class McpRoutingAndTopBarSourceTest {
     fun nexus_app_binds_delete_action_to_current_mcp_detail_entry() {
         val source = nexusAppFile.readText()
 
-        assertTrue(source.contains("currentPage is McpServerDetailPage"))
-        assertTrue(source.contains("!currentPage.isCreating"))
-        assertTrue(source.contains("McpSettingsViewModelFactory"))
-        assertTrue(source.contains("McpSettingsIntent.DeleteCurrent"))
-        assertTrue(source.contains("ViewModelProvider(currentEntry, McpSettingsViewModelFactory)"))
+        assertFalse(source.contains("currentPage is McpServerDetailPage"))
+        assertFalse(source.contains("McpSettingsViewModelFactory"))
+        assertFalse(source.contains("McpSettingsIntent.DeleteCurrent"))
+        assertFalse(source.contains("ViewModelProvider(currentEntry"))
     }
 }

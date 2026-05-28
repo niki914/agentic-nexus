@@ -31,7 +31,6 @@ import com.niki914.nexus.agentic.app.ui.nexus.content.StartupPageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.mcp.McpServerDetailContent
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureEffect
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureIntent
-import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureScene
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.ProviderButtonTokens
 import com.niki914.nexus.agentic.app.ui.nexus.model.ProviderSpec
@@ -79,7 +78,7 @@ fun NexusPageContent(
                     when (startupAssistantUi) {
                         StartupAssistantUi.Breeno,
                         StartupAssistantUi.XiaoAi -> ProviderPickPage
-                        StartupAssistantUi.ChatOnly -> HomePage()
+                        StartupAssistantUi.ChatOnly -> HomePage
                     }
                 )
             },
@@ -125,17 +124,13 @@ fun NexusPageContent(
             }
 
             LaunchedEffect(page.providerId) {
-                viewModel.sendIntent(
-                    ConfigureIntent.Initialize(
-                        scene = ConfigureScene.Onboarding,
-                        providerId = page.providerId,
-                    )
-                )
+                viewModel.sendIntent(ConfigureIntent.Initialize(page.providerId))
             }
             LaunchedEffect(viewModel) {
                 viewModel.uiEffect.collect { effect ->
                     when (effect) {
                         ConfigureEffect.OnboardingSaveSucceeded -> onPush(DonePage)
+                        ConfigureEffect.SettingsSaveSucceeded -> Unit
                         ConfigureEffect.FocusModel -> {
                             pendingFocusField = ConfigureEditableField.Model
                         }
@@ -145,8 +140,9 @@ fun NexusPageContent(
                         ConfigureEffect.FocusEndpoint -> {
                             pendingFocusField = ConfigureEditableField.Endpoint
                         }
-                        ConfigureEffect.SettingsSaveSucceeded,
-                        ConfigureEffect.FocusProxy,
+                        ConfigureEffect.FocusProxy -> {
+                            pendingFocusField = ConfigureEditableField.Proxy
+                        }
                         is ConfigureEffect.SaveFailed -> Unit
                     }
                 }
@@ -189,14 +185,17 @@ fun NexusPageContent(
             onEnterHome = {
                 scope.launch {
                     completeOnboarding()
-                    onResetTo(HomePage())
+                    onResetTo(HomePage)
                 }
             },
         )
 
-        is HomePage -> HomePageContent(
+        HomePage -> HomePageContent(
             topPadding = topPadding,
             hazeState = hazeState,
+            onOpenSettings = {
+                onPush(SettingsHomePage)
+            },
         )
 
         SettingsHomePage -> SettingsHomePageContent(

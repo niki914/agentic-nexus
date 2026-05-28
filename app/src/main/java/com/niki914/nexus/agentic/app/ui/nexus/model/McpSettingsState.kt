@@ -5,7 +5,10 @@ import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.cb.ComposeMVIViewModel
 import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -64,17 +67,15 @@ sealed interface McpSettingsEffect {
     data object FocusHeaders : McpSettingsEffect
 }
 
-class McpSettingsViewModel internal constructor(
-    private val listServers: suspend () -> List<McpServer> = { XRepo.mcp.list() },
-    private val saveServer: suspend (McpServer) -> Unit = { server -> XRepo.mcp.save(server) },
-    private val replaceServer: suspend (String?, McpServer) -> Unit = { previousName, server ->
-        XRepo.mcp.replace(previousName, server)
-    },
-    private val deleteServer: suspend (String) -> Unit = { name -> XRepo.mcp.delete(name) },
-    private val setServerEnabled: suspend (String, Boolean) -> Unit = { name, enabled ->
-        XRepo.mcp.setEnabled(name, enabled)
-    },
-) : ComposeMVIViewModel<McpSettingsIntent, McpSettingsUiState, McpSettingsEffect>() {
+class McpSettingsViewModel : ComposeMVIViewModel<McpSettingsIntent, McpSettingsUiState, McpSettingsEffect>() {
+
+    init {
+        viewModelScope.launch {
+            settingsChanges.collect {
+                load()
+            }
+        }
+    }
 
     override fun initUiState(): McpSettingsUiState = McpSettingsUiState()
 
@@ -120,7 +121,7 @@ class McpSettingsViewModel internal constructor(
     private suspend fun load() {
         updateState { copy(isLoading = true) }
         try {
-            val loadedItems = listServers().map { it.toItem() }
+            val loadedItems = XRepo.mcp.list().map { it.toItem() }
             updateState {
                 copy(
                     items = loadedItems,
@@ -197,12 +198,13 @@ class McpSettingsViewModel internal constructor(
             )
         }
         try {
-            setServerEnabled(currentItem.name, enabled)
+            XRepo.mcp.setEnabled(currentItem.name, enabled)
             updateState {
                 copy(
                     isSaving = false,
                 )
             }
+            notifySettingsChanged()
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
             updateState {
@@ -293,9 +295,9 @@ class McpSettingsViewModel internal constructor(
                 }
             }
             if (previousName != null && previousName != nextItem.name) {
-                replaceServer(previousName, nextItem.toRepo())
+                XRepo.mcp.replace(previousName, nextItem.toRepo())
             } else {
-                saveServer(nextItem.toRepo())
+                XRepo.mcp.save(nextItem.toRepo())
             }
             updateState {
                 copy(
@@ -313,6 +315,7 @@ class McpSettingsViewModel internal constructor(
                     inlineError = null,
                 )
             }
+            notifySettingsChanged()
             sendEffect(McpSettingsEffect.ExitDetail)
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
@@ -333,7 +336,7 @@ class McpSettingsViewModel internal constructor(
         updateState { copy(isSaving = true) }
         try {
             val updatedItems = currentState.items.filterIndexed { index, _ -> index != editingIndex }
-            deleteServer(currentItem.name)
+            XRepo.mcp.delete(currentItem.name)
             updateState {
                 copy(
                     items = updatedItems,
@@ -342,6 +345,7 @@ class McpSettingsViewModel internal constructor(
                     inlineError = null,
                 )
             }
+            notifySettingsChanged()
             sendEffect(McpSettingsEffect.ExitDetail)
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
@@ -354,6 +358,14 @@ class McpSettingsViewModel internal constructor(
                 )
             }
         }
+    }
+
+    private fun notifySettingsChanged() {
+        settingsChanges.tryEmit(Unit)
+    }
+
+    private companion object {
+        val settingsChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     }
 }
 
