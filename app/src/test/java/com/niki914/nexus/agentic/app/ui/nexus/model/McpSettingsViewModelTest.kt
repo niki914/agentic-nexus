@@ -2,16 +2,18 @@ package com.niki914.nexus.agentic.app.ui.nexus.model
 
 import android.content.Context
 import android.content.ContextWrapper
+import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.repo.LocalSettingsStore
 import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.After
@@ -118,9 +120,33 @@ class McpSettingsViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiStateFlow.value
-        assertEquals("请输入名称", state.formState.nameError)
+        assertEquals(R.string.mcp_error_name_required, state.formState.nameErrorResId)
         assertTrue(XRepo.mcp.list().isEmpty())
         assertFalse(state.isSaving)
+    }
+
+    @Test
+    fun save_withBlankName_emitsFocusNameEveryTime() = runTest {
+        installStore(LocalSettings())
+        val viewModel = McpSettingsViewModel()
+        val effects = mutableListOf<McpSettingsEffect>()
+        val collectJob = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiEffect.take(2).toList(effects)
+        }
+
+        viewModel.sendIntent(McpSettingsIntent.Load)
+        advanceUntilIdle()
+        viewModel.sendIntent(McpSettingsIntent.StartCreate)
+        viewModel.sendIntent(McpSettingsIntent.UrlChanged("http://127.0.0.1:51338/mcp"))
+        viewModel.sendIntent(McpSettingsIntent.Save)
+        viewModel.sendIntent(McpSettingsIntent.Save)
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(McpSettingsEffect.FocusName, McpSettingsEffect.FocusName),
+            effects,
+        )
+        collectJob.cancel()
     }
 
     @Test
@@ -138,7 +164,26 @@ class McpSettingsViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiStateFlow.value
-        assertEquals("请求头不是合法 JSON", state.formState.headersError)
+        assertEquals(R.string.mcp_error_headers_invalid_json, state.formState.headersErrorResId)
+        assertTrue(XRepo.mcp.list().isEmpty())
+        assertFalse(state.isSaving)
+    }
+
+    @Test
+    fun save_withNonHttpScheme_setsUrlErrorAndSkipsPersistence() = runTest {
+        installStore(LocalSettings())
+        val viewModel = McpSettingsViewModel()
+
+        viewModel.sendIntent(McpSettingsIntent.Load)
+        advanceUntilIdle()
+        viewModel.sendIntent(McpSettingsIntent.StartCreate)
+        viewModel.sendIntent(McpSettingsIntent.NameChanged("demo"))
+        viewModel.sendIntent(McpSettingsIntent.UrlChanged("ftp://127.0.0.1:51338/mcp"))
+        viewModel.sendIntent(McpSettingsIntent.Save)
+        advanceUntilIdle()
+
+        val state = viewModel.uiStateFlow.value
+        assertEquals(R.string.mcp_error_url_invalid, state.formState.urlErrorResId)
         assertTrue(XRepo.mcp.list().isEmpty())
         assertFalse(state.isSaving)
     }
@@ -147,8 +192,9 @@ class McpSettingsViewModelTest {
     fun save_withHeaders_persistsHeadersAndEmitsExitDetail() = runTest {
         installStore(LocalSettings())
         val viewModel = McpSettingsViewModel()
-        val effectDeferred = async {
-            withTimeout(1_000) { viewModel.uiEffect.first() }
+        val effects = mutableListOf<McpSettingsEffect>()
+        val collectJob = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiEffect.take(1).toList(effects)
         }
 
         viewModel.sendIntent(McpSettingsIntent.Load)
@@ -163,9 +209,9 @@ class McpSettingsViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiStateFlow.value
-        assertNull(state.formState.nameError)
-        assertNull(state.formState.urlError)
-        assertNull(state.formState.headersError)
+        assertNull(state.formState.nameErrorResId)
+        assertNull(state.formState.urlErrorResId)
+        assertNull(state.formState.headersErrorResId)
         assertEquals(
             listOf(
                 McpServer(
@@ -177,7 +223,8 @@ class McpSettingsViewModelTest {
             ),
             XRepo.mcp.list(),
         )
-        assertEquals(McpSettingsEffect.ExitDetail, effectDeferred.await())
+        assertEquals(listOf(McpSettingsEffect.ExitDetail), effects)
+        collectJob.cancel()
     }
 
     @Test
@@ -194,8 +241,9 @@ class McpSettingsViewModelTest {
             )
         )
         val viewModel = McpSettingsViewModel()
-        val effectDeferred = async {
-            withTimeout(1_000) { viewModel.uiEffect.first() }
+        val effects = mutableListOf<McpSettingsEffect>()
+        val collectJob = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiEffect.take(1).toList(effects)
         }
 
         viewModel.sendIntent(McpSettingsIntent.Load)
@@ -206,7 +254,8 @@ class McpSettingsViewModelTest {
         advanceUntilIdle()
 
         assertTrue(XRepo.mcp.list().isEmpty())
-        assertEquals(McpSettingsEffect.ExitDetail, effectDeferred.await())
+        assertEquals(listOf(McpSettingsEffect.ExitDetail), effects)
+        collectJob.cancel()
     }
 
     @Test

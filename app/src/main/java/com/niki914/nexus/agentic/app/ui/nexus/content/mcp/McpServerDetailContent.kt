@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -43,6 +44,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 
 @Composable
 fun McpServerDetailContent(
@@ -56,6 +58,8 @@ fun McpServerDetailContent(
     val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
     var expandedField by rememberSaveable { mutableStateOf<McpEditableField?>(null) }
+    var pendingFocusField by rememberSaveable { mutableStateOf<McpEditableField?>(null) }
+    var requestedFocusField by rememberSaveable { mutableStateOf<McpEditableField?>(null) }
 
     fun clearActiveField() {
         expandedField = null
@@ -81,7 +85,85 @@ fun McpServerDetailContent(
         viewModel.uiEffect.collect { effect ->
             when (effect) {
                 McpSettingsEffect.ExitDetail -> onBack()
+                McpSettingsEffect.FocusName -> {
+                    pendingFocusField = McpEditableField.Name
+                    requestedFocusField = pendingFocusField
+                }
+                McpSettingsEffect.FocusUrl -> {
+                    pendingFocusField = McpEditableField.Url
+                    requestedFocusField = pendingFocusField
+                }
+                McpSettingsEffect.FocusHeaders -> {
+                    pendingFocusField = McpEditableField.Headers
+                    requestedFocusField = pendingFocusField
+                }
             }
+        }
+    }
+
+    LaunchedEffect(requestedFocusField) {
+        if (requestedFocusField != null) {
+            expandedField = requestedFocusField
+            requestedFocusField = null
+            pendingFocusField = null
+        }
+    }
+
+    McpServerDetailContentBody(
+        topPadding = topPadding,
+        hazeState = hazeState,
+        uiState = uiState,
+        requestedFocusField = requestedFocusField,
+        onRequestedFocusHandled = {
+            requestedFocusField = null
+            pendingFocusField = null
+        },
+        onNameChange = { value ->
+            viewModel.sendIntent(McpSettingsIntent.NameChanged(value))
+        },
+        onEnabledChange = { value ->
+            clearActiveField()
+            viewModel.sendIntent(McpSettingsIntent.EnabledChanged(value))
+        },
+        onUrlChange = { value ->
+            viewModel.sendIntent(McpSettingsIntent.UrlChanged(value))
+        },
+        onHeadersChange = { value ->
+            viewModel.sendIntent(McpSettingsIntent.HeadersChanged(value))
+        },
+        onSave = {
+            clearActiveField()
+            viewModel.sendIntent(McpSettingsIntent.Save)
+        },
+    )
+}
+
+@Composable
+private fun McpServerDetailContentBody(
+    topPadding: Dp,
+    hazeState: HazeState,
+    uiState: McpSettingsUiState,
+    requestedFocusField: McpEditableField?,
+    onRequestedFocusHandled: () -> Unit,
+    onNameChange: (String) -> Unit,
+    onEnabledChange: (Boolean) -> Unit,
+    onUrlChange: (String) -> Unit,
+    onHeadersChange: (String) -> Unit,
+    onSave: () -> Unit,
+) {
+    val scrollState = rememberScrollState()
+    val focusManager = LocalFocusManager.current
+    var expandedField by rememberSaveable { mutableStateOf<McpEditableField?>(null) }
+
+    fun clearActiveField() {
+        expandedField = null
+        focusManager.clearFocus()
+    }
+
+    LaunchedEffect(requestedFocusField) {
+        if (requestedFocusField != null) {
+            expandedField = requestedFocusField
+            onRequestedFocusHandled()
         }
     }
 
@@ -116,11 +198,10 @@ fun McpServerDetailContent(
                     uiState = uiState,
                     expandedField = expandedField,
                     onExpandedFieldChange = { field -> expandedField = field },
-                    onNameChange = { value ->
-                        viewModel.sendIntent(McpSettingsIntent.NameChanged(value))
-                    },
-                    onEnabledChange = { value ->
-                        viewModel.sendIntent(McpSettingsIntent.EnabledChanged(value))
+                    onNameChange = onNameChange,
+                    onEnabledChange = {
+                        clearActiveField()
+                        onEnabledChange(it)
                     },
                 )
 
@@ -128,12 +209,8 @@ fun McpServerDetailContent(
                     uiState = uiState,
                     expandedField = expandedField,
                     onExpandedFieldChange = { field -> expandedField = field },
-                    onUrlChange = { value ->
-                        viewModel.sendIntent(McpSettingsIntent.UrlChanged(value))
-                    },
-                    onHeadersChange = { value ->
-                        viewModel.sendIntent(McpSettingsIntent.HeadersChanged(value))
-                    },
+                    onUrlChange = onUrlChange,
+                    onHeadersChange = onHeadersChange,
                 )
 
                 mcpInlineErrorText(uiState.inlineError)?.let { errorText ->
@@ -150,10 +227,7 @@ fun McpServerDetailContent(
             TintLiquidButton(
                 text = stringResource(R.string.mcp_save_action),
                 enabled = !uiState.isSaving,
-                onClick = {
-                    clearActiveField()
-                    viewModel.sendIntent(McpSettingsIntent.Save)
-                },
+                onClick = onSave,
             )
         }
     }
@@ -178,8 +252,8 @@ private fun McpIdentitySettingsBlock(
             title = stringResource(R.string.mcp_field_name),
             value = uiState.formState.name,
             onValueChange = onNameChange,
-            placeholder = stringResource(R.string.mcp_field_name_placeholder),
-            description = null,
+            placeholder = stringResource(R.string.mcp_field_name_hint),
+            description = mcpFieldErrorText(uiState.formState.nameErrorResId),
             enabled = !uiState.isSaving,
             minLines = 1,
             maxLines = 1,
@@ -189,10 +263,6 @@ private fun McpIdentitySettingsBlock(
                     if (isExpanded) McpEditableField.Name else null,
                 )
             },
-        )
-        McpSupportingText(
-            errorText = uiState.formState.nameError,
-            hintText = stringResource(R.string.mcp_field_name_placeholder),
         )
         McpItemDivider()
         SettingToggleItem(
@@ -217,8 +287,8 @@ private fun McpConnectionSettingsBlock(
             title = stringResource(R.string.mcp_field_url),
             value = uiState.formState.url,
             onValueChange = onUrlChange,
-            placeholder = stringResource(R.string.mcp_field_url_placeholder),
-            description = null,
+            placeholder = stringResource(R.string.mcp_field_url_hint),
+            description = mcpFieldErrorText(uiState.formState.urlErrorResId),
             enabled = !uiState.isSaving,
             minLines = 1,
             maxLines = 1,
@@ -229,17 +299,13 @@ private fun McpConnectionSettingsBlock(
                 )
             },
         )
-        McpSupportingText(
-            errorText = uiState.formState.urlError,
-            hintText = stringResource(R.string.mcp_field_url_placeholder),
-        )
         McpItemDivider()
         SettingExpandableTextItem(
             title = stringResource(R.string.mcp_field_headers),
             value = uiState.formState.headersInput,
             onValueChange = onHeadersChange,
-            placeholder = stringResource(R.string.mcp_field_headers_placeholder),
-            description = null,
+            placeholder = stringResource(R.string.mcp_field_headers_hint),
+            description = mcpFieldErrorText(uiState.formState.headersErrorResId),
             enabled = !uiState.isSaving,
             minLines = 4,
             maxLines = 10,
@@ -250,30 +316,12 @@ private fun McpConnectionSettingsBlock(
                 )
             },
         )
-        McpSupportingText(
-            errorText = uiState.formState.headersError,
-            hintText = stringResource(R.string.mcp_field_headers_placeholder),
-        )
     }
 }
 
 @Composable
-private fun McpSupportingText(
-    errorText: String?,
-    hintText: String,
-) {
-    Text(
-        text = errorText ?: hintText,
-        style = MaterialTheme.typography.bodySmall,
-        color = if (errorText == null) {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        } else {
-            MaterialTheme.colorScheme.error
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-    )
+private fun mcpFieldErrorText(errorResId: Int?): String? {
+    return errorResId?.let { stringResource(id = it) }
 }
 
 @Composable
@@ -300,5 +348,35 @@ internal object McpSettingsViewModelFactory : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         require(modelClass == McpSettingsViewModel::class.java)
         return McpSettingsViewModel() as T
+    }
+}
+
+@Preview(showBackground = true, widthDp = 420, heightDp = 900)
+@Composable
+private fun McpServerDetailContentPreview() {
+    MaterialTheme {
+        McpServerDetailContentBody(
+            topPadding = 0.dp,
+            hazeState = rememberHazeState(blurEnabled = true),
+            uiState = McpSettingsUiState(
+                items = emptyList(),
+                formState = com.niki914.nexus.agentic.app.ui.nexus.model.McpServerFormState(
+                    name = "demo-mcp",
+                    url = "https://a.b.c/mcp",
+                    enabled = true,
+                    headersInput = "{\n  \"Authorization\": \"Bearer xxx\"\n}",
+                    headersErrorResId = R.string.mcp_error_headers_not_object,
+                ),
+                isLoading = false,
+                isSaving = false,
+            ),
+            requestedFocusField = McpEditableField.Headers,
+            onRequestedFocusHandled = {},
+            onNameChange = {},
+            onEnabledChange = {},
+            onUrlChange = {},
+            onHeadersChange = {},
+            onSave = {},
+        )
     }
 }

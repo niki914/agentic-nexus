@@ -1,6 +1,6 @@
 package com.niki914.nexus.agentic.app.ui.infra.component
 
-internal sealed interface LiquidToggleInteractionState {
+sealed interface LiquidToggleInteractionState {
     data class Settled(
         val checked: Boolean,
     ) : LiquidToggleInteractionState
@@ -21,14 +21,14 @@ internal sealed interface LiquidToggleInteractionState {
     ) : LiquidToggleInteractionState
 }
 
-internal data class LiquidToggleTransition(
+data class LiquidToggleTransition(
     val state: LiquidToggleInteractionState,
     val commitChecked: Boolean? = null,
     val isDragging: Boolean = false,
     val emitThresholdTick: Boolean = false,
 )
 
-internal fun liquidToggleVisualChecked(
+fun liquidToggleVisualChecked(
     checked: Boolean,
     state: LiquidToggleInteractionState?,
 ): Boolean {
@@ -41,7 +41,7 @@ internal fun liquidToggleVisualChecked(
     }
 }
 
-internal class LiquidToggleStateMachine(
+class LiquidToggleStateMachine(
     initialChecked: Boolean,
 ) {
     private var confirmedChecked: Boolean = initialChecked

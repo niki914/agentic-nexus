@@ -11,7 +11,9 @@ class McpStringsResourceFileTest {
         val xml = File("src/main/res/values/strings.xml").readText()
 
         assertTrue(xml.contains("""name="mcp_field_headers""""))
-        assertTrue(xml.contains("""name="mcp_field_headers_placeholder""""))
+        assertTrue(xml.contains("""name="mcp_field_name_hint""""))
+        assertTrue(xml.contains("""name="mcp_field_url_hint""""))
+        assertTrue(xml.contains("""name="mcp_field_headers_hint""""))
         assertTrue(xml.contains("""name="mcp_error_name_required""""))
         assertTrue(xml.contains("""name="mcp_error_name_duplicate""""))
         assertTrue(xml.contains("""name="mcp_error_url_required""""))
@@ -21,6 +23,12 @@ class McpStringsResourceFileTest {
         assertTrue(xml.contains("""name="mcp_error_headers_empty_key""""))
         assertTrue(xml.contains("""name="mcp_error_headers_non_string""""))
         assertTrue(xml.contains("""<string name="mcp_field_enabled">启用服务</string>"""))
+        assertTrue(xml.contains("""http://"""))
+        assertTrue(xml.contains("""https://"""))
+        assertFalse(xml.contains("""name="mcp_field_name_placeholder""""))
+        assertFalse(xml.contains("""name="mcp_field_url_placeholder""""))
+        assertFalse(xml.contains("""name="mcp_field_headers_placeholder""""))
+        assertFalse(xml.contains("""name="mcp_field_enabled_description""""))
         assertFalse(xml.contains("""<string name="mcp_field_enabled">启用该服务</string>"""))
     }
 }

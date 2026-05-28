@@ -1,5 +1,7 @@
 package com.niki914.nexus.agentic.app.ui.nexus.model
 
+import androidx.annotation.StringRes
+import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.cb.ComposeMVIViewModel
 import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
@@ -23,9 +25,9 @@ data class McpServerFormState(
     val url: String = "",
     val enabled: Boolean = true,
     val headersInput: String = "",
-    val nameError: String? = null,
-    val urlError: String? = null,
-    val headersError: String? = null,
+    @param:StringRes val nameErrorResId: Int? = null,
+    @param:StringRes val urlErrorResId: Int? = null,
+    @param:StringRes val headersErrorResId: Int? = null,
 )
 
 data class McpSettingsUiState(
@@ -57,6 +59,9 @@ sealed interface McpInlineError {
 
 sealed interface McpSettingsEffect {
     data object ExitDetail : McpSettingsEffect
+    data object FocusName : McpSettingsEffect
+    data object FocusUrl : McpSettingsEffect
+    data object FocusHeaders : McpSettingsEffect
 }
 
 class McpSettingsViewModel internal constructor(
@@ -86,7 +91,7 @@ class McpSettingsViewModel internal constructor(
                 copy(
                     formState = formState.copy(
                         name = intent.value,
-                        nameError = null,
+                        nameErrorResId = null,
                     ),
                     inlineError = null,
                 )
@@ -95,7 +100,7 @@ class McpSettingsViewModel internal constructor(
                 copy(
                     formState = formState.copy(
                         url = intent.value,
-                        urlError = null,
+                        urlErrorResId = null,
                     ),
                     inlineError = null,
                 )
@@ -166,7 +171,7 @@ class McpSettingsViewModel internal constructor(
             copy(
                 formState = formState.copy(
                     headersInput = value,
-                    headersError = null,
+                    headersErrorResId = null,
                 ),
                 inlineError = null,
             )
@@ -220,32 +225,39 @@ class McpSettingsViewModel internal constructor(
         val trimmedUrl = formState.url.trim()
         val editingIndex = formState.editingIndex
         val headersResult = normalizedHeadersOrError(formState.headersInput)
-        val nameError = when {
-            trimmedName.isBlank() -> ERROR_NAME_REQUIRED
+        val nameErrorResId = when {
+            trimmedName.isBlank() -> R.string.mcp_error_name_required
             currentState.items.anyIndexed { index, item ->
                 item.name == trimmedName && index != editingIndex
-            } -> ERROR_NAME_DUPLICATE
+            } -> R.string.mcp_error_name_duplicate
             else -> null
         }
-        val urlError = when {
-            trimmedUrl.isBlank() -> ERROR_URL_REQUIRED
-            !isValidUrl(trimmedUrl) -> ERROR_URL_INVALID
+        val urlErrorResId = when {
+            trimmedUrl.isBlank() -> R.string.mcp_error_url_required
+            !isValidUrl(trimmedUrl) -> R.string.mcp_error_url_invalid
             else -> null
         }
-        val headersError = (headersResult as? McpHeadersParseResult.Error)?.message
-        if (nameError != null || urlError != null || headersError != null) {
+        val headersErrorResId = (headersResult as? McpHeadersParseResult.Error)?.messageResId
+        if (nameErrorResId != null || urlErrorResId != null || headersErrorResId != null) {
             updateState {
                 copy(
                     formState = formState.copy(
                         name = trimmedName,
                         url = trimmedUrl,
-                        nameError = nameError,
-                        urlError = urlError,
-                        headersError = headersError,
+                        nameErrorResId = nameErrorResId,
+                        urlErrorResId = urlErrorResId,
+                        headersErrorResId = headersErrorResId,
                     ),
                     isSaving = false,
                     inlineError = null,
                 )
+            }
+            firstInvalidFieldEffect(
+                nameErrorResId = nameErrorResId,
+                urlErrorResId = urlErrorResId,
+                headersErrorResId = headersErrorResId,
+            )?.let { effect ->
+                sendEffect(effect)
             }
             return
         }
@@ -256,9 +268,9 @@ class McpSettingsViewModel internal constructor(
                 formState = formState.copy(
                     name = trimmedName,
                     url = trimmedUrl,
-                    nameError = null,
-                    urlError = null,
-                    headersError = null,
+                    nameErrorResId = null,
+                    urlErrorResId = null,
+                    headersErrorResId = null,
                 ),
                 isSaving = true,
                 inlineError = null,
@@ -293,9 +305,9 @@ class McpSettingsViewModel internal constructor(
                         name = trimmedName,
                         url = trimmedUrl,
                         headersInput = headersToInput(headers),
-                        nameError = null,
-                        urlError = null,
-                        headersError = null,
+                        nameErrorResId = null,
+                        urlErrorResId = null,
+                        headersErrorResId = null,
                     ),
                     isSaving = false,
                     inlineError = null,
@@ -347,7 +359,7 @@ class McpSettingsViewModel internal constructor(
 
 private sealed interface McpHeadersParseResult {
     data class Success(val headers: Map<String, String>) : McpHeadersParseResult
-    data class Error(val message: String) : McpHeadersParseResult
+    data class Error(@param:StringRes val messageResId: Int) : McpHeadersParseResult
 }
 
 private fun normalizedHeadersOrError(input: String): McpHeadersParseResult {
@@ -357,19 +369,19 @@ private fun normalizedHeadersOrError(input: String): McpHeadersParseResult {
     val element = try {
         Json.parseToJsonElement(input)
     } catch (_: Throwable) {
-        return McpHeadersParseResult.Error(ERROR_HEADERS_INVALID_JSON)
+        return McpHeadersParseResult.Error(R.string.mcp_error_headers_invalid_json)
     }
     val jsonObject = element as? JsonObject
-        ?: return McpHeadersParseResult.Error(ERROR_HEADERS_NOT_OBJECT)
+        ?: return McpHeadersParseResult.Error(R.string.mcp_error_headers_not_object)
     val headers = linkedMapOf<String, String>()
     jsonObject.forEach { (key, value) ->
         if (key.isBlank()) {
-            return McpHeadersParseResult.Error(ERROR_HEADERS_EMPTY_KEY)
+            return McpHeadersParseResult.Error(R.string.mcp_error_headers_empty_key)
         }
         val primitive = value as? JsonPrimitive
-            ?: return McpHeadersParseResult.Error(ERROR_HEADERS_NON_STRING)
+            ?: return McpHeadersParseResult.Error(R.string.mcp_error_headers_non_string)
         val content = primitive.contentOrNull
-            ?: return McpHeadersParseResult.Error(ERROR_HEADERS_NON_STRING)
+            ?: return McpHeadersParseResult.Error(R.string.mcp_error_headers_non_string)
         headers[key] = content
     }
     return McpHeadersParseResult.Success(headers.toSortedMap())
@@ -397,18 +409,24 @@ private fun headersToInput(headers: Map<String, String>): String {
 private fun isValidUrl(value: String): Boolean {
     return runCatching {
         val uri = URI(value)
-        !uri.scheme.isNullOrBlank() && !uri.host.isNullOrBlank()
+        val scheme = uri.scheme?.lowercase()
+        val isHttpScheme = scheme == "http" || scheme == "https"
+        isHttpScheme && !uri.host.isNullOrBlank()
     }.getOrDefault(false)
 }
 
-private const val ERROR_NAME_REQUIRED = "请输入名称"
-private const val ERROR_NAME_DUPLICATE = "名称已存在，请更换后重试"
-private const val ERROR_URL_REQUIRED = "请输入 URL"
-private const val ERROR_URL_INVALID = "URL 格式不正确"
-private const val ERROR_HEADERS_INVALID_JSON = "请求头不是合法 JSON"
-private const val ERROR_HEADERS_NOT_OBJECT = "请求头必须是 JSON 对象"
-private const val ERROR_HEADERS_EMPTY_KEY = "请求头名称不能为空"
-private const val ERROR_HEADERS_NON_STRING = "请求头的值必须是字符串"
+private fun firstInvalidFieldEffect(
+    nameErrorResId: Int?,
+    urlErrorResId: Int?,
+    headersErrorResId: Int?,
+): McpSettingsEffect? {
+    return when {
+        nameErrorResId != null -> McpSettingsEffect.FocusName
+        urlErrorResId != null -> McpSettingsEffect.FocusUrl
+        headersErrorResId != null -> McpSettingsEffect.FocusHeaders
+        else -> null
+    }
+}
 
 private inline fun <T> List<T>.anyIndexed(predicate: (Int, T) -> Boolean): Boolean {
     forEachIndexed { index, item ->
