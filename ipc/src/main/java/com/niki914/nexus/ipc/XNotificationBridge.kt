@@ -1,5 +1,6 @@
 package com.niki914.nexus.ipc
 
+import android.R
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -78,6 +79,6 @@ internal object XNotificationBridge {
     }
 
     private fun resolveSmallIcon(context: Context): Int {
-        return context.applicationInfo.icon.takeIf { it != 0 } ?: android.R.drawable.ic_dialog_info
+        return context.applicationInfo.icon.takeIf { it != 0 } ?: R.drawable.ic_dialog_info
     }
 }

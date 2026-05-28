@@ -1,6 +1,7 @@
 package com.niki914.nexus.ipc.store
 
 import android.content.Context
+import com.niki914.nexus.h.util.xTry
 import com.niki914.nexus.ipc.IpcContract
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -94,19 +95,15 @@ internal object XIpcStoreRepository {
     }
 
     private fun parseJsonObject(json: String): JSONObject {
-        return runCatching {
+        return xTry("XIpcStoreRepository#parseJsonObject") {
             if (json.isBlank()) JSONObject() else JSONObject(json)
-        }.getOrElse {
-            JSONObject()
-        }
+        } ?: JSONObject()
     }
 
-    private fun parseValueJson(valueJson: String): Any? {
-        return runCatching {
+    private fun parseValueJson(valueJson: String): Any {
+        return xTry("XIpcStoreRepository#parseValueJson") {
             JSONTokener(valueJson).nextValue()
-        }.getOrElse {
-            valueJson
-        }
+        } ?: valueJson
     }
 
     private fun toJsonValue(value: Any?): Any {

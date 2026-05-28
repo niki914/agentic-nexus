@@ -3,6 +3,7 @@ package com.niki914.nexus.h.xevent
 import android.app.Application
 import android.os.Build
 import com.niki914.nexus.h.util.ContextProvider
+import com.niki914.nexus.h.util.xTry
 import com.niki914.nexus.h.util.xtlog
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -89,7 +90,7 @@ object XEvent {
     ) {
         val context = ContextProvider.await()
         val packageName = context.packageName
-        val processName = runCatching {
+        val processName = xTry("XEvent#resolveProcessName") {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 Application.getProcessName()
             } else {
@@ -97,9 +98,7 @@ object XEvent {
                 val currentProcessNameMethod = activityThreadClass.getDeclaredMethod("currentProcessName")
                 currentProcessNameMethod.invoke(null) as String
             }
-        }.getOrElse {
-            packageName
-        }
+        } ?: packageName
 
         val envelope = XEventEnvelope(
             ts = System.currentTimeMillis(),

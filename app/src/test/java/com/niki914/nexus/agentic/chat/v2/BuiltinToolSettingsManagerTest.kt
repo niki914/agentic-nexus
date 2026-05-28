@@ -103,7 +103,7 @@ class BuiltinToolSettingsManagerTest {
         XRepo.installStoreForTest(store)
         XRepo.init(context)
 
-        val result = manager.setEnabled(
+        manager.setEnabled(
             name = "create_custom_tool",
             enabled = true,
         )

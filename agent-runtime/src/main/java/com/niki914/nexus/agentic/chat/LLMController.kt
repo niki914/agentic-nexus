@@ -30,19 +30,19 @@ import kotlinx.coroutines.flow.flowOn
 // TODO impl a mcpHooks {} like hooks to make mcp update easier
 object LLMController {
     private val promptComposer =
-        _root_ide_package_.com.niki914.nexus.agentic.chat.agentic.PromptComposer()
+        PromptComposer()
     private val toolManager =
-        _root_ide_package_.com.niki914.nexus.agentic.chat.agentic.ToolManager()
+        ToolManager()
     private val mcpCacheStore =
-        _root_ide_package_.com.niki914.nexus.agentic.chat.agentic.mcp.McpDiscoveryCacheStore()
+        McpDiscoveryCacheStore()
     private val toolCallDispatcher =
-        _root_ide_package_.com.niki914.nexus.agentic.chat.agentic.ToolCallDispatcher { runtimeState?.snapshot?.tools }
+        ToolCallDispatcher { runtimeState?.snapshot?.tools }
 
     private var runtimeState: RuntimeState? = null
     private var session: Session? = null
     private var lastMcpServersFingerprint: String? = null
 
-    suspend fun refresh(): com.niki914.nexus.agentic.chat.LlmRuntimeSnapshot {
+    suspend fun refresh(): LlmRuntimeSnapshot {
         val previousSnapshot = runtimeState?.snapshot
         val gateway = RuntimeEnvironment.awaitSettingsGateway()
         val llmConfig = gateway.readLlmConfig()
@@ -58,14 +58,14 @@ object LLMController {
             },
         )
         val prompt = promptComposer.compose(
-            _root_ide_package_.com.niki914.nexus.agentic.chat.agentic.PromptComposerInput(
+            PromptComposerInput(
                 baseSystemPrompt = llmConfig.prompt,
                 memorySections = buildMemorySections(llmConfig),
                 toolSections = resolvedTools.promptLines,
                 runtimeSections = buildRuntimeSections(llmConfig),
             )
         )
-        val config = _root_ide_package_.com.niki914.nexus.agentic.chat.ResolvedLlmConfig(
+        val config = ResolvedLlmConfig(
             endpoint = llmConfig.endpoint,
             apiKey = llmConfig.apiKey,
             model = llmConfig.model,

@@ -18,13 +18,13 @@ data class ConversationTurnState(
     val roomId: String = "",
     val turnId: Long = 0L,
     val lastQuery: String = "",
-    val mode: com.niki914.nexus.agentic.chat.TurnMode = _root_ide_package_.com.niki914.nexus.agentic.chat.TurnMode.InjectedLLM
+    val mode: TurnMode = TurnMode.InjectedLLM
 ) {
     fun resetForRoom(roomId: String = "") = ConversationTurnState(roomId = roomId)
 
-    fun nextTurn(roomId: String, query: String, mode: com.niki914.nexus.agentic.chat.TurnMode) = ConversationTurnState(
+    fun nextTurn(roomId: String, query: String, mode: TurnMode) = ConversationTurnState(
         roomId = roomId,
-        turnId = _root_ide_package_.com.niki914.nexus.agentic.chat.TurnIdGenerator.next(),
+        turnId = TurnIdGenerator.next(),
         lastQuery = query,
         mode = mode
     )

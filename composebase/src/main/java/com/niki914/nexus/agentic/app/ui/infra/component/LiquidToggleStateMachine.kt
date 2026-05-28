@@ -128,9 +128,8 @@ internal class LiquidToggleStateMachine(
     }
 
     fun onDragStop(): LiquidToggleTransition {
-        val current = state
         val nextChecked =
-            when (current) {
+            when (val current = state) {
                 is LiquidToggleInteractionState.Settled -> current.checked
                 is LiquidToggleInteractionState.Pressed -> current.checked
                 is LiquidToggleInteractionState.Dragging -> current.fraction >= MIDPOINT_FRACTION
@@ -151,9 +150,8 @@ internal class LiquidToggleStateMachine(
     }
 
     fun onReleaseAnimationFinished(): LiquidToggleTransition {
-        val current = state
         val nextChecked =
-            when (current) {
+            when (val current = state) {
                 is LiquidToggleInteractionState.Settled -> current.checked
                 is LiquidToggleInteractionState.Pressed -> current.checked
                 is LiquidToggleInteractionState.Dragging -> current.thresholdChecked

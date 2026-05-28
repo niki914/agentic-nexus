@@ -59,7 +59,7 @@ class ToolManagerTest {
         assertEquals("date +%s", customTool.command)
         assertEquals(listOf("aslocate"), resolved.mcpServers.map { it.name })
         val mcpServer = resolved.mcpServers.single()
-        val cachedTool = (mcpServer as com.niki914.nexus.agentic.chat.McpServerDefinition.Http)
+        val cachedTool = (mcpServer as McpServerDefinition.Http)
             .cachedTools
             .single()
         assertEquals("lookupSymbol", cachedTool.name)

@@ -96,7 +96,11 @@ abstract class ComposeMVIViewModel<Intent, State, Effect>(
      * 错误处理 - 子类可重写自定义错误处理
      */
     protected open fun onError(error: Throwable) {
-        Log.e(this::class.simpleName, error.stackTraceToString())
+        Log.e(
+            this::class.simpleName ?: "ComposeMVIViewModel",
+            error.message ?: "Unhandled intent error",
+            error
+        )
     }
 
     // 抽象方法
