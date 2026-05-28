@@ -5,15 +5,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -50,57 +49,60 @@ fun SettingsDetailFormScaffold(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .hazeSource(hazeState)
-            .padding(top = topPadding)
-            .padding(
-                horizontal = SettingsDetailPageDefaults.HorizontalPadding,
-                vertical = SettingsDetailPageDefaults.VerticalPadding,
-            ),
+            .hazeSource(hazeState),
     ) {
         Column(
-            modifier = contentModifier.fillMaxSize(),
+            modifier = contentModifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(
+                    horizontal = SettingsDetailPageDefaults.HorizontalPadding,
+                )
+                .padding(
+                    top = topPadding + SettingsDetailPageDefaults.VerticalPadding,
+                    bottom = SettingsDetailPageDefaults.VerticalPadding +
+                        SettingsDetailPageDefaults.RootVerticalSpacing +
+                        SettingsDetailPageDefaults.ActionButtonReservedHeight,
+                ),
             verticalArrangement = Arrangement.spacedBy(
-                SettingsDetailPageDefaults.RootVerticalSpacing,
+                SettingsDetailPageDefaults.ContentVerticalSpacing,
             ),
         ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(
-                    SettingsDetailPageDefaults.ContentVerticalSpacing,
-                ),
-            ) {
-                if (!description.isNullOrBlank()) {
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                content()
-                if (!inlineErrorText.isNullOrBlank()) {
-                    Text(
-                        text = inlineErrorText,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(
-                            horizontal = SettingsDetailPageDefaults.InlineErrorHorizontalPadding,
-                        ),
-                    )
-                }
-                Spacer(modifier = Modifier.height(SettingsDetailPageDefaults.BottomSpacerHeight))
+            if (!description.isNullOrBlank()) {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-
-            TintLiquidButton(
-                text = actionText,
-                enabled = actionEnabled,
-                onClick = onActionClick,
-                darkContainerColor = actionButtonDarkContainerColor,
-                lightContainerColor = actionButtonLightContainerColor,
-                darkContentColor = actionButtonDarkContentColor,
-                lightContentColor = actionButtonLightContentColor,
-            )
+            content()
+            if (!inlineErrorText.isNullOrBlank()) {
+                Text(
+                    text = inlineErrorText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(
+                        horizontal = SettingsDetailPageDefaults.InlineErrorHorizontalPadding,
+                    ),
+                )
+            }
         }
+
+        TintLiquidButton(
+            text = actionText,
+            enabled = actionEnabled,
+            onClick = onActionClick,
+            darkContainerColor = actionButtonDarkContainerColor,
+            lightContainerColor = actionButtonLightContainerColor,
+            darkContentColor = actionButtonDarkContentColor,
+            lightContentColor = actionButtonLightContentColor,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(
+                    start = SettingsDetailPageDefaults.HorizontalPadding,
+                    end = SettingsDetailPageDefaults.HorizontalPadding,
+                    bottom = SettingsDetailPageDefaults.VerticalPadding,
+                ),
+        )
     }
 }

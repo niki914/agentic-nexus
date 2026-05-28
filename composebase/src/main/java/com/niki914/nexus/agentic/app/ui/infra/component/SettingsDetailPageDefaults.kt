@@ -14,7 +14,7 @@ object SettingsDetailPageDefaults {
     val RootVerticalSpacing: Dp = 20.dp
     val ContentVerticalSpacing: Dp = 18.dp
     val InlineErrorHorizontalPadding: Dp = 16.dp
-    val BottomSpacerHeight: Dp = 8.dp
+    val ActionButtonReservedHeight: Dp = 56.dp
     val DividerHorizontalPadding: Dp = 12.dp
     val DividerThickness: Dp = 1.dp
 }
