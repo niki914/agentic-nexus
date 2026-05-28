@@ -58,6 +58,10 @@ internal object LocalSettingsCodec {
         return LocalSettings(JsonObject(props))
     }
 
+    fun withPrompt(settings: LocalSettings, prompt: String): LocalSettings {
+        return settings.withTopLevel(PROMPT_KEY, JsonPrimitive(prompt))
+    }
+
     fun parseMcpServers(settings: LocalSettings): List<McpServer> {
         return settings.mcpServers
             .orEmptyObjects()

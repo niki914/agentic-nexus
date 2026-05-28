@@ -8,8 +8,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
@@ -24,6 +26,52 @@ class XRepoTest {
     @After
     fun tearDown() {
         XRepo.resetForTest()
+    }
+
+    @Test
+    fun tryPutDefaultSettings_writesPromptAndWechatToolWhenOnboardingIsNotCompleted() = runTest {
+        val store = FakeLocalSettingsStore(LocalSettings())
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        val updated = XRepo.tryPutDefaultSettings()
+
+        assertTrue(updated)
+        assertEquals(1, store.writeCount)
+        assertEquals(
+            LocalSettingsDefaults.DEFAULT_SYSTEM_PROMPT.trimIndent(),
+            store.settings.prompt
+        )
+        assertEquals("", store.settings.endpoint)
+        assertEquals("", store.settings.apiKey)
+        assertEquals("", store.settings.model)
+        assertNull(store.settings.mcpServers)
+        assertEquals(
+            listOf(
+                CustomTool(
+                    name = "launch_wechat",
+                    description = "启动微信",
+                    command = "am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI",
+                )
+            ),
+            LocalSettingsCodec.parseCustomTools(store.settings),
+        )
+    }
+
+    @Test
+    fun tryPutDefaultSettings_skipsWhenOnboardingIsCompleted() = runTest {
+        val store = FakeLocalSettingsStore(
+            LocalSettingsCodec.withBoolean(LocalSettings(), "onboarding_completed", true)
+        )
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        val updated = XRepo.tryPutDefaultSettings()
+
+        assertFalse(updated)
+        assertEquals(0, store.writeCount)
+        assertEquals("", store.settings.prompt)
+        assertNull(store.settings.customTools)
     }
 
     @Test

@@ -60,6 +60,18 @@ object XRepo {
         }
     }
 
+    suspend fun tryPutDefaultSettings(): Boolean {
+        return writeMutex.withLock {
+            val context = context()
+            val latest = store.read(context)
+            if (latest.onboardingCompleted) {
+                return@withLock false
+            }
+            store.write(context, LocalSettingsDefaults.applyTo(latest))
+            true
+        }
+    }
+
     suspend fun onboardingCompleted(): Boolean {
         return readLocal().onboardingCompleted
     }
