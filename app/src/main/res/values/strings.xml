@@ -12,16 +12,7 @@
     <string name="ui_onboard_startup_continue">开始接入</string>
     <string name="ui_onboard_startup_continue_chat_only">继续</string>
     <string name="ui_onboard_provider_pick_title">选择提供商</string>
-    <string name="ui_onboard_provider_pick_headline">选择大模型提供商</string>
     <string name="ui_onboard_provider_pick_description">从这里开始接入您的模型能力。\n选择一个提供商以继续。</string>
-    <string name="ui_onboard_provider_pick_option_deepseek">DeepSeek</string>
-    <string name="ui_onboard_provider_pick_option_deepseek_summary">适合优先接入 DeepSeek 系列模型。</string>
-    <string name="ui_onboard_provider_pick_option_openai">OpenAI</string>
-    <string name="ui_onboard_provider_pick_option_openai_summary">适用于 OpenAI 官方接口与兼容实现。</string>
-    <string name="ui_onboard_provider_pick_option_anthropic">Anthropic</string>
-    <string name="ui_onboard_provider_pick_option_anthropic_summary">用于 Claude 系列模型或兼容接入。</string>
-    <string name="ui_onboard_provider_pick_option_google">Google</string>
-    <string name="ui_onboard_provider_pick_option_google_summary">用于 Gemini 系列模型或 Google 生态接入。</string>
     <string name="ui_onboard_configure_title">配置模型接入信息</string>
     <string name="ui_onboard_configure_description">填写模型配置，完成后即可开始使用。</string>
     <string name="ui_onboard_configure_next">下一步</string>
@@ -61,7 +52,6 @@
     <string name="ui_settings_detail_placeholder">当前分组内容将在后续迭代中补齐，这里先用于验证设置树导航。</string>
     <string name="ui_settings_provider_model">模型供应商</string>
     <string name="ui_settings_provider_model_summary">查看和调整模型来源、默认模型与相关策略。</string>
-    <string name="ui_settings_configure_title">模型供应商</string>
     <string name="ui_settings_configure_description">调整模型接入、提示词与代理配置。</string>
     <string name="ui_settings_configure_save">保存配置</string>
     <string name="ui_settings_configure_prompt_label">提示词</string>
@@ -99,42 +89,15 @@
     <!-- Custom Tool Module -->
     <string name="custom_tool_page_description">管理你的自定义工具。</string>
     <string name="custom_tool_page_empty_description">让你的 Agent帮你——或点击右上方，创建新的工具。</string>
-    <string name="custom_tool_list_title">已配置工具</string>
     <string name="custom_tool_loading">正在读取已保存的自定义工具...</string>
-    <string name="custom_tool_empty">当前还没有自定义工具。</string>
-    <string name="custom_tool_summary_fallback">暂无描述，列表摘要回退为命令内容。</string>
-    <string name="custom_tool_state_enabled">已启用</string>
-    <string name="custom_tool_state_disabled">已停用</string>
-    <string name="custom_tool_add_action">新增工具</string>
     <string name="custom_tool_editor_title_create">新增自定义工具</string>
-    <string name="custom_tool_editor_title_edit">编辑自定义工具</string>
-    <string name="custom_tool_field_name">工具名称</string>
-    <string name="custom_tool_field_name_placeholder">例如 open_wechat</string>
-    <string name="custom_tool_field_description">工具描述</string>
-    <string name="custom_tool_field_description_placeholder">告诉模型这个工具适合做什么。</string>
-    <string name="custom_tool_field_enabled">启用该工具</string>
-    <string name="custom_tool_field_enabled_description">关闭后会保留配置，但不会注册到当前 session。</string>
-    <string name="custom_tool_field_command">固定命令</string>
-    <string name="custom_tool_field_command_placeholder">例如 am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI</string>
-    <string name="custom_tool_save_action">保存工具</string>
-    <string name="custom_tool_delete_action">删除当前工具</string>
-    <string name="custom_tool_save_success">自定义工具已保存。</string>
-    <string name="custom_tool_delete_success">自定义工具已删除。</string>
     <string name="custom_tool_save_failed">保存失败：%1$s</string>
-    <string name="custom_tool_duplicate_name">工具名称不能重复，请换一个名称。</string>
 
     <!-- MCP Module -->
     <string name="mcp_page_description">配置 MCP 服务的连接方式与鉴权信息。\n保存后，Nexus 会在运行时自动发现可用工具。</string>
     <string name="mcp_page_empty_description">点击右上方，添加你的第一个服务器。</string>
-    <string name="mcp_list_title">已配置 MCP 服务</string>
     <string name="mcp_loading">正在读取已保存的 MCP 服务...</string>
-    <string name="mcp_empty">当前还没有 MCP 服务。</string>
-    <string name="mcp_summary_fallback">暂无 URL，列表摘要为空。</string>
-    <string name="mcp_state_enabled">已启用</string>
-    <string name="mcp_state_disabled">已停用</string>
-    <string name="mcp_add_action">新增 MCP 服务</string>
     <string name="mcp_editor_title_create">新增 MCP 服务</string>
-    <string name="mcp_editor_title_edit">编辑 MCP 服务</string>
     <string name="mcp_field_name">名称</string>
     <string name="mcp_field_name_hint">例如：my-xxx-mcp-server</string>
     <string name="mcp_field_url">URL</string>
@@ -143,7 +106,6 @@
     <string name="mcp_field_headers">自定义请求头</string>
     <string name="mcp_field_headers_hint">{\n  \"Authorization\": \"Bearer xxx\"\n}</string>
     <string name="mcp_save_action">保存 MCP 服务</string>
-    <string name="mcp_delete_action">删除当前 MCP 服务</string>
     <string name="mcp_error_name_required">请输入名称</string>
     <string name="mcp_error_name_duplicate">名称已存在，请更换后重试</string>
     <string name="mcp_error_url_required">请输入 URL</string>
