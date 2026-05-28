@@ -8,28 +8,25 @@ import com.niki914.nexus.agentic.repo.XRepo
 data class AppLaunchDecision(
     val initialPage: NexusPage,
     val onboardingCompleted: Boolean,
-    val endpointPresent: Boolean,
 ) {
     companion object {
         suspend fun resolve(
             startupAssistantUi: StartupAssistantUi,
         ): AppLaunchDecision {
             val onboardingCompleted = XRepo.onboardingCompleted()
-            val endpointPresent = XRepo.llm().endpoint.isNotBlank()
             val startupPage = when (startupAssistantUi) {
                 StartupAssistantUi.Breeno,
                 StartupAssistantUi.XiaoAi,
                 StartupAssistantUi.ChatOnly -> StartupPage
             }
-            val initialPage = if (onboardingCompleted && endpointPresent) {
+            val initialPage = if (onboardingCompleted) {
                 HomePage
             } else {
                 startupPage
             }
             return AppLaunchDecision(
                 initialPage = initialPage,
-                onboardingCompleted = onboardingCompleted,
-                endpointPresent = endpointPresent,
+                onboardingCompleted = onboardingCompleted
             )
         }
     }
