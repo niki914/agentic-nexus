@@ -29,16 +29,20 @@ import kotlinx.coroutines.flow.flowOn
 // TODO UI 认领你的 AI 伴侣
 // TODO impl a mcpHooks {} like hooks to make mcp update easier
 object LLMController {
-    private val promptComposer = PromptComposer()
-    private val toolManager = ToolManager()
-    private val mcpCacheStore = McpDiscoveryCacheStore()
-    private val toolCallDispatcher = ToolCallDispatcher { runtimeState?.snapshot?.tools }
+    private val promptComposer =
+        _root_ide_package_.com.niki914.nexus.agentic.chat.agentic.PromptComposer()
+    private val toolManager =
+        _root_ide_package_.com.niki914.nexus.agentic.chat.agentic.ToolManager()
+    private val mcpCacheStore =
+        _root_ide_package_.com.niki914.nexus.agentic.chat.agentic.mcp.McpDiscoveryCacheStore()
+    private val toolCallDispatcher =
+        _root_ide_package_.com.niki914.nexus.agentic.chat.agentic.ToolCallDispatcher { runtimeState?.snapshot?.tools }
 
     private var runtimeState: RuntimeState? = null
     private var session: Session? = null
     private var lastMcpServersFingerprint: String? = null
 
-    suspend fun refresh(): LlmRuntimeSnapshot {
+    suspend fun refresh(): com.niki914.nexus.agentic.chat.LlmRuntimeSnapshot {
         val previousSnapshot = runtimeState?.snapshot
         val llmConfig = XRepo.llm()
         val mcpServers = XRepo.mcp.list()
@@ -53,14 +57,14 @@ object LLMController {
             },
         )
         val prompt = promptComposer.compose(
-            PromptComposerInput(
+            _root_ide_package_.com.niki914.nexus.agentic.chat.agentic.PromptComposerInput(
                 baseSystemPrompt = llmConfig.prompt,
                 memorySections = buildMemorySections(llmConfig),
                 toolSections = resolvedTools.promptLines,
                 runtimeSections = buildRuntimeSections(llmConfig),
             )
         )
-        val config = ResolvedLlmConfig(
+        val config = _root_ide_package_.com.niki914.nexus.agentic.chat.ResolvedLlmConfig(
             endpoint = llmConfig.endpoint,
             apiKey = llmConfig.apiKey,
             model = llmConfig.model,
