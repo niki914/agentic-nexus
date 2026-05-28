@@ -6,12 +6,12 @@
 - **配置同步机制**：本地 Python 配置服务器按包名/版本号下发 WebSettings；`WEB_SETTINGS` 与 `LOCAL_SETTINGS` 均由 `XIpcStoreRepository` / `ConfigPersistence` 文件化持久化，宿主读取通过 `SettingsContentProvider.openFile()` 暴露的文件流完成，写入与 mutate 仍通过 provider call 分发。
 - **Breeno 注入实现**：基于卡片层拦截原生回答，使用单卡片全量刷新模式渲染 LLM 输出。
 - **XiaoAi 注入实现**：基于底层指令流与文字流拦截做增量文本分片注入，并拦截 TTS 流与原生播放。
-- **LLM Runtime**：`LLMController` 持有单例 `Session` 与 runtime snapshot，支持配置刷新、流式请求、会话重置和统一事件映射。
+- **LLM Runtime**：`agent-runtime` 模块中的 `LLMController` 持有单例 `Session` 与 runtime snapshot，支持配置刷新、流式请求、会话重置和统一事件映射。
 - **HTTP MCP**：MCP server 配置解析、Session 注册、discovered tools cache 与 HTTP interceptor 已落地。
 - **Builtin Tool**：`builtin_tool_flags` 由 `XRepo.builtinTools` 基于 `BuiltinToolRegistry` 解析并持久化，`ToolManager` 会将启用项解析为 `LocalTool.Builtin`、写入 prompt lines，并通过 `SessionToolBinder`、`ToolCallDispatcher`、`BuiltinToolExecutor` 打通执行链路；默认注册 `create_custom_tool`、`notify`、`run_command`。
 - **CustomTool**：`custom_tools` 从 `LocalSettings` 解析到 `LocalTool.Custom`、local tool 注册、`ToolCallDispatcher` 与 `CustomToolExecutor` 执行链路已落地；可通过 builtin `create_custom_tool` 写回配置。
-- **UI Shell 与导航**：`NexusApp`、`NexusPages`、`NexusPage`、`NavigationController` 与 `LiquidScreen` 壳层已落地，页面覆盖 Startup、ProviderPick、Configure、Done、Home、SettingsHome、SettingsDetail。
-- **UI 基建组件**：`LiquidScreenState`、`LiquidScreenSwipeContent`、`SettingsGroupCard`、`SettingNavigationItem`、`SettingToggleItem`、`SettingExpandableTextCard`、`SettingsToggleListItemCard`、`LiquidTextField`、`LiquidSecretTextField` 以及 liquid 交互层已落地，形成统一风格的 Compose 基建层。
+- **UI Shell 与导航**：`app` 模块中的 `NexusApp`、`NexusPages`、`NexusPage` 与 `composebase` 模块中的 `NavigationController`、`LiquidScreen` 壳层已落地，页面覆盖 Startup、ProviderPick、Configure、Done、Home、SettingsHome、SettingsDetail。
+- **UI 基建组件**：`composebase` 模块中的 `LiquidScreenState`、`LiquidScreenSwipeContent`、`SettingsGroupCard`、`SettingNavigationItem`、`SettingToggleItem`、`SettingExpandableTextCard`、`SettingsToggleListItemCard`、`LiquidTextField`、`LiquidSecretTextField` 以及 liquid 交互层已落地，形成统一风格的 Compose 基建层。
 - **UI 设置页能力**：`BuiltinToolsSettingsContent`、`McpSettingsContent`、`CustomToolsSettingsContent` 均已接入真实配置读写，不再只有自定义工具设置页落地。
 
 ## 半落地能力

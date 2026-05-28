@@ -25,7 +25,7 @@
 - `hyper/subhooks/BlockNativeTtsStreamHook.kt`: 子 Hook (拦截原生 TTS 流)
 - `hyper/subhooks/BlockNativeTtsPlaybackHook.kt`: 子 Hook (拦截原生 TTS 播放)
 
-## app/src/main/java/com/niki914/nexus/agentic/chat/
+## agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/
 
 - `ConversationTurnState.kt`: LLM 会话状态流转
 - `ConversationJournal.kt`: LLM 交互日志
@@ -37,7 +37,7 @@
 - `agentic/SessionToolBinder.kt`: local tools 与 MCP servers 绑定
 - `agentic/ToolCallDispatcher.kt`: local tool 调度
 
-## app/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/
+## agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/
 
 - `BuiltinTool.kt`: builtin tool 协议
 - `BuiltinToolExecutor.kt`: builtin tool 执行器
@@ -47,22 +47,22 @@
 - `impl/NotifyBuiltin.kt`: 内建通知工具
 - `impl/RunCommandBuildin_WIP_SAFE.kt`: 内建命令执行工具
 
-## app/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/
+## agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/
 
 - `CustomToolExecutor.kt`: custom tool 执行器
 - `CustomToolManager.kt`: custom tool 配置与校验
 
-## app/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/
+## agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/
 
 - `McpDiscoveryCacheStore.kt`: MCP discovered tools 缓存
 - `McpInterceptorHttpEngine.kt`: MCP discovery HTTP interceptor
 
-## app/src/main/java/com/niki914/nexus/agentic/chat/agentic/shell/
+## agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/shell/
 
 - `ShellCommandRunner.kt`: shell 命令执行器
 - `ShellCommandSafetyPolicy.kt`: shell 命令安全策略
 
-## app/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/
+## agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/
 
 - `LlmStreamEventMapper.kt`: `SessionEvent` 到 `LlmStreamEvent` 的映射
 - `ToolEventFormatter.kt`: 工具事件格式化
@@ -92,26 +92,28 @@
 - `content/ProviderAccessSettingsBlock.kt`: provider 接入设置块
 - `content/StartupPosterBackground.kt`: 启动页背景
 
-## app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/
+## composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/
 
 - `LiquidScreen.kt`: 顶层 Liquid Shell
 - `LiquidScreenState.kt`: 标题、按钮、blur layer 状态
 - `LiquidScreenSwipeContent.kt`: 页面转场容器
 - `ActionBarButton.kt`: 顶栏按钮基建
+- `LiquidViewportAvoidance.kt`: 视口避让与窗口 inset 处理
 
-## app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/nav/
+## composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/nav/
 
 - `NavigationController.kt`: 导航控制器
 - `Navigator.kt`: 导航能力接口
 - `Page.kt`: 页面接口
 - `PageViewModel.kt`: 页面 ViewModel 基类
 
-## app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/component/
+## composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/component/
 
 - `LiquidButton.kt`: 基础 Liquid 按钮
 - `TintLiquidButton.kt`: 可着色 Liquid 按钮
 - `MaterialTintLiquidButton.kt`: Material 风格着色按钮
 - `LiquidTextField.kt`: 基础文本输入
+- `LiquidTextFieldContainer.kt`: 文本输入容器
 - `LiquidSecretTextField.kt`: 密码输入
 - `SettingExpandableTextCard.kt`: 可展开设置文本卡片
 - `SettingExpandableTextItem.kt`: 可展开设置项
@@ -123,14 +125,14 @@
 - `SettingToggleItem.kt`: 设置开关项
 - `SettingsToggleListItemCard.kt`: 设置开关列表卡片
 
-## app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/interaction/
+## composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/interaction/
 
 - `LiquidInteractiveLayer.kt`: 液态交互层
 - `LiquidInteractiveStyle.kt`: 交互参数模型
 - `DragGestureInspector.kt`: 拖拽手势检测
 - `InteractiveHighlight.kt`: 交互高亮
 
-## app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/shape/
+## composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/shape/
 
 - `G2Shapes.kt`: G2 系列形状定义
 

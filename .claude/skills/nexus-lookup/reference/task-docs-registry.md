@@ -10,23 +10,23 @@
 - **源码核对入口**：
   - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/`
   - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/`
-  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/`
-  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/nav/NavigationController.kt`
-  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/nav/Page.kt`
+  - `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/`
+  - `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/nav/NavigationController.kt`
+  - `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/nav/Page.kt`
 
 ### `apple-liquid-glass-philosophy.md`
 
 - **主题**：Liquid Glass 视觉原则与组件设计参考。
 - **状态**：`参考文档`
 - **源码核对入口**：
-  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/component/`
-  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/LiquidScreen.kt`
-  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/LiquidScreenState.kt`
+  - `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/component/`
+  - `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/LiquidScreen.kt`
+  - `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/LiquidScreenState.kt`
 
 ### `SESSION.md`
 
 - **主题**：S3ss10n、LLM 和 MCP 网络请求相关记录。
 - **状态**：`参考文档`
 - **源码核对入口**：
-  - `app/src/main/java/com/niki914/nexus/agentic/chat/LLMController.kt`
-  - `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/`
+  - `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/LLMController.kt`
+  - `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/`

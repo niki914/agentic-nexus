@@ -30,8 +30,8 @@
 
 ## 源码引用
 
-- `app/src/main/java/com/niki914/nexus/agentic/chat/ConversationTurnState.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/chat/ConversationJournal.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/ConversationTurnState.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/ConversationJournal.kt`
 - `app/src/main/java/com/niki914/nexus/agentic/mod/feat/AbstractAssistantHook.kt`
 - `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/subhooks/ResetConversationSignalHook.kt`
 - `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`

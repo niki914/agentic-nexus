@@ -2,13 +2,13 @@
 
 ## 包结构
 
-## `app/src/main/java/com/niki914/nexus/agentic/chat/`
+## `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/`
 
 - `LLMController.kt`: 运行时入口；持有唯一 `Session`，负责 refresh、stream、resetConversation
 - `LlmModels.kt`: `LlmRuntimeSnapshot`、`ResolvedTools`、`LocalTool`、`McpServerDefinition`
 - `LlmStreamEvent.kt`: 项目内统一流式事件模型
 
-## `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/`
+## `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/`
 
 - `PromptComposer.kt`: 组装 `system`、`memory_*`、`tool_*`、`runtime_*` 区块
 - `ToolManager.kt`: 解析 builtin/custom/MCP 配置，产出 `ResolvedTools` 与 prompt lines
@@ -34,7 +34,7 @@
 
 ### Stream
 
-- `LLMController.stream()`: 复用当前 `Session`，把底层回调交给 `stream/LlmStreamEventMapper.kt`
+- `LLMController.stream()`: 每次优先尝试 `refreshIfPossibleFromHookContext()`；refresh 失败时退回最近一次 `runtimeState`，再把底层回调交给 `stream/LlmStreamEventMapper.kt`
 - `LlmStreamEventMapper.kt`: 已覆盖 `RoundStarted`、`TextDelta`、`ToolRunning`、`ToolSucceeded`、`ToolFailed`、`Error`、`RoundCompleted`
 - `TextDelta`: 计算 `charsPerSecond`
 - `stream/ToolEventFormatter.kt`: 负责工具事件宿主文案；支持 `AppendOnly`、`ReplaceStatus`
@@ -121,7 +121,7 @@
 
 ## 关键源码入口
 
-## `app/src/main/java/com/niki914/nexus/agentic/chat/`
+## `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/`
 
 - `LLMController.kt`
 - `LlmModels.kt`
@@ -131,7 +131,7 @@
 - `agentic/SessionToolBinder.kt`
 - `agentic/ToolCallDispatcher.kt`
 
-## `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/`
+## `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/`
 
 - `BuiltinToolExecutor.kt`
 - `BuiltinToolRegistry.kt`
@@ -140,22 +140,22 @@
 - `impl/NotifyBuiltin.kt`
 - `impl/RunCommandBuildin_WIP_SAFE.kt`
 
-## `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/`
+## `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/`
 
 - `CustomToolManager.kt`
 - `CustomToolExecutor.kt`
 
-## `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/`
+## `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/`
 
 - `McpDiscoveryCacheStore.kt`
 - `McpInterceptorHttpEngine.kt`
 
-## `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/shell/`
+## `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/shell/`
 
 - `ShellCommandSafetyPolicy.kt`
 - `ShellCommandRunner.kt`
 
-## `app/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/`
+## `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/`
 
 - `LlmStreamEventMapper.kt`
 - `ToolEventFormatter.kt`

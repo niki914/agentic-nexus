@@ -2,7 +2,7 @@
 
 ## 现状
 
-- UI Shell 对应 `app/src/main/java/com/niki914/nexus/agentic/app/ui/`，范围不止页面，还包括导航、顶栏 chrome、交互反馈、形状和表单组件。
+- UI Shell 当前拆成两个模块：页面层在 `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/`，基建层在 `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/`。
 - 当前实现使用 Compose 自定义栈，不引入 Jetpack Navigation；`NexusPage` 负责声明标题、按钮和 blur layer，栈行为由 `NavigationController` 统一管理。
 - 当前已落地 onboarding 主链路、Home/Settings 壳层、Builtin/MCP/CustomTools 列表页；部分 settings 分组和详情编辑仍是占位或空壳。
 
@@ -38,7 +38,7 @@
 - `CustomToolsSettingsContent.kt`：已支持 `custom_tools` 列表读取、启用开关写回和跳转详情页。
 - `McpServerDetailContent.kt`、`CustomToolDetailContent.kt`：当前仍是空内容壳层。
 
-## `app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/`
+## `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/`
 
 - `LiquidScreen.kt`、`LiquidScreenState.kt`、`LiquidScreenSwipeContent.kt`：负责 action bar、标题方向切换、blur layer、viewport avoidance 和页面转场。
 - `nav/NavigationController.kt`：提供 `push` / `pop` / `resetTo` 的自定义栈管理，不使用路由图。
@@ -47,6 +47,6 @@
 
 ## 边界
 
-- 不要把 UI Shell 理解成“只有页面”；当前源码已拆成页面层、导航层、壳层、交互层和组件层。
+- 不要把 UI Shell 理解成“只有页面”；当前源码已拆成 `app/` 内的页面层，以及 `composebase/` 内的导航层、壳层、交互层和组件层。
 - 不要把 `McpServerDetailPage`、`CustomToolDetailPage` 误判为已完成 CRUD；当前只落地了列表页入口、部分动作位和详情页路由，详情内容本身仍未实现。
 - 不要把宿主分流理解成初始页差异；当前三种宿主都会先进入 `StartupPage`，分流发生在继续按钮逻辑里。

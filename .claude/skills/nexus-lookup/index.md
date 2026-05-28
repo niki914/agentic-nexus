@@ -46,6 +46,12 @@
 | `reference/source-map.md` | Stable | 关键类、目录、文件入口的相对路径地图 |
 | `reference/task-docs-registry.md` | In Progress | PRD、设计稿与源码落地状态的注册表 |
 
+### repo root docs — 仓库根目录参考文档
+
+| 文件 | 层级 | 预期内容 |
+| --- | --- | --- |
+| `SESSION.md` | Reference | S3ss10n 库、LLM 与 MCP 网络请求相关记录 |
+
 ## 检索建议
 
 | 场景 | 推荐阅读顺序 |
