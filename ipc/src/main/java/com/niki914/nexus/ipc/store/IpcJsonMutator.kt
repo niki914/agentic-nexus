@@ -59,12 +59,15 @@ internal object IpcJsonMutator {
                     }
                 }
             }
+
             is Iterable<*> -> JSONArray().apply {
                 value.forEach { put(toJsonValue(it)) }
             }
+
             is Array<*> -> JSONArray().apply {
                 value.forEach { put(toJsonValue(it)) }
             }
+
             else -> value.toString()
         }
     }

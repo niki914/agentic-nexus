@@ -37,7 +37,7 @@ private data class G2CornerBasedShape(
     bottomEnd = bottomEndSize,
     bottomStart = bottomStartSize,
 ) {
-    
+
     constructor(
         cornerRadius: Dp,
         continuity: Continuity = G2Continuity(),

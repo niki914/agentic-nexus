@@ -5,11 +5,11 @@ import android.os.Bundle
 import com.niki914.nexus.h.util.xlog
 import com.niki914.nexus.ipc.store.XIpcStoreRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 /**
  * `XIpcBridge` 是 `:ipc` 对外暴露的统一桥接入口，用来把“同一套能力在两个进程里运行”
@@ -285,12 +285,15 @@ object XIpcBridge {
                     }
                 }
             }
+
             is Iterable<*> -> JSONArray().apply {
                 value.forEach { put(toJsonValue(it)) }
             }
+
             is Array<*> -> JSONArray().apply {
                 value.forEach { put(toJsonValue(it)) }
             }
+
             else -> value.toString()
         }
     }

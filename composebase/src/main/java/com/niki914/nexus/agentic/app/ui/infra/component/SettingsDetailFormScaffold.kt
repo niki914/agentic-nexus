@@ -61,8 +61,8 @@ fun SettingsDetailFormScaffold(
                 .padding(
                     top = topPadding + SettingsDetailPageDefaults.VerticalPadding,
                     bottom = SettingsDetailPageDefaults.VerticalPadding +
-                        SettingsDetailPageDefaults.RootVerticalSpacing +
-                        SettingsDetailPageDefaults.ActionButtonReservedHeight,
+                            SettingsDetailPageDefaults.RootVerticalSpacing +
+                            SettingsDetailPageDefaults.ActionButtonReservedHeight,
                 ),
             verticalArrangement = Arrangement.spacedBy(
                 SettingsDetailPageDefaults.ContentVerticalSpacing,

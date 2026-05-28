@@ -1,10 +1,9 @@
 package com.niki914.nexus.agentic.chat
 
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
-import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.CreateCustomToolBuiltin
+import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -17,6 +16,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 
 class CreateCustomToolBuiltinTest {
     @After
@@ -33,13 +33,21 @@ class CreateCustomToolBuiltinTest {
         assertTrue(config.description.contains("Create or update a custom tool"))
         val schema = Json.parseToJsonElement(config.rawInputSchemaJson!!).jsonObject
         val properties = schema["properties"]!!.jsonObject
-        assertEquals(listOf("name", "description", "command"), schema["required"]!!.jsonArray.map { it.jsonPrimitive.content })
+        assertEquals(
+            listOf("name", "description", "command"),
+            schema["required"]!!.jsonArray.map { it.jsonPrimitive.content })
         assertEquals("string", properties["name"]!!.jsonObject["type"]!!.jsonPrimitive.content)
-        assertEquals("string", properties["description"]!!.jsonObject["type"]!!.jsonPrimitive.content)
+        assertEquals(
+            "string",
+            properties["description"]!!.jsonObject["type"]!!.jsonPrimitive.content
+        )
         assertEquals("string", properties["command"]!!.jsonObject["type"]!!.jsonPrimitive.content)
         assertEquals("boolean", properties["enabled"]!!.jsonObject["type"]!!.jsonPrimitive.content)
         assertFalse(properties["enabled"]!!.jsonObject["default"]!!.jsonPrimitive.boolean)
-        assertEquals("boolean", properties["overwrite"]!!.jsonObject["type"]!!.jsonPrimitive.content)
+        assertEquals(
+            "boolean",
+            properties["overwrite"]!!.jsonObject["type"]!!.jsonPrimitive.content
+        )
         assertFalse(properties["overwrite"]!!.jsonObject["default"]!!.jsonPrimitive.boolean)
     }
 
@@ -105,7 +113,14 @@ class CreateCustomToolBuiltinTest {
         assertTrue(result.ok)
         assertEquals(1, store.writeCount)
         assertEquals(
-            listOf(CustomTool("battery_status", "Read current battery status.", "dumpsys battery", enabled = true)),
+            listOf(
+                CustomTool(
+                    "battery_status",
+                    "Read current battery status.",
+                    "dumpsys battery",
+                    enabled = true
+                )
+            ),
             store.customTools,
         )
     }

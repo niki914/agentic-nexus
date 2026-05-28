@@ -1,19 +1,19 @@
 package com.niki914.nexus.agentic.mod.feat.oppo
 
-import com.niki914.nexus.agentic.mod.feat.AbstractAssistantHook
 import com.niki914.nexus.agentic.chat.ConversationJournal
 import com.niki914.nexus.agentic.chat.ConversationTurnState
 import com.niki914.nexus.agentic.chat.HiddenTurnSummary
-import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.agentic.chat.fullText
 import com.niki914.nexus.agentic.chat.isFinal
 import com.niki914.nexus.agentic.chat.isFirst
-import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.CaptureInputHook
+import com.niki914.nexus.agentic.mod.HookLocalSettings
+import com.niki914.nexus.agentic.mod.feat.AbstractAssistantHook
 import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.BlockNativeCardHook
-import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.SuppressCleanupHook
+import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.CaptureInputHook
 import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.ResetConversationSignalHook
+import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.SuppressCleanupHook
 import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.findClass
 import com.niki914.nexus.h.util.xlog
@@ -141,13 +141,16 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         }
 
         val beanClass = viewBeanClass ?: return
-        val dataCenterInsertMessageMethod = BreenoConfigProvider.RenderCard.dataCenterInsertMessageMethod
-        val dataCenterUpdateMessageMethod = BreenoConfigProvider.RenderCard.dataCenterUpdateMessageMethod
+        val dataCenterInsertMessageMethod =
+            BreenoConfigProvider.RenderCard.dataCenterInsertMessageMethod
+        val dataCenterUpdateMessageMethod =
+            BreenoConfigProvider.RenderCard.dataCenterUpdateMessageMethod
 
         val mockBeanMethodsUnit = BreenoConfigProvider.RenderCard.mockBeanMethodsUnit
         val mockBeanLocalDataUnit = BreenoConfigProvider.RenderCard.mockBeanLocalDataUnit
         val typeAnswer = BreenoConfigProvider.RenderCard.chatTypeAnswer
-        val hideFeedbackViewLocalDataKey = BreenoConfigProvider.RenderCard.hideFeedbackViewLocalDataKey
+        val hideFeedbackViewLocalDataKey =
+            BreenoConfigProvider.RenderCard.hideFeedbackViewLocalDataKey
         val setChatTypeMethod = BreenoConfigProvider.RenderCard.beanSetChatTypeMethod
         val setRoomIdMethod = BreenoConfigProvider.RenderCard.beanSetRoomIdMethod
         val setRecordIdMethod = BreenoConfigProvider.RenderCard.beanSetRecordIdMethod

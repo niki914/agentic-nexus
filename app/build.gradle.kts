@@ -107,7 +107,7 @@ fun getAdbPath(): String {
 val adbReverse = tasks.register("adbReverse") {
     group = "custom"
     description = "Execute adb reverse for port 8788 and 1234"
-    
+
     doLast {
         val adbPath = getAdbPath()
         println("Using ADB path: $adbPath")
@@ -135,12 +135,17 @@ val adbReverse = tasks.register("adbReverse") {
 val startServer = tasks.register("startServer") {
     group = "custom"
     description = "Start simple python server"
-    
+
     doFirst {
         println("Starting Python Server in background...")
-        val pythonCmds = listOf("python3", "/usr/bin/python3", "/usr/local/bin/python3", "/opt/homebrew/bin/python3")
+        val pythonCmds = listOf(
+            "python3",
+            "/usr/bin/python3",
+            "/usr/local/bin/python3",
+            "/opt/homebrew/bin/python3"
+        )
         var started = false
-        
+
         for (cmd in pythonCmds) {
             try {
                 ProcessBuilder(cmd, "server.py")
@@ -154,7 +159,7 @@ val startServer = tasks.register("startServer") {
                 // Continue to next command
             }
         }
-        
+
         if (!started) {
             println("Failed to start Python Server: python3 not found in common paths.")
         }

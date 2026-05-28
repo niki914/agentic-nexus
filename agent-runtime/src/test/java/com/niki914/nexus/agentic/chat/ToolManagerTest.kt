@@ -1,18 +1,18 @@
 package com.niki914.nexus.agentic.chat
 
+import com.niki914.nexus.agentic.chat.agentic.ToolManager
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
-import com.niki914.nexus.agentic.chat.agentic.ToolManager
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeBuiltinToolSetting as BuiltinToolSetting
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 import com.niki914.s3ss10n.LocalToolConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeBuiltinToolSetting as BuiltinToolSetting
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 
 class ToolManagerTest {
 
@@ -35,7 +35,11 @@ class ToolManagerTest {
                 McpServer(name = "aslocate", url = "http://127.0.0.1:51338/mcp")
             ),
             builtinSettings = listOf(
-                BuiltinToolSetting(name = "time", description = "Read current time.", enabled = true)
+                BuiltinToolSetting(
+                    name = "time",
+                    description = "Read current time.",
+                    enabled = true
+                )
             ),
             mcpCachedTools = mapOf(
                 "aslocate" to listOf(

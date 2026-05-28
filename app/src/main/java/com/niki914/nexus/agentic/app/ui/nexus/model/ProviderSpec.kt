@@ -10,6 +10,7 @@ sealed interface ProviderSpec {
     val officialEndpoint: String
     val onboardingModelHint: String
     val showEndpointConfigInOnboarding: Boolean
+
     @get:DrawableRes
     val iconRes: Int
     val tintIcon: Boolean
@@ -121,7 +122,8 @@ private data object AnthropicSpec : ProviderSpec {
 private data object GoogleSpec : ProviderSpec {
     override val id: String = "google"
     override val brandName: String = "Google"
-    override val officialEndpoint: String = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+    override val officialEndpoint: String =
+        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
     override val onboardingModelHint: String = "如：gemini-3.5-flash"
     override val showEndpointConfigInOnboarding: Boolean = true
     override val iconRes: Int = R.drawable.gemini

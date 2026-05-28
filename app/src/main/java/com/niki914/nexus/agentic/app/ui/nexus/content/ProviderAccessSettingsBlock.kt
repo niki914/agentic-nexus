@@ -25,7 +25,7 @@ internal fun ProviderAccessSettingsBlock(
     SettingsGroupCard {
         if (policy.showEndpointSection) {
             val endpointEditable = policy.endpointEditable &&
-                (!policy.showEndpointOverrideToggle || uiState.endpointOverrideEnabled)
+                    (!policy.showEndpointOverrideToggle || uiState.endpointOverrideEnabled)
             if (policy.showEndpointOverrideToggle) {
                 SettingToggleItem(
                     title = stringResource(R.string.ui_onboard_configure_endpoint_override_title),

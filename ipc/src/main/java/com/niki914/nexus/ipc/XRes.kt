@@ -1,8 +1,8 @@
 package com.niki914.nexus.ipc
 
 import android.content.Context
-import android.os.Bundle
 import android.net.Uri
+import android.os.Bundle
 import androidx.core.net.toUri
 
 enum class HostApp(val packageName: String) {

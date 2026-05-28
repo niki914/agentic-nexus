@@ -43,7 +43,12 @@ class Runtime(
                         System.loadLibrary("dexkit")
                         DexKitBridge.create(params.appInfo.sourceDir).use { bridge ->
                             dexkitHooks.forEach { hook ->
-                                xTry("Runtime#attaching: ${hook.name}") { hook.onHookWithDexkit(params, bridge) }
+                                xTry("Runtime#attaching: ${hook.name}") {
+                                    hook.onHookWithDexkit(
+                                        params,
+                                        bridge
+                                    )
+                                }
                             }
                         }
                     }

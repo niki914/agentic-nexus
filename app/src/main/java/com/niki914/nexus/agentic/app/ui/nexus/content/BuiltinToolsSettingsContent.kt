@@ -23,8 +23,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolSettingItem
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolSettingsManager
 import dev.chrisbanes.haze.HazeState

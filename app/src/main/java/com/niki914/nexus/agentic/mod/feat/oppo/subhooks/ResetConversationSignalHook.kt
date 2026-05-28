@@ -16,7 +16,13 @@ class ResetConversationSignalHook(
 
     override fun afterHook(param: XC_MethodHook.MethodHookParam) {
         val roomId = param.result as? String ?: ""
-        xlog("[$name] 检测到会话重置信号, roomMode=${param.args.getOrNull(0)}, src=${param.args.getOrNull(1)}, roomId=$roomId")
+        xlog(
+            "[$name] 检测到会话重置信号, roomMode=${param.args.getOrNull(0)}, src=${
+                param.args.getOrNull(
+                    1
+                )
+            }, roomId=$roomId"
+        )
         onSessionReset(roomId)
     }
 }

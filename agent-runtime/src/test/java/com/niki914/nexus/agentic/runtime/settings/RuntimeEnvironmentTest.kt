@@ -72,7 +72,8 @@ private class FakeRuntimeSettingsGateway : RuntimeSettingsGateway {
 
     override suspend fun listMcpServers(): List<RuntimeMcpServer> = emptyList()
 
-    override suspend fun listCachedTools(server: RuntimeMcpServer): List<RuntimeMcpTool> = emptyList()
+    override suspend fun listCachedTools(server: RuntimeMcpServer): List<RuntimeMcpTool> =
+        emptyList()
 
     override suspend fun saveDiscoveredTools(
         url: String,

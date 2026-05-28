@@ -8,16 +8,24 @@ object BreenoFeedbackAssembler {
         val feedbackClassName = BreenoConfigProvider.RenderCard.feedbackInfoClass
         val footerClassName = BreenoConfigProvider.RenderCard.footerInfoClass
         val beanSetFeedbackInfoMethod = BreenoConfigProvider.RenderCard.beanSetFeedbackInfoMethod
-        val feedbackSetFooterInfoMethod = BreenoConfigProvider.RenderCard.feedbackSetFooterInfoMethod
+        val feedbackSetFooterInfoMethod =
+            BreenoConfigProvider.RenderCard.feedbackSetFooterInfoMethod
         val footerSetCopyFlagMethod = BreenoConfigProvider.RenderCard.footerInfoSetCopyFlagMethod
-        val footerSetUpvoteFlagMethod = BreenoConfigProvider.RenderCard.footerInfoSetUpvoteFlagMethod
+        val footerSetUpvoteFlagMethod =
+            BreenoConfigProvider.RenderCard.footerInfoSetUpvoteFlagMethod
 
         val classLoader = bean.javaClass.classLoader
         val feedback = instantiate(feedbackClassName, classLoader) ?: return
         val footer = instantiate(footerClassName, classLoader) ?: return
 
-        footer.call<Unit>(footerSetCopyFlagMethod, BreenoConfigProvider.RenderCard.feedbackCopyFlagEnabled)
-        footer.call<Unit>(footerSetUpvoteFlagMethod, BreenoConfigProvider.RenderCard.feedbackUpvoteFlagEnabled)
+        footer.call<Unit>(
+            footerSetCopyFlagMethod,
+            BreenoConfigProvider.RenderCard.feedbackCopyFlagEnabled
+        )
+        footer.call<Unit>(
+            footerSetUpvoteFlagMethod,
+            BreenoConfigProvider.RenderCard.feedbackUpvoteFlagEnabled
+        )
         feedback.call<Unit>(feedbackSetFooterInfoMethod, footer)
         bean.call<Unit>(beanSetFeedbackInfoMethod, feedback)
     }

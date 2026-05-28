@@ -22,7 +22,9 @@ class SuppressCleanupHook(
                 xlog("[$name] takeover mode, letting native Operation through")
                 return
             }
-            TurnMode.InjectedLLM -> { /* proceed */ }
+
+            TurnMode.InjectedLLM -> { /* proceed */
+            }
         }
 
         val result = param.result ?: return
@@ -31,7 +33,7 @@ class SuppressCleanupHook(
 
         val resultClass = result.javaClass
         val isCleanOperation = resultClass.name == cleanOperationClass ||
-            resultClass.simpleName == cleanOperationClass
+                resultClass.simpleName == cleanOperationClass
         if (!isCleanOperation) {
             return
         }

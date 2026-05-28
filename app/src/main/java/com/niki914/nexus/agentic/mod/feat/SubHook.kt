@@ -41,6 +41,7 @@ abstract class SubHook : Hook {
                     after = { param -> afterHook(param) }
                 )
             }
+
             else -> Unit
         }
     }

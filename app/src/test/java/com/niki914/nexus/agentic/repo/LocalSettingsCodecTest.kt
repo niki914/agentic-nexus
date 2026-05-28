@@ -1,9 +1,6 @@
 package com.niki914.nexus.agentic.repo
 
 import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonArray
@@ -13,6 +10,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 
 class LocalSettingsCodecTest {
     @Test
@@ -39,7 +39,14 @@ class LocalSettingsCodecTest {
         val servers = LocalSettingsCodec.parseMcpServers(settings)
 
         assertEquals(2, servers.size)
-        assertEquals(McpServer("direct", "https://mcp.example/direct", false, mapOf("Authorization" to "Bearer token")), servers[0])
+        assertEquals(
+            McpServer(
+                "direct",
+                "https://mcp.example/direct",
+                false,
+                mapOf("Authorization" to "Bearer token")
+            ), servers[0]
+        )
         assertEquals(McpServer("transport", "https://mcp.example/transport", true), servers[1])
     }
 
@@ -87,7 +94,12 @@ class LocalSettingsCodecTest {
         )
 
         assertEquals(listOf(tool), LocalSettingsCodec.parseMcpCache(settings, server))
-        assertTrue(LocalSettingsCodec.withoutMcpCache(settings, listOf(server)).mcpDiscoveredToolsCache!!.isEmpty())
+        assertTrue(
+            LocalSettingsCodec.withoutMcpCache(
+                settings,
+                listOf(server)
+            ).mcpDiscoveredToolsCache!!.isEmpty()
+        )
     }
 
     @Test

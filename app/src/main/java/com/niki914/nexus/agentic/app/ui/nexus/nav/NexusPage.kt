@@ -3,7 +3,6 @@ package com.niki914.nexus.agentic.app.ui.nexus.nav
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -47,7 +46,8 @@ data object StartupPage : NexusPage {
 data object ProviderPickPage : NexusPage {
     override val routeKey: String = "provider-pick"
     override val titleSpec: PageTitleSpec = ResTitle(R.string.ui_onboard_provider_pick_title)
-    override val leftAction: TopBarActionSpec = TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
+    override val leftAction: TopBarActionSpec =
+        TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
     override val rightAction: TopBarActionSpec? = null
 }
 
@@ -56,15 +56,18 @@ data class ConfigurePage(
     val explicitTitleSpec: PageTitleSpec? = null,
 ) : NexusPage {
     override val routeKey: String = if (providerId == null) "configure" else "configure:$providerId"
-    override val titleSpec: PageTitleSpec = explicitTitleSpec ?: ResTitle(R.string.ui_onboard_configure_title)
-    override val leftAction: TopBarActionSpec = TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
+    override val titleSpec: PageTitleSpec =
+        explicitTitleSpec ?: ResTitle(R.string.ui_onboard_configure_title)
+    override val leftAction: TopBarActionSpec =
+        TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
     override val rightAction: TopBarActionSpec? = null
 }
 
 data object DonePage : NexusPage {
     override val routeKey: String = "done"
     override val titleSpec: PageTitleSpec = NoTitle
-    override val leftAction: TopBarActionSpec = TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
+    override val leftAction: TopBarActionSpec =
+        TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
     override val rightAction: TopBarActionSpec? = null
 }
 
@@ -80,7 +83,8 @@ data object HomePage : NexusPage {
 data object SettingsHomePage : NexusPage {
     override val routeKey: String = "settings-home"
     override val titleSpec: PageTitleSpec = ResTitle(R.string.ui_settings_title)
-    override val leftAction: TopBarActionSpec = TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
+    override val leftAction: TopBarActionSpec =
+        TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
     override val rightAction: TopBarActionSpec? = null
 }
 
@@ -91,7 +95,8 @@ data class SettingsDetailPage(
 ) : NexusPage {
     override val routeKey: String = "settings-detail:${group.routeSuffix}"
     override val titleSpec: PageTitleSpec = explicitTitleSpec ?: ResTitle(group.titleRes)
-    override val leftAction: TopBarActionSpec = TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
+    override val leftAction: TopBarActionSpec =
+        TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
     override val rightAction: TopBarActionSpec? = explicitRightAction
 }
 
@@ -102,8 +107,10 @@ data class McpServerDetailPage(
 ) : NexusPage {
     override val routeKey: String = "mcp-server-detail:$serverIndex:$serverName"
     override val titleSpec: PageTitleSpec = TextTitle(serverName)
-    override val leftAction: TopBarActionSpec = TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
-    override val rightAction: TopBarActionSpec? = if (isCreating) null else TopBarActionSpec(Icons.Default.Delete)
+    override val leftAction: TopBarActionSpec =
+        TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
+    override val rightAction: TopBarActionSpec? =
+        if (isCreating) null else TopBarActionSpec(Icons.Default.Delete)
 }
 
 data class CustomToolDetailPage(
@@ -113,6 +120,8 @@ data class CustomToolDetailPage(
 ) : NexusPage {
     override val routeKey: String = "custom-tool-detail:$toolIndex:$toolName"
     override val titleSpec: PageTitleSpec = TextTitle(toolName)
-    override val leftAction: TopBarActionSpec = TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
-    override val rightAction: TopBarActionSpec? = if (isCreating) null else TopBarActionSpec(Icons.Default.Delete)
+    override val leftAction: TopBarActionSpec =
+        TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
+    override val rightAction: TopBarActionSpec? =
+        if (isCreating) null else TopBarActionSpec(Icons.Default.Delete)
 }

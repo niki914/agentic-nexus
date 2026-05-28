@@ -5,8 +5,6 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation as CustomToolValidation
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerializationException
@@ -16,6 +14,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation as CustomToolValidation
 
 class CreateCustomToolBuiltin : BuiltinTool() {
     override val name: String = "create_custom_tool"
@@ -43,7 +43,8 @@ class CreateCustomToolBuiltin : BuiltinTool() {
             required = false
         }
         config.boolean("overwrite") {
-            description = "Whether to replace an existing custom tool with the same name. Defaults to false."
+            description =
+                "Whether to replace an existing custom tool with the same name. Defaults to false."
             required = false
         }
         config.rawJsonSchema(CREATE_CUSTOM_TOOL_SCHEMA)
@@ -60,7 +61,9 @@ class CreateCustomToolBuiltin : BuiltinTool() {
                 code = "INVALID_ARGUMENTS_JSON",
                 message = "create_custom_tool arguments must be a JSON object with name, description, command, enabled, and overwrite fields.",
                 hint = """Example: {"name":"battery_status","description":"Read current battery status.","command":"dumpsys battery","enabled":false,"overwrite":false}""",
-                fieldErrors = mapOf("argumentsJson" to (throwable.message ?: "Invalid JSON object.")),
+                fieldErrors = mapOf(
+                    "argumentsJson" to (throwable.message ?: "Invalid JSON object.")
+                ),
             )
         }
 

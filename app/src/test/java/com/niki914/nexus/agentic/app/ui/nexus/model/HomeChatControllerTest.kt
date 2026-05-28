@@ -38,8 +38,20 @@ class HomeChatViewModelTest {
                     LlmStreamEvent.ToolRunning(ToolCallStatus(name = "search", label = "Search")),
                     LlmStreamEvent.ToolSucceeded(ToolCallStatus(name = "search", label = "Search")),
                     LlmStreamEvent.TextDelta(delta = "llo", fullText = "hello"),
-                    LlmStreamEvent.ToolRunning(ToolCallStatus(callId = "calc-1", name = "calc", label = "Calc")),
-                    LlmStreamEvent.ToolSucceeded(ToolCallStatus(callId = "calc-1", name = "calc", label = "Calc")),
+                    LlmStreamEvent.ToolRunning(
+                        ToolCallStatus(
+                            callId = "calc-1",
+                            name = "calc",
+                            label = "Calc"
+                        )
+                    ),
+                    LlmStreamEvent.ToolSucceeded(
+                        ToolCallStatus(
+                            callId = "calc-1",
+                            name = "calc",
+                            label = "Calc"
+                        )
+                    ),
                     LlmStreamEvent.Completed(fullText = "hello back"),
                 )
             },
@@ -59,9 +71,20 @@ class HomeChatViewModelTest {
         assertEquals(
             listOf(
                 HomeChatBlock.Text("he"),
-                HomeChatBlock.Tool(HomeToolStatus(name = "Search", state = HomeToolState.Succeeded)),
+                HomeChatBlock.Tool(
+                    HomeToolStatus(
+                        name = "Search",
+                        state = HomeToolState.Succeeded
+                    )
+                ),
                 HomeChatBlock.Text("llo"),
-                HomeChatBlock.Tool(HomeToolStatus(callId = "calc-1", name = "Calc", state = HomeToolState.Succeeded)),
+                HomeChatBlock.Tool(
+                    HomeToolStatus(
+                        callId = "calc-1",
+                        name = "Calc",
+                        state = HomeToolState.Succeeded
+                    )
+                ),
                 HomeChatBlock.Text(" back"),
             ),
             turn.blocks,

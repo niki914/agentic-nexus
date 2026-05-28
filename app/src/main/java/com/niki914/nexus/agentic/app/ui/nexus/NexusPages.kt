@@ -19,8 +19,8 @@ import androidx.lifecycle.ViewModelProvider
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.nav.NavigationEntry
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
-import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigurePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigureEditableField
+import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigurePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.CustomToolDetailContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.DonePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.HomePageContent
@@ -41,10 +41,10 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.ConfigurePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.CustomToolDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.DonePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
-import com.niki914.nexus.agentic.app.ui.nexus.nav.PageTitleSpec
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusSettingsGroup
+import com.niki914.nexus.agentic.app.ui.nexus.nav.PageTitleSpec
 import com.niki914.nexus.agentic.app.ui.nexus.nav.ProviderPickPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.ResTitle
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsDetailPage
@@ -79,6 +79,7 @@ fun NexusPageContent(
                     when (startupAssistantUi) {
                         StartupAssistantUi.Breeno,
                         StartupAssistantUi.XiaoAi -> ProviderPickPage
+
                         StartupAssistantUi.ChatOnly -> HomePage
                     }
                 )
@@ -135,15 +136,19 @@ fun NexusPageContent(
                         ConfigureEffect.FocusModel -> {
                             pendingFocusField = ConfigureEditableField.Model
                         }
+
                         ConfigureEffect.FocusApiKey -> {
                             pendingFocusField = ConfigureEditableField.ApiKey
                         }
+
                         ConfigureEffect.FocusEndpoint -> {
                             pendingFocusField = ConfigureEditableField.Endpoint
                         }
+
                         ConfigureEffect.FocusProxy -> {
                             pendingFocusField = ConfigureEditableField.Proxy
                         }
+
                         is ConfigureEffect.SaveFailed -> Unit
                     }
                 }
@@ -266,6 +271,7 @@ private fun settingsDetailRightAction(
                 )
             },
         )
+
         NexusSettingsGroup.CustomTools -> TopBarActionSpec(
             icon = androidx.compose.material.icons.Icons.Default.Add,
             onClick = {
@@ -278,6 +284,7 @@ private fun settingsDetailRightAction(
                 )
             },
         )
+
         else -> null
     }
 }
@@ -305,10 +312,14 @@ private fun providerButtonColors(spec: ProviderSpec): ProviderButtonColors {
 private fun ProviderButtonTokens.toProviderButtonColors(): ProviderButtonColors {
     val colorScheme = MaterialTheme.colorScheme
     return ProviderButtonColors(
-        darkContainerColor = darkContainerColorRes?.let { id -> colorResource(id) } ?: colorScheme.primary,
-        lightContainerColor = lightContainerColorRes?.let { id -> colorResource(id) } ?: colorScheme.primary,
-        darkContentColor = darkContentColorRes?.let { id -> colorResource(id) } ?: colorScheme.onPrimary,
-        lightContentColor = lightContentColorRes?.let { id -> colorResource(id) } ?: colorScheme.onPrimary,
+        darkContainerColor = darkContainerColorRes?.let { id -> colorResource(id) }
+            ?: colorScheme.primary,
+        lightContainerColor = lightContainerColorRes?.let { id -> colorResource(id) }
+            ?: colorScheme.primary,
+        darkContentColor = darkContentColorRes?.let { id -> colorResource(id) }
+            ?: colorScheme.onPrimary,
+        lightContentColor = lightContentColorRes?.let { id -> colorResource(id) }
+            ?: colorScheme.onPrimary,
     )
 }
 

@@ -39,12 +39,12 @@ import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownTypography
 import com.mikepenz.markdown.model.rememberMarkdownState
 import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.cb.BaseTheme
 import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
 import com.niki914.nexus.agentic.app.ui.infra.shape.G2BubbleShape
 import com.niki914.nexus.agentic.app.ui.infra.shape.G2CapsuleShape
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolState
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolStatus
+import com.niki914.nexus.cb.BaseTheme
 
 private val ToolSucceededIndicatorColor = Color(0xFF4F8F6B)
 private val ToolFailedIndicatorColor = Color(0xFFB85C5C)
@@ -309,9 +309,10 @@ private fun ToolStatusIndicator(
             color = color,
             strokeWidth = 2.dp,
         )
+
         HomeToolState.Succeeded,
         HomeToolState.Failed,
-        -> {
+            -> {
             val indicatorColor = when (state) {
                 HomeToolState.Succeeded -> ToolSucceededIndicatorColor
                 HomeToolState.Failed -> ToolFailedIndicatorColor

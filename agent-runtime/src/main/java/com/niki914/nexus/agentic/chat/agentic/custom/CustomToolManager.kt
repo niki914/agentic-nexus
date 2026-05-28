@@ -1,14 +1,14 @@
 package com.niki914.nexus.agentic.chat.agentic.custom
 
-import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
+import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation as CustomToolValidation
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation as CustomToolValidation
 
 data class CustomToolCreateRequest(
     val name: String,
@@ -52,7 +52,8 @@ class CustomToolManager(
 
             val normalized = request.toConfig()
             val gateway = RuntimeEnvironment.awaitSettingsGateway()
-            val repoValidation = gateway.saveCustomTool(normalized.toRuntimeModel(), overwrite = true)
+            val repoValidation =
+                gateway.saveCustomTool(normalized.toRuntimeModel(), overwrite = true)
             if (repoValidation != null) {
                 return@withSettingsFailure repoValidation.toFailure()
             }
@@ -75,7 +76,8 @@ class CustomToolManager(
             }
 
             val gateway = RuntimeEnvironment.awaitSettingsGateway()
-            val repoValidation = gateway.replaceAllCustomTools(normalizedItems.map { it.toRuntimeModel() })
+            val repoValidation =
+                gateway.replaceAllCustomTools(normalizedItems.map { it.toRuntimeModel() })
             if (repoValidation != null) {
                 return@withSettingsFailure repoValidation.toFailure()
             }

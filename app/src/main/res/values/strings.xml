@@ -94,7 +94,7 @@
     <string name="custom_tool_save_failed">保存失败：%1$s</string>
 
     <!-- MCP Module -->
-    <string name="mcp_page_description">配置 MCP 服务的连接方式与鉴权信息。\n保存后，Nexus 会在运行时自动发现可用工具。</string>
+    <string name="mcp_page_description">配置 MCP 服务的连接方式与鉴权信息。保存后，Nexus 会在运行时自动发现可用工具。</string>
     <string name="mcp_page_empty_description">点击右上方，添加你的第一个服务器。</string>
     <string name="mcp_loading">正在读取已保存的 MCP 服务...</string>
     <string name="mcp_editor_title_create">新增 MCP 服务</string>

@@ -3,10 +3,6 @@ package com.niki914.nexus.agentic.repo
 import android.content.Context
 import android.content.ContextWrapper
 import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -15,6 +11,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 
 class XRepoTest {
     private val context: Context = object : ContextWrapper(null) {
@@ -116,7 +116,10 @@ class XRepoTest {
         XRepo.mcp.clearCache(first)
 
         assertEquals(emptyList<McpTool>(), XRepo.mcp.cachedTools(first))
-        assertEquals(listOf(McpTool("getWeather", "Weather", """{"type":"object"}""")), XRepo.mcp.cachedTools(second))
+        assertEquals(
+            listOf(McpTool("getWeather", "Weather", """{"type":"object"}""")),
+            XRepo.mcp.cachedTools(second)
+        )
     }
 
     @Test

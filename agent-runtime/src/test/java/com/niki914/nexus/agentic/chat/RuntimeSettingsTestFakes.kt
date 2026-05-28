@@ -131,7 +131,8 @@ internal data class RuntimeMcpCacheWrite(
 )
 
 private object FakeRuntimeHostGateway : RuntimeHostGateway {
-    override suspend fun postNotification(title: String, content: String, uri: String?): Boolean = false
+    override suspend fun postNotification(title: String, content: String, uri: String?): Boolean =
+        false
 }
 
 private fun defaultBuiltinToolSettings(): List<RuntimeBuiltinToolSetting> {

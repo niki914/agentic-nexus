@@ -45,7 +45,8 @@ class PromptComposer {
         }
 
         return PromptComposeResult(
-            finalSystemPrompt = sections.joinToString(separator = "\n\n") { it.content.trim() }.trim(),
+            finalSystemPrompt = sections.joinToString(separator = "\n\n") { it.content.trim() }
+                .trim(),
             sections = sections,
         )
     }

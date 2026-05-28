@@ -33,10 +33,10 @@ fun GraphicsLayerScope.applyLiquidInteractiveTransform(
     val offsetAngle = atan2(offset.y, offset.x)
     scaleX =
         scale +
-            maxDragScale * abs(cos(offsetAngle) * offset.x / size.maxDimension) *
-            (width / height).fastCoerceAtMost(1f)
+                maxDragScale * abs(cos(offsetAngle) * offset.x / size.maxDimension) *
+                (width / height).fastCoerceAtMost(1f)
     scaleY =
         scale +
-            maxDragScale * abs(sin(offsetAngle) * offset.y / size.maxDimension) *
-            (height / width).fastCoerceAtMost(1f)
+                maxDragScale * abs(sin(offsetAngle) * offset.y / size.maxDimension) *
+                (height / width).fastCoerceAtMost(1f)
 }

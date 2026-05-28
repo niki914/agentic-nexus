@@ -150,15 +150,19 @@ private fun ProviderModelSettingsContent(
                 ConfigureEffect.FocusModel -> {
                     pendingFocusField = ConfigureEditableField.Model
                 }
+
                 ConfigureEffect.FocusApiKey -> {
                     pendingFocusField = ConfigureEditableField.ApiKey
                 }
+
                 ConfigureEffect.FocusEndpoint -> {
                     pendingFocusField = ConfigureEditableField.Endpoint
                 }
+
                 ConfigureEffect.FocusProxy -> {
                     pendingFocusField = ConfigureEditableField.Proxy
                 }
+
                 ConfigureEffect.OnboardingSaveSucceeded,
                 is ConfigureEffect.SaveFailed -> Unit
             }

@@ -57,7 +57,6 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.Shadow
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * 正式的 infra toggle 入口。
@@ -207,7 +206,7 @@ fun LiquidToggle(
                                     val down = awaitFirstDown(requireUnconsumed = false)
                                     val draggableWidth =
                                         trackWidthPx.floatValue -
-                                            with(density) { thumbWidth.toPx() + 4.dp.toPx() }
+                                                with(density) { thumbWidth.toPx() + 4.dp.toPx() }
                                     if (draggableWidth <= 0f) {
                                         waitForUpOrCancellation()
                                         return@awaitEachGesture
@@ -221,7 +220,10 @@ fun LiquidToggle(
                                             dragStarted = true
                                             applyTransition(
                                                 stateMachine.onDragStart(
-                                                    fraction = animatedFraction.value.fastCoerceIn(0f, 1f)
+                                                    fraction = animatedFraction.value.fastCoerceIn(
+                                                        0f,
+                                                        1f
+                                                    )
                                                 )
                                             )
                                         }

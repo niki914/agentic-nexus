@@ -3,7 +3,6 @@ package com.niki914.nexus.agentic.app.ui.nexus
 import android.app.Activity
 import android.os.SystemClock
 import android.widget.Toast
-
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -14,11 +13,11 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.DropdownMenu
@@ -32,15 +31,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.LiquidScreen
 import com.niki914.nexus.agentic.app.ui.infra.LiquidScreenSwipeContent
@@ -82,17 +81,20 @@ fun NexusApp(
     fun closeChromeMenu() {
         chromeMenuExpanded = false
     }
+
     fun openChromeMenu() {
         if (currentChrome.menuItems.isNotEmpty()) {
             chromeMenuExpanded = true
         }
     }
+
     val currentRightAction = resolveRightAction(
         baseAction = currentPage.rightAction,
         chrome = currentChrome,
         onOpenChromeMenu = ::openChromeMenu,
     )
-    val showLeftButton = currentLeftAction != null && (currentLeftAction.onClick != null || controller.canGoBack)
+    val showLeftButton =
+        currentLeftAction != null && (currentLeftAction.onClick != null || controller.canGoBack)
     val showRightButton = currentRightAction != null
     val currentTitle = resolveTitle(currentPage.titleSpec)
     val screenState = rememberLiquidScreenState(
@@ -123,12 +125,19 @@ fun NexusApp(
                 activity?.moveTaskToBack(true)
             } else {
                 lastRootBackPressedAt = now
-                Toast.makeText(context.applicationContext, rootBackToHomeHint, Toast.LENGTH_SHORT).show() // TODO rm
+                Toast.makeText(context.applicationContext, rootBackToHomeHint, Toast.LENGTH_SHORT)
+                    .show() // TODO rm
             }
         }
     }
 
-    LaunchedEffect(currentEntry.id, controller.lastDirection, currentTitle, currentRightAction, currentChrome.menuItems) {
+    LaunchedEffect(
+        currentEntry.id,
+        controller.lastDirection,
+        currentTitle,
+        currentRightAction,
+        currentChrome.menuItems
+    ) {
         if (currentChrome.menuItems.isEmpty()) {
             closeChromeMenu()
         }
@@ -302,6 +311,7 @@ private fun resolveRightAction(
         chrome.rightAction != null -> chrome.rightAction
         chrome.menuItems.isNotEmpty() -> baseAction?.copy(onClick = onOpenChromeMenu)
             ?: TopBarActionSpec(icon = Icons.Default.MoreHoriz, onClick = onOpenChromeMenu)
+
         else -> baseAction
     }
 }

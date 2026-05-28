@@ -43,13 +43,14 @@ class CaptureInputHook(
         onInput(dialogId, query)
     }
 
-    private fun shouldSuppress(dialogId: String, query: String): Boolean = synchronized(duplicateLock) {
-        val currentInput = CapturedInput(dialogId = dialogId, query = query)
-        if (lastDeliveredInput == currentInput) {
-            true
-        } else {
-            lastDeliveredInput = currentInput
-            false
+    private fun shouldSuppress(dialogId: String, query: String): Boolean =
+        synchronized(duplicateLock) {
+            val currentInput = CapturedInput(dialogId = dialogId, query = query)
+            if (lastDeliveredInput == currentInput) {
+                true
+            } else {
+                lastDeliveredInput = currentInput
+                false
+            }
         }
-    }
 }

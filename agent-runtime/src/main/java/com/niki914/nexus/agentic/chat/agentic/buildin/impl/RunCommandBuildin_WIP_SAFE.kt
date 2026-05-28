@@ -1,12 +1,12 @@
 package com.niki914.nexus.agentic.chat.agentic.buildin.impl
 
-import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRequest
-import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRunner
-import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.buildin.RawJsonBuiltinTool
+import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRequest
+import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRunner
+import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerializationException
@@ -33,11 +33,13 @@ class RunCommandBuildin_WIP_SAFE(
     override fun configure(config: LocalToolConfig) {
         config.description = description
         config.string("command") {
-            description = "Command string to execute inside Android `/system/bin/sh -c`. Do not assume desktop package managers or scripting runtimes are available. Prefer shell builtins, Toybox or Toolbox commands, and Android-specific shell commands."
+            description =
+                "Command string to execute inside Android `/system/bin/sh -c`. Do not assume desktop package managers or scripting runtimes are available. Prefer shell builtins, Toybox or Toolbox commands, and Android-specific shell commands."
             required = true
         }
         config.string("workdir") {
-            description = "Optional working directory inside the Android filesystem. Defaults to '/'. Prefer absolute device paths."
+            description =
+                "Optional working directory inside the Android filesystem. Defaults to '/'. Prefer absolute device paths."
             required = false
         }
         config.rawJsonSchema(RUN_COMMAND_SCHEMA)
@@ -60,7 +62,8 @@ class RunCommandBuildin_WIP_SAFE(
             }
             return buildResultJson(
                 exitCode = INVALID_REQUEST_EXIT_CODE,
-                stderr = throwable.message ?: "argumentsJson must be a JSON object with a non-blank command field.",
+                stderr = throwable.message
+                    ?: "argumentsJson must be a JSON object with a non-blank command field.",
             )
         }
         if (args.command.isBlank()) {
@@ -91,11 +94,12 @@ class RunCommandBuildin_WIP_SAFE(
             ?: throw IllegalArgumentException("argumentsJson must be a JSON object.")
         val command = obj["command"]?.jsonPrimitive?.contentOrNull.orEmpty().trim()
         val workdir = obj["workdir"]?.jsonPrimitive?.contentOrNull?.trim()?.ifBlank { null }
-        val timeoutOverride = obj["timeout_ms"]?.jsonPrimitive?.contentOrNull?.trim()?.takeIf { it.isNotBlank() }
-            ?.toLongOrNull()
-            ?: obj["timeout_ms"]?.jsonPrimitive?.let {
-                throw IllegalArgumentException("Field 'timeout_ms' must be a positive integer.")
-            }
+        val timeoutOverride =
+            obj["timeout_ms"]?.jsonPrimitive?.contentOrNull?.trim()?.takeIf { it.isNotBlank() }
+                ?.toLongOrNull()
+                ?: obj["timeout_ms"]?.jsonPrimitive?.let {
+                    throw IllegalArgumentException("Field 'timeout_ms' must be a positive integer.")
+                }
         if (timeoutOverride != null && timeoutOverride <= 0) {
             throw IllegalArgumentException("Field 'timeout_ms' must be a positive integer.")
         }

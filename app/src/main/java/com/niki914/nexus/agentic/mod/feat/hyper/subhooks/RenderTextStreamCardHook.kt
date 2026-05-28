@@ -91,10 +91,22 @@ class RenderTextStreamCardHook : SubHook() {
         )
         val instructionId = buildInstructionId()
 
-        header.call<Any>(XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderIdSetter, instructionId)
-        header.call<Any>(XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderDialogIdSetter, dialogId)
-        instruction.call<Unit>(XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderSetter, header)
-        instruction.call<Unit>(XiaoaiConfigProvider.RenderTextStreamCard.instructionPayloadSetter, payload)
+        header.call<Any>(
+            XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderIdSetter,
+            instructionId
+        )
+        header.call<Any>(
+            XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderDialogIdSetter,
+            dialogId
+        )
+        instruction.call<Unit>(
+            XiaoaiConfigProvider.RenderTextStreamCard.instructionHeaderSetter,
+            header
+        )
+        instruction.call<Unit>(
+            XiaoaiConfigProvider.RenderTextStreamCard.instructionPayloadSetter,
+            payload
+        )
         instruction.setTag(INJECTED_FLAG, true)
         target.call<Unit>(methodName, instruction)
         xlog("[$name] 已注入文字流分片: dialogId=$dialogId, text=$text")
@@ -107,7 +119,8 @@ class RenderTextStreamCardHook : SubHook() {
         vararg args: Any?
     ): Any {
         val clazz = resolveRuntimeClass(className, classLoader)
-        val paramTypes = constructorParamTypes.map { resolveRuntimeClass(it, classLoader) }.toTypedArray()
+        val paramTypes =
+            constructorParamTypes.map { resolveRuntimeClass(it, classLoader) }.toTypedArray()
         return clazz.getDeclaredConstructor(*paramTypes).newInstance(*args)
     }
 
@@ -120,10 +133,13 @@ class RenderTextStreamCardHook : SubHook() {
         return "${XiaoaiConfigProvider.RenderTextStreamCard.instructionIdPrefix}_$next"
     }
 
-    private fun obtainSession(turnId: Long, dialogId: String): XiaoaiRenderSession = synchronized(sessionLock) {
-        currentSession?.takeIf { it.turnId == turnId && it.dialogId == dialogId }
-            ?: XiaoaiRenderSession(turnId = turnId, dialogId = dialogId).also { currentSession = it }
-    }
+    private fun obtainSession(turnId: Long, dialogId: String): XiaoaiRenderSession =
+        synchronized(sessionLock) {
+            currentSession?.takeIf { it.turnId == turnId && it.dialogId == dialogId }
+                ?: XiaoaiRenderSession(turnId = turnId, dialogId = dialogId).also {
+                    currentSession = it
+                }
+        }
 
     fun reset() = synchronized(sessionLock) {
         currentSession = null

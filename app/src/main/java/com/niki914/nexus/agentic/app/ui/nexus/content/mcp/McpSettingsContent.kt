@@ -58,7 +58,12 @@ fun McpSettingsContent(
                         checked = item.enabled,
                         enabled = !uiState.isSaving,
                         onCheckedChange = { checked ->
-                            viewModel.sendIntent(McpSettingsIntent.ItemEnabledChanged(index, checked))
+                            viewModel.sendIntent(
+                                McpSettingsIntent.ItemEnabledChanged(
+                                    index,
+                                    checked
+                                )
+                            )
                         },
                         onClick = {
                             onOpenServerDetail(item.name, index)

@@ -110,8 +110,9 @@ fun <P : Page> rememberNavigationController(
     val holder = viewModel<NavigationControllerHolderViewModel>()
     return remember(holder, initialPage.routeKey) {
         @Suppress("UNCHECKED_CAST")
-        (holder.controller as? NavigationController<P>) ?: NavigationController(initialPage = initialPage).also {
-            holder.controller = it
-        }
+        (holder.controller as? NavigationController<P>)
+            ?: NavigationController(initialPage = initialPage).also {
+                holder.controller = it
+            }
     }
 }

@@ -53,7 +53,14 @@ class BuiltinToolExecutorTest {
     @Test
     fun execute_wrapsNonCancellationExceptionAsUnknownError() = runTest {
         val executor = BuiltinToolExecutor(
-            BuiltinToolRegistry(listOf(ThrowingBuiltinTool("broken", IllegalStateException("boom"))))
+            BuiltinToolRegistry(
+                listOf(
+                    ThrowingBuiltinTool(
+                        "broken",
+                        IllegalStateException("boom")
+                    )
+                )
+            )
         )
 
         val resultJson = executor.execute("broken", "{}")
@@ -79,7 +86,14 @@ class BuiltinToolExecutorTest {
     @Test(expected = CancellationException::class)
     fun execute_rethrowsCancellationException() = runTest {
         val executor = BuiltinToolExecutor(
-            BuiltinToolRegistry(listOf(ThrowingBuiltinTool("cancel", CancellationException("cancel"))))
+            BuiltinToolRegistry(
+                listOf(
+                    ThrowingBuiltinTool(
+                        "cancel",
+                        CancellationException("cancel")
+                    )
+                )
+            )
         )
 
         executor.execute("cancel", "{}")

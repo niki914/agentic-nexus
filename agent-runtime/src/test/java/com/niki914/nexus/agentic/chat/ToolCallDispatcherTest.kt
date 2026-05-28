@@ -2,6 +2,7 @@ package com.niki914.nexus.agentic.chat
 
 import android.content.Context
 import android.content.ContextWrapper
+import com.niki914.nexus.agentic.chat.agentic.ToolCallDispatcher
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolExecutor
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
@@ -9,7 +10,6 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolExecutor
 import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRunner
-import com.niki914.nexus.agentic.chat.agentic.ToolCallDispatcher
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json

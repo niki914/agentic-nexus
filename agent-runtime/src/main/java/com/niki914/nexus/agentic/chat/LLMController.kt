@@ -1,15 +1,14 @@
 package com.niki914.nexus.agentic.chat
 
-import com.niki914.nexus.agentic.chat.agentic.stream.LlmStreamEventMapper
-import com.niki914.nexus.agentic.chat.agentic.mcp.McpDiscoveryCacheStore
-import com.niki914.nexus.agentic.chat.agentic.mcp.McpInterceptorHttpEngine
 import com.niki914.nexus.agentic.chat.agentic.PromptComposer
 import com.niki914.nexus.agentic.chat.agentic.PromptComposerInput
 import com.niki914.nexus.agentic.chat.agentic.SessionToolBinder
 import com.niki914.nexus.agentic.chat.agentic.ToolCallDispatcher
 import com.niki914.nexus.agentic.chat.agentic.ToolManager
+import com.niki914.nexus.agentic.chat.agentic.mcp.McpDiscoveryCacheStore
+import com.niki914.nexus.agentic.chat.agentic.mcp.McpInterceptorHttpEngine
+import com.niki914.nexus.agentic.chat.agentic.stream.LlmStreamEventMapper
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 import com.niki914.nexus.h.util.xlog
 import com.niki914.s3ss10n.Session
 import com.niki914.s3ss10n.SessionConfig
@@ -22,11 +21,13 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 
 // TODO P1 [Parse] HTTP 400 , body={"error":{"message":"Invalid assistant message: content or toolcalls must be set","type":"invalidrequesterror","param":null,"code":"invalidrequest_error"}}
 // TODO P0 rm caches when mcp server is inreachable
 // TODO P0 PromptComposer 添加 mcp 发现状态的提示，让 Agent 知道 mcp 是失败、加载中还是可用
 // TODO impl a mcpHooks {} like hooks to make mcp update easier
+// TODO 重复 mcp tool 注册进行去重
 object LLMController {
     private val promptComposer =
         PromptComposer()
@@ -153,7 +154,13 @@ object LLMController {
             xlog("LLMController.stream sessionSend begin")
             state.session.send(query).collect { event ->
                 val mapped = LlmStreamEventMapper.map(event, accumulator, startedAtMs)
-                xlog("LLMController.stream sessionEvent type=${event::class.simpleName} mapped=${mapped?.let(::eventName)}")
+                xlog(
+                    "LLMController.stream sessionEvent type=${event::class.simpleName} mapped=${
+                        mapped?.let(
+                            ::eventName
+                        )
+                    }"
+                )
                 mapped?.let { sink.send(it) }
             }
             xlog("LLMController.stream sessionSend done")
@@ -163,7 +170,10 @@ object LLMController {
             }
             xlog("LLMController.stream error type=${throwable::class.simpleName} message=${throwable.message}")
             send(
-                LlmStreamEvent.Error(message = throwable.message ?: "LLM stream failed", throwable = throwable)
+                LlmStreamEvent.Error(
+                    message = throwable.message ?: "LLM stream failed",
+                    throwable = throwable
+                )
             )
         }
     }.flowOn(Dispatchers.IO)
@@ -202,6 +212,7 @@ object LLMController {
                             )
                         )
                     }
+
                     is ToolCallKind.Mcp -> delegate()
                 }
             }

@@ -59,6 +59,9 @@ class RunCommandBuiltinTest {
         ).jsonObject
 
         assertEquals("-1", json["exit_code"]!!.jsonPrimitive.content)
-        assertEquals("Field 'timeout_ms' must be a positive integer.", json["stderr"]!!.jsonPrimitive.content)
+        assertEquals(
+            "Field 'timeout_ms' must be a positive integer.",
+            json["stderr"]!!.jsonPrimitive.content
+        )
     }
 }

@@ -1,7 +1,5 @@
 package com.niki914.nexus.agentic.chat.agentic.shell
 
-import kotlin.text.iterator
-
 data class ShellCommandPolicyDecision(
     val allowed: Boolean,
     val code: String = "OK",

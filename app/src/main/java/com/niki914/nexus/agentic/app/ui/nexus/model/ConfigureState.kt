@@ -2,11 +2,11 @@ package com.niki914.nexus.agentic.app.ui.nexus.model
 
 import androidx.annotation.StringRes
 import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.cb.ComposeMVIViewModel
 import com.niki914.nexus.agentic.repo.XRepo
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
-import java.net.URI
+import com.niki914.nexus.cb.ComposeMVIViewModel
 import kotlinx.coroutines.CancellationException
+import java.net.URI
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 
 enum class ConfigureScene {
     Onboarding,
@@ -34,8 +34,11 @@ data class ConfigureUiState(
 )
 
 sealed interface ConfigureInlineError {
-    data class LoadFailed(val reason: ConfigureErrorReason.LoadSettingsFailed) : ConfigureInlineError
-    data class SaveFailed(val reason: ConfigureErrorReason.SaveSettingsFailed) : ConfigureInlineError
+    data class LoadFailed(val reason: ConfigureErrorReason.LoadSettingsFailed) :
+        ConfigureInlineError
+
+    data class SaveFailed(val reason: ConfigureErrorReason.SaveSettingsFailed) :
+        ConfigureInlineError
 }
 
 sealed interface ConfigureErrorReason {
@@ -48,6 +51,7 @@ sealed interface ConfigureIntent {
         val providerId: String? = null,
         val scene: ConfigureScene = ConfigureScene.Onboarding,
     ) : ConfigureIntent
+
     data class SetEndpointOverride(val enabled: Boolean) : ConfigureIntent
     data class UpdateEndpoint(val value: String) : ConfigureIntent
     data class UpdateModel(val value: String) : ConfigureIntent
@@ -132,7 +136,7 @@ class ConfigureViewModel internal constructor(
         val savedModel = if (shouldReuseSavedValues) llmConfig.model else ""
         val savedApiKey = if (shouldReuseSavedValues) llmConfig.apiKey else ""
         val endpointOverrideEnabled = savedEndpoint.isNotBlank() &&
-            savedEndpoint != providerSpec.officialEndpoint
+                savedEndpoint != providerSpec.officialEndpoint
         val endpointInput = if (endpointOverrideEnabled) {
             savedEndpoint
         } else {
@@ -313,6 +317,7 @@ class ConfigureViewModel internal constructor(
                 sendEffect(ConfigureEffect.FocusModel)
                 return
             }
+
             ConfigureFieldTarget.ApiKey -> {
                 updateState {
                     copy(
@@ -323,6 +328,7 @@ class ConfigureViewModel internal constructor(
                 sendEffect(ConfigureEffect.FocusApiKey)
                 return
             }
+
             ConfigureFieldTarget.Endpoint -> {
                 updateState {
                     copy(
@@ -333,6 +339,7 @@ class ConfigureViewModel internal constructor(
                 sendEffect(ConfigureEffect.FocusEndpoint)
                 return
             }
+
             ConfigureFieldTarget.Proxy -> {
                 updateState {
                     copy(
@@ -343,6 +350,7 @@ class ConfigureViewModel internal constructor(
                 sendEffect(ConfigureEffect.FocusProxy)
                 return
             }
+
             null -> Unit
         }
         when (currentState.scene) {
@@ -463,8 +471,8 @@ private fun ConfigureUiState.canSave(
 ): Boolean {
     val endpointValid = !endpointOverrideEnabled || endpointInput.trim().isNotBlank()
     return endpointValid &&
-        modelInput.trim().isNotBlank() &&
-        apiKeyInput.trim().isNotBlank()
+            modelInput.trim().isNotBlank() &&
+            apiKeyInput.trim().isNotBlank()
 }
 
 private enum class ConfigureFieldTarget {

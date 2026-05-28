@@ -95,7 +95,8 @@ object XEvent {
                 Application.getProcessName()
             } else {
                 val activityThreadClass = Class.forName("android.app.ActivityThread")
-                val currentProcessNameMethod = activityThreadClass.getDeclaredMethod("currentProcessName")
+                val currentProcessNameMethod =
+                    activityThreadClass.getDeclaredMethod("currentProcessName")
                 currentProcessNameMethod.invoke(null) as String
             }
         } ?: packageName
@@ -111,7 +112,7 @@ object XEvent {
         )
 
         val jsonString = Json.encodeToString(envelope)
-        
+
         xtlog("XEvent", jsonString) // TODO: py server --> db --> script check
     }
 }

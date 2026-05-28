@@ -6,11 +6,10 @@ import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.repo.LocalSettingsStore
 import com.niki914.nexus.agentic.repo.XRepo
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -21,9 +20,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Assert.fail
 import org.junit.Rule
 import org.junit.Test
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class McpSettingsViewModelTest {

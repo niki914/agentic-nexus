@@ -49,7 +49,10 @@ class BuiltinToolTest {
         assertEquals("INVALID_NAME", json["code"]!!.jsonPrimitive.content)
         assertEquals("Invalid tool name.", json["message"]!!.jsonPrimitive.content)
         assertEquals("Use letters, digits, or underscores.", json["hint"]!!.jsonPrimitive.content)
-        assertEquals("Invalid format.", json["field_errors"]!!.jsonObject["name"]!!.jsonPrimitive.content)
+        assertEquals(
+            "Invalid format.",
+            json["field_errors"]!!.jsonObject["name"]!!.jsonPrimitive.content
+        )
         assertTrue(json["data"]!!.jsonObject.isEmpty())
     }
 

@@ -27,9 +27,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
@@ -122,8 +122,8 @@ internal fun SettingExpandableTextItemContent(
     )
     val colorScheme = MaterialTheme.colorScheme
     val usesSecretField = onToggleSecretVisibility != null &&
-        toggleSecretVisibleContentDescription != null &&
-        toggleSecretHiddenContentDescription != null
+            toggleSecretVisibleContentDescription != null &&
+            toggleSecretHiddenContentDescription != null
     val singleLine = maxLines == 1
     val fieldMinHeight = if (singleLine) 52.dp else 136.dp
     val titleColor = if (enabled) {

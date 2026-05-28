@@ -1,11 +1,10 @@
 package com.niki914.nexus.agentic.app.ui.nexus.model
 
 import androidx.annotation.StringRes
-import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.cb.ComposeMVIViewModel
-import com.niki914.nexus.agentic.repo.XRepo
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import androidx.lifecycle.viewModelScope
+import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.cb.ComposeMVIViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
@@ -14,6 +13,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import java.net.URI
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 
 data class McpServerItem(
     val name: String,
@@ -67,7 +67,8 @@ sealed interface McpSettingsEffect {
     data object FocusHeaders : McpSettingsEffect
 }
 
-class McpSettingsViewModel : ComposeMVIViewModel<McpSettingsIntent, McpSettingsUiState, McpSettingsEffect>() {
+class McpSettingsViewModel :
+    ComposeMVIViewModel<McpSettingsIntent, McpSettingsUiState, McpSettingsEffect>() {
 
     init {
         viewModelScope.launch {
@@ -88,6 +89,7 @@ class McpSettingsViewModel : ComposeMVIViewModel<McpSettingsIntent, McpSettingsU
                 index = intent.index,
                 enabled = intent.value,
             )
+
             is McpSettingsIntent.NameChanged -> updateState {
                 copy(
                     formState = formState.copy(
@@ -97,6 +99,7 @@ class McpSettingsViewModel : ComposeMVIViewModel<McpSettingsIntent, McpSettingsU
                     inlineError = null,
                 )
             }
+
             is McpSettingsIntent.UrlChanged -> updateState {
                 copy(
                     formState = formState.copy(
@@ -106,6 +109,7 @@ class McpSettingsViewModel : ComposeMVIViewModel<McpSettingsIntent, McpSettingsU
                     inlineError = null,
                 )
             }
+
             is McpSettingsIntent.HeadersChanged -> updateHeaders(intent.value)
             is McpSettingsIntent.EnabledChanged -> updateState {
                 copy(
@@ -113,6 +117,7 @@ class McpSettingsViewModel : ComposeMVIViewModel<McpSettingsIntent, McpSettingsU
                     inlineError = null,
                 )
             }
+
             McpSettingsIntent.Save -> save()
             McpSettingsIntent.DeleteCurrent -> deleteCurrent()
         }
@@ -232,6 +237,7 @@ class McpSettingsViewModel : ComposeMVIViewModel<McpSettingsIntent, McpSettingsU
             currentState.items.anyIndexed { index, item ->
                 item.name == trimmedName && index != editingIndex
             } -> R.string.mcp_error_name_duplicate
+
             else -> null
         }
         val urlErrorResId = when {
@@ -335,7 +341,8 @@ class McpSettingsViewModel : ComposeMVIViewModel<McpSettingsIntent, McpSettingsU
         val currentItem = currentState.items.getOrNull(editingIndex) ?: return
         updateState { copy(isSaving = true) }
         try {
-            val updatedItems = currentState.items.filterIndexed { index, _ -> index != editingIndex }
+            val updatedItems =
+                currentState.items.filterIndexed { index, _ -> index != editingIndex }
             XRepo.mcp.delete(currentItem.name)
             updateState {
                 copy(

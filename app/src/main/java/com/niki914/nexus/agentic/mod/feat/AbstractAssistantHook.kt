@@ -95,12 +95,14 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
                 *paramTypes,
                 before = { onObserved() }
             )
+
             "after" -> lpparam.hookMethod(
                 className = target.ownerClass,
                 methodName = target.methodName,
                 *paramTypes,
                 after = { onObserved() }
             )
+
             else -> Unit
         }
     }
@@ -151,7 +153,8 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
 
     protected open fun shouldTakeOver(query: String): Boolean = false
 
-    protected open suspend fun onTakeoverTriggered(turnId: Long, roomId: String, query: String) = Unit
+    protected open suspend fun onTakeoverTriggered(turnId: Long, roomId: String, query: String) =
+        Unit
 
     protected open suspend fun onSessionReset(roomId: String = "") {
         if (turnState.roomId.isNotBlank()) {

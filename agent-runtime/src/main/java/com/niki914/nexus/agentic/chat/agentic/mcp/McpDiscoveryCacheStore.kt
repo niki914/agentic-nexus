@@ -2,7 +2,6 @@ package com.niki914.nexus.agentic.chat.agentic.mcp
 
 import com.niki914.nexus.agentic.chat.McpCachedTool
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 import com.niki914.nexus.h.util.xTry
 import com.niki914.nexus.h.util.xlog
 import kotlinx.coroutines.CancellationException
@@ -12,6 +11,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 
 class McpDiscoveryCacheStore {
     private val json = Json { ignoreUnknownKeys = true }

@@ -33,7 +33,8 @@ class NotifyBuiltin : BuiltinTool() {
             required = true
         }
         config.string("uri") {
-            description = "Optional Android uri to open when the notification is tapped. Only provide this when you already know it is valid and usable; never invent or guess a uri."
+            description =
+                "Optional Android uri to open when the notification is tapped. Only provide this when you already know it is valid and usable; never invent or guess a uri."
             required = false
         }
         config.rawJsonSchema(NOTIFY_SCHEMA)
@@ -50,7 +51,9 @@ class NotifyBuiltin : BuiltinTool() {
                 code = "INVALID_ARGUMENTS_JSON",
                 message = "notify arguments must be a JSON object with title, content, and optional uri fields.",
                 hint = """Example: {"title":"Reminder","content":"Call Alice at 5 PM","uri":"tel:10086"}""",
-                fieldErrors = mapOf("argumentsJson" to (throwable.message ?: "Invalid JSON object.")),
+                fieldErrors = mapOf(
+                    "argumentsJson" to (throwable.message ?: "Invalid JSON object.")
+                ),
             )
         }
 

@@ -75,7 +75,11 @@ class BuiltinToolSettingsManagerTest {
         val gateway = installRuntimeSettingsGatewayForTest(
             FakeRuntimeSettingsGateway(
                 builtinTools = listOf(
-                    RuntimeBuiltinToolSetting("create_custom_tool", "Create custom tools.", enabled = false),
+                    RuntimeBuiltinToolSetting(
+                        "create_custom_tool",
+                        "Create custom tools.",
+                        enabled = false
+                    ),
                     RuntimeBuiltinToolSetting("legacy_builtin", "Legacy builtin.", enabled = true),
                 )
             )

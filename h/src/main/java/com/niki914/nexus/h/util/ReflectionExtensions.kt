@@ -27,9 +27,10 @@ fun Any.getAllFields(): List<Field> = xTry("getAllFields") {
     fields
 } ?: emptyList()
 
-inline fun <reified T> Any.call(methodName: String, vararg params: Any?): T? = xTry("call:$methodName") {
-    XposedHelpers.callMethod(this, methodName, *params) as? T
-}
+inline fun <reified T> Any.call(methodName: String, vararg params: Any?): T? =
+    xTry("call:$methodName") {
+        XposedHelpers.callMethod(this, methodName, *params) as? T
+    }
 
 fun resolveClass(
     typeName: String,

@@ -4,7 +4,6 @@ import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolConfig
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolManager
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -12,6 +11,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 
 class CustomToolManagerTest {
     private val manager = CustomToolManager(reservedToolNames = { emptySet() })

@@ -28,6 +28,11 @@ class ToolEventFormatterTest {
         assertFalse(append?.replacePreviousStatus ?: true)
         assertEquals("Calling tool: Search", replace?.text)
         assertTrue(replace?.replacePreviousStatus ?: false)
-        assertNull(ToolEventFormatter.format(LlmStreamEvent.Completed("done"), ToolRenderMode.AppendOnly))
+        assertNull(
+            ToolEventFormatter.format(
+                LlmStreamEvent.Completed("done"),
+                ToolRenderMode.AppendOnly
+            )
+        )
     }
 }

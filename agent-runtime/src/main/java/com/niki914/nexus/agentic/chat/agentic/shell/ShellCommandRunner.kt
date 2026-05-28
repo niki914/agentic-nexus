@@ -21,61 +21,63 @@ data class ShellCommandResult(
     val stderr: String = "",
     val timedOut: Boolean = false,
     val executionErrorMessage: String? = null,
-) 
+)
 
 class ShellCommandRunner(
     private val shellPath: String = DEFAULT_SHELL_PATH,
 ) {
-    suspend fun run(request: ShellCommandRequest): ShellCommandResult = withContext(Dispatchers.IO) {
-        var process: Process? = null
-        try {
-            process = ProcessBuilder(shellPath, "-c", request.command)
-                .directory(request.workingDirectory)
-                .redirectErrorStream(request.mergeErrorIntoStdout)
-                .start()
-            return@withContext coroutineScope {
-                val stdoutDeferred = async { process.inputStream.bufferedReader().use { it.readText() } }
-                val stderrDeferred = if (request.mergeErrorIntoStdout) {
-                    null
-                } else {
-                    async { process.errorStream.bufferedReader().use { it.readText() } }
-                }
-                val finished = process.waitFor(request.timeoutMs, TimeUnit.MILLISECONDS)
-                if (!finished) {
-                    process.destroyWithTimeout()
-                    stdoutDeferred.cancel()
-                    stderrDeferred?.cancel()
-                    return@coroutineScope ShellCommandResult(
-                        timedOut = true,
-                        executionErrorMessage = "Command timed out after ${request.timeoutMs}ms.",
+    suspend fun run(request: ShellCommandRequest): ShellCommandResult =
+        withContext(Dispatchers.IO) { // TODO 导入 cmd-android 依赖
+            var process: Process? = null
+            try {
+                process = ProcessBuilder(shellPath, "-c", request.command)
+                    .directory(request.workingDirectory)
+                    .redirectErrorStream(request.mergeErrorIntoStdout)
+                    .start()
+                return@withContext coroutineScope {
+                    val stdoutDeferred =
+                        async { process.inputStream.bufferedReader().use { it.readText() } }
+                    val stderrDeferred = if (request.mergeErrorIntoStdout) {
+                        null
+                    } else {
+                        async { process.errorStream.bufferedReader().use { it.readText() } }
+                    }
+                    val finished = process.waitFor(request.timeoutMs, TimeUnit.MILLISECONDS)
+                    if (!finished) {
+                        process.destroyWithTimeout()
+                        stdoutDeferred.cancel()
+                        stderrDeferred?.cancel()
+                        return@coroutineScope ShellCommandResult(
+                            timedOut = true,
+                            executionErrorMessage = "Command timed out after ${request.timeoutMs}ms.",
+                        )
+                    }
+                    ShellCommandResult(
+                        exitCode = process.exitValue(),
+                        stdout = stdoutDeferred.await().trim(),
+                        stderr = stderrDeferred?.await()?.trim().orEmpty(),
                     )
                 }
+            } catch (throwable: Throwable) {
+                if (throwable is CancellationException) {
+                    process?.destroy()
+                    if (process?.isAlive == true) {
+                        process.destroyForcibly()
+                    }
+                    throw throwable
+                }
                 ShellCommandResult(
-                    exitCode = process.exitValue(),
-                    stdout = stdoutDeferred.await().trim(),
-                    stderr = stderrDeferred?.await()?.trim().orEmpty(),
+                    executionErrorMessage = throwable.message ?: "Command execution failed.",
                 )
-            }
-        } catch (throwable: Throwable) {
-            if (throwable is CancellationException) {
-                process?.destroy()
+            } finally {
+                process?.inputStream?.close()
+                process?.outputStream?.close()
+                process?.errorStream?.close()
                 if (process?.isAlive == true) {
                     process.destroyForcibly()
                 }
-                throw throwable
-            }
-            ShellCommandResult(
-                executionErrorMessage = throwable.message ?: "Command execution failed.",
-            )
-        } finally {
-            process?.inputStream?.close()
-            process?.outputStream?.close()
-            process?.errorStream?.close()
-            if (process?.isAlive == true) {
-                process.destroyForcibly()
             }
         }
-    }
 
     private fun Process.destroyWithTimeout() {
         destroy()

@@ -160,18 +160,23 @@ class HomeChatViewModel internal constructor(
             is LlmStreamEvent.TextDelta -> updateTurn(turnId) {
                 it.appendText(event.delta)
             }
+
             is LlmStreamEvent.ToolRunning -> updateTurn(turnId) {
                 it.appendTool(event.call.callId, event.call.label, HomeToolState.Running)
             }
+
             is LlmStreamEvent.ToolSucceeded -> updateTurn(turnId) {
                 it.updateTool(event.call.callId, event.call.label, HomeToolState.Succeeded)
             }
+
             is LlmStreamEvent.ToolFailed -> updateTurn(turnId) {
                 it.updateTool(event.call.callId, event.call.label, HomeToolState.Failed)
             }
+
             is LlmStreamEvent.Error -> {
                 applyError(turnId = turnId, message = event.message)
             }
+
             is LlmStreamEvent.Completed -> {
                 updateTurn(turnId) {
                     it.appendFinalText(event.fullText)
@@ -217,7 +222,8 @@ class HomeChatViewModel internal constructor(
     }
 
     private fun HomeChatTurn.appendFinalText(fullText: String): HomeChatTurn {
-        val displayedText = blocks.filterIsInstance<HomeChatBlock.Text>().joinToString(separator = "") { it.text }
+        val displayedText =
+            blocks.filterIsInstance<HomeChatBlock.Text>().joinToString(separator = "") { it.text }
         val delta = fullText.removePrefix(displayedText)
         return appendText(delta)
     }

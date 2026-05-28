@@ -5,6 +5,7 @@ import kotlinx.coroutines.CompletableDeferred
 object RuntimeEnvironment {
     @Volatile
     private var bridge: RuntimeBridge? = null
+
     @Volatile
     private var bridgeReady = CompletableDeferred<RuntimeBridge>()
 

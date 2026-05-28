@@ -21,10 +21,22 @@ class ProviderSpecTest {
     fun deepseek_usesFineGrainedButtonResourceNames() {
         val deepseek = ProviderSpecs.find("deepseek")
 
-        assertEquals(R.color.provider_deepseek_button_dark_container, deepseek.visualTokens.button.darkContainerColorRes)
-        assertEquals(R.color.provider_deepseek_button_light_container, deepseek.visualTokens.button.lightContainerColorRes)
-        assertEquals(R.color.provider_deepseek_button_dark_content, deepseek.visualTokens.button.darkContentColorRes)
-        assertEquals(R.color.provider_deepseek_button_light_content, deepseek.visualTokens.button.lightContentColorRes)
+        assertEquals(
+            R.color.provider_deepseek_button_dark_container,
+            deepseek.visualTokens.button.darkContainerColorRes
+        )
+        assertEquals(
+            R.color.provider_deepseek_button_light_container,
+            deepseek.visualTokens.button.lightContainerColorRes
+        )
+        assertEquals(
+            R.color.provider_deepseek_button_dark_content,
+            deepseek.visualTokens.button.darkContentColorRes
+        )
+        assertEquals(
+            R.color.provider_deepseek_button_light_content,
+            deepseek.visualTokens.button.lightContentColorRes
+        )
     }
 
     @Test

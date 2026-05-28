@@ -1,7 +1,6 @@
 package com.niki914.nexus.agentic.app.ui.nexus.model
 
 import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
@@ -13,6 +12,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConfigureViewModelTest {

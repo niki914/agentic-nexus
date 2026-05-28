@@ -1,10 +1,6 @@
 package com.niki914.nexus.agentic.repo
 
 import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
-import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -15,6 +11,11 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
+
 internal object LocalSettingsCodec {
     fun parseLlm(settings: LocalSettings): LlmConfig {
         return LlmConfig(
@@ -61,7 +62,8 @@ internal object LocalSettingsCodec {
         return settings.mcpServers
             .orEmptyObjects()
             .mapNotNull { obj ->
-                val name = obj.string(NAME_KEY).trim().takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val name =
+                    obj.string(NAME_KEY).trim().takeIf { it.isNotBlank() } ?: return@mapNotNull null
                 val url = obj.string(URL_KEY).ifBlank {
                     obj.obj(TRANSPORT_KEY)?.string(URL_KEY).orEmpty()
                 }.trim()
@@ -108,7 +110,8 @@ internal object LocalSettingsCodec {
             ?.array(TOOLS_KEY)
             .orEmptyObjects()
             .mapNotNull { obj ->
-                val name = obj.string(NAME_KEY).trim().takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val name =
+                    obj.string(NAME_KEY).trim().takeIf { it.isNotBlank() } ?: return@mapNotNull null
                 val inputSchema = obj.obj(INPUT_SCHEMA_KEY) ?: return@mapNotNull null
                 McpTool(
                     name = name,
