@@ -1,4 +1,4 @@
-package com.niki914.nexus.agentic.chat.v2
+package com.niki914.nexus.agentic.chat
 
 import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRequest
 import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRunner

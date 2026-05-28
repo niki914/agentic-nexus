@@ -1,8 +1,5 @@
-package com.niki914.nexus.agentic.chat.v2
+package com.niki914.nexus.agentic.chat
 
-import com.niki914.nexus.agentic.chat.LlmStreamEvent
-import com.niki914.nexus.agentic.chat.ToolCallKind
-import com.niki914.nexus.agentic.chat.ToolCallStatus
 import com.niki914.nexus.agentic.chat.agentic.stream.ToolEventFormatter
 import com.niki914.nexus.agentic.chat.agentic.stream.ToolRenderMode
 import org.junit.Assert.assertEquals

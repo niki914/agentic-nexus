@@ -1,10 +1,7 @@
 package com.niki914.nexus.agentic.chat.agentic.mcp
 
-import android.content.Context
-import android.content.ContextWrapper
-import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.repo.LocalSettingsStore
-import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.chat.installRuntimeSettingsGatewayForTest
+import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 import kotlinx.coroutines.test.runTest
@@ -13,20 +10,14 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class McpDiscoveryCacheStoreTest {
-    private val context: Context = object : ContextWrapper(null) {
-        override fun getApplicationContext(): Context = this
-    }
-
     @After
     fun tearDown() {
-        XRepo.resetForTest()
+        RuntimeEnvironment.clearForTest()
     }
 
     @Test
-    fun onToolsDiscovered_persistsParsedToolsIntoXRepoCache() = runTest {
-        val store = FakeLocalSettingsStore(LocalSettings())
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
+    fun onToolsDiscovered_persistsParsedToolsIntoSettingsGateway() = runTest {
+        val gateway = installRuntimeSettingsGatewayForTest()
 
         McpDiscoveryCacheStore().onToolsDiscovered(
             url = "http://127.0.0.1:51338/mcp",
@@ -48,7 +39,7 @@ class McpDiscoveryCacheStoreTest {
             """.trimIndent(),
         )
 
-        assertEquals(1, store.writeCount)
+        assertEquals(1, gateway.writeCount)
         assertEquals(
             listOf(
                 McpTool(
@@ -57,7 +48,7 @@ class McpDiscoveryCacheStoreTest {
                     inputSchemaJson = """{"type":"object"}""",
                 )
             ),
-            XRepo.mcp.cachedTools(
+            gateway.listCachedTools(
                 McpServer(
                     name = "aslocate",
                     url = "http://127.0.0.1:51338/mcp",
@@ -65,21 +56,5 @@ class McpDiscoveryCacheStoreTest {
                 )
             ),
         )
-    }
-
-    private class FakeLocalSettingsStore(
-        initialSettings: LocalSettings,
-    ) : LocalSettingsStore {
-        var settings: LocalSettings = initialSettings
-            private set
-        var writeCount: Int = 0
-            private set
-
-        override suspend fun read(context: Context): LocalSettings = settings
-
-        override suspend fun write(context: Context, settings: LocalSettings) {
-            this.settings = settings
-            writeCount++
-        }
     }
 }

@@ -1,12 +1,9 @@
-package com.niki914.nexus.agentic.chat.v2
+package com.niki914.nexus.agentic.chat
 
-import android.content.Context
-import android.content.ContextWrapper
+import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolConfig
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolManager
-import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.repo.LocalSettingsStore
-import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -17,14 +14,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CustomToolManagerTest {
-    private val context: Context = object : ContextWrapper(null) {
-        override fun getApplicationContext(): Context = this
-    }
     private val manager = CustomToolManager(reservedToolNames = { emptySet() })
 
     @After
     fun tearDown() {
-        XRepo.resetForTest()
+        RuntimeEnvironment.clearForTest()
     }
 
     @Test
@@ -102,10 +96,8 @@ class CustomToolManagerTest {
     }
 
     @Test
-    fun createOrUpdate_writesThroughXRepoCustomTools() = runTest {
-        val store = FakeLocalSettingsStore(LocalSettings())
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
+    fun createOrUpdate_writesThroughRuntimeSettingsGateway() = runTest {
+        val store = installRuntimeSettingsGatewayForTest()
 
         val result = manager.createOrUpdate(
             request = request(command = "getprop ro.product.model").copy(enabled = true),
@@ -122,15 +114,13 @@ class CustomToolManagerTest {
                     enabled = true,
                 )
             ),
-            XRepo.customTools.list(),
+            store.customTools,
         )
     }
 
     @Test
     fun createOrUpdate_rejectsDuplicateNameWithoutWriting() = runTest {
-        val store = FakeLocalSettingsStore(LocalSettings())
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
+        val store = installRuntimeSettingsGatewayForTest()
         assertTrue(
             manager.createOrUpdate(
                 request = request(command = "getprop ro.product.model"),
@@ -144,14 +134,12 @@ class CustomToolManagerTest {
         assertFalse(result.ok)
         assertEquals("NAME_CONFLICT", result.code)
         assertEquals(1, store.writeCount)
-        assertEquals("getprop ro.product.model", XRepo.customTools.list().single().command)
+        assertEquals("getprop ro.product.model", store.customTools.single().command)
     }
 
     @Test
     fun createOrUpdate_rejectsUnsafeCommandWithoutWriting() = runTest {
-        val store = FakeLocalSettingsStore(LocalSettings())
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
+        val store = installRuntimeSettingsGatewayForTest()
 
         val result = manager.createOrUpdate(
             request = request(command = "rm -rf /data/local/tmp/cache"),
@@ -160,14 +148,12 @@ class CustomToolManagerTest {
         assertFalse(result.ok)
         assertEquals("UNSAFE_COMMAND", result.code)
         assertEquals(0, store.writeCount)
-        assertEquals(emptyList<CustomTool>(), XRepo.customTools.list())
+        assertEquals(emptyList<CustomTool>(), store.customTools)
     }
 
     @Test
-    fun saveAll_replacesRepoCustomTools() = runTest {
-        val store = FakeLocalSettingsStore(LocalSettings())
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
+    fun saveAll_replacesRuntimeCustomTools() = runTest {
+        val store = installRuntimeSettingsGatewayForTest()
         assertTrue(
             manager.createOrUpdate(
                 request = request(command = "getprop ro.product.model").copy(name = "old_tool"),
@@ -176,7 +162,7 @@ class CustomToolManagerTest {
 
         val result = manager.saveAll(
             items = listOf(
-                com.niki914.nexus.agentic.chat.agentic.custom.CustomToolConfig(
+                CustomToolConfig(
                     name = "new_tool",
                     description = "New custom tool.",
                     enabled = true,
@@ -195,7 +181,7 @@ class CustomToolManagerTest {
                     enabled = true,
                 )
             ),
-            XRepo.customTools.list(),
+            store.customTools,
         )
     }
 
@@ -207,15 +193,14 @@ class CustomToolManagerTest {
             command = "getprop ro.product.model",
             enabled = true,
         )
-        val store = FakeLocalSettingsStore(LocalSettings())
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
-        XRepo.customTools.save(existing)
+        val store = installRuntimeSettingsGatewayForTest(
+            FakeRuntimeSettingsGateway(customTools = listOf(existing))
+        )
         store.failOnWriteNumber = store.writeCount + 1
 
         val result = manager.saveAll(
             items = listOf(
-                com.niki914.nexus.agentic.chat.agentic.custom.CustomToolConfig(
+                CustomToolConfig(
                     name = "new_tool",
                     description = "New custom tool.",
                     enabled = true,
@@ -225,7 +210,7 @@ class CustomToolManagerTest {
         )
 
         assertFalse(result.ok)
-        assertEquals(listOf(existing), XRepo.customTools.list())
+        assertEquals(listOf(existing), store.customTools)
     }
 
     private fun assertUnsafe(command: String) {
@@ -246,23 +231,4 @@ class CustomToolManagerTest {
         )
     }
 
-    private class FakeLocalSettingsStore(
-        initialSettings: LocalSettings,
-        var failOnWriteNumber: Int? = null,
-    ) : LocalSettingsStore {
-        var settings: LocalSettings = initialSettings
-            private set
-        var writeCount: Int = 0
-            private set
-
-        override suspend fun read(context: Context): LocalSettings = settings
-
-        override suspend fun write(context: Context, settings: LocalSettings) {
-            if (failOnWriteNumber == writeCount + 1) {
-                throw IllegalStateException("write failed")
-            }
-            this.settings = settings
-            writeCount++
-        }
-    }
 }

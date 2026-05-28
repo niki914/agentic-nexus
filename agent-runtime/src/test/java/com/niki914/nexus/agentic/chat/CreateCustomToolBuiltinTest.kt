@@ -1,13 +1,9 @@
-package com.niki914.nexus.agentic.chat.v2
+package com.niki914.nexus.agentic.chat
 
-import android.content.Context
-import android.content.ContextWrapper
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.CreateCustomToolBuiltin
-import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.repo.LocalSettingsStore
-import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.test.runTest
@@ -23,13 +19,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CreateCustomToolBuiltinTest {
-    private val context: Context = object : ContextWrapper(null) {
-        override fun getApplicationContext(): Context = this
-    }
-
     @After
     fun tearDown() {
-        XRepo.resetForTest()
+        RuntimeEnvironment.clearForTest()
     }
 
     @Test
@@ -92,10 +84,8 @@ class CreateCustomToolBuiltinTest {
     }
 
     @Test
-    fun invoke_writesCreatedToolThroughXRepo() = runTest {
-        val store = FakeLocalSettingsStore(LocalSettings())
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
+    fun invoke_writesCreatedToolThroughRuntimeSettingsGateway() = runTest {
+        val store = installRuntimeSettingsGatewayForTest()
 
         val result = CreateCustomToolBuiltin().invoke(
             BuiltinToolRequest(
@@ -116,23 +106,8 @@ class CreateCustomToolBuiltinTest {
         assertEquals(1, store.writeCount)
         assertEquals(
             listOf(CustomTool("battery_status", "Read current battery status.", "dumpsys battery", enabled = true)),
-            XRepo.customTools.list(),
+            store.customTools,
         )
     }
 
-    private class FakeLocalSettingsStore(
-        initialSettings: LocalSettings,
-    ) : LocalSettingsStore {
-        var settings: LocalSettings = initialSettings
-            private set
-        var writeCount: Int = 0
-            private set
-
-        override suspend fun read(context: Context): LocalSettings = settings
-
-        override suspend fun write(context: Context, settings: LocalSettings) {
-            this.settings = settings
-            writeCount++
-        }
-    }
 }

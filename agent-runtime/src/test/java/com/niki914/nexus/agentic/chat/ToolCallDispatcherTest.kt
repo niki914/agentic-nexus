@@ -1,9 +1,7 @@
-package com.niki914.nexus.agentic.chat.v2
+package com.niki914.nexus.agentic.chat
 
 import android.content.Context
 import android.content.ContextWrapper
-import com.niki914.nexus.agentic.chat.LocalTool
-import com.niki914.nexus.agentic.chat.ResolvedTools
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolExecutor
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry

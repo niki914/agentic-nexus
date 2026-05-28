@@ -1,7 +1,5 @@
-package com.niki914.nexus.agentic.chat.v2
+package com.niki914.nexus.agentic.chat
 
-import com.niki914.nexus.agentic.chat.LocalTool
-import com.niki914.nexus.agentic.chat.McpServerDefinition
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest

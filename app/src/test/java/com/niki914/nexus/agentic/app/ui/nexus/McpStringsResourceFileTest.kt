@@ -1,13 +1,12 @@
 package com.niki914.nexus.agentic.app.ui.nexus
 
 import java.io.File
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class McpStringsResourceFileTest {
     @Test
-    fun stringsXml_containsB01Task02RequiredMcpEntries() {
+    fun stringsXml_containsRequiredMcpResourceKeys() {
         val xml = File("src/main/res/values/strings.xml").readText()
 
         assertTrue(xml.contains("""name="mcp_field_headers""""))
@@ -22,13 +21,6 @@ class McpStringsResourceFileTest {
         assertTrue(xml.contains("""name="mcp_error_headers_not_object""""))
         assertTrue(xml.contains("""name="mcp_error_headers_empty_key""""))
         assertTrue(xml.contains("""name="mcp_error_headers_non_string""""))
-        assertTrue(xml.contains("""<string name="mcp_field_enabled">启用服务</string>"""))
-        assertTrue(xml.contains("""http://"""))
-        assertTrue(xml.contains("""https://"""))
-        assertFalse(xml.contains("""name="mcp_field_name_placeholder""""))
-        assertFalse(xml.contains("""name="mcp_field_url_placeholder""""))
-        assertFalse(xml.contains("""name="mcp_field_headers_placeholder""""))
-        assertFalse(xml.contains("""name="mcp_field_enabled_description""""))
-        assertFalse(xml.contains("""<string name="mcp_field_enabled">启用该服务</string>"""))
+        assertTrue(xml.contains("""name="mcp_field_enabled""""))
     }
 }

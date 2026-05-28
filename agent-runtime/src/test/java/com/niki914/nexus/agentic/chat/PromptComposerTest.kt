@@ -1,4 +1,4 @@
-package com.niki914.nexus.agentic.chat.v2
+package com.niki914.nexus.agentic.chat
 
 import com.niki914.nexus.agentic.chat.agentic.PromptComposer
 import com.niki914.nexus.agentic.chat.agentic.PromptComposerInput
