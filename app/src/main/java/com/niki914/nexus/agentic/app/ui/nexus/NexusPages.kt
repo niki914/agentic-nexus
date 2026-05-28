@@ -22,6 +22,7 @@ import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigurePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigureEditableField
 import com.niki914.nexus.agentic.app.ui.nexus.content.CustomToolDetailContent
+import com.niki914.nexus.agentic.app.ui.nexus.content.DonePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.HomePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SelectionOption
 import com.niki914.nexus.agentic.app.ui.nexus.content.SelectionPageContent
@@ -317,20 +318,4 @@ internal object ConfigureViewModelFactory : ViewModelProvider.Factory {
         require(modelClass == ConfigureViewModel::class.java)
         return ConfigureViewModel() as T
     }
-}
-
-@Composable
-private fun DonePageContent(
-    topPadding: Dp,
-    hazeState: HazeState,
-    onEnterHome: () -> Unit,
-) {
-    ConfigurePageContent(
-        topPadding = topPadding,
-        hazeState = hazeState,
-        headline = stringResource(R.string.ui_onboard_done_headline),
-        description = stringResource(R.string.ui_onboard_done_description),
-        buttonText = stringResource(R.string.ui_onboard_done_enter_home),
-        onComplete = onEnterHome,
-    )
 }
