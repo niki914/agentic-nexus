@@ -64,6 +64,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":agent-runtime"))
     implementation(project(":composebase"))
     implementation(project(":h"))
     implementation(project(":ipc"))
@@ -71,11 +72,6 @@ dependencies {
     // Android root
     compileOnly("de.robv.android.xposed:api:82")
     implementation("org.luckypray:dexkit:2.1.0")
-
-    // LLM & networking
-    implementation("com.github.niki914:s3ss10n:2.0.2")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     // Third-party UI
     implementation("com.github.Kyant0:Capsule:2.1.0")

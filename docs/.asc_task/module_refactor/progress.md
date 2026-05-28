@@ -4,7 +4,7 @@
 通过“两刀方案”降低 `app` 模块职责密度：将 `app/ui/infra` 下沉到 `composebase`，新建 `agent-runtime` 承接 `chat`，并明确用户在 AS 的机械迁移与 ASC 的边界/依赖改造分工。
 
 ## Current Phase
-Phase 3 ▶ B-01
+Phase 3 ⏸ After B-01
 
 ## Context (关键上下文)
 
@@ -42,7 +42,7 @@ Phase 3 ▶ B-01
 每个 Batch 完成后人工确认（半自动执行）
 
 ## Batch Progress
-- [ ] B-01 `F-01` 新模块与 Gradle 骨架
+- [x] B-01 `F-01` 新模块与 Gradle 骨架
 - [ ] B-02 `F-02` runtime shared settings 契约层
 - [ ] B-03 `F-04` UI Infra 物理迁移到 composebase
 - [ ] B-04 `F-03` app/repo 接入与模型下沉收口
@@ -50,9 +50,22 @@ Phase 3 ▶ B-01
 - [ ] B-06 `F-06` 迁移后 runtime 源码去 app 依赖
 
 ## Task Progress
-- [ ] T-01 ~ T-05: `F-01` 新模块与 Gradle 骨架
+- [x] T-01 ~ T-05: `F-01` 新模块与 Gradle 骨架
 - [ ] T-06 ~ T-08: `F-02` runtime shared settings 契约层
 - [ ] T-09 ~ T-17: `F-03` app/repo 接入与模型下沉收口
 - [ ] T-18 ~ T-47: `F-04` UI Infra 物理迁移到 composebase
 - [ ] T-48 ~ T-71: `F-05` Chat Runtime 物理迁移到 agent-runtime
 - [ ] T-72 ~ T-77: `F-06` 迁移后 runtime 源码去 app 依赖
+
+## Last Batch Result
+- Batch: `B-01`
+- Status: `DONE_WITH_CONCERNS`
+- Modified Files:
+  - `settings.gradle.kts`
+  - `agent-runtime/build.gradle.kts`
+  - `agent-runtime/src/main/AndroidManifest.xml`
+  - `app/build.gradle.kts`
+  - `composebase/build.gradle.kts`
+- Notes:
+  - `agent-runtime` 暂未创建 `consumer-rules.pro` / `proguard-rules.pro`，因为设计稿未要求，当前采用最小可落地骨架。
+  - `app` 中的 `Capsule` / `backdrop` / `haze` 依赖暂时保留，等待后续 `ui/infra` 物理迁移后再收敛。
