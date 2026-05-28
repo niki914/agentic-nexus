@@ -4,7 +4,7 @@
 通过“两刀方案”降低 `app` 模块职责密度：将 `app/ui/infra` 下沉到 `composebase`，新建 `agent-runtime` 承接 `chat`，并明确用户在 AS 的机械迁移与 ASC 的边界/依赖改造分工。
 
 ## Current Phase
-Phase 3 ⏸ After B-01
+Phase 3 ⏸ After B-02
 
 ## Context (关键上下文)
 
@@ -22,10 +22,11 @@ Phase 3 ⏸ After B-01
 - `agent-runtime` 接收 `chat/**`，`app` 继续保留 `mod`、`repo`、`app/ui/nexus`、`Entrance`。
 
 ### Phase 2 任务规划摘要
-- 共拆分 6 个 Feature、6 个 Batch、77 个 Task。
+- 共拆分 7 个 Feature、7 个 Batch、78 个 Task。
 - `F-04` 与 `F-05` 为大体量机械迁移，分别独占 `B-03`、`B-05`。
 - `F-03` 已补入模型下沉波及的 `LocalSettingsCodec.kt` 与 3 个 UI 文件 import 修正，避免 Phase 3 漏改。
 - `F-06` 被放在 `chat` 文件迁移之后，确保 runtime 去耦改造发生在新模块上下文内。
+- 新增 `F-07` / `B-07` 作为辅助批次，在人工 AS 迁移前预创建目标目录树。
 
 ## Decisions
 - D-01: 重构范围采用“两刀方案”
@@ -37,13 +38,15 @@ Phase 3 ⏸ After B-01
 - D-07: 通过 `RuntimeSettingsGateway` + `XRepoRuntimeGateway` 消除 runtime 对 `app` 的反向依赖
 - D-08: `ui/infra` 与 `chat` 机械迁移按“1 文件 = 1 Task”展开，避免目录级黑箱迁移
 - D-09: 共享模型下沉影响 `LocalSettingsCodec.kt`、`ConfigureState.kt`、`McpSettingsState.kt`、`CustomToolsSettingsContent.kt`，这些文件必须纳入执行计划
+- D-10: 在人工移动前新增 `B-07`，由 ASC 统一 `mkdir -p` 目标目录，减少 AS 手工准备成本
 
 ## Batch Pause Mode
 每个 Batch 完成后人工确认（半自动执行）
 
 ## Batch Progress
 - [x] B-01 `F-01` 新模块与 Gradle 骨架
-- [ ] B-02 `F-02` runtime shared settings 契约层
+- [x] B-02 `F-02` runtime shared settings 契约层
+- [ ] B-07 `F-07` 预创建目标迁移目录
 - [ ] B-03 `F-04` UI Infra 物理迁移到 composebase
 - [ ] B-04 `F-03` app/repo 接入与模型下沉收口
 - [ ] B-05 `F-05` Chat Runtime 物理迁移到 agent-runtime
@@ -51,21 +54,20 @@ Phase 3 ⏸ After B-01
 
 ## Task Progress
 - [x] T-01 ~ T-05: `F-01` 新模块与 Gradle 骨架
-- [ ] T-06 ~ T-08: `F-02` runtime shared settings 契约层
+- [x] T-06 ~ T-08: `F-02` runtime shared settings 契约层
+- [ ] T-78: `F-07` 预创建目标迁移目录
 - [ ] T-09 ~ T-17: `F-03` app/repo 接入与模型下沉收口
 - [ ] T-18 ~ T-47: `F-04` UI Infra 物理迁移到 composebase
 - [ ] T-48 ~ T-71: `F-05` Chat Runtime 物理迁移到 agent-runtime
 - [ ] T-72 ~ T-77: `F-06` 迁移后 runtime 源码去 app 依赖
 
 ## Last Batch Result
-- Batch: `B-01`
-- Status: `DONE_WITH_CONCERNS`
+- Batch: `B-02`
+- Status: `DONE`
 - Modified Files:
-  - `settings.gradle.kts`
-  - `agent-runtime/build.gradle.kts`
-  - `agent-runtime/src/main/AndroidManifest.xml`
-  - `app/build.gradle.kts`
-  - `composebase/build.gradle.kts`
+  - `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/model/RuntimeSettingsModels.kt`
+  - `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeSettingsGateway.kt`
+  - `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeEnvironment.kt`
 - Notes:
-  - `agent-runtime` 暂未创建 `consumer-rules.pro` / `proguard-rules.pro`，因为设计稿未要求，当前采用最小可落地骨架。
-  - `app` 中的 `Capsule` / `backdrop` / `haze` 依赖暂时保留，等待后续 `ui/infra` 物理迁移后再收敛。
+  - 共享 settings contract 已全部落在 `agent-runtime`，为后续 `XRepo` 适配和 runtime 去耦提供稳定签名。
+  - `app/repo/XRepoModels.kt` 本批未改动，符合“先新增共享契约，再做模型下沉替换”的顺序。

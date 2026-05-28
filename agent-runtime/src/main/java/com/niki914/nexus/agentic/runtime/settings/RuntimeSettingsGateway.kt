@@ -1,0 +1,48 @@
+package com.niki914.nexus.agentic.runtime.settings
+
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeBuiltinToolSetting
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool
+
+interface RuntimeSettingsGateway {
+    suspend fun readLlmConfig(): RuntimeLlmConfig
+
+    suspend fun listMcpServers(): List<RuntimeMcpServer>
+
+    suspend fun listCachedTools(server: RuntimeMcpServer): List<RuntimeMcpTool>
+
+    suspend fun saveDiscoveredTools(
+        url: String,
+        headers: Map<String, String>,
+        tools: List<RuntimeMcpTool>,
+    )
+
+    suspend fun clearMcpCacheByServerNames(names: Set<String>)
+
+    suspend fun fingerprintMcpServers(): String
+
+    suspend fun listCustomTools(): List<RuntimeCustomTool>
+
+    suspend fun saveCustomTool(
+        tool: RuntimeCustomTool,
+        overwrite: Boolean = true,
+    ): RuntimeCustomToolValidation?
+
+    suspend fun replaceAllCustomTools(
+        tools: List<RuntimeCustomTool>,
+    ): RuntimeCustomToolValidation?
+
+    suspend fun deleteCustomTool(name: String)
+
+    suspend fun setCustomToolEnabled(name: String, enabled: Boolean)
+
+    suspend fun listBuiltinToolSettings(): List<RuntimeBuiltinToolSetting>
+
+    suspend fun setBuiltinToolEnabled(
+        name: String,
+        enabled: Boolean,
+    ): RuntimeCustomToolValidation?
+}

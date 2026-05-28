@@ -1,4 +1,4 @@
-# 任务规划清单 v1.0
+# 任务规划清单 v1.1
 
 ## 1. Feature 列表
 
@@ -6,6 +6,7 @@
 |:-----------|:---------|:---------|:-------------|
 | F-01 | 新模块与 Gradle 骨架 | ~90 | - |
 | F-02 | runtime shared settings 契约层 | ~120 | F-01 |
+| F-07 | 预创建目标迁移目录 | ~20 | F-02 |
 | F-03 | app/repo 接入与模型下沉收口 | ~245 | F-02 |
 | F-04 | UI Infra 物理迁移到 composebase | ~3454 | F-01 |
 | F-05 | Chat Runtime 物理迁移到 agent-runtime | ~2492 | F-02 |
@@ -16,13 +17,14 @@
 | Batch ID | 包含 Feature | 预估总 LOC | 前置 Batch | 可并行 |
 |:---------|:------------|:-----------|:-----------|:-------|
 | B-01 | F-01 | ~90 | - | - |
-| B-02 | F-02 | ~120 | B-01 | 与 B-04 并行 |
+| B-02 | F-02 | ~120 | B-01 | 与 B-07 并行 |
+| B-07 | F-07 | ~20 | B-02 | - |
 | B-03 | F-04 | ~3454 | B-01 | 与 B-02 并行 |
 | B-04 | F-03 | ~245 | B-02 | 与 B-05 并行 |
 | B-05 | F-05 | ~2492 | B-02 | 与 B-04 并行 |
 | B-06 | F-06 | ~245 | B-04 + B-05 | - |
 
-> **编排说明**：`F-04` 与 `F-05` 的代码量都远超 500 LOC，必须独占 Batch。`F-03` 依赖 `F-02` 的 shared contract 与 gateway，`F-06` 依赖 `F-03` 和 `F-05`，因此运行时去耦修正必须放在 chat 文件完成物理迁移之后。
+> **编排说明**：`F-04` 与 `F-05` 的代码量都远超 500 LOC，必须独占 Batch。新增 `B-07` 是辅助 Batch，在你第一次 AS 迁移前预创建目标目录树，不改变源码语义。`F-03` 依赖 `F-02` 的 shared contract 与 gateway，`F-06` 依赖 `F-03` 和 `F-05`，因此运行时去耦修正必须放在 chat 文件完成物理迁移之后。
 
 ## 3. 任务清单 (Task List)
 
@@ -43,6 +45,12 @@
 | T-06 | Contracts | Contract | 新增 runtime shared settings DTO；定义 `RuntimeLlmConfig`、`RuntimeMcpServer`、`RuntimeMcpTool`、`RuntimeCustomTool`、`RuntimeBuiltinToolSetting`、`RuntimeCustomToolValidation`。 | `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/model/RuntimeSettingsModels.kt` | `docs/.asc_task/module_refactor/tech_design.md`, `app/src/main/java/com/niki914/nexus/agentic/repo/XRepoModels.kt` | - | M | ~70 lines | 6 个共享 DTO 完整存在；字段覆盖设计稿；不再依赖 `app/repo` 包。 |
 | T-07 | Contracts | Contract | 新增 `RuntimeSettingsGateway` 接口；完整声明 runtime 读取/写入配置所需的方法签名。 | `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeSettingsGateway.kt` | `docs/.asc_task/module_refactor/tech_design.md`, `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/model/RuntimeSettingsModels.kt` | - | M | ~30 lines | 接口方法集合与设计稿一致；返回值与参数全部使用 runtime shared models。 |
 | T-08 | Infra | Infra | 新增 `RuntimeEnvironment`；提供 `install()`、`requireSettingsGateway()`、`clearForTest()`；作为 runtime 全局 gateway 安装点。 | `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeEnvironment.kt` | `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeSettingsGateway.kt`, `docs/.asc_task/module_refactor/tech_design.md` | - | L | ~25 lines | `RuntimeEnvironment` 可保存一个已安装 gateway；未安装时 `requireSettingsGateway()` 会明确失败。 |
+
+### Feature F-07: 预创建目标迁移目录
+
+| ID | 阶段 | 类型 | 任务详情（含伪代码签名与实现步骤） | 目标文件 | 视野（依赖文件） | 匹配 Skill | 复杂度 | 预估规模 | 验收标准 (AC) |
+|:---|:-----|:-----|:-------------------------------|:---------|:--------------|:-----------|:-------|:---------|:-------------|
+| T-78 | Infra | Config | 新建 `mkdir_targets.sh` 脚本并执行；用 `mkdir -p` 预创建 `composebase` 与 `agent-runtime` 下承接机械迁移所需的全部目录；脚本保留在任务目录下供后续复用。 | `docs/.asc_task/module_refactor/mkdir_targets.sh` | `docs/.asc_task/module_refactor/plan.md`, `composebase/src/main/java`, `agent-runtime/src/main/java` | - | L | ~20 lines | 脚本存在且可执行；`composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra` 及其子目录、`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat` 及其子目录均已存在；不改动任何源码文件。 |
 
 ### Feature F-03: app/repo 接入与模型下沉收口
 
@@ -182,6 +190,12 @@
 - [ ] 创建 `RuntimeEnvironment`。
 - [ ] 加入 `@Volatile` gateway 持有字段。
 - [ ] 实现安装、读取、测试清理入口。
+
+### T-78: 预创建目标迁移目录 / mkdir_targets.sh
+
+- [ ] 在 `docs/.asc_task/module_refactor/` 下创建 `mkdir_targets.sh`。
+- [ ] 在脚本中显式列出 `composebase` 承接 `ui/infra` 的目录和 `agent-runtime` 承接 `chat` 的目录，并使用 `mkdir -p` 创建。
+- [ ] 执行脚本，确认所有迁移目标目录已存在。
 
 ### T-09: app/repo 接入与模型下沉收口 / XRepoRuntimeGateway.kt
 
@@ -612,4 +626,5 @@
 ### Round 3: 结对伙伴
 - 所有任务都给出了明确目标文件、依赖视野和可执行 AC；文档中没有保留占位文本。
 - 对手工 AS 迁移任务，实施步骤统一限制为机械 Move，显式禁止顺手 rename，避免把逻辑改造掺进去。
-- `B-02`、`B-04`、`B-05` 的先后顺序已经覆盖 gateway 先建、chat 后迁、runtime 再去耦的依赖链。
+- 新增 `B-07` 作为辅助 Batch，在人工迁移前先创建目录树，减少 AS Move 时的目录准备成本。
+- `B-02`、`B-07`、`B-04`、`B-05` 的顺序已经覆盖 gateway 先建、目录预创建、chat 后迁、runtime 再去耦的依赖链。
