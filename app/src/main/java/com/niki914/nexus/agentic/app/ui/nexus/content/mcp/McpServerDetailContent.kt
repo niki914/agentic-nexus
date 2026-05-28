@@ -1,19 +1,6 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content.mcp
 
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -21,8 +8,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -32,9 +17,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
-import com.niki914.nexus.agentic.app.ui.infra.component.TintLiquidButton
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsDetailFormScaffold
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpInlineError
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsEffect
@@ -43,7 +29,6 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 
 @Composable
@@ -55,19 +40,9 @@ fun McpServerDetailContent(
 ) {
     val viewModel = pageViewModel<McpSettingsViewModel>(factory = McpSettingsViewModelFactory)
     val uiState by viewModel.uiStateFlow.collectAsState()
-    val scrollState = rememberScrollState()
-    val focusManager = LocalFocusManager.current
-    var expandedField by rememberSaveable { mutableStateOf<McpEditableField?>(null) }
-    var pendingFocusField by rememberSaveable { mutableStateOf<McpEditableField?>(null) }
     var requestedFocusField by rememberSaveable { mutableStateOf<McpEditableField?>(null) }
 
-    fun clearActiveField() {
-        expandedField = null
-        focusManager.clearFocus()
-    }
-
     LaunchedEffect(page.routeKey) {
-        clearActiveField()
         if (page.isCreating) {
             viewModel.sendIntent(McpSettingsIntent.StartCreate)
         } else {
@@ -85,27 +60,10 @@ fun McpServerDetailContent(
         viewModel.uiEffect.collect { effect ->
             when (effect) {
                 McpSettingsEffect.ExitDetail -> onBack()
-                McpSettingsEffect.FocusName -> {
-                    pendingFocusField = McpEditableField.Name
-                    requestedFocusField = pendingFocusField
-                }
-                McpSettingsEffect.FocusUrl -> {
-                    pendingFocusField = McpEditableField.Url
-                    requestedFocusField = pendingFocusField
-                }
-                McpSettingsEffect.FocusHeaders -> {
-                    pendingFocusField = McpEditableField.Headers
-                    requestedFocusField = pendingFocusField
-                }
+                McpSettingsEffect.FocusName -> requestedFocusField = McpEditableField.Name
+                McpSettingsEffect.FocusUrl -> requestedFocusField = McpEditableField.Url
+                McpSettingsEffect.FocusHeaders -> requestedFocusField = McpEditableField.Headers
             }
-        }
-    }
-
-    LaunchedEffect(requestedFocusField) {
-        if (requestedFocusField != null) {
-            expandedField = requestedFocusField
-            requestedFocusField = null
-            pendingFocusField = null
         }
     }
 
@@ -116,13 +74,11 @@ fun McpServerDetailContent(
         requestedFocusField = requestedFocusField,
         onRequestedFocusHandled = {
             requestedFocusField = null
-            pendingFocusField = null
         },
         onNameChange = { value ->
             viewModel.sendIntent(McpSettingsIntent.NameChanged(value))
         },
         onEnabledChange = { value ->
-            clearActiveField()
             viewModel.sendIntent(McpSettingsIntent.EnabledChanged(value))
         },
         onUrlChange = { value ->
@@ -132,7 +88,6 @@ fun McpServerDetailContent(
             viewModel.sendIntent(McpSettingsIntent.HeadersChanged(value))
         },
         onSave = {
-            clearActiveField()
             viewModel.sendIntent(McpSettingsIntent.Save)
         },
     )
@@ -151,7 +106,6 @@ private fun McpServerDetailContentBody(
     onHeadersChange: (String) -> Unit,
     onSave: () -> Unit,
 ) {
-    val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
     var expandedField by rememberSaveable { mutableStateOf<McpEditableField?>(null) }
 
@@ -167,69 +121,37 @@ private fun McpServerDetailContentBody(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .hazeSource(hazeState)
-            .padding(top = topPadding)
-            .padding(horizontal = 20.dp, vertical = 24.dp),
+    SettingsDetailFormScaffold(
+        topPadding = topPadding,
+        hazeState = hazeState,
+        actionText = stringResource(R.string.mcp_save_action),
+        onActionClick = {
+            clearActiveField()
+            onSave()
+        },
+        description = stringResource(R.string.mcp_page_description),
+        inlineErrorText = mcpInlineErrorText(uiState.inlineError),
+        actionEnabled = !uiState.isSaving,
+        onBackgroundTap = ::clearActiveField,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectTapGestures(onTap = { clearActiveField() })
-                },
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.mcp_page_description),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        McpIdentitySettingsBlock(
+            uiState = uiState,
+            expandedField = expandedField,
+            onExpandedFieldChange = { field -> expandedField = field },
+            onNameChange = onNameChange,
+            onEnabledChange = {
+                clearActiveField()
+                onEnabledChange(it)
+            },
+        )
 
-                McpIdentitySettingsBlock(
-                    uiState = uiState,
-                    expandedField = expandedField,
-                    onExpandedFieldChange = { field -> expandedField = field },
-                    onNameChange = onNameChange,
-                    onEnabledChange = {
-                        clearActiveField()
-                        onEnabledChange(it)
-                    },
-                )
-
-                McpConnectionSettingsBlock(
-                    uiState = uiState,
-                    expandedField = expandedField,
-                    onExpandedFieldChange = { field -> expandedField = field },
-                    onUrlChange = onUrlChange,
-                    onHeadersChange = onHeadersChange,
-                )
-
-                mcpInlineErrorText(uiState.inlineError)?.let { errorText ->
-                    Text(
-                        text = errorText,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            TintLiquidButton(
-                text = stringResource(R.string.mcp_save_action),
-                enabled = !uiState.isSaving,
-                onClick = onSave,
-            )
-        }
+        McpConnectionSettingsBlock(
+            uiState = uiState,
+            expandedField = expandedField,
+            onExpandedFieldChange = { field -> expandedField = field },
+            onUrlChange = onUrlChange,
+            onHeadersChange = onHeadersChange,
+        )
     }
 }
 
@@ -264,7 +186,7 @@ private fun McpIdentitySettingsBlock(
                 )
             },
         )
-        McpItemDivider()
+        SettingsItemDivider()
         SettingToggleItem(
             title = stringResource(R.string.mcp_field_enabled),
             checked = uiState.formState.enabled,
@@ -299,7 +221,7 @@ private fun McpConnectionSettingsBlock(
                 )
             },
         )
-        McpItemDivider()
+        SettingsItemDivider()
         SettingExpandableTextItem(
             title = stringResource(R.string.mcp_field_headers),
             value = uiState.formState.headersInput,
@@ -322,15 +244,6 @@ private fun McpConnectionSettingsBlock(
 @Composable
 private fun mcpFieldErrorText(errorResId: Int?): String? {
     return errorResId?.let { stringResource(id = it) }
-}
-
-@Composable
-private fun McpItemDivider() {
-    HorizontalDivider(
-        thickness = 1.dp,
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-        modifier = Modifier.padding(horizontal = 12.dp),
-    )
 }
 
 @Composable

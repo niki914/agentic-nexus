@@ -3,14 +3,10 @@ package com.niki914.nexus.agentic.app.ui.nexus.content
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,7 +18,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsDetailFormScaffold
 import com.niki914.nexus.agentic.app.ui.infra.component.TintLiquidButton
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureInlineError
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureUiState
@@ -57,7 +53,6 @@ fun ConfigurePageContent(
     requestedFocusField: ConfigureEditableField? = null,
     onRequestedFocusHandled: () -> Unit = {},
 ) {
-    val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
     val policy = onboardingConfigurePolicy(uiState.providerSpec)
     var expandedField by rememberSaveable { mutableStateOf<ConfigureEditableField?>(null) }
@@ -80,69 +75,32 @@ fun ConfigurePageContent(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .hazeSource(hazeState)
-            .padding(top = topPadding)
-            .padding(horizontal = 20.dp, vertical = 24.dp),
+    SettingsDetailFormScaffold(
+        topPadding = topPadding,
+        hazeState = hazeState,
+        actionText = stringResource(R.string.ui_onboard_configure_next),
+        onActionClick = onComplete,
+        description = stringResource(R.string.ui_onboard_configure_description),
+        inlineErrorText = configureInlineErrorText(uiState.inlineError),
+        actionEnabled = !uiState.isSaving,
+        onBackgroundTap = ::clearActiveField,
+        actionButtonDarkContainerColor = buttonDarkContainerColor,
+        actionButtonLightContainerColor = buttonLightContainerColor,
+        actionButtonDarkContentColor = buttonDarkContentColor,
+        actionButtonLightContentColor = buttonLightContentColor,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = {
-                            clearActiveField()
-                        },
-                    )
-                },
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
-            ) {
-                ConfigureDescriptionBlock(
-                    text = stringResource(R.string.ui_onboard_configure_description),
-                )
-
-                ProviderAccessSettingsBlock(
-                    uiState = uiState,
-                    policy = policy,
-                    expandedField = expandedField,
-                    onExpandedFieldChange = { field -> expandedField = field },
-                    onEndpointOverrideChange = onEndpointOverrideChange,
-                    onEndpointChange = onEndpointChange,
-                    onModelChange = onModelChange,
-                    onApiKeyChange = onApiKeyChange,
-                    onToggleApiKeyVisibility = onToggleApiKeyVisibility,
-                    onClearActiveField = ::clearActiveField,
-                )
-
-                configureInlineErrorText(uiState.inlineError)?.let { errorText ->
-                    Text(
-                        text = errorText,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            TintLiquidButton(
-                text = stringResource(R.string.ui_onboard_configure_next),
-                darkContainerColor = buttonDarkContainerColor,
-                lightContainerColor = buttonLightContainerColor,
-                darkContentColor = buttonDarkContentColor,
-                lightContentColor = buttonLightContentColor,
-                enabled = !uiState.isSaving,
-                onClick = onComplete,
-            )
-        }
+        ProviderAccessSettingsBlock(
+            uiState = uiState,
+            policy = policy,
+            expandedField = expandedField,
+            onExpandedFieldChange = { field -> expandedField = field },
+            onEndpointOverrideChange = onEndpointOverrideChange,
+            onEndpointChange = onEndpointChange,
+            onModelChange = onModelChange,
+            onApiKeyChange = onApiKeyChange,
+            onToggleApiKeyVisibility = onToggleApiKeyVisibility,
+            onClearActiveField = ::clearActiveField,
+        )
     }
 }
 

@@ -1,16 +1,12 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureUiState
 
 @Composable
@@ -113,13 +109,4 @@ internal fun ProviderAccessSettingsBlock(
             },
         )
     }
-}
-
-@Composable
-private fun SettingsItemDivider() {
-    HorizontalDivider(
-        thickness = 1.dp,
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-        modifier = Modifier.padding(horizontal = 12.dp),
-    )
 }
