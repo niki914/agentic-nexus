@@ -5,6 +5,9 @@
 ## app/src/main/java/com/niki914/nexus/agentic/mod/feat/
 
 - `AbstractAssistantHook.kt`: 通用 Hook 模板
+- `BaseConfigProvider.kt`: 宿主配置提供者基类
+- `HookTarget.kt`: 宿主目标枚举
+- `SubHook.kt`: 子 Hook 协议
 - `oppo/BreenoChatHook.kt`: Breeno 业务 Hook 入口
 - `oppo/BreenoConfigProvider.kt`: Breeno 配置提供者
 - `oppo/BreenoFeedbackAssembler.kt`: Breeno UI 反馈组装
@@ -33,17 +36,45 @@
 - `agentic/ToolManager.kt`: 工具配置解析与 prompt lines 生成
 - `agentic/SessionToolBinder.kt`: local tools 与 MCP servers 绑定
 - `agentic/ToolCallDispatcher.kt`: local tool 调度
-- `agentic/CustomToolExecutor.kt`: custom tools 执行器
-- `agentic/McpDiscoveryCacheStore.kt`: MCP discovered tools 缓存
-- `agentic/McpInterceptorHttpEngine.kt`: MCP discovery HTTP interceptor
-- `agentic/LlmStreamEventMapper.kt`: `SessionEvent` 到 `LlmStreamEvent` 的映射
-- `agentic/ToolEventFormatter.kt`: 工具事件格式化
+
+## app/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/
+
+- `BuiltinTool.kt`: builtin tool 协议
+- `BuiltinToolExecutor.kt`: builtin tool 执行器
+- `BuiltinToolRegistry.kt`: builtin tool 注册表
+- `BuiltinToolSettingsManager.kt`: builtin tool 设置读写门面
+- `impl/CreateCustomToolBuiltin.kt`: 内建创建 custom tool
+- `impl/NotifyBuiltin.kt`: 内建通知工具
+- `impl/RunCommandBuildin_WIP_SAFE.kt`: 内建命令执行工具
+
+## app/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/
+
+- `CustomToolExecutor.kt`: custom tool 执行器
+- `CustomToolManager.kt`: custom tool 配置与校验
+
+## app/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/
+
+- `McpDiscoveryCacheStore.kt`: MCP discovered tools 缓存
+- `McpInterceptorHttpEngine.kt`: MCP discovery HTTP interceptor
+
+## app/src/main/java/com/niki914/nexus/agentic/chat/agentic/shell/
+
+- `ShellCommandRunner.kt`: shell 命令执行器
+- `ShellCommandSafetyPolicy.kt`: shell 命令安全策略
+
+## app/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/
+
+- `LlmStreamEventMapper.kt`: `SessionEvent` 到 `LlmStreamEvent` 的映射
+- `ToolEventFormatter.kt`: 工具事件格式化
 
 ## app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/
 
 - `NexusApp.kt`: 主 App Shell 入口
 - `NexusPages.kt`: 页面装配与路由分发
 - `model/AppLaunchDecision.kt`: 初始页面判定
+- `model/ConfigureState.kt`: 配置页状态
+- `model/McpSettingsState.kt`: MCP 设置页状态
+- `model/SettingsState.kt`: 设置页状态
 - `nav/NexusPage.kt`: 页面定义
 - `nav/NexusSettingsGroup.kt`: 设置组模型
 - `content/StartupPageContent.kt`: 启动页内容
@@ -55,7 +86,10 @@
 - `content/SettingsDetailPageContent.kt`: 设置详情分发入口
 - `content/BuiltinToolsSettingsContent.kt`: Builtin Tools 设置页
 - `content/McpSettingsContent.kt`: MCP 设置页
+- `content/McpServerDetailContent.kt`: MCP server 详情页
 - `content/CustomToolsSettingsContent.kt`: 自定义工具设置页
+- `content/CustomToolDetailContent.kt`: 自定义工具详情页
+- `content/ProviderAccessSettingsBlock.kt`: provider 接入设置块
 - `content/StartupPosterBackground.kt`: 启动页背景
 
 ## app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/
@@ -79,12 +113,15 @@
 - `MaterialTintLiquidButton.kt`: Material 风格着色按钮
 - `LiquidTextField.kt`: 基础文本输入
 - `LiquidSecretTextField.kt`: 密码输入
-- `ExpandableLiquidTextFieldCard.kt`: 可展开多行表单卡片
+- `SettingExpandableTextCard.kt`: 可展开设置文本卡片
+- `SettingExpandableTextItem.kt`: 可展开设置项
 - `LiquidToggle.kt`: 自定义 Toggle
 - `LiquidToggleStateMachine.kt`: Toggle 状态机
 - `SettingsGroupCard.kt`: 设置分组卡片
-- `SettingsNavigationRow.kt`: 设置导航行
-- `SettingsToggleRow.kt`: 设置开关行
+- `SettingsListPageContent.kt`: 设置列表页容器
+- `SettingNavigationItem.kt`: 设置导航项
+- `SettingToggleItem.kt`: 设置开关项
+- `SettingsToggleListItemCard.kt`: 设置开关列表卡片
 
 ## app/src/main/java/com/niki914/nexus/agentic/app/ui/infra/interaction/
 
@@ -106,6 +143,13 @@
 - `XService.kt`: 本地/远程配置门面
 - `SettingModels.kt`: `LocalSettings`、`WebSettings` 等配置模型
 - `HookLocalSettings.kt`: Hook 侧本地配置读取
+
+## app/src/main/java/com/niki914/nexus/agentic/repo/
+
+- `XRepo.kt`: App 侧设置读写门面，聚合 builtin/custom/MCP API
+- `XRepoModels.kt`: builtin/custom/MCP 配置模型
+- `LocalSettingsStore.kt`: `LocalSettings` 读写存储
+- `LocalSettingsCodec.kt`: `LocalSettings` 编解码与字段投影
 
 ## ipc/src/main/java/com/niki914/nexus/ipc/
 
