@@ -266,6 +266,7 @@ fun LiquidChatComposer(
     onSendClick: () -> Unit,
     sendEnabled: Boolean,
     modifier: Modifier = Modifier,
+    maxLines: Int = Int.MAX_VALUE,
 ) {
     val canSend = sendEnabled && value.isNotBlank()
     val contentColor = if (canSend) {
@@ -280,6 +281,7 @@ fun LiquidChatComposer(
         placeholder = stringResource(R.string.ui_home_input_placeholder),
         enabled = true,
         singleLine = false,
+        maxLines = maxLines,
         modifier = modifier.fillMaxWidth(),
         trailingContent = {
             CompositionLocalProvider(LocalContentColor provides contentColor) {

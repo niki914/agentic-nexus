@@ -190,7 +190,6 @@ fun HomePageContent(
         }
 
         LiquidChatComposer(
-            // TODO P2 限制输入框最大行数
             value = uiState.input,
             onValueChange = { value ->
                 viewModel.sendIntent(HomeChatIntent.InputChanged(value))
@@ -200,6 +199,7 @@ fun HomePageContent(
                 viewModel.sendIntent(HomeChatIntent.Send)
             },
             sendEnabled = !uiState.isGenerating,
+            maxLines = 10,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(

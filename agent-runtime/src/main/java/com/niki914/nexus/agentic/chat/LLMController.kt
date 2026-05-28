@@ -24,10 +24,8 @@ import kotlinx.coroutines.flow.flowOn
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 
 // TODO P1 [Parse] HTTP 400 , body={"error":{"message":"Invalid assistant message: content or toolcalls must be set","type":"invalidrequesterror","param":null,"code":"invalidrequest_error"}}
-// TODO P0 rm caches when mcp server is inreachable
 // TODO P0 PromptComposer 添加 mcp 发现状态的提示，让 Agent 知道 mcp 是失败、加载中还是可用
-// TODO impl a mcpHooks {} like hooks to make mcp update easier
-// TODO 重复 mcp tool 注册进行去重
+// TODO session 库应提供 MCP discovery 状态、cache update hook 与 tool 去重/冲突策略；当前 HttpEngine interceptor 只是 Nexus 侧 workaround
 object LLMController {
     private val promptComposer =
         PromptComposer()

@@ -6,19 +6,21 @@ import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiRenderSession
 import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.setTag
 import com.niki914.nexus.h.util.xlog
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicLong
 
 /** 将 LLM 的累计文本切成增量块，构造为宿主 Instruction 并注入响应目标，管理渲染会话生命周期与终帧补片。 */
 class RenderTextStreamCardHook : SubHook() {
 
     private val instructionCounter = AtomicLong()
-    private val sessionLock = Any() // TODO 改用 Mutex
+    private val sessionLock = Mutex()
     private var currentSession: XiaoaiRenderSession? = null
     private val renderMethodName: String? by lazy {
         XiaoaiConfigProvider.RenderTextStreamCard.hookTarget?.methodName
     }
 
-    fun render(
+    suspend fun render(
         turnId: Long,
         dialogId: String,
         target: Any?,
@@ -27,8 +29,8 @@ class RenderTextStreamCardHook : SubHook() {
         isFinal: Boolean
     ) {
         val methodName = renderMethodName ?: return
-        val session = obtainSession(turnId, dialogId)
-        val delta = synchronized(sessionLock) {
+        val delta = sessionLock.withLock {
+            val session = obtainSessionLocked(turnId, dialogId)
             val previous = session.renderedText
             val nextDelta = when {
                 chunk.isEmpty() -> ""
@@ -133,21 +135,23 @@ class RenderTextStreamCardHook : SubHook() {
         return "${XiaoaiConfigProvider.RenderTextStreamCard.instructionIdPrefix}_$next"
     }
 
-    private fun obtainSession(turnId: Long, dialogId: String): XiaoaiRenderSession =
-        synchronized(sessionLock) {
-            currentSession?.takeIf { it.turnId == turnId && it.dialogId == dialogId }
-                ?: XiaoaiRenderSession(turnId = turnId, dialogId = dialogId).also {
-                    currentSession = it
-                }
-        }
+    private fun obtainSessionLocked(turnId: Long, dialogId: String): XiaoaiRenderSession =
+        currentSession?.takeIf { it.turnId == turnId && it.dialogId == dialogId }
+            ?: XiaoaiRenderSession(turnId = turnId, dialogId = dialogId).also {
+                currentSession = it
+            }
 
-    fun reset() = synchronized(sessionLock) {
-        currentSession = null
+    suspend fun reset() {
+        sessionLock.withLock {
+            currentSession = null
+        }
     }
 
-    private fun clearSession(turnId: Long) = synchronized(sessionLock) {
-        if (currentSession?.turnId == turnId) {
-            currentSession = null
+    private suspend fun clearSession(turnId: Long) {
+        sessionLock.withLock {
+            if (currentSession?.turnId == turnId) {
+                currentSession = null
+            }
         }
     }
 
