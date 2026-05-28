@@ -74,25 +74,15 @@ internal fun ActionBarButton(
                         color = Color.Black.copy(if (isDarkTheme) 0.08f else 0.2f)
                     )
                 },
-                layerBlock = if (enabled) {
-                    {
-                        applyLiquidInteractiveTransform(
-                            style = interactiveStyle,
-                            pressProgress = interactiveHighlight.pressProgress,
-                            offset = interactiveHighlight.offset,
-                            size = size,
-                        )
-                    }
-                } else {
-                    null
+                layerBlock = {
+                    applyLiquidInteractiveTransform(
+                        style = interactiveStyle,
+                        pressProgress = interactiveHighlight.pressProgress,
+                        offset = interactiveHighlight.offset,
+                        size = size,
+                    )
                 },
                 onDrawSurface = {
-                    if (!enabled) {
-                        drawRect(
-                            (if (isDarkTheme) Color(0xFFAFAFAF) else Color.White).copy(0.5f)
-                        )
-                        return@drawBackdrop
-                    }
                     val progress = interactiveHighlight.pressProgress.coerceIn(0f, 1f)
 
                     val outline = buttonShape.createOutline(size, layoutDirection, this)
@@ -126,25 +116,20 @@ internal fun ActionBarButton(
                 },
             )
             .clickable(
-                enabled = enabled,
+                enabled = true,
                 interactionSource = interactionSource,
                 indication = null,
                 role = Role.Button,
             ) {
-                animationScope.launch { haptics.performHapticFeedback(HapticFeedbackType.ContextClick) }
-                onClick()
-            }
-            .then(
                 if (enabled) {
-                    Modifier
-                        .then(interactiveHighlight.gestureModifier)
-                        .then(
-                            if (interactiveStyle.highlightEnabled) {
-                                interactiveHighlight.modifier
-                            } else {
-                                Modifier
-                            }
-                        )
+                    animationScope.launch { haptics.performHapticFeedback(HapticFeedbackType.ContextClick) }
+                    onClick()
+                }
+            }
+            .then(interactiveHighlight.gestureModifier)
+            .then(
+                if (interactiveStyle.highlightEnabled) {
+                    interactiveHighlight.modifier
                 } else {
                     Modifier
                 }
