@@ -5,9 +5,9 @@ import android.content.ContextWrapper
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolManager
 import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.repo.CustomTool
 import com.niki914.nexus.agentic.repo.LocalSettingsStore
 import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals

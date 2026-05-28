@@ -3,6 +3,10 @@ package com.niki914.nexus.agentic.repo
 import android.content.Context
 import android.content.ContextWrapper
 import com.niki914.nexus.agentic.mod.LocalSettings
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject

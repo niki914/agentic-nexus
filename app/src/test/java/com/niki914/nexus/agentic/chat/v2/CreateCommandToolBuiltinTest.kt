@@ -6,9 +6,9 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.CreateCustomToolBuiltin
 import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.repo.CustomTool
 import com.niki914.nexus.agentic.repo.LocalSettingsStore
 import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json

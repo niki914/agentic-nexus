@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.ContextWrapper
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.repo.LocalSettingsStore
-import com.niki914.nexus.agentic.repo.McpServer
 import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest

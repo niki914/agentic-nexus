@@ -4,7 +4,7 @@
 通过“两刀方案”降低 `app` 模块职责密度：将 `app/ui/infra` 下沉到 `composebase`，新建 `agent-runtime` 承接 `chat`，并明确用户在 AS 的机械迁移与 ASC 的边界/依赖改造分工。
 
 ## Current Phase
-Phase 3 ▶ Ready for B-03
+Phase 3 ⏸ After B-04
 
 ## Context (关键上下文)
 
@@ -47,8 +47,8 @@ Phase 3 ▶ Ready for B-03
 - [x] B-01 `F-01` 新模块与 Gradle 骨架
 - [x] B-02 `F-02` runtime shared settings 契约层
 - [x] B-07 `F-07` 预创建目标迁移目录
-- [ ] B-03 `F-04` UI Infra 物理迁移到 composebase
-- [ ] B-04 `F-03` app/repo 接入与模型下沉收口
+- [x] B-03 `F-04` UI Infra 物理迁移到 composebase
+- [x] B-04 `F-03` app/repo 接入与模型下沉收口
 - [ ] B-05 `F-05` Chat Runtime 物理迁移到 agent-runtime
 - [ ] B-06 `F-06` 迁移后 runtime 源码去 app 依赖
 
@@ -56,22 +56,31 @@ Phase 3 ▶ Ready for B-03
 - [x] T-01 ~ T-05: `F-01` 新模块与 Gradle 骨架
 - [x] T-06 ~ T-08: `F-02` runtime shared settings 契约层
 - [x] T-78: `F-07` 预创建目标迁移目录
-- [ ] T-09 ~ T-17: `F-03` app/repo 接入与模型下沉收口
-- [ ] T-18 ~ T-47: `F-04` UI Infra 物理迁移到 composebase
+- [x] T-09 ~ T-17: `F-03` app/repo 接入与模型下沉收口
+- [x] T-18 ~ T-47: `F-04` UI Infra 物理迁移到 composebase
 - [ ] T-48 ~ T-71: `F-05` Chat Runtime 物理迁移到 agent-runtime
 - [ ] T-72 ~ T-77: `F-06` 迁移后 runtime 源码去 app 依赖
 
 ## Last Batch Result
-- Batch: `B-07`
+- Batch: `B-04`
 - Status: `DONE`
 - Modified Files:
-  - `docs/.asc_task/module_refactor/mkdir_targets.sh`
+  - `app/src/main/java/com/niki914/nexus/agentic/repo/XRepoRuntimeGateway.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/repo/XRepo.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/repo/LocalSettingsCodec.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/App.kt`
+  - `app/src/main/java/a0/a0/a0/a0/a0/a0/Entrance.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/ConfigureState.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/McpSettingsState.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/CustomToolsSettingsContent.kt`
+  - `app/src/main/java/com/niki914/nexus/agentic/repo/XRepoModels.kt`（删除）
   - `docs/.asc_task/module_refactor/progress.md`
 - Verification:
-  - `chmod +x docs/.asc_task/module_refactor/mkdir_targets.sh`
-  - `docs/.asc_task/module_refactor/mkdir_targets.sh`
-  - 已确认 `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra` 及其子目录存在。
-  - 已确认 `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat` 及其子目录存在。
+  - 已确认 `XRepoRuntimeGateway` 已实现 `RuntimeSettingsGateway` 全量方法。
+  - 已确认 `XRepo` / `LocalSettingsCodec` 与 3 个 UI 文件切到 runtime shared models。
+  - 已删除 `XRepoModels.kt`，并补齐当前 `app/chat` 与测试侧对 runtime shared models 的 import 修正。
+  - 已对本批主源码改动文件执行 IDE Diagnostics，结果均为 0 error。
 - Notes:
-  - B-07 只预创建机械迁移目标目录，不改动任何源码文件。
-  - B-03 的前置 `B-01` 已完成，且本批已补齐 AS 迁移所需目录树，可进入 `B-03`。
+  - 本批只完成 `B-04`，未进入 `B-05` 的 chat 物理迁移。
+  - 为避免删除旧模型后留下显式未解析引用，顺手把当前仍留在 `app` 的 chat / test import 切到 runtime shared models；未改变其逻辑路径。
+  - 下一批应进入 `B-05`，由用户在 Android Studio 中把 `chat/**` 物理迁入 `agent-runtime`。

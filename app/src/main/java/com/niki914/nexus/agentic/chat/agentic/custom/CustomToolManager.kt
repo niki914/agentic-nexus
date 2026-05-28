@@ -3,9 +3,9 @@ package com.niki914.nexus.agentic.chat.agentic.custom
 import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
-import com.niki914.nexus.agentic.repo.CustomTool
-import com.niki914.nexus.agentic.repo.CustomToolValidation
 import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation as CustomToolValidation
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive

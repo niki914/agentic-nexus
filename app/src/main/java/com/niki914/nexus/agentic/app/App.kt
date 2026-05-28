@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatDelegate
 import com.google.android.material.color.DynamicColors
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.mod.XService
+import com.niki914.nexus.agentic.repo.XRepoRuntimeGateway
+import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.h.util.xlog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +23,7 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        RuntimeEnvironment.install(XRepoRuntimeGateway())
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         DynamicColors.applyToActivitiesIfAvailable(this)
         applicationScope.launch {

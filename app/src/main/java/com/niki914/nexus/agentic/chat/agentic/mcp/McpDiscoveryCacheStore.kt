@@ -1,8 +1,8 @@
 package com.niki914.nexus.agentic.chat.agentic.mcp
 
 import com.niki914.nexus.agentic.chat.McpCachedTool
-import com.niki914.nexus.agentic.repo.McpTool
 import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 import com.niki914.nexus.h.util.xTry
 import com.niki914.nexus.h.util.xlog
 import kotlinx.coroutines.CancellationException

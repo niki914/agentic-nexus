@@ -1,8 +1,8 @@
 package com.niki914.nexus.agentic.app.ui.nexus.model
 
 import com.niki914.nexus.cb.ComposeMVIViewModel
-import com.niki914.nexus.agentic.repo.McpServer
 import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import kotlinx.coroutines.CancellationException
 
 data class McpServerItem(

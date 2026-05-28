@@ -1,6 +1,6 @@
 package com.niki914.nexus.agentic.app.ui.nexus.model
 
-import com.niki914.nexus.agentic.repo.LlmConfig
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first

@@ -4,9 +4,9 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
-import com.niki914.nexus.agentic.repo.CustomTool
-import com.niki914.nexus.agentic.repo.CustomToolValidation
 import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation as CustomToolValidation
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerializationException

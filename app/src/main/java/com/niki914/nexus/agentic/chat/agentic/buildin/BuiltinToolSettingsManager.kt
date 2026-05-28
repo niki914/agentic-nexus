@@ -1,7 +1,7 @@
 package com.niki914.nexus.agentic.chat.agentic.buildin
 
-import com.niki914.nexus.agentic.repo.BuiltinToolSetting
 import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeBuiltinToolSetting as BuiltinToolSetting
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive

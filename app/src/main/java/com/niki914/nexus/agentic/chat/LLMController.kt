@@ -8,8 +8,8 @@ import com.niki914.nexus.agentic.chat.agentic.PromptComposerInput
 import com.niki914.nexus.agentic.chat.agentic.SessionToolBinder
 import com.niki914.nexus.agentic.chat.agentic.ToolCallDispatcher
 import com.niki914.nexus.agentic.chat.agentic.ToolManager
-import com.niki914.nexus.agentic.repo.LlmConfig
 import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 import com.niki914.nexus.h.util.xlog
 import com.niki914.s3ss10n.Session
 import com.niki914.s3ss10n.SessionConfig

@@ -7,10 +7,10 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.ToolManager
-import com.niki914.nexus.agentic.repo.BuiltinToolSetting
-import com.niki914.nexus.agentic.repo.CustomTool
-import com.niki914.nexus.agentic.repo.McpServer
-import com.niki914.nexus.agentic.repo.McpTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeBuiltinToolSetting as BuiltinToolSetting
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 import com.niki914.s3ss10n.LocalToolConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

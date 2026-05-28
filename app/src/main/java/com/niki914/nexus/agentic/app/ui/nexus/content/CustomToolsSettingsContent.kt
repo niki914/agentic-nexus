@@ -18,8 +18,8 @@ import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleListItemCard
-import com.niki914.nexus.agentic.repo.CustomTool
 import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
 

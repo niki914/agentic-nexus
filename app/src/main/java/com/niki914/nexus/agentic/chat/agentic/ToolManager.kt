@@ -6,10 +6,10 @@ import com.niki914.nexus.agentic.chat.McpServerDefinition
 import com.niki914.nexus.agentic.chat.ResolvedTools
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
-import com.niki914.nexus.agentic.repo.BuiltinToolSetting
-import com.niki914.nexus.agentic.repo.CustomTool
-import com.niki914.nexus.agentic.repo.McpServer
-import com.niki914.nexus.agentic.repo.McpTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeBuiltinToolSetting as BuiltinToolSetting
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject

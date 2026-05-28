@@ -4,9 +4,9 @@ import android.content.Context
 import android.content.ContextWrapper
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.repo.LocalSettingsStore
-import com.niki914.nexus.agentic.repo.McpServer
-import com.niki914.nexus.agentic.repo.McpTool
 import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
