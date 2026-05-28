@@ -1,7 +1,7 @@
 package com.niki914.nexus.agentic.chat.agentic.mcp
 
 import com.niki914.nexus.agentic.chat.McpCachedTool
-import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 import com.niki914.nexus.h.util.xTry
 import com.niki914.nexus.h.util.xlog
@@ -40,7 +40,8 @@ class McpDiscoveryCacheStore {
         headers: Map<String, String>,
         tools: List<McpCachedTool>,
     ) {
-        XRepo.mcp.saveDiscoveredTools(
+        val gateway = RuntimeEnvironment.awaitSettingsGateway()
+        gateway.saveDiscoveredTools(
             url = url,
             headers = headers,
             tools = tools.map { tool ->

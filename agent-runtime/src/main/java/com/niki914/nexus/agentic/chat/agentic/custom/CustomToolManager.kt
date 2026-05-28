@@ -3,7 +3,7 @@ package com.niki914.nexus.agentic.chat.agentic.custom
 import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
-import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation as CustomToolValidation
 import kotlinx.coroutines.CancellationException
@@ -32,7 +32,8 @@ class CustomToolManager(
     private val safetyPolicy: ShellCommandSafetyPolicy = ShellCommandSafetyPolicy(),
 ) {
     suspend fun load(): List<CustomToolConfig> {
-        return XRepo.customTools.list().map { it.toConfig() }
+        val gateway = RuntimeEnvironment.awaitSettingsGateway()
+        return gateway.listCustomTools().map { it.toConfig() }
     }
 
     suspend fun createOrUpdate(
@@ -50,7 +51,8 @@ class CustomToolManager(
             }
 
             val normalized = request.toConfig()
-            val repoValidation = XRepo.customTools.save(normalized.toRepo(), overwrite = true)
+            val gateway = RuntimeEnvironment.awaitSettingsGateway()
+            val repoValidation = gateway.saveCustomTool(normalized.toRuntimeModel(), overwrite = true)
             if (repoValidation != null) {
                 return@withSettingsFailure repoValidation.toFailure()
             }
@@ -72,7 +74,8 @@ class CustomToolManager(
                 return@withSettingsFailure validationError
             }
 
-            val repoValidation = XRepo.customTools.replaceAll(normalizedItems.map { it.toRepo() })
+            val gateway = RuntimeEnvironment.awaitSettingsGateway()
+            val repoValidation = gateway.replaceAllCustomTools(normalizedItems.map { it.toRuntimeModel() })
             if (repoValidation != null) {
                 return@withSettingsFailure repoValidation.toFailure()
             }
@@ -92,7 +95,8 @@ class CustomToolManager(
 
     suspend fun delete(name: String): BuiltinToolResult {
         return withSettingsFailure {
-            XRepo.customTools.delete(name)
+            val gateway = RuntimeEnvironment.awaitSettingsGateway()
+            gateway.deleteCustomTool(name)
             BuiltinToolResult.success(
                 message = "Custom tool '$name' was deleted.",
                 hint = "The updated custom tools are available after the next runtime refresh.",
@@ -108,7 +112,8 @@ class CustomToolManager(
 
     suspend fun setEnabled(name: String, enabled: Boolean): BuiltinToolResult {
         return withSettingsFailure {
-            XRepo.customTools.setEnabled(name, enabled)
+            val gateway = RuntimeEnvironment.awaitSettingsGateway()
+            gateway.setCustomToolEnabled(name, enabled)
             BuiltinToolResult.success(
                 message = "Custom tool setting updated.",
                 hint = "The updated custom tools are available after the next runtime refresh.",
@@ -269,7 +274,7 @@ class CustomToolManager(
         )
     }
 
-    private fun CustomToolConfig.toRepo(): CustomTool {
+    private fun CustomToolConfig.toRuntimeModel(): CustomTool {
         return CustomTool(
             name = name,
             description = description,

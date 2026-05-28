@@ -1,6 +1,6 @@
 package com.niki914.nexus.agentic.chat.agentic.buildin
 
-import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeBuiltinToolSetting as BuiltinToolSetting
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonObject
@@ -14,7 +14,8 @@ data class BuiltinToolSettingItem(
 
 class BuiltinToolSettingsManager {
     suspend fun load(): List<BuiltinToolSettingItem> {
-        return XRepo.builtinTools.list().map { it.toItem() }
+        val gateway = RuntimeEnvironment.awaitSettingsGateway()
+        return gateway.listBuiltinToolSettings().map { it.toItem() }
     }
 
     suspend fun setEnabled(
@@ -22,7 +23,8 @@ class BuiltinToolSettingsManager {
         enabled: Boolean,
     ): BuiltinToolResult {
         return try {
-            val validation = XRepo.builtinTools.setEnabled(name, enabled)
+            val gateway = RuntimeEnvironment.awaitSettingsGateway()
+            val validation = gateway.setBuiltinToolEnabled(name, enabled)
             if (validation != null) {
                 return BuiltinToolResult.failure(
                     code = "UNKNOWN_BUILTIN_TOOL",

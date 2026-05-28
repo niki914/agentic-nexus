@@ -4,7 +4,7 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolCreateRequest
-import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation as CustomToolValidation
 import com.niki914.s3ss10n.LocalToolConfig
@@ -72,7 +72,8 @@ class CreateCustomToolBuiltin : BuiltinTool() {
                 command = normalized.command,
                 enabled = normalized.enabled,
             )
-            val validation = XRepo.customTools.save(tool, overwrite = normalized.overwrite)
+            val gateway = RuntimeEnvironment.awaitSettingsGateway()
+            val validation = gateway.saveCustomTool(tool, overwrite = normalized.overwrite)
             if (validation != null) {
                 validation.toFailure(tool.name)
             } else {

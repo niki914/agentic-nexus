@@ -3,7 +3,8 @@ package com.niki914.nexus.agentic.chat.agentic.buildin.impl
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
-import com.niki914.nexus.agentic.mod.XService
+import com.niki914.nexus.h.util.ContextProvider
+import com.niki914.nexus.ipc.XIpcBridge
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerializationException
@@ -71,7 +72,9 @@ class NotifyBuiltin : BuiltinTool() {
         }
 
         val data = buildPayload(args)
-        val posted = XService.postNotification(
+        val context = ContextProvider.await()
+        val posted = XIpcBridge.postNotification(
+            context = context,
             title = args.title,
             content = args.content,
             uri = args.uri,

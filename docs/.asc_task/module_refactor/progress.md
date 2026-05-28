@@ -4,7 +4,7 @@
 通过“两刀方案”降低 `app` 模块职责密度：将 `app/ui/infra` 下沉到 `composebase`，新建 `agent-runtime` 承接 `chat`，并明确用户在 AS 的机械迁移与 ASC 的边界/依赖改造分工。
 
 ## Current Phase
-Phase 3 ⏸ After B-04
+Phase 3 ✅ Completed
 
 ## Context (关键上下文)
 
@@ -49,8 +49,8 @@ Phase 3 ⏸ After B-04
 - [x] B-07 `F-07` 预创建目标迁移目录
 - [x] B-03 `F-04` UI Infra 物理迁移到 composebase
 - [x] B-04 `F-03` app/repo 接入与模型下沉收口
-- [ ] B-05 `F-05` Chat Runtime 物理迁移到 agent-runtime
-- [ ] B-06 `F-06` 迁移后 runtime 源码去 app 依赖
+- [x] B-05 `F-05` Chat Runtime 物理迁移到 agent-runtime
+- [x] B-06 `F-06` 迁移后 runtime 源码去 app 依赖
 
 ## Task Progress
 - [x] T-01 ~ T-05: `F-01` 新模块与 Gradle 骨架
@@ -58,29 +58,25 @@ Phase 3 ⏸ After B-04
 - [x] T-78: `F-07` 预创建目标迁移目录
 - [x] T-09 ~ T-17: `F-03` app/repo 接入与模型下沉收口
 - [x] T-18 ~ T-47: `F-04` UI Infra 物理迁移到 composebase
-- [ ] T-48 ~ T-71: `F-05` Chat Runtime 物理迁移到 agent-runtime
-- [ ] T-72 ~ T-77: `F-06` 迁移后 runtime 源码去 app 依赖
+- [x] T-48 ~ T-71: `F-05` Chat Runtime 物理迁移到 agent-runtime
+- [x] T-72 ~ T-77: `F-06` 迁移后 runtime 源码去 app 依赖
 
 ## Last Batch Result
-- Batch: `B-04`
+- Batch: `B-06`
 - Status: `DONE`
 - Modified Files:
-  - `app/src/main/java/com/niki914/nexus/agentic/repo/XRepoRuntimeGateway.kt`
-  - `app/src/main/java/com/niki914/nexus/agentic/repo/XRepo.kt`
-  - `app/src/main/java/com/niki914/nexus/agentic/repo/LocalSettingsCodec.kt`
-  - `app/src/main/java/com/niki914/nexus/agentic/app/App.kt`
-  - `app/src/main/java/a0/a0/a0/a0/a0/a0/Entrance.kt`
-  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/ConfigureState.kt`
-  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/McpSettingsState.kt`
-  - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/CustomToolsSettingsContent.kt`
-  - `app/src/main/java/com/niki914/nexus/agentic/repo/XRepoModels.kt`（删除）
+  - `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/LLMController.kt`
+  - `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolSettingsManager.kt`
+  - `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/CustomToolManager.kt`
+  - `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/CreateCustomToolBuiltin.kt`
+  - `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStore.kt`
   - `docs/.asc_task/module_refactor/progress.md`
 - Verification:
-  - 已确认 `XRepoRuntimeGateway` 已实现 `RuntimeSettingsGateway` 全量方法。
-  - 已确认 `XRepo` / `LocalSettingsCodec` 与 3 个 UI 文件切到 runtime shared models。
-  - 已删除 `XRepoModels.kt`，并补齐当前 `app/chat` 与测试侧对 runtime shared models 的 import 修正。
-  - 已对本批主源码改动文件执行 IDE Diagnostics，结果均为 0 error。
+  - 已确认 `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat` 下搜索 `XRepo|com.niki914.nexus.agentic.repo` 结果为空。
+  - 已对 `LLMController.kt`、`BuiltinToolSettingsManager.kt`、`CustomToolManager.kt`、`CreateCustomToolBuiltin.kt`、`McpDiscoveryCacheStore.kt`、`ToolManager.kt` 执行 IDE Diagnostics，结果均为 0 error。
+  - `ToolManager.kt` 已核对仅依赖 runtime shared models，因此 `T-77` 无额外代码差异。
 - Notes:
-  - 本批只完成 `B-04`，未进入 `B-05` 的 chat 物理迁移。
-  - 为避免删除旧模型后留下显式未解析引用，顺手把当前仍留在 `app` 的 chat / test import 切到 runtime shared models；未改变其逻辑路径。
-  - 下一批应进入 `B-05`，由用户在 Android Studio 中把 `chat/**` 物理迁入 `agent-runtime`。
+  - 本批完成 runtime 去 `app/XRepo` 的静态依赖切断，配置读取统一经由 `RuntimeEnvironment` / `RuntimeSettingsGateway`。
+  - 全量 reviewer 曾发现 Hook 冷启动下 gateway 安装竞态；现已通过 `RuntimeEnvironment.awaitSettingsGateway()` 修复，并新增 `RuntimeEnvironmentTest.kt` 覆盖延迟安装场景。
+  - `NotifyBuiltin.kt` 也已去除对 `app.mod.XService` 的直接依赖，改为 `ContextProvider + XIpcBridge`，`agent-runtime` 增加 `:ipc` 依赖。
+  - 修复后已执行 `:agent-runtime:testDebugUnitTest --tests com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironmentTest`，并通过聚焦复审，无新增 findings。

@@ -8,7 +8,7 @@ import com.niki914.nexus.agentic.chat.agentic.PromptComposerInput
 import com.niki914.nexus.agentic.chat.agentic.SessionToolBinder
 import com.niki914.nexus.agentic.chat.agentic.ToolCallDispatcher
 import com.niki914.nexus.agentic.chat.agentic.ToolManager
-import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 import com.niki914.nexus.h.util.xlog
 import com.niki914.s3ss10n.Session
@@ -44,16 +44,17 @@ object LLMController {
 
     suspend fun refresh(): com.niki914.nexus.agentic.chat.LlmRuntimeSnapshot {
         val previousSnapshot = runtimeState?.snapshot
-        val llmConfig = XRepo.llm()
-        val mcpServers = XRepo.mcp.list()
-        val customTools = XRepo.customTools.list()
-        val builtinSettings = XRepo.builtinTools.list()
+        val gateway = RuntimeEnvironment.awaitSettingsGateway()
+        val llmConfig = gateway.readLlmConfig()
+        val mcpServers = gateway.listMcpServers()
+        val customTools = gateway.listCustomTools()
+        val builtinSettings = gateway.listBuiltinToolSettings()
         var resolvedTools = toolManager.resolve(
             customTools = customTools,
             mcpServers = mcpServers,
             builtinSettings = builtinSettings,
             mcpCachedTools = mcpServers.associate { server ->
-                server.name to XRepo.mcp.cachedTools(server)
+                server.name to gateway.listCachedTools(server)
             },
         )
         val prompt = promptComposer.compose(
@@ -73,7 +74,7 @@ object LLMController {
             proxy = llmConfig.proxy,
         )
         val isNewSession = session == null
-        val currentMcpServersFingerprint = XRepo.mcp.fingerprint()
+        val currentMcpServersFingerprint = gateway.fingerprintMcpServers()
         val activeSession = obtainSession()
         activeSession.update {
             applyRuntimeConfig(
@@ -93,7 +94,7 @@ object LLMController {
                     "LLMController.refreshMcpTools refreshed=${refreshResult.refreshedServers} failed=${refreshResult.failedServers} count=${refreshResult.discoveredToolCount}"
                 )
                 if (refreshResult.failedServers.isNotEmpty()) {
-                    XRepo.mcp.clearCacheByServerNames(
+                    gateway.clearMcpCacheByServerNames(
                         refreshResult.failedServers.map { it.serverName }.toSet()
                     )
                     resolvedTools = toolManager.resolve(
@@ -101,7 +102,7 @@ object LLMController {
                         mcpServers = mcpServers,
                         builtinSettings = builtinSettings,
                         mcpCachedTools = mcpServers.associate { server ->
-                            server.name to XRepo.mcp.cachedTools(server)
+                            server.name to gateway.listCachedTools(server)
                         },
                     )
                     activeSession.update {
