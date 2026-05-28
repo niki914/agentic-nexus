@@ -4,7 +4,7 @@
 通过“两刀方案”降低 `app` 模块职责密度：将 `app/ui/infra` 下沉到 `composebase`，新建 `agent-runtime` 承接 `chat`，并明确用户在 AS 的机械迁移与 ASC 的边界/依赖改造分工。
 
 ## Current Phase
-Phase 3 ⏸ After B-02
+Phase 3 ▶ Ready for B-03
 
 ## Context (关键上下文)
 
@@ -46,7 +46,7 @@ Phase 3 ⏸ After B-02
 ## Batch Progress
 - [x] B-01 `F-01` 新模块与 Gradle 骨架
 - [x] B-02 `F-02` runtime shared settings 契约层
-- [ ] B-07 `F-07` 预创建目标迁移目录
+- [x] B-07 `F-07` 预创建目标迁移目录
 - [ ] B-03 `F-04` UI Infra 物理迁移到 composebase
 - [ ] B-04 `F-03` app/repo 接入与模型下沉收口
 - [ ] B-05 `F-05` Chat Runtime 物理迁移到 agent-runtime
@@ -55,19 +55,23 @@ Phase 3 ⏸ After B-02
 ## Task Progress
 - [x] T-01 ~ T-05: `F-01` 新模块与 Gradle 骨架
 - [x] T-06 ~ T-08: `F-02` runtime shared settings 契约层
-- [ ] T-78: `F-07` 预创建目标迁移目录
+- [x] T-78: `F-07` 预创建目标迁移目录
 - [ ] T-09 ~ T-17: `F-03` app/repo 接入与模型下沉收口
 - [ ] T-18 ~ T-47: `F-04` UI Infra 物理迁移到 composebase
 - [ ] T-48 ~ T-71: `F-05` Chat Runtime 物理迁移到 agent-runtime
 - [ ] T-72 ~ T-77: `F-06` 迁移后 runtime 源码去 app 依赖
 
 ## Last Batch Result
-- Batch: `B-02`
+- Batch: `B-07`
 - Status: `DONE`
 - Modified Files:
-  - `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/model/RuntimeSettingsModels.kt`
-  - `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeSettingsGateway.kt`
-  - `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeEnvironment.kt`
+  - `docs/.asc_task/module_refactor/mkdir_targets.sh`
+  - `docs/.asc_task/module_refactor/progress.md`
+- Verification:
+  - `chmod +x docs/.asc_task/module_refactor/mkdir_targets.sh`
+  - `docs/.asc_task/module_refactor/mkdir_targets.sh`
+  - 已确认 `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra` 及其子目录存在。
+  - 已确认 `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat` 及其子目录存在。
 - Notes:
-  - 共享 settings contract 已全部落在 `agent-runtime`，为后续 `XRepo` 适配和 runtime 去耦提供稳定签名。
-  - `app/repo/XRepoModels.kt` 本批未改动，符合“先新增共享契约，再做模型下沉替换”的顺序。
+  - B-07 只预创建机械迁移目标目录，不改动任何源码文件。
+  - B-03 的前置 `B-01` 已完成，且本批已补齐 AS 迁移所需目录树，可进入 `B-03`。
