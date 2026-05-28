@@ -4,6 +4,7 @@ import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiChatHook
 import com.niki914.nexus.agentic.mod.feat.oppo.BreenoChatHook
+import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.h.IXposed
 import com.niki914.nexus.h.core.runtime.Hook
 import com.niki914.nexus.h.core.runtime.Runtime
@@ -34,6 +35,7 @@ class Entrance : IXposed() {
         HookSideLoader.load(scope, ActivityHook(), params)
         scope.launch(Dispatchers.IO) {
             val ctx = ContextProvider.await()
+            XRepo.init(ctx)
             xlog("Entrance: context initialized: $ctx")
 
             HookLocalSettings.update(ctx)

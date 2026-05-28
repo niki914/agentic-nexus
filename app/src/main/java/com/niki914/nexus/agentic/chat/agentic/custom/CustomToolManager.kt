@@ -1,6 +1,5 @@
 package com.niki914.nexus.agentic.chat.agentic.custom
 
-import android.content.Context
 import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
@@ -32,18 +31,15 @@ class CustomToolManager(
     },
     private val safetyPolicy: ShellCommandSafetyPolicy = ShellCommandSafetyPolicy(),
 ) {
-    suspend fun load(context: Context): List<CustomToolConfig> {
-        XRepo.init(context)
+    suspend fun load(): List<CustomToolConfig> {
         return XRepo.customTools.list().map { it.toConfig() }
     }
 
     suspend fun createOrUpdate(
-        context: Context,
         request: CustomToolCreateRequest,
     ): BuiltinToolResult {
         return withSettingsFailure {
-            XRepo.init(context)
-            val existingItems = load(context)
+            val existingItems = load()
             val validationError = validate(
                 request = request,
                 existingNames = existingItems.map { it.name }.toSet(),
@@ -64,11 +60,9 @@ class CustomToolManager(
     }
 
     suspend fun saveAll(
-        context: Context,
         items: List<CustomToolConfig>,
     ): BuiltinToolResult {
         return withSettingsFailure {
-            XRepo.init(context)
             val normalizedItems = items.map { it.normalized() }
             val validationError = validateAll(
                 items = normalizedItems,
@@ -96,9 +90,8 @@ class CustomToolManager(
         }
     }
 
-    suspend fun delete(context: Context, name: String): BuiltinToolResult {
+    suspend fun delete(name: String): BuiltinToolResult {
         return withSettingsFailure {
-            XRepo.init(context)
             XRepo.customTools.delete(name)
             BuiltinToolResult.success(
                 message = "Custom tool '$name' was deleted.",
@@ -113,9 +106,8 @@ class CustomToolManager(
         }
     }
 
-    suspend fun setEnabled(context: Context, name: String, enabled: Boolean): BuiltinToolResult {
+    suspend fun setEnabled(name: String, enabled: Boolean): BuiltinToolResult {
         return withSettingsFailure {
-            XRepo.init(context)
             XRepo.customTools.setEnabled(name, enabled)
             BuiltinToolResult.success(
                 message = "Custom tool setting updated.",

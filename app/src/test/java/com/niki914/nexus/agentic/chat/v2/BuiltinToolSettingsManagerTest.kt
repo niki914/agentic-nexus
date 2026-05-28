@@ -34,7 +34,7 @@ class BuiltinToolSettingsManagerTest {
         XRepo.installStoreForTest(store)
         XRepo.init(context)
 
-        val items = manager.load(context)
+        val items = manager.load()
 
         assertEquals(
             listOf("create_custom_tool", "notify", "run_command"),
@@ -51,7 +51,6 @@ class BuiltinToolSettingsManagerTest {
         XRepo.init(context)
 
         val result = manager.setEnabled(
-            context = context,
             name = "create_custom_tool",
             enabled = true,
         )
@@ -76,7 +75,6 @@ class BuiltinToolSettingsManagerTest {
         XRepo.init(context)
 
         val result = manager.setEnabled(
-            context = context,
             name = "unknown_tool",
             enabled = true,
         )
@@ -106,7 +104,6 @@ class BuiltinToolSettingsManagerTest {
         XRepo.init(context)
 
         val result = manager.setEnabled(
-            context = context,
             name = "create_custom_tool",
             enabled = true,
         )

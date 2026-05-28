@@ -52,7 +52,6 @@ class ToolCallDispatcherTest {
         )
 
         val resultJson = dispatcher.executeLocalTool(
-            context = context,
             name = "create_custom_tool",
             argumentsJson = """{"name":"battery_status"}""",
         )
@@ -82,7 +81,6 @@ class ToolCallDispatcherTest {
         )
 
         val resultJson = dispatcher.executeLocalTool(
-            context = context,
             name = "create_custom_tool",
             argumentsJson = """{"name":"battery_status"}""",
         )
@@ -101,7 +99,6 @@ class ToolCallDispatcherTest {
         )
 
         val resultJson = dispatcher.executeLocalTool(
-            context = context,
             name = "missing",
             argumentsJson = "{}",
         )
@@ -133,7 +130,6 @@ class ToolCallDispatcherTest {
         )
 
         val resultJson = dispatcher.executeLocalTool(
-            context = context,
             name = "device_model",
             argumentsJson = "{}",
         )
@@ -162,7 +158,6 @@ class ToolCallDispatcherTest {
         )
 
         val resultJson = dispatcher.executeLocalTool(
-            context = context,
             name = "wipe_data",
             argumentsJson = "{}",
         )

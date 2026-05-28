@@ -65,7 +65,6 @@ class CreateCustomToolBuiltin : BuiltinTool() {
         }
 
         return try {
-            XRepo.init(request.context)
             val normalized = createRequest.normalized()
             val tool = CustomTool(
                 name = normalized.name,

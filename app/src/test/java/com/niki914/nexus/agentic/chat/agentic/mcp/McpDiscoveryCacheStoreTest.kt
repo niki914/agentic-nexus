@@ -28,7 +28,7 @@ class McpDiscoveryCacheStoreTest {
         XRepo.installStoreForTest(store)
         XRepo.init(context)
 
-        McpDiscoveryCacheStore(contextProvider = { context }).onToolsDiscovered(
+        McpDiscoveryCacheStore().onToolsDiscovered(
             url = "http://127.0.0.1:51338/mcp",
             headers = mapOf("Authorization" to "Bearer token"),
             responseJson = """

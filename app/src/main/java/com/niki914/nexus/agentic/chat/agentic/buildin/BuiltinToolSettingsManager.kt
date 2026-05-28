@@ -1,6 +1,5 @@
 package com.niki914.nexus.agentic.chat.agentic.buildin
 
-import android.content.Context
 import com.niki914.nexus.agentic.repo.BuiltinToolSetting
 import com.niki914.nexus.agentic.repo.XRepo
 import kotlinx.coroutines.CancellationException
@@ -13,21 +12,16 @@ data class BuiltinToolSettingItem(
     val enabled: Boolean,
 )
 
-class BuiltinToolSettingsManager(
-    private val registry: BuiltinToolRegistry = BuiltinToolRegistry.default(),
-) {
-    suspend fun load(context: Context): List<BuiltinToolSettingItem> {
-        XRepo.init(context)
+class BuiltinToolSettingsManager {
+    suspend fun load(): List<BuiltinToolSettingItem> {
         return XRepo.builtinTools.list().map { it.toItem() }
     }
 
     suspend fun setEnabled(
-        context: Context,
         name: String,
         enabled: Boolean,
     ): BuiltinToolResult {
         return try {
-            XRepo.init(context)
             val validation = XRepo.builtinTools.setEnabled(name, enabled)
             if (validation != null) {
                 return BuiltinToolResult.failure(

@@ -49,7 +49,7 @@ fun BuiltinToolsSettingsContent(
 
     LaunchedEffect(Unit) {
         runCatching {
-            loadBuiltinToolItems(context, manager)
+            loadBuiltinToolItems(manager)
         }.onSuccess { loadedItems ->
             items = loadedItems
         }.onFailure { throwable ->
@@ -112,9 +112,9 @@ fun BuiltinToolsSettingsContent(
                             savingToolName = item.name
                             scope.launch {
                                 runCatching {
-                                    val result = manager.setEnabled(context, item.name, checked)
+                                    val result = manager.setEnabled(item.name, checked)
                                     if (result.ok) {
-                                        items = loadBuiltinToolItems(context, manager)
+                                        items = loadBuiltinToolItems(manager)
                                         statusMessage = context.getString(
                                             if (checked) {
                                                 R.string.builtin_tool_save_success_enabled
@@ -188,10 +188,9 @@ private fun BuiltinToolMessage(text: String) {
 }
 
 private suspend fun loadBuiltinToolItems(
-    context: Context,
     manager: BuiltinToolSettingsManager,
 ): List<BuiltinToolSettingItem> {
-    return manager.load(context)
+    return manager.load()
 }
 
 private suspend fun refreshBuiltinToolItemsOrFallback(
@@ -200,7 +199,7 @@ private suspend fun refreshBuiltinToolItemsOrFallback(
     fallback: List<BuiltinToolSettingItem>,
 ): List<BuiltinToolSettingItem> {
     return runCatching {
-        loadBuiltinToolItems(context, manager)
+        loadBuiltinToolItems(manager)
     }.getOrElse { throwable ->
         if (throwable is CancellationException) {
             throw throwable

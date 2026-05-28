@@ -1,6 +1,5 @@
 package com.niki914.nexus.agentic.chat
 
-import android.content.Context
 import com.niki914.nexus.agentic.chat.agentic.stream.LlmStreamEventMapper
 import com.niki914.nexus.agentic.chat.agentic.mcp.McpDiscoveryCacheStore
 import com.niki914.nexus.agentic.chat.agentic.mcp.McpInterceptorHttpEngine
@@ -11,7 +10,6 @@ import com.niki914.nexus.agentic.chat.agentic.ToolCallDispatcher
 import com.niki914.nexus.agentic.chat.agentic.ToolManager
 import com.niki914.nexus.agentic.repo.LlmConfig
 import com.niki914.nexus.agentic.repo.XRepo
-import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.nexus.h.util.xlog
 import com.niki914.s3ss10n.Session
 import com.niki914.s3ss10n.SessionConfig
@@ -33,18 +31,15 @@ import kotlinx.coroutines.flow.flowOn
 object LLMController {
     private val promptComposer = PromptComposer()
     private val toolManager = ToolManager()
-    private val mcpCacheStore = McpDiscoveryCacheStore { sessionContext ?: ContextProvider.await() }
+    private val mcpCacheStore = McpDiscoveryCacheStore()
     private val toolCallDispatcher = ToolCallDispatcher { runtimeState?.snapshot?.tools }
 
     private var runtimeState: RuntimeState? = null
     private var session: Session? = null
-    private var sessionContext: Context? = null
     private var lastMcpServersFingerprint: String? = null
 
-    suspend fun refresh(context: Context): LlmRuntimeSnapshot {
+    suspend fun refresh(): LlmRuntimeSnapshot {
         val previousSnapshot = runtimeState?.snapshot
-        sessionContext = context.applicationContext
-        XRepo.init(context)
         val llmConfig = XRepo.llm()
         val mcpServers = XRepo.mcp.list()
         val customTools = XRepo.customTools.list()
@@ -133,7 +128,7 @@ object LLMController {
         }
     }
 
-    suspend fun refreshFromHookContext(): LlmRuntimeSnapshot = refresh(ContextProvider.await())
+    suspend fun refreshFromHookContext(): LlmRuntimeSnapshot = refresh()
 
     suspend fun snapshot(): LlmRuntimeSnapshot? = runtimeState?.snapshot
 
@@ -175,8 +170,7 @@ object LLMController {
 
     private suspend fun refreshIfPossibleFromHookContext(): RuntimeState? {
         return try {
-            val context = sessionContext ?: ContextProvider.await()
-            refresh(context)
+            refresh()
             runtimeState
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) {
@@ -199,7 +193,6 @@ object LLMController {
                     ToolCallKind.Local -> {
                         ok(
                             toolCallDispatcher.executeLocalTool(
-                                context = sessionContext ?: ContextProvider.await(),
                                 name = name,
                                 argumentsJson = argumentsJson,
                             )

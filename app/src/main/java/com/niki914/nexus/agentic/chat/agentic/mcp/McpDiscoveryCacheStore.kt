@@ -1,10 +1,8 @@
 package com.niki914.nexus.agentic.chat.agentic.mcp
 
-import android.content.Context
 import com.niki914.nexus.agentic.chat.McpCachedTool
 import com.niki914.nexus.agentic.repo.McpTool
 import com.niki914.nexus.agentic.repo.XRepo
-import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.nexus.h.util.xTry
 import com.niki914.nexus.h.util.xlog
 import kotlinx.coroutines.CancellationException
@@ -15,9 +13,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-class McpDiscoveryCacheStore(
-    private val contextProvider: suspend () -> Context = { ContextProvider.await() },
-) {
+class McpDiscoveryCacheStore {
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun onToolsDiscovered(
@@ -44,7 +40,6 @@ class McpDiscoveryCacheStore(
         headers: Map<String, String>,
         tools: List<McpCachedTool>,
     ) {
-        XRepo.init(contextProvider())
         XRepo.mcp.saveDiscoveredTools(
             url = url,
             headers = headers,

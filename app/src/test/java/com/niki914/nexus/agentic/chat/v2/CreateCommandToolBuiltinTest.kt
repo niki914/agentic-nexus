@@ -81,7 +81,6 @@ class CreateCustomToolBuiltinTest {
     fun invoke_returnsInvalidArgumentsJsonForNonObjectArguments() = runTest {
         val result = CreateCustomToolBuiltin().invoke(
             BuiltinToolRequest(
-                context = context,
                 name = "create_custom_tool",
                 argumentsJson = "[]",
             )
@@ -100,7 +99,6 @@ class CreateCustomToolBuiltinTest {
 
         val result = CreateCustomToolBuiltin().invoke(
             BuiltinToolRequest(
-                context = context,
                 name = "create_custom_tool",
                 argumentsJson = """
                     {

@@ -1,6 +1,5 @@
 package com.niki914.nexus.agentic.chat.agentic.buildin
 
-import android.content.Context
 import kotlinx.coroutines.CancellationException
 
 class BuiltinToolExecutor(
@@ -11,7 +10,6 @@ class BuiltinToolExecutor(
     }
 
     suspend fun execute(
-        context: Context,
         name: String,
         argumentsJson: String,
     ): String {
@@ -22,11 +20,10 @@ class BuiltinToolExecutor(
                 hint = "Check builtin_tool_flags or custom_tools configuration.",
             ).toJsonString()
 
-        return execute(context = context, tool = tool, argumentsJson = argumentsJson)
+        return execute(tool = tool, argumentsJson = argumentsJson)
     }
 
     suspend fun execute(
-        context: Context,
         tool: BuiltinTool,
         argumentsJson: String,
     ): String {
@@ -34,7 +31,6 @@ class BuiltinToolExecutor(
             return try {
                 tool.invokeRawJson(
                     BuiltinToolRequest(
-                        context = context,
                         name = tool.name,
                         argumentsJson = argumentsJson,
                     )
@@ -53,7 +49,6 @@ class BuiltinToolExecutor(
         return try {
             tool.invoke(
                 BuiltinToolRequest(
-                    context = context,
                     name = tool.name,
                     argumentsJson = argumentsJson,
                 )

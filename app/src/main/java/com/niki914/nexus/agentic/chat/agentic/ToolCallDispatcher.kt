@@ -1,6 +1,5 @@
 package com.niki914.nexus.agentic.chat.agentic
 
-import android.content.Context
 import com.niki914.nexus.agentic.chat.LocalTool
 import com.niki914.nexus.agentic.chat.ResolvedTools
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolExecutor
@@ -25,7 +24,6 @@ class ToolCallDispatcher(
     }
 
     suspend fun executeLocalTool(
-        context: Context,
         name: String,
         argumentsJson: String,
     ): String {
@@ -37,7 +35,6 @@ class ToolCallDispatcher(
             .firstOrNull { it.name == name }
         if (builtinTool != null) {
             return builtinToolExecutor.execute(
-                context = context,
                 tool = builtinTool.tool,
                 argumentsJson = argumentsJson,
             )

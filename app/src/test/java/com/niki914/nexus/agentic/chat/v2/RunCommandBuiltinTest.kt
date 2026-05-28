@@ -1,6 +1,5 @@
 package com.niki914.nexus.agentic.chat.v2
 
-import android.content.ContextWrapper
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.RunCommandBuildin_WIP_SAFE
 import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRunner
@@ -18,7 +17,6 @@ class RunCommandBuiltinTest {
         val json = Json.parseToJsonElement(
             tool.invokeRawJson(
                 BuiltinToolRequest(
-                    context = ContextWrapper(null),
                     name = tool.name,
                     argumentsJson = """{"command":"rm -rf /data/local/tmp/cache"}""",
                 )
@@ -37,7 +35,6 @@ class RunCommandBuiltinTest {
         val json = Json.parseToJsonElement(
             tool.invokeRawJson(
                 BuiltinToolRequest(
-                    context = ContextWrapper(null),
                     name = tool.name,
                     argumentsJson = """{"command":"pwd; echo err >&2","workdir":"/tmp","merge_stderr":true}""",
                 )
@@ -55,7 +52,6 @@ class RunCommandBuiltinTest {
         val json = Json.parseToJsonElement(
             tool.invokeRawJson(
                 BuiltinToolRequest(
-                    context = ContextWrapper(null),
                     name = tool.name,
                     argumentsJson = """{"command":"pwd","timeout_ms":0}""",
                 )

@@ -1,6 +1,5 @@
 package com.niki914.nexus.agentic.chat.agentic.buildin
 
-import android.content.Context
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -23,7 +22,6 @@ interface RawJsonBuiltinTool {
 }
 
 data class BuiltinToolRequest(
-    val context: Context,
     val name: String,
     val argumentsJson: String,
 )

@@ -108,7 +108,6 @@ class CustomToolManagerTest {
         XRepo.init(context)
 
         val result = manager.createOrUpdate(
-            context = context,
             request = request(command = "getprop ro.product.model").copy(enabled = true),
         )
 
@@ -134,13 +133,11 @@ class CustomToolManagerTest {
         XRepo.init(context)
         assertTrue(
             manager.createOrUpdate(
-                context = context,
                 request = request(command = "getprop ro.product.model"),
             ).ok
         )
 
         val result = manager.createOrUpdate(
-            context = context,
             request = request(command = "getprop ro.build.version.release"),
         )
 
@@ -157,7 +154,6 @@ class CustomToolManagerTest {
         XRepo.init(context)
 
         val result = manager.createOrUpdate(
-            context = context,
             request = request(command = "rm -rf /data/local/tmp/cache"),
         )
 
@@ -174,13 +170,11 @@ class CustomToolManagerTest {
         XRepo.init(context)
         assertTrue(
             manager.createOrUpdate(
-                context = context,
                 request = request(command = "getprop ro.product.model").copy(name = "old_tool"),
             ).ok
         )
 
         val result = manager.saveAll(
-            context = context,
             items = listOf(
                 com.niki914.nexus.agentic.chat.agentic.custom.CustomToolConfig(
                     name = "new_tool",
@@ -220,7 +214,6 @@ class CustomToolManagerTest {
         store.failOnWriteNumber = store.writeCount + 1
 
         val result = manager.saveAll(
-            context = context,
             items = listOf(
                 com.niki914.nexus.agentic.chat.agentic.custom.CustomToolConfig(
                     name = "new_tool",

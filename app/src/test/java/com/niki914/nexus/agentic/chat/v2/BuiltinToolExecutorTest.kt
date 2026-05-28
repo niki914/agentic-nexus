@@ -26,7 +26,6 @@ class BuiltinToolExecutorTest {
         val executor = BuiltinToolExecutor(BuiltinToolRegistry(listOf(tool)))
 
         val resultJson = executor.execute(
-            context = context,
             name = "create_custom_tool",
             argumentsJson = """{"name":"battery_status"}""",
         )
@@ -41,7 +40,7 @@ class BuiltinToolExecutorTest {
     fun execute_returnsLocalToolNotExecutableWhenBuiltinMissing() = runTest {
         val executor = BuiltinToolExecutor(BuiltinToolRegistry(emptyList()))
 
-        val resultJson = executor.execute(context, "missing", "{}")
+        val resultJson = executor.execute("missing", "{}")
 
         val json = Json.parseToJsonElement(resultJson).jsonObject
         assertEquals("LOCAL_TOOL_NOT_EXECUTABLE", json["code"]!!.jsonPrimitive.content)
@@ -57,7 +56,7 @@ class BuiltinToolExecutorTest {
             BuiltinToolRegistry(listOf(ThrowingBuiltinTool("broken", IllegalStateException("boom"))))
         )
 
-        val resultJson = executor.execute(context, "broken", "{}")
+        val resultJson = executor.execute("broken", "{}")
 
         val json = Json.parseToJsonElement(resultJson).jsonObject
         assertEquals("UNKNOWN_ERROR", json["code"]!!.jsonPrimitive.content)
@@ -70,7 +69,7 @@ class BuiltinToolExecutorTest {
             BuiltinToolRegistry(listOf(RawJsonBuiltin("raw_json_tool")))
         )
 
-        val resultJson = executor.execute(context, "raw_json_tool", """{"command":"pwd"}""")
+        val resultJson = executor.execute("raw_json_tool", """{"command":"pwd"}""")
 
         val json = Json.parseToJsonElement(resultJson).jsonObject
         assertEquals("0", json["exit_code"]!!.jsonPrimitive.content)
@@ -83,7 +82,7 @@ class BuiltinToolExecutorTest {
             BuiltinToolRegistry(listOf(ThrowingBuiltinTool("cancel", CancellationException("cancel"))))
         )
 
-        executor.execute(context, "cancel", "{}")
+        executor.execute("cancel", "{}")
     }
 
     private class RecordingBuiltinTool(
