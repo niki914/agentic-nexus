@@ -1,4 +1,4 @@
-# 技术方案与 API 设计 v1.0
+# 技术方案与 API 设计 v1.1
 
 ## 1. 架构特征分析
 - **强制工具类**: Xposed 侧基础设施复用 `h` 模块；UI 状态管理复用 `ComposeMVIViewModel`；本地设置读写继续复用 `LocalSettingsCodec`、`LocalSettingsStore`、`XService`
@@ -22,13 +22,14 @@
 | 迁移后的 package 是否统一改名 | 方案 A：跨模块迁移先保留原 package；方案 B：迁移同时重命名到新 package | 方案 A | 可把用户在 AS 的工作压缩为“Move”，避免把包重命名和模块迁移耦合在一起 |
 | `LLMController -> XRepo` 环如何切断 | 方案 A：引入 `RuntimeSettingsGateway` 由 `app` 提供实现；方案 B：把 `repo` 一并迁入 runtime | 方案 A | 本轮约束已明确 `repo` 不拆出 `app`，因此只能让 runtime 依赖接口而不是依赖实现 |
 | 共享配置模型放哪里 | 方案 A：迁入 `agent-runtime` 的 shared settings 包；方案 B：继续放在 `app/repo` 并让 runtime 引用 | 方案 A | 共享 DTO 必须位于低层，才能同时被 runtime 和 app/repo 使用且不形成回环 |
+| runtime 如何承接未来宿主能力 | 方案 A：继续按能力新增若干独立 gateway 挂到 `RuntimeEnvironment`；方案 B：新增统一 `RuntimeBridge`，在 bridge 下分组 `settings` / `host` 能力 | 方案 B | 配置读取与宿主能力都属于 runtime 对外部世界的依赖，应通过统一安装点装配，避免 runtime 继续直接依赖 `ipc` 或未来出现多个平行全局 gateway |
 
 ## 4. 方案概览
 本轮采用“模块先切、包名后稳、边界同步收敛”的设计：
 - **UI Infra 下沉**: 将 `app/ui/infra/**` 迁入 `composebase`，保留原 package `com.niki914.nexus.agentic.app.ui.infra`
 - **Runtime 独立**: 新建 `agent-runtime` Android library 模块，承接 `app/chat/**`，本轮保留原 package `com.niki914.nexus.agentic.chat`
 - **共享模型下沉**: 将 `LlmConfig`、`McpServer`、`McpTool`、`CustomTool`、`BuiltinToolSetting`、`CustomToolValidation` 下沉到 `agent-runtime` 的 shared settings 包
-- **接口切环**: 在 `agent-runtime` 中定义 `RuntimeSettingsGateway` 与安装入口，`app` 提供 `XRepoRuntimeGateway`
+- **接口切环**: 在 `agent-runtime` 中定义 `RuntimeBridge` 统一安装入口，其中 `settings` 由 `RuntimeSettingsGateway` 抽象，`host` 由 `RuntimeHostGateway` 抽象；`app` 侧分别提供 `XRepoRuntimeGateway` 与 `IpcRuntimeHostGateway`
 - **执行分工**: 你在 AS 执行 Move；ASC 负责新模块、Gradle、包外引用修正、接口注入和边界重构
 
 ## 5. 项目目录结构
@@ -127,15 +128,38 @@ nexus/
 
 ---
 
-### Class: `RuntimeEnvironment`
+### Interface: `RuntimeHostGateway`
 - **类型**: 新增
-- **职责**: 保存 `agent-runtime` 的全局依赖安装点，向 `LLMController`、`BuiltinToolSettingsManager`、`CustomToolManager`、`McpDiscoveryCacheStore` 暴露统一 gateway
-- **隔离验证**: What=运行时依赖安装器 | How=App/Entrance 启动时调用 install，再由 runtime 代码读取 gateway | Depends=[RuntimeSettingsGateway]
+- **职责**: 为 `agent-runtime` 提供宿主能力抽象，避免 builtin/tool 直接依赖 `ipc`、`XService` 或其他宿主实现
+- **隔离验证**: What=宿主能力访问抽象 | How=由 app 提供实现并在启动时安装 | Depends=[Kotlin interface]
+
+#### 方法（完整签名）
+- `suspend fun postNotification(title: String, content: String, uri: String?): Boolean`
+
+---
+
+### Class: `RuntimeBridge`
+- **类型**: 新增
+- **职责**: 聚合 runtime 所需的外部依赖分组，作为 `RuntimeEnvironment` 的唯一安装单元
+- **隔离验证**: What=runtime 外部依赖聚合桥 | How=app 在启动/Hook 初始化时整体安装，再由 runtime 侧按能力读取 | Depends=[RuntimeSettingsGateway, RuntimeHostGateway]
 
 #### 属性 / 方法（完整签名）
-- `@Volatile private var settingsGateway: RuntimeSettingsGateway? = null`
-- `fun install(settingsGateway: RuntimeSettingsGateway): Unit`
+- `data class RuntimeBridge(val settings: RuntimeSettingsGateway, val host: RuntimeHostGateway)`
+
+---
+
+### Class: `RuntimeEnvironment`
+- **类型**: 新增
+- **职责**: 保存 `agent-runtime` 的全局依赖安装点，向 runtime 代码暴露统一 bridge
+- **隔离验证**: What=运行时依赖安装器 | How=App/Entrance 启动时调用 install，再由 runtime 代码读取 bridge 或其子能力 | Depends=[RuntimeBridge]
+
+#### 属性 / 方法（完整签名）
+- `@Volatile private var bridge: RuntimeBridge? = null`
+- `fun install(bridge: RuntimeBridge): Unit`
+- `fun requireBridge(): RuntimeBridge`
+- `suspend fun awaitBridge(): RuntimeBridge`
 - `fun requireSettingsGateway(): RuntimeSettingsGateway`
+- `suspend fun awaitSettingsGateway(): RuntimeSettingsGateway`
 - `fun clearForTest(): Unit`
 
 ---
@@ -163,7 +187,7 @@ nexus/
 #### 修改要点
 - 将 `import com.niki914.nexus.agentic.repo.XRepo` 替换为 `import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment`
 - 将 `import com.niki914.nexus.agentic.repo.LlmConfig` 替换为 `import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig`
-- 在 `refresh()` 中统一通过 `val gateway = RuntimeEnvironment.requireSettingsGateway()` 读取 llm/mcp/custom/builtin 配置
+- 在 `refresh()` 中统一通过 `val gateway = RuntimeEnvironment.awaitSettingsGateway()` 读取 llm/mcp/custom/builtin 配置
 
 #### 关键方法（完整签名）
 - `suspend fun refresh(): LlmRuntimeSnapshot`
@@ -184,8 +208,8 @@ nexus/
 - `suspend fun setEnabled(name: String, enabled: Boolean): BuiltinToolResult`
 
 #### 修改要点
-- `load(): List<BuiltinToolSettingItem>` 的实现改为读取 `RuntimeEnvironment.requireSettingsGateway().listBuiltinToolSettings()`
-- `setEnabled(name: String, enabled: Boolean): BuiltinToolResult` 的实现改为读取 `RuntimeEnvironment.requireSettingsGateway().setBuiltinToolEnabled(name, enabled)`
+- `load(): List<BuiltinToolSettingItem>` 的实现改为读取 `RuntimeEnvironment.awaitSettingsGateway().listBuiltinToolSettings()`
+- `setEnabled(name: String, enabled: Boolean): BuiltinToolResult` 的实现改为读取 `RuntimeEnvironment.awaitSettingsGateway().setBuiltinToolEnabled(name, enabled)`
 
 ---
 
@@ -215,6 +239,20 @@ nexus/
 #### 关键方法（完整签名）
 - `suspend fun onToolsDiscovered(url: String, headers: Map<String, String>, responseJson: String): Unit`
 - `private suspend fun persistDiscoveredTools(url: String, headers: Map<String, String>, tools: List<McpCachedTool>): Unit`
+
+---
+
+### Class: `NotifyBuiltin`
+- **类型**: 修改
+- **职责**: 继续提供通知 builtin，但通过 `RuntimeHostGateway` 访问宿主通知能力，不再直接依赖 `ipc`
+- **隔离验证**: What=通知 builtin | How=invoke 时从 `RuntimeEnvironment.awaitBridge().host` 调用 `postNotification()` | Depends=[RuntimeEnvironment, RuntimeHostGateway]
+
+#### 关键方法（完整签名）
+- `override suspend fun invoke(request: BuiltinToolRequest): BuiltinToolResult`
+
+#### 修改要点
+- 删除对 `ContextProvider`、`XIpcBridge`、`XService` 的直接 import
+- 将通知发送实现替换为 `RuntimeEnvironment.awaitBridge().host.postNotification(title, content, uri)`
 
 ---
 
@@ -255,27 +293,48 @@ nexus/
 
 ### Class: `App`
 - **类型**: 修改
-- **职责**: 在主进程启动时完成 runtime gateway 安装
-- **隔离验证**: What=应用初始化 | How=onCreate 中 install runtime gateway | Depends=[RuntimeEnvironment, XRepoRuntimeGateway, XService]
+- **职责**: 在主进程启动时完成 runtime bridge 安装
+- **隔离验证**: What=应用初始化 | How=onCreate 中 install runtime bridge | Depends=[RuntimeEnvironment, RuntimeBridge, XRepoRuntimeGateway, IpcRuntimeHostGateway, XService]
 
 #### 关键方法（完整签名）
 - `override fun onCreate(): Unit`
 
 #### 修改要点
-- 在 `onCreate()` 顶部增加 `RuntimeEnvironment.install(XRepoRuntimeGateway())`
+- 在 `onCreate()` 顶部增加 `RuntimeEnvironment.install(createAppRuntimeBridge())`
 
 ---
 
 ### Class: `Entrance`
 - **类型**: 修改
-- **职责**: 在宿主进程初始化时完成 `XRepo.init()` 后的 runtime gateway 安装，确保 Hook 环境下 `LLMController` 可用
-- **隔离验证**: What=Xposed 入口装配 | How=onLoad 初始化 context 后安装 gateway | Depends=[XRepo, RuntimeEnvironment, XRepoRuntimeGateway, h]
+- **职责**: 在宿主进程初始化时完成 `XRepo.init()` 后的 runtime bridge 安装，确保 Hook 环境下 `LLMController` 与 host builtin 可用
+- **隔离验证**: What=Xposed 入口装配 | How=onLoad 初始化 context 后安装 bridge | Depends=[XRepo, RuntimeEnvironment, RuntimeBridge, XRepoRuntimeGateway, IpcRuntimeHostGateway, h]
 
 #### 关键方法（完整签名）
 - `override fun onLoad(params: XC_LoadPackage.LoadPackageParam): Unit`
 
 #### 修改要点
-- 在 `XRepo.init(ctx)` 之后增加 `RuntimeEnvironment.install(XRepoRuntimeGateway())`
+- 在 `XRepo.init(ctx)` 之后增加 `RuntimeEnvironment.install(createAppRuntimeBridge())`
+
+---
+
+### Class: `IpcRuntimeHostGateway`
+- **类型**: 新增
+- **职责**: 位于 `app`，把宿主通知等 IPC 能力适配成 `RuntimeHostGateway`
+- **隔离验证**: What=宿主能力到 runtime host gateway 的适配器 | How=内部调用 `ContextProvider` / `XIpcBridge`，对 runtime 暴露纯接口 | Depends=[RuntimeHostGateway, ContextProvider, XIpcBridge]
+
+#### 关键方法（完整签名）
+- `class IpcRuntimeHostGateway : RuntimeHostGateway`
+- `override suspend fun postNotification(title: String, content: String, uri: String?): Boolean`
+
+---
+
+### File: `AppRuntimeBridge.kt`
+- **类型**: 新增
+- **职责**: 集中组装 `RuntimeBridge(settings = XRepoRuntimeGateway(), host = IpcRuntimeHostGateway())`，避免 `App` 与 `Entrance` 重复装配逻辑
+- **隔离验证**: What=runtime bridge 组装器 | How=暴露工厂函数返回完整 `RuntimeBridge` | Depends=[RuntimeBridge, XRepoRuntimeGateway, IpcRuntimeHostGateway]
+
+#### 关键方法（完整签名）
+- `fun createAppRuntimeBridge(): RuntimeBridge`
 
 ## 7. 数据模型 / Gradle 设计
 
@@ -295,6 +354,7 @@ nexus/
   - `implementation("com.squareup.okhttp3:okhttp:4.12.0")`
   - `implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")`
   - `implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")`
+- 不再允许 `agent-runtime` 直接依赖 `:ipc`
 
 ### 7.3 `composebase/build.gradle.kts`
 - 保留现有 Compose / Navigation 依赖
@@ -324,16 +384,23 @@ graph TD
     RT[agent-runtime]
     H[h]
     IPC[ipc]
-    GW[RuntimeSettingsGateway]
+    RB[RuntimeBridge]
+    SG[RuntimeSettingsGateway]
+    HG[RuntimeHostGateway]
     Repo[XRepo + XRepoRuntimeGateway]
+    Host[IpcRuntimeHostGateway]
 
     App --> CB
     App --> RT
     App --> H
     App --> IPC
     App --> Repo
-    Repo --> GW
-    RT --> GW
+    App --> RB
+    Repo --> SG
+    Host --> HG
+    RB --> SG
+    RB --> HG
+    RT --> RB
     RT --> H
     IPC --> H
 ```

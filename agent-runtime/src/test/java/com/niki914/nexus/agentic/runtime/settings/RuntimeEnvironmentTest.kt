@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertSame
 import org.junit.Test
+import java.lang.reflect.Proxy
 
 class RuntimeEnvironmentTest {
     @After
@@ -19,14 +20,51 @@ class RuntimeEnvironmentTest {
     }
 
     @Test
-    fun awaitSettingsGateway_waitsForDelayedInstall() = runTest {
+    fun awaitSettingsGateway_waitsForDelayedBridgeInstall() = runTest {
         val gateway = FakeRuntimeSettingsGateway()
         val awaiting = async { RuntimeEnvironment.awaitSettingsGateway() }
 
-        RuntimeEnvironment.install(gateway)
+        installBridge(gateway)
 
         assertSame(gateway, awaiting.await())
     }
+
+    @Test
+    fun requireBridge_returnsInstalledBridge() {
+        val gateway = FakeRuntimeSettingsGateway()
+        val bridge = createRuntimeBridge(gateway)
+
+        installBridge(bridge)
+
+        val requireBridge = RuntimeEnvironment::class.java.getMethod("requireBridge")
+        val requiredBridge = requireBridge.invoke(RuntimeEnvironment)
+        assertSame(bridge, requiredBridge)
+    }
+}
+
+private fun installBridge(settingsGateway: RuntimeSettingsGateway) {
+    installBridge(createRuntimeBridge(settingsGateway))
+}
+
+private fun installBridge(bridge: Any) {
+    val install = RuntimeEnvironment::class.java.getMethod("install", bridge.javaClass)
+    install.invoke(RuntimeEnvironment, bridge)
+}
+
+private fun createRuntimeBridge(settingsGateway: RuntimeSettingsGateway): Any {
+    val hostGatewayClass = Class.forName(
+        "com.niki914.nexus.agentic.runtime.settings.RuntimeHostGateway"
+    )
+    val runtimeBridgeClass = Class.forName(
+        "com.niki914.nexus.agentic.runtime.settings.RuntimeBridge"
+    )
+    val hostGateway = Proxy.newProxyInstance(
+        hostGatewayClass.classLoader,
+        arrayOf(hostGatewayClass),
+    ) { _, _, _ -> false }
+    return runtimeBridgeClass
+        .getConstructor(RuntimeSettingsGateway::class.java, hostGatewayClass)
+        .newInstance(settingsGateway, hostGateway)
 }
 
 private class FakeRuntimeSettingsGateway : RuntimeSettingsGateway {

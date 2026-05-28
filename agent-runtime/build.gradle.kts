@@ -24,7 +24,6 @@ android {
 
 dependencies {
     implementation(project(":h"))
-    implementation(project(":ipc"))
     implementation("com.github.niki914:s3ss10n:2.0.2")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")

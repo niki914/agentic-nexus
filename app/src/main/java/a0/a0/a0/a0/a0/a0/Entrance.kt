@@ -5,7 +5,7 @@ import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiChatHook
 import com.niki914.nexus.agentic.mod.feat.oppo.BreenoChatHook
 import com.niki914.nexus.agentic.repo.XRepo
-import com.niki914.nexus.agentic.repo.XRepoRuntimeGateway
+import com.niki914.nexus.agentic.runtime.createAppRuntimeBridge
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.h.IXposed
 import com.niki914.nexus.h.core.runtime.Hook
@@ -38,7 +38,7 @@ class Entrance : IXposed() {
         scope.launch(Dispatchers.IO) {
             val ctx = ContextProvider.await()
             XRepo.init(ctx)
-            RuntimeEnvironment.install(XRepoRuntimeGateway())
+            RuntimeEnvironment.install(createAppRuntimeBridge())
             xlog("Entrance: context initialized: $ctx")
 
             HookLocalSettings.update(ctx)

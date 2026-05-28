@@ -1,4 +1,4 @@
-# 任务规划清单 v1.1
+# 任务规划清单 v1.2
 
 ## 1. Feature 列表
 
@@ -11,6 +11,7 @@
 | F-04 | UI Infra 物理迁移到 composebase | ~3454 | F-01 |
 | F-05 | Chat Runtime 物理迁移到 agent-runtime | ~2492 | F-02 |
 | F-06 | 迁移后 runtime 源码去 app 依赖 | ~245 | F-03 + F-05 |
+| F-08 | Runtime Host Bridge 收口 | ~150 | F-03 + F-06 |
 
 ## 2. Batch 编排表
 
@@ -23,8 +24,9 @@
 | B-04 | F-03 | ~245 | B-02 | 与 B-05 并行 |
 | B-05 | F-05 | ~2492 | B-02 | 与 B-04 并行 |
 | B-06 | F-06 | ~245 | B-04 + B-05 | - |
+| B-08 | F-08 | ~150 | B-06 | - |
 
-> **编排说明**：`F-04` 与 `F-05` 的代码量都远超 500 LOC，必须独占 Batch。新增 `B-07` 是辅助 Batch，在你第一次 AS 迁移前预创建目标目录树，不改变源码语义。`F-03` 依赖 `F-02` 的 shared contract 与 gateway，`F-06` 依赖 `F-03` 和 `F-05`，因此运行时去耦修正必须放在 chat 文件完成物理迁移之后。
+> **编排说明**：`F-04` 与 `F-05` 的代码量都远超 500 LOC，必须独占 Batch。新增 `B-07` 是辅助 Batch，在你第一次 AS 迁移前预创建目标目录树，不改变源码语义。`F-03` 依赖 `F-02` 的 shared contract 与 gateway，`F-06` 依赖 `F-03` 和 `F-05`，因此运行时去耦修正必须放在 chat 文件完成物理迁移之后。`F-08` 是对 `F-06` 的增量收口：把运行时“配置 + 宿主能力”统一纳入 `RuntimeBridge`，避免 `NotifyBuiltin` 继续直接依赖 `ipc`。
 
 ## 3. 任务清单 (Task List)
 
@@ -141,6 +143,18 @@
 | T-76 | Logic | Logic | 修改迁移后的 `McpDiscoveryCacheStore.kt`；发现到的 tools 缓存写入改经由 gateway；不再直接调用 `XRepo`。 | `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStore.kt` | `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStore.kt`, `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeEnvironment.kt`, `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/model/RuntimeSettingsModels.kt` | - | M | ~30 lines | `McpDiscoveryCacheStore.kt` 中不存在 `XRepo` 直接访问；缓存持久化调用通过 gateway 完成。 |
 | T-77 | Logic | Logic | 修改迁移后的 `ToolManager.kt`；把共享模型 import 调整到 runtime settings models；保持 tool 装配顺序与会话绑定行为不变。 | `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolManager.kt` | `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolManager.kt`, `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/model/RuntimeSettingsModels.kt` | - | L | ~15 lines | `ToolManager.kt` 不再依赖 repo model 包；对外行为与原来一致。 |
 
+### Feature F-08: Runtime Host Bridge 收口
+
+| ID | 阶段 | 类型 | 任务详情（含伪代码签名与实现步骤） | 目标文件 | 视野（依赖文件） | 匹配 Skill | 复杂度 | 预估规模 | 验收标准 (AC) |
+|:---|:-----|:-----|:-------------------------------|:---------|:--------------|:-----------|:-------|:---------|:-------------|
+| T-79 | Contracts | Contract | 在 `agent-runtime` 新增 `RuntimeHostGateway.kt`；先只定义 `postNotification(title, content, uri)`，作为 AI 运行时访问宿主能力的统一接口起点。 | `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeHostGateway.kt` | `docs/.asc_task/module_refactor/tech_design.md`, `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/NotifyBuiltin.kt` | - | L | ~10 lines | `RuntimeHostGateway` 存在；`agent-runtime` 中没有直接引入 `ipc` 类型也能表达通知能力。 |
+| T-80 | Contracts | Contract | 在 `agent-runtime` 新增 `RuntimeBridge.kt`；聚合 `settings: RuntimeSettingsGateway` 与 `host: RuntimeHostGateway`，作为 `RuntimeEnvironment` 的唯一安装单元。 | `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeBridge.kt` | `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeSettingsGateway.kt`, `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeHostGateway.kt`, `docs/.asc_task/module_refactor/tech_design.md` | - | L | ~10 lines | `RuntimeBridge` 为单一聚合类型；不包含实现细节。 |
+| T-81 | Infra | Infra | 修改 `RuntimeEnvironment.kt` 与 `RuntimeEnvironmentTest.kt`；将安装点从单一 settings gateway 升级为 bridge，并补充延迟安装 bridge 的测试；保留 `awaitSettingsGateway()` 兼容调用点。 | `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeEnvironment.kt` | `agent-runtime/src/test/java/com/niki914/nexus/agentic/runtime/settings/RuntimeEnvironmentTest.kt`, `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeBridge.kt`, `docs/.asc_task/module_refactor/tech_design.md` | - | M | ~40 lines | `RuntimeEnvironment.install()` 改为安装 `RuntimeBridge`；`awaitBridge()` / `awaitSettingsGateway()` 均可用；相关测试通过。 |
+| T-82 | Logic | Logic | 修改 `NotifyBuiltin.kt`；通知发送改为调用 `RuntimeEnvironment.awaitBridge().host.postNotification(...)`；删除 `ContextProvider`、`XIpcBridge` 直接 import。 | `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/NotifyBuiltin.kt` | `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeEnvironment.kt`, `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeHostGateway.kt` | - | M | ~15 lines | `NotifyBuiltin.kt` 中不再出现 `XIpcBridge` / `ContextProvider`；通知行为改经由 host gateway。 |
+| T-83 | Infra | Infra | 在 `app` 新增 `IpcRuntimeHostGateway.kt` 与 `AppRuntimeBridge.kt`；前者把 `ContextProvider + XIpcBridge` 适配成 `RuntimeHostGateway`，后者集中组装 `RuntimeBridge(settings = XRepoRuntimeGateway(), host = IpcRuntimeHostGateway())`。 | `app/src/main/java/com/niki914/nexus/agentic/runtime/AppRuntimeBridge.kt` | `app/src/main/java/com/niki914/nexus/agentic/repo/XRepoRuntimeGateway.kt`, `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeBridge.kt`, `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeHostGateway.kt`, `ipc/src/main/java/com/niki914/nexus/ipc/XIpcBridge.kt` | - | M | ~40 lines | `app` 侧存在完整 bridge 组装；`ipc` 依赖只留在 `app`。 |
+| T-84 | Infra | Infra | 修改 `App.kt` 与 `Entrance.kt`；统一安装 `createAppRuntimeBridge()`；去掉重复的 bridge 组装细节。 | `app/src/main/java/com/niki914/nexus/agentic/app/App.kt` | `app/src/main/java/a0/a0/a0/a0/a0/a0/Entrance.kt`, `app/src/main/java/com/niki914/nexus/agentic/runtime/AppRuntimeBridge.kt`, `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeEnvironment.kt` | - | M | ~15 lines | 主进程与 Hook 进程都安装完整 `RuntimeBridge`；安装时机保持不晚于 runtime 首次使用。 |
+| T-85 | Config | Config | 修改 `agent-runtime/build.gradle.kts`；移除对 `:ipc` 的直接依赖，仅保留测试依赖与 runtime 运行所需依赖。 | `agent-runtime/build.gradle.kts` | `agent-runtime/build.gradle.kts`, `app/build.gradle.kts`, `docs/.asc_task/module_refactor/tech_design.md` | - | L | ~5 lines | `agent-runtime` 构建配置中不再依赖 `project(":ipc")`；编译仍通过。 |
+
 ## 4. 实施步骤 (Steps per Task)
 
 ### T-01: 新模块与 Gradle 骨架 / settings.gradle.kts
@@ -196,6 +210,48 @@
 - [ ] 在 `docs/.asc_task/module_refactor/` 下创建 `mkdir_targets.sh`。
 - [ ] 在脚本中显式列出 `composebase` 承接 `ui/infra` 的目录和 `agent-runtime` 承接 `chat` 的目录，并使用 `mkdir -p` 创建。
 - [ ] 执行脚本，确认所有迁移目标目录已存在。
+
+### T-79: Runtime Host Bridge 收口 / RuntimeHostGateway.kt
+
+- [ ] 在 `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/` 下创建 `RuntimeHostGateway.kt`。
+- [ ] 定义 `suspend fun postNotification(title: String, content: String, uri: String?): Boolean`。
+- [ ] 确认接口文件不 import `ipc`、`ContextProvider` 或 `app` 层类型。
+
+### T-80: Runtime Host Bridge 收口 / RuntimeBridge.kt
+
+- [ ] 在 `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/` 下创建 `RuntimeBridge.kt`。
+- [ ] 定义 `data class RuntimeBridge(val settings: RuntimeSettingsGateway, val host: RuntimeHostGateway)`。
+- [ ] 核对聚合类型只承载抽象依赖，不出现任何实现类。
+
+### T-81: Runtime Host Bridge 收口 / RuntimeEnvironment.kt
+
+- [ ] 将 `RuntimeEnvironment` 的持有对象从单一 settings gateway 改为 `RuntimeBridge`。
+- [ ] 新增 `requireBridge()` 与 `awaitBridge()`，并保留 `requireSettingsGateway()` / `awaitSettingsGateway()` 作为兼容代理。
+- [ ] 修改 `RuntimeEnvironmentTest.kt`，验证延迟安装 bridge 时 `awaitBridge()` 与 `awaitSettingsGateway()` 都能正常返回。
+
+### T-82: Runtime Host Bridge 收口 / NotifyBuiltin.kt
+
+- [ ] 打开 `NotifyBuiltin.kt`，删除 `ContextProvider` 与 `XIpcBridge` import。
+- [ ] 将通知发送逻辑替换为 `RuntimeEnvironment.awaitBridge().host.postNotification(args.title, args.content, args.uri)`。
+- [ ] 保持参数校验、返回码与错误提示文案不变。
+
+### T-83: Runtime Host Bridge 收口 / AppRuntimeBridge.kt
+
+- [ ] 新建 `app/src/main/java/com/niki914/nexus/agentic/runtime/IpcRuntimeHostGateway.kt`，内部用 `ContextProvider.await()` + `XIpcBridge.postNotification(...)` 实现 `RuntimeHostGateway`。
+- [ ] 新建 `app/src/main/java/com/niki914/nexus/agentic/runtime/AppRuntimeBridge.kt`，提供 `fun createAppRuntimeBridge(): RuntimeBridge`。
+- [ ] 确认 `ipc` 依赖只出现在 `app` 新增实现中，不泄漏到 `agent-runtime`。
+
+### T-84: Runtime Host Bridge 收口 / App.kt
+
+- [ ] 修改 `App.kt`，把 `RuntimeEnvironment.install(XRepoRuntimeGateway())` 替换为 `RuntimeEnvironment.install(createAppRuntimeBridge())`。
+- [ ] 修改 `Entrance.kt`，把 `RuntimeEnvironment.install(XRepoRuntimeGateway())` 替换为 `RuntimeEnvironment.install(createAppRuntimeBridge())`。
+- [ ] 核对 Hook 侧安装仍在 `XRepo.init(ctx)` 之后。
+
+### T-85: Runtime Host Bridge 收口 / agent-runtime/build.gradle.kts
+
+- [ ] 打开 `agent-runtime/build.gradle.kts`。
+- [ ] 删除 `implementation(project(":ipc"))`。
+- [ ] 保留单测依赖并确保 `:agent-runtime:testDebugUnitTest` 仍可执行。
 
 ### T-09: app/repo 接入与模型下沉收口 / XRepoRuntimeGateway.kt
 

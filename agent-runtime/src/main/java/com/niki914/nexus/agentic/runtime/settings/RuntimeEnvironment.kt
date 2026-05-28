@@ -4,29 +4,37 @@ import kotlinx.coroutines.CompletableDeferred
 
 object RuntimeEnvironment {
     @Volatile
-    private var settingsGateway: RuntimeSettingsGateway? = null
+    private var bridge: RuntimeBridge? = null
     @Volatile
-    private var settingsGatewayReady = CompletableDeferred<RuntimeSettingsGateway>()
+    private var bridgeReady = CompletableDeferred<RuntimeBridge>()
 
-    fun install(settingsGateway: RuntimeSettingsGateway) {
-        this.settingsGateway = settingsGateway
-        if (!settingsGatewayReady.isCompleted) {
-            settingsGatewayReady.complete(settingsGateway)
+    fun install(bridge: RuntimeBridge) {
+        this.bridge = bridge
+        if (!bridgeReady.isCompleted) {
+            bridgeReady.complete(bridge)
         }
     }
 
+    fun requireBridge(): RuntimeBridge {
+        return bridge
+            ?: error("RuntimeBridge is not installed.")
+    }
+
+    suspend fun awaitBridge(): RuntimeBridge {
+        bridge?.let { return it }
+        return bridgeReady.await()
+    }
+
     fun requireSettingsGateway(): RuntimeSettingsGateway {
-        return settingsGateway
-            ?: error("RuntimeSettingsGateway is not installed.")
+        return requireBridge().settings
     }
 
     suspend fun awaitSettingsGateway(): RuntimeSettingsGateway {
-        settingsGateway?.let { return it }
-        return settingsGatewayReady.await()
+        return awaitBridge().settings
     }
 
     fun clearForTest() {
-        settingsGateway = null
-        settingsGatewayReady = CompletableDeferred()
+        bridge = null
+        bridgeReady = CompletableDeferred()
     }
 }

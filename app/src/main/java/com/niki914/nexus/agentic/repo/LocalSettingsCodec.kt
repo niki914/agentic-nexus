@@ -1,6 +1,5 @@
 package com.niki914.nexus.agentic.repo
 
-import com.niki914.nexus.agentic.chat.mcpCacheKey
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
@@ -250,6 +249,22 @@ internal object LocalSettingsCodec {
 
     private fun JsonObject.obj(key: String): JsonObject? {
         return this[key] as? JsonObject
+    }
+
+    private fun mcpCacheKey(url: String, headers: Map<String, String>): String {
+        val normalizedHeaders = headers
+            .mapKeys { (key, _) -> key.lowercase() }
+            .toSortedMap()
+        return buildString {
+            append(url)
+            append("#")
+            normalizedHeaders.forEach { (key, value) ->
+                append(key)
+                append("=")
+                append(value)
+                append("&")
+            }
+        }
     }
 
     private const val PROVIDER_KEY = "provider"
