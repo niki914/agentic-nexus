@@ -4,4 +4,6 @@ enum class ConfigureEditableField {
     Endpoint,
     Model,
     ApiKey,
+    Prompt,
+    Proxy,
 }

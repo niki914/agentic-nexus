@@ -32,6 +32,7 @@ class SettingsViewModelTest {
     fun settingsViewModel_usesDefaultVisibleGroups() {
         val viewModel = SettingsViewModel()
 
+        assertTrue(viewModel.isGroupVisible(NexusSettingsGroup.ProviderModel))
         assertTrue(viewModel.isGroupVisible(NexusSettingsGroup.BuiltinTools))
         assertFalse(viewModel.isGroupVisible(NexusSettingsGroup.Network))
     }

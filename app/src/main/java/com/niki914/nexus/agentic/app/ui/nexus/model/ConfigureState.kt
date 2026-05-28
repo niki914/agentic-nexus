@@ -1,11 +1,20 @@
 package com.niki914.nexus.agentic.app.ui.nexus.model
 
+import androidx.annotation.StringRes
+import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.cb.ComposeMVIViewModel
 import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
+import java.net.URI
 import kotlinx.coroutines.CancellationException
 
+enum class ConfigureScene {
+    Onboarding,
+    Settings,
+}
+
 data class ConfigureUiState(
+    val scene: ConfigureScene = ConfigureScene.Onboarding,
     val providerSpec: ProviderSpec = ProviderSpecs.default,
     val endpointOverrideEnabled: Boolean = false,
     val endpointInput: String = ProviderSpecs.default.officialEndpoint,
@@ -13,6 +22,12 @@ data class ConfigureUiState(
     val modelInput: String = "",
     val apiKeyInput: String = "",
     val apiKeyVisible: Boolean = false,
+    @param:StringRes val endpointErrorResId: Int? = null,
+    @param:StringRes val modelErrorResId: Int? = null,
+    @param:StringRes val apiKeyErrorResId: Int? = null,
+    val promptInput: String = "",
+    val proxyInput: String = "",
+    @param:StringRes val proxyErrorResId: Int? = null,
     val isSaving: Boolean = false,
     val saveEnabled: Boolean = false,
     val inlineError: ConfigureInlineError? = null,
@@ -29,21 +44,28 @@ sealed interface ConfigureErrorReason {
 }
 
 sealed interface ConfigureIntent {
-    data class Initialize(val providerId: String?) : ConfigureIntent
+    data class Initialize(
+        val providerId: String? = null,
+        val scene: ConfigureScene = ConfigureScene.Onboarding,
+    ) : ConfigureIntent
     data class SetEndpointOverride(val enabled: Boolean) : ConfigureIntent
     data class UpdateEndpoint(val value: String) : ConfigureIntent
     data class UpdateModel(val value: String) : ConfigureIntent
     data class UpdateApiKey(val value: String) : ConfigureIntent
+    data class UpdatePrompt(val value: String) : ConfigureIntent
+    data class UpdateProxy(val value: String) : ConfigureIntent
     data object ToggleApiKeyVisibility : ConfigureIntent
     data object Save : ConfigureIntent
 }
 
 sealed interface ConfigureEffect {
-    data object SaveSucceeded : ConfigureEffect
+    data object OnboardingSaveSucceeded : ConfigureEffect
+    data object SettingsSaveSucceeded : ConfigureEffect
     data class SaveFailed(val reason: ConfigureErrorReason) : ConfigureEffect
     data object FocusModel : ConfigureEffect
     data object FocusApiKey : ConfigureEffect
     data object FocusEndpoint : ConfigureEffect
+    data object FocusProxy : ConfigureEffect
 }
 
 class ConfigureViewModel internal constructor(
@@ -54,68 +76,31 @@ class ConfigureViewModel internal constructor(
         model: String,
         apiKey: String,
     ) -> Unit = XRepo::saveLlmAccess,
+    private val saveLlmConfig: suspend (LlmConfig) -> Unit = XRepo::saveLlm,
 ) : ComposeMVIViewModel<ConfigureIntent, ConfigureUiState, ConfigureEffect>() {
 
     override fun initUiState(): ConfigureUiState = ConfigureUiState()
 
     override suspend fun handleIntent(intent: ConfigureIntent) {
         when (intent) {
-            is ConfigureIntent.Initialize -> initialize(intent.providerId)
+            is ConfigureIntent.Initialize -> initialize(intent.scene, intent.providerId)
             is ConfigureIntent.SetEndpointOverride -> setEndpointOverride(intent.enabled)
             is ConfigureIntent.UpdateEndpoint -> updateEndpoint(intent.value)
             is ConfigureIntent.UpdateModel -> updateModel(intent.value)
             is ConfigureIntent.UpdateApiKey -> updateApiKey(intent.value)
+            is ConfigureIntent.UpdatePrompt -> updatePrompt(intent.value)
+            is ConfigureIntent.UpdateProxy -> updateProxy(intent.value)
             ConfigureIntent.ToggleApiKeyVisibility -> toggleApiKeyVisibility()
             ConfigureIntent.Save -> save()
         }
     }
 
-    private suspend fun initialize(initialProviderId: String?) {
+    private suspend fun initialize(scene: ConfigureScene, initialProviderId: String?) {
         try {
             val llmConfig = loadLlmConfig()
-            val savedProviderId = llmConfig.provider.takeIf { it.isNotBlank() }
-            val resolvedProviderId = initialProviderId
-                ?.takeIf { it.isNotBlank() }
-                ?: savedProviderId
-            val providerSpec = ProviderSpecs.find(resolvedProviderId)
-            val shouldReuseSavedValues = if (initialProviderId.isNullOrBlank()) {
-                savedProviderId == null || savedProviderId == providerSpec.id
-            } else {
-                savedProviderId == providerSpec.id
-            }
-            val savedEndpoint = if (shouldReuseSavedValues) llmConfig.endpoint.trim() else ""
-            val savedModel = if (shouldReuseSavedValues) llmConfig.model else ""
-            val savedApiKey = if (shouldReuseSavedValues) llmConfig.apiKey else ""
-            val endpointOverrideEnabled = savedEndpoint.isNotBlank() &&
-                savedEndpoint != providerSpec.officialEndpoint
-            val endpointInput = if (endpointOverrideEnabled) {
-                savedEndpoint
-            } else {
-                providerSpec.officialEndpoint
-            }
-            val lastCustomEndpointInput = if (endpointOverrideEnabled) {
-                savedEndpoint
-            } else {
-                providerSpec.officialEndpoint
-            }
-            updateState {
-                copy(
-                    providerSpec = providerSpec,
-                    endpointOverrideEnabled = endpointOverrideEnabled,
-                    endpointInput = endpointInput,
-                    lastCustomEndpointInput = lastCustomEndpointInput,
-                    modelInput = savedModel,
-                    apiKeyInput = savedApiKey,
-                    apiKeyVisible = false,
-                    isSaving = false,
-                    saveEnabled = canSave(
-                        endpointOverrideEnabled = endpointOverrideEnabled,
-                        endpointInput = endpointInput,
-                        modelInput = savedModel,
-                        apiKeyInput = savedApiKey,
-                    ),
-                    inlineError = null,
-                )
+            when (scene) {
+                ConfigureScene.Onboarding -> initializeOnboarding(llmConfig, initialProviderId)
+                ConfigureScene.Settings -> initializeSettings(llmConfig)
             }
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
@@ -123,11 +108,99 @@ class ConfigureViewModel internal constructor(
             val reason = ConfigureErrorReason.LoadSettingsFailed(message)
             updateState {
                 copy(
+                    scene = scene,
                     isSaving = false,
                     saveEnabled = false,
                     inlineError = ConfigureInlineError.LoadFailed(reason),
                 )
             }
+        }
+    }
+
+    private fun initializeOnboarding(llmConfig: LlmConfig, initialProviderId: String?) {
+        val savedProviderId = llmConfig.provider.takeIf { it.isNotBlank() }
+        val resolvedProviderId = initialProviderId
+            ?.takeIf { it.isNotBlank() }
+            ?: savedProviderId
+        val providerSpec = ProviderSpecs.find(resolvedProviderId)
+        val shouldReuseSavedValues = if (initialProviderId.isNullOrBlank()) {
+            savedProviderId == null || savedProviderId == providerSpec.id
+        } else {
+            savedProviderId == providerSpec.id
+        }
+        val savedEndpoint = if (shouldReuseSavedValues) llmConfig.endpoint.trim() else ""
+        val savedModel = if (shouldReuseSavedValues) llmConfig.model else ""
+        val savedApiKey = if (shouldReuseSavedValues) llmConfig.apiKey else ""
+        val endpointOverrideEnabled = savedEndpoint.isNotBlank() &&
+            savedEndpoint != providerSpec.officialEndpoint
+        val endpointInput = if (endpointOverrideEnabled) {
+            savedEndpoint
+        } else {
+            providerSpec.officialEndpoint
+        }
+        val lastCustomEndpointInput = if (endpointOverrideEnabled) {
+            savedEndpoint
+        } else {
+            providerSpec.officialEndpoint
+        }
+        updateState {
+            copy(
+                scene = ConfigureScene.Onboarding,
+                providerSpec = providerSpec,
+                endpointOverrideEnabled = endpointOverrideEnabled,
+                endpointInput = endpointInput,
+                lastCustomEndpointInput = lastCustomEndpointInput,
+                modelInput = savedModel,
+                apiKeyInput = savedApiKey,
+                apiKeyVisible = false,
+                endpointErrorResId = null,
+                modelErrorResId = null,
+                apiKeyErrorResId = null,
+                promptInput = "",
+                proxyInput = "",
+                proxyErrorResId = null,
+                isSaving = false,
+                saveEnabled = canSave(
+                    endpointOverrideEnabled = endpointOverrideEnabled,
+                    endpointInput = endpointInput,
+                    modelInput = savedModel,
+                    apiKeyInput = savedApiKey,
+                ),
+                inlineError = null,
+            )
+        }
+    }
+
+    private fun initializeSettings(llmConfig: LlmConfig) {
+        val providerSpec = ProviderSpecs.find(llmConfig.provider.takeIf { it.isNotBlank() })
+        val endpointInput = llmConfig.endpoint.trim().ifBlank {
+            providerSpec.officialEndpoint
+        }
+        updateState {
+            copy(
+                scene = ConfigureScene.Settings,
+                providerSpec = providerSpec,
+                endpointOverrideEnabled = true,
+                endpointInput = endpointInput,
+                lastCustomEndpointInput = endpointInput,
+                modelInput = llmConfig.model,
+                apiKeyInput = llmConfig.apiKey,
+                apiKeyVisible = false,
+                endpointErrorResId = null,
+                modelErrorResId = null,
+                apiKeyErrorResId = null,
+                promptInput = llmConfig.prompt,
+                proxyInput = llmConfig.proxy,
+                proxyErrorResId = null,
+                isSaving = false,
+                saveEnabled = canSave(
+                    endpointOverrideEnabled = true,
+                    endpointInput = endpointInput,
+                    modelInput = llmConfig.model,
+                    apiKeyInput = llmConfig.apiKey,
+                ),
+                inlineError = null,
+            )
         }
     }
 
@@ -147,6 +220,7 @@ class ConfigureViewModel internal constructor(
                 endpointOverrideEnabled = enabled,
                 endpointInput = nextEndpointInput,
                 lastCustomEndpointInput = nextLastCustomEndpointInput,
+                endpointErrorResId = null,
                 saveEnabled = !isSaving && canSave(
                     endpointOverrideEnabled = enabled,
                     endpointInput = nextEndpointInput,
@@ -165,6 +239,7 @@ class ConfigureViewModel internal constructor(
                 } else {
                     lastCustomEndpointInput
                 },
+                endpointErrorResId = null,
                 saveEnabled = !isSaving && canSave(endpointInput = value),
                 inlineError = null,
             )
@@ -175,6 +250,7 @@ class ConfigureViewModel internal constructor(
         updateState {
             copy(
                 modelInput = value,
+                modelErrorResId = null,
                 saveEnabled = !isSaving && canSave(modelInput = value),
                 inlineError = null,
             )
@@ -185,7 +261,29 @@ class ConfigureViewModel internal constructor(
         updateState {
             copy(
                 apiKeyInput = value,
+                apiKeyErrorResId = null,
                 saveEnabled = !isSaving && canSave(apiKeyInput = value),
+                inlineError = null,
+            )
+        }
+    }
+
+    private fun updatePrompt(value: String) {
+        updateState {
+            copy(
+                promptInput = value,
+                saveEnabled = !isSaving && canSave(),
+                inlineError = null,
+            )
+        }
+    }
+
+    private fun updateProxy(value: String) {
+        updateState {
+            copy(
+                proxyInput = value,
+                proxyErrorResId = null,
+                saveEnabled = !isSaving && canSave(),
                 inlineError = null,
             )
         }
@@ -204,28 +302,63 @@ class ConfigureViewModel internal constructor(
         if (currentState.isSaving) {
             return
         }
-        when (currentState.firstIncompleteField()) {
+        when (currentState.firstInvalidField()) {
             ConfigureFieldTarget.Model -> {
-                updateState { copy(inlineError = null) }
+                updateState {
+                    copy(
+                        modelErrorResId = R.string.ui_settings_configure_error_required,
+                        inlineError = null,
+                    )
+                }
                 sendEffect(ConfigureEffect.FocusModel)
                 return
             }
             ConfigureFieldTarget.ApiKey -> {
-                updateState { copy(inlineError = null) }
+                updateState {
+                    copy(
+                        apiKeyErrorResId = R.string.ui_settings_configure_error_required,
+                        inlineError = null,
+                    )
+                }
                 sendEffect(ConfigureEffect.FocusApiKey)
                 return
             }
             ConfigureFieldTarget.Endpoint -> {
-                updateState { copy(inlineError = null) }
+                updateState {
+                    copy(
+                        endpointErrorResId = R.string.ui_settings_configure_error_required,
+                        inlineError = null,
+                    )
+                }
                 sendEffect(ConfigureEffect.FocusEndpoint)
+                return
+            }
+            ConfigureFieldTarget.Proxy -> {
+                updateState {
+                    copy(
+                        proxyErrorResId = R.string.ui_settings_configure_error_proxy_invalid,
+                        inlineError = null,
+                    )
+                }
+                sendEffect(ConfigureEffect.FocusProxy)
                 return
             }
             null -> Unit
         }
+        when (currentState.scene) {
+            ConfigureScene.Onboarding -> saveOnboarding()
+            ConfigureScene.Settings -> saveSettings()
+        }
+    }
+
+    private suspend fun saveOnboarding() {
         updateState {
             copy(
                 isSaving = true,
                 saveEnabled = false,
+                endpointErrorResId = null,
+                modelErrorResId = null,
+                apiKeyErrorResId = null,
                 inlineError = null,
             )
         }
@@ -240,10 +373,64 @@ class ConfigureViewModel internal constructor(
                 copy(
                     isSaving = false,
                     saveEnabled = canSave(),
+                    endpointErrorResId = null,
+                    modelErrorResId = null,
+                    apiKeyErrorResId = null,
                     inlineError = null,
                 )
             }
-            sendEffect(ConfigureEffect.SaveSucceeded)
+            sendEffect(ConfigureEffect.OnboardingSaveSucceeded)
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            val message = throwable.message ?: throwable::class.java.simpleName
+            val reason = ConfigureErrorReason.SaveSettingsFailed(message)
+            updateState {
+                copy(
+                    isSaving = false,
+                    saveEnabled = canSave(),
+                    inlineError = ConfigureInlineError.SaveFailed(reason),
+                )
+            }
+            sendEffect(ConfigureEffect.SaveFailed(reason))
+        }
+    }
+
+    private suspend fun saveSettings() {
+        updateState {
+            copy(
+                isSaving = true,
+                saveEnabled = false,
+                endpointErrorResId = null,
+                modelErrorResId = null,
+                apiKeyErrorResId = null,
+                proxyErrorResId = null,
+                inlineError = null,
+            )
+        }
+        try {
+            val currentConfig = loadLlmConfig()
+            saveLlmConfig(
+                currentConfig.copy(
+                    provider = currentState.providerSpec.id,
+                    endpoint = currentState.resolvedEndpoint(),
+                    model = currentState.modelInput,
+                    apiKey = currentState.apiKeyInput,
+                    prompt = currentState.promptInput,
+                    proxy = currentState.proxyInput.trim(),
+                ),
+            )
+            updateState {
+                copy(
+                    isSaving = false,
+                    saveEnabled = canSave(),
+                    endpointErrorResId = null,
+                    modelErrorResId = null,
+                    apiKeyErrorResId = null,
+                    proxyErrorResId = null,
+                    inlineError = null,
+                )
+            }
+            sendEffect(ConfigureEffect.SettingsSaveSucceeded)
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
             val message = throwable.message ?: throwable::class.java.simpleName
@@ -261,7 +448,7 @@ class ConfigureViewModel internal constructor(
 }
 
 private fun ConfigureUiState.resolvedEndpoint(): String {
-    return if (endpointOverrideEnabled) {
+    return if (scene == ConfigureScene.Settings || endpointOverrideEnabled) {
         endpointInput.trim().ifBlank { providerSpec.officialEndpoint }
     } else {
         providerSpec.officialEndpoint
@@ -284,13 +471,26 @@ private enum class ConfigureFieldTarget {
     Endpoint,
     Model,
     ApiKey,
+    Proxy,
 }
 
-private fun ConfigureUiState.firstIncompleteField(): ConfigureFieldTarget? {
+private fun ConfigureUiState.firstInvalidField(): ConfigureFieldTarget? {
     return when {
         modelInput.trim().isBlank() -> ConfigureFieldTarget.Model
         apiKeyInput.trim().isBlank() -> ConfigureFieldTarget.ApiKey
         endpointOverrideEnabled && endpointInput.trim().isBlank() -> ConfigureFieldTarget.Endpoint
+        scene == ConfigureScene.Settings && !isValidProxyUri(proxyInput) -> ConfigureFieldTarget.Proxy
         else -> null
     }
+}
+
+private fun isValidProxyUri(value: String): Boolean {
+    val trimmedValue = value.trim()
+    if (trimmedValue.isBlank()) {
+        return true
+    }
+    return runCatching {
+        val uri = URI(trimmedValue)
+        !uri.scheme.isNullOrBlank() && !uri.host.isNullOrBlank()
+    }.getOrDefault(false)
 }

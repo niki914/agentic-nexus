@@ -24,6 +24,8 @@ internal fun ProviderAccessSettingsBlock(
 ) {
     SettingsGroupCard {
         if (policy.showEndpointSection) {
+            val endpointEditable = policy.endpointEditable &&
+                (!policy.showEndpointOverrideToggle || uiState.endpointOverrideEnabled)
             if (policy.showEndpointOverrideToggle) {
                 SettingToggleItem(
                     title = stringResource(R.string.ui_onboard_configure_endpoint_override_title),
@@ -50,12 +52,13 @@ internal fun ProviderAccessSettingsBlock(
                 value = uiState.endpointInput,
                 onValueChange = onEndpointChange,
                 placeholder = stringResource(R.string.ui_onboard_configure_endpoint_placeholder),
-                description = if (uiState.endpointOverrideEnabled) {
-                    null
-                } else {
-                    uiState.endpointInput
-                },
-                enabled = uiState.endpointOverrideEnabled && !uiState.isSaving,
+                description = uiState.endpointErrorResId?.let { stringResource(it) }
+                    ?: if (endpointEditable) {
+                        null
+                    } else {
+                        uiState.endpointInput
+                    },
+                enabled = endpointEditable && !uiState.isSaving,
                 minLines = 3,
                 maxLines = 6,
                 expanded = expandedField == ConfigureEditableField.Endpoint,
@@ -72,7 +75,8 @@ internal fun ProviderAccessSettingsBlock(
             value = uiState.modelInput,
             onValueChange = onModelChange,
             placeholder = stringResource(R.string.ui_onboard_configure_model_placeholder),
-            description = uiState.providerSpec.onboardingModelHint,
+            description = uiState.modelErrorResId?.let { stringResource(it) }
+                ?: uiState.providerSpec.onboardingModelHint,
             enabled = !uiState.isSaving,
             minLines = 1,
             maxLines = 1,
@@ -89,7 +93,7 @@ internal fun ProviderAccessSettingsBlock(
             value = uiState.apiKeyInput,
             onValueChange = onApiKeyChange,
             placeholder = stringResource(R.string.ui_onboard_configure_api_key_placeholder),
-            description = null,
+            description = uiState.apiKeyErrorResId?.let { stringResource(it) },
             enabled = !uiState.isSaving,
             minLines = 1,
             maxLines = 1,

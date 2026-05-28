@@ -31,6 +31,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.content.StartupPageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.mcp.McpServerDetailContent
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureEffect
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureIntent
+import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureScene
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.ProviderButtonTokens
 import com.niki914.nexus.agentic.app.ui.nexus.model.ProviderSpec
@@ -124,12 +125,17 @@ fun NexusPageContent(
             }
 
             LaunchedEffect(page.providerId) {
-                viewModel.sendIntent(ConfigureIntent.Initialize(page.providerId))
+                viewModel.sendIntent(
+                    ConfigureIntent.Initialize(
+                        scene = ConfigureScene.Onboarding,
+                        providerId = page.providerId,
+                    )
+                )
             }
             LaunchedEffect(viewModel) {
                 viewModel.uiEffect.collect { effect ->
                     when (effect) {
-                        ConfigureEffect.SaveSucceeded -> onPush(DonePage)
+                        ConfigureEffect.OnboardingSaveSucceeded -> onPush(DonePage)
                         ConfigureEffect.FocusModel -> {
                             pendingFocusField = ConfigureEditableField.Model
                         }
@@ -139,6 +145,8 @@ fun NexusPageContent(
                         ConfigureEffect.FocusEndpoint -> {
                             pendingFocusField = ConfigureEditableField.Endpoint
                         }
+                        ConfigureEffect.SettingsSaveSucceeded,
+                        ConfigureEffect.FocusProxy,
                         is ConfigureEffect.SaveFailed -> Unit
                     }
                 }
@@ -215,6 +223,7 @@ fun NexusPageContent(
             topPadding = topPadding,
             hazeState = hazeState,
             onPush = onPush,
+            onBack = onPop,
         )
 
         is McpServerDetailPage -> McpServerDetailContent(
@@ -303,7 +312,7 @@ private fun ProviderButtonTokens.toProviderButtonColors(): ProviderButtonColors 
     )
 }
 
-private object ConfigureViewModelFactory : ViewModelProvider.Factory {
+internal object ConfigureViewModelFactory : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         require(modelClass == ConfigureViewModel::class.java)

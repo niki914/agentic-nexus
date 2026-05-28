@@ -29,6 +29,7 @@ import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsDetailFormScaffold
 import com.niki914.nexus.agentic.app.ui.infra.component.TintLiquidButton
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureInlineError
+import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureScene
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.ProviderSpecs
 import dev.chrisbanes.haze.HazeState
@@ -48,13 +49,27 @@ fun ConfigurePageContent(
     onEndpointChange: (String) -> Unit,
     onModelChange: (String) -> Unit,
     onApiKeyChange: (String) -> Unit,
+    onPromptChange: (String) -> Unit = {},
+    onProxyChange: (String) -> Unit = {},
     onToggleApiKeyVisibility: () -> Unit,
     onComplete: () -> Unit,
     requestedFocusField: ConfigureEditableField? = null,
     onRequestedFocusHandled: () -> Unit = {},
 ) {
     val focusManager = LocalFocusManager.current
-    val policy = onboardingConfigurePolicy(uiState.providerSpec)
+    val policy = configurePagePolicy(uiState.scene, uiState.providerSpec)
+    val actionText = stringResource(
+        when (uiState.scene) {
+            ConfigureScene.Onboarding -> R.string.ui_onboard_configure_next
+            ConfigureScene.Settings -> R.string.ui_settings_configure_save
+        },
+    )
+    val description = stringResource(
+        when (uiState.scene) {
+            ConfigureScene.Onboarding -> R.string.ui_onboard_configure_description
+            ConfigureScene.Settings -> R.string.ui_settings_configure_description
+        },
+    )
     var expandedField by rememberSaveable { mutableStateOf<ConfigureEditableField?>(null) }
 
     fun clearActiveField() {
@@ -78,9 +93,9 @@ fun ConfigurePageContent(
     SettingsDetailFormScaffold(
         topPadding = topPadding,
         hazeState = hazeState,
-        actionText = stringResource(R.string.ui_onboard_configure_next),
+        actionText = actionText,
         onActionClick = onComplete,
-        description = stringResource(R.string.ui_onboard_configure_description),
+        description = description,
         inlineErrorText = configureInlineErrorText(uiState.inlineError),
         actionEnabled = !uiState.isSaving,
         onBackgroundTap = ::clearActiveField,
@@ -101,6 +116,15 @@ fun ConfigurePageContent(
             onToggleApiKeyVisibility = onToggleApiKeyVisibility,
             onClearActiveField = ::clearActiveField,
         )
+        if (policy.showAdvancedSection) {
+            ProviderAdvancedSettingsBlock(
+                uiState = uiState,
+                expandedField = expandedField,
+                onExpandedFieldChange = { field -> expandedField = field },
+                onPromptChange = onPromptChange,
+                onProxyChange = onProxyChange,
+            )
+        }
     }
 }
 

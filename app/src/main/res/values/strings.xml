@@ -62,6 +62,15 @@
     <string name="ui_settings_detail_placeholder">当前分组内容将在后续迭代中补齐，这里先用于验证设置树导航。</string>
     <string name="ui_settings_provider_model">模型供应商</string>
     <string name="ui_settings_provider_model_summary">查看和调整模型来源、默认模型与相关策略。</string>
+    <string name="ui_settings_configure_title">模型供应商</string>
+    <string name="ui_settings_configure_description">调整模型接入、提示词与代理配置。</string>
+    <string name="ui_settings_configure_save">保存配置</string>
+    <string name="ui_settings_configure_prompt_label">提示词</string>
+    <string name="ui_settings_configure_prompt_placeholder">你的助手应该怎么做？</string>
+    <string name="ui_settings_configure_proxy_label">代理</string>
+    <string name="ui_settings_configure_proxy_placeholder">例如：http://127.0.0.1:7890</string>
+    <string name="ui_settings_configure_error_required">必填项不能为空</string>
+    <string name="ui_settings_configure_error_proxy_invalid">代理地址不是合法 URI</string>
     <string name="ui_settings_network">网络</string>
     <string name="ui_settings_network_summary">管理 endpoint、代理和请求链路的最小入口。</string>
     <string name="ui_settings_memory">记忆</string>
