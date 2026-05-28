@@ -71,6 +71,7 @@ fun NexusApp(
     val pageChromeHost = rememberPageChromeHost()
     var chromeMenuExpanded by remember { mutableStateOf(false) }
     var lastRootBackPressedAt by remember { mutableStateOf(0L) }
+    var isPageTransitioning by remember { mutableStateOf(false) }
     val initialPage = launchDecision.initialPage
     val controller = rememberNavigationController<NexusPage>(initialPage = initialPage)
     val navigator = controller.navigator
@@ -166,6 +167,7 @@ fun NexusApp(
 
     LiquidScreen(
         state = screenState,
+        actionsEnabled = !isPageTransitioning,
         leftButton = currentLeftAction?.let { action ->
             {
                 AnimatedContent(
@@ -228,6 +230,9 @@ fun NexusApp(
                 targetState = currentEntry,
                 direction = controller.lastDirection,
                 modifier = Modifier.fillMaxSize(),
+                onTransitionActiveChanged = { active ->
+                    isPageTransitioning = active
+                },
             ) { entry ->
                 val pageChromeRegistrar = remember(entry.id, pageChromeHost) {
                     pageChromeHost.registrarFor(entry.id)

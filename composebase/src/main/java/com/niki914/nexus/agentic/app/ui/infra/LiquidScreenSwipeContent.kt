@@ -14,17 +14,29 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.delay
 
 @Composable
 fun <T> LiquidScreenSwipeContent(
     targetState: T,
     direction: TitleDirection,
     modifier: Modifier = Modifier,
+    onTransitionActiveChanged: (Boolean) -> Unit = {},
     content: @Composable AnimatedContentScope.(targetState: T) -> Unit,
 ) {
     val duration = 360
     val easing = FastOutSlowInEasing
+    LaunchedEffect(targetState, direction) {
+        if (direction == TitleDirection.None) {
+            onTransitionActiveChanged(false)
+            return@LaunchedEffect
+        }
+        onTransitionActiveChanged(true)
+        delay(duration.toLong())
+        onTransitionActiveChanged(false)
+    }
 
     AnimatedContent(
         targetState = targetState,

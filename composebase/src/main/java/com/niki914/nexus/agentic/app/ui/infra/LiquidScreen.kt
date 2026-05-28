@@ -62,6 +62,7 @@ import kotlinx.coroutines.delay
 fun LiquidScreen(
     state: LiquidScreenState,
     modifier: Modifier = Modifier,
+    actionsEnabled: Boolean = true,
     leftButton: (@Composable () -> Unit)? = null,
     rightButton: (@Composable () -> Unit)? = null,
     content: @Composable (hazeState: HazeState) -> Unit,
@@ -270,6 +271,7 @@ fun LiquidScreen(
                     ) {
                         ActionBarButton(
                             onClick = { state.onLeftClick?.invoke() },
+                            enabled = actionsEnabled,
                             backdrop = chromeBackdrop,
                             content = buttonContent,
                         )
@@ -300,6 +302,7 @@ fun LiquidScreen(
                     ) {
                         ActionBarButton(
                             onClick = { state.onRightClick?.invoke() },
+                            enabled = actionsEnabled,
                             backdrop = chromeBackdrop,
                             content = buttonContent,
                         )
