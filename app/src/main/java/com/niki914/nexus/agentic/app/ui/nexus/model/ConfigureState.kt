@@ -29,7 +29,6 @@ data class ConfigureUiState(
     val proxyInput: String = "",
     @param:StringRes val proxyErrorResId: Int? = null,
     val isSaving: Boolean = false,
-    val saveEnabled: Boolean = false,
     val inlineError: ConfigureInlineError? = null,
 )
 
@@ -114,7 +113,6 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
                 copy(
                     scene = scene,
                     isSaving = false,
-                    saveEnabled = false,
                     inlineError = ConfigureInlineError.LoadFailed(reason),
                 )
             }
@@ -164,12 +162,6 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
                 proxyInput = "",
                 proxyErrorResId = null,
                 isSaving = false,
-                saveEnabled = canSave(
-                    endpointOverrideEnabled = endpointOverrideEnabled,
-                    endpointInput = endpointInput,
-                    modelInput = savedModel,
-                    apiKeyInput = savedApiKey,
-                ),
                 inlineError = null,
             )
         }
@@ -197,12 +189,6 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
                 proxyInput = llmConfig.proxy,
                 proxyErrorResId = null,
                 isSaving = false,
-                saveEnabled = canSave(
-                    endpointOverrideEnabled = true,
-                    endpointInput = endpointInput,
-                    modelInput = llmConfig.model,
-                    apiKeyInput = llmConfig.apiKey,
-                ),
                 inlineError = null,
             )
         }
@@ -225,10 +211,6 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
                 endpointInput = nextEndpointInput,
                 lastCustomEndpointInput = nextLastCustomEndpointInput,
                 endpointErrorResId = null,
-                saveEnabled = !isSaving && canSave(
-                    endpointOverrideEnabled = enabled,
-                    endpointInput = nextEndpointInput,
-                ),
                 inlineError = null,
             )
         }
@@ -244,7 +226,6 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
                     lastCustomEndpointInput
                 },
                 endpointErrorResId = null,
-                saveEnabled = !isSaving && canSave(endpointInput = value),
                 inlineError = null,
             )
         }
@@ -255,7 +236,6 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
             copy(
                 modelInput = value,
                 modelErrorResId = null,
-                saveEnabled = !isSaving && canSave(modelInput = value),
                 inlineError = null,
             )
         }
@@ -266,7 +246,6 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
             copy(
                 apiKeyInput = value,
                 apiKeyErrorResId = null,
-                saveEnabled = !isSaving && canSave(apiKeyInput = value),
                 inlineError = null,
             )
         }
@@ -276,7 +255,6 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
         updateState {
             copy(
                 promptInput = value,
-                saveEnabled = !isSaving && canSave(),
                 inlineError = null,
             )
         }
@@ -287,7 +265,6 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
             copy(
                 proxyInput = value,
                 proxyErrorResId = null,
-                saveEnabled = !isSaving && canSave(),
                 inlineError = null,
             )
         }
@@ -363,7 +340,6 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
         updateState {
             copy(
                 isSaving = true,
-                saveEnabled = false,
                 endpointErrorResId = null,
                 modelErrorResId = null,
                 apiKeyErrorResId = null,
@@ -380,7 +356,6 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
             updateState {
                 copy(
                     isSaving = false,
-                    saveEnabled = canSave(),
                     endpointErrorResId = null,
                     modelErrorResId = null,
                     apiKeyErrorResId = null,
@@ -395,7 +370,6 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
             updateState {
                 copy(
                     isSaving = false,
-                    saveEnabled = canSave(),
                     inlineError = ConfigureInlineError.SaveFailed(reason),
                 )
             }
@@ -407,7 +381,6 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
         updateState {
             copy(
                 isSaving = true,
-                saveEnabled = false,
                 endpointErrorResId = null,
                 modelErrorResId = null,
                 apiKeyErrorResId = null,
@@ -430,7 +403,6 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
             updateState {
                 copy(
                     isSaving = false,
-                    saveEnabled = canSave(),
                     endpointErrorResId = null,
                     modelErrorResId = null,
                     apiKeyErrorResId = null,
@@ -446,7 +418,6 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
             updateState {
                 copy(
                     isSaving = false,
-                    saveEnabled = canSave(),
                     inlineError = ConfigureInlineError.SaveFailed(reason),
                 )
             }
@@ -461,18 +432,6 @@ private fun ConfigureUiState.resolvedEndpoint(): String {
     } else {
         providerSpec.officialEndpoint
     }
-}
-
-private fun ConfigureUiState.canSave(
-    endpointOverrideEnabled: Boolean = this.endpointOverrideEnabled,
-    endpointInput: String = this.endpointInput,
-    modelInput: String = this.modelInput,
-    apiKeyInput: String = this.apiKeyInput,
-): Boolean {
-    val endpointValid = !endpointOverrideEnabled || endpointInput.trim().isNotBlank()
-    return endpointValid &&
-            modelInput.trim().isNotBlank() &&
-            apiKeyInput.trim().isNotBlank()
 }
 
 private enum class ConfigureFieldTarget {

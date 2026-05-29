@@ -25,13 +25,13 @@ data class HomeToolStatus(
 sealed interface HomeChatBlock {
     data class Text(val text: String) : HomeChatBlock
     data class Tool(val status: HomeToolStatus) : HomeChatBlock
+    data class Error(val message: String) : HomeChatBlock
 }
 
 data class HomeChatTurn(
     val id: Long,
     val userText: String,
     val blocks: List<HomeChatBlock> = emptyList(),
-    val errorMessage: String? = null,
 )
 
 data class HomeChatUiState(
@@ -48,14 +48,10 @@ sealed interface HomeChatIntent {
     data object ClearConversation : HomeChatIntent
 }
 
-sealed interface HomeChatEffect {
-    data class Error(val message: String) : HomeChatEffect
-}
-
 class HomeChatViewModel internal constructor(
     private val streamProvider: (String) -> Flow<LlmStreamEvent> = LLMController::stream,
     private val resetConversation: suspend () -> Unit = LLMController::resetConversation, // TODO 直接内联，改为无参，看是否有对应 factory，也删除
-) : ComposeMVIViewModel<HomeChatIntent, HomeChatUiState, HomeChatEffect>() {
+) : ComposeMVIViewModel<HomeChatIntent, HomeChatUiState, Nothing>() {
     private var nextTurnId = 0L
     private var streamJob: Job? = null
 
@@ -134,7 +130,6 @@ class HomeChatViewModel internal constructor(
                 xlog(
                     "HomeChatViewModel.ClearConversation resetError type=${throwable::class.simpleName} message=${throwable.message}"
                 )
-                throwable.message?.let { sendEffect(HomeChatEffect.Error(it)) }
             }
         }
     }
@@ -189,10 +184,9 @@ class HomeChatViewModel internal constructor(
     private fun applyError(turnId: Long, message: String) {
         xlog("HomeChatViewModel.Error turnId=$turnId messageLength=${message.length}")
         updateTurn(turnId) {
-            it.copy(errorMessage = message)
+            it.appendError(message)
         }
         updateState { copy(isGenerating = false) }
-        sendEffect(HomeChatEffect.Error(message))
     }
 
     private fun updateTurn(turnId: Long, transform: (HomeChatTurn) -> HomeChatTurn) {
@@ -204,7 +198,7 @@ class HomeChatViewModel internal constructor(
         }
         val updatedTurn = transform(currentTurns[index])
         xlog(
-            "HomeChatViewModel.UpdateTurn turnId=$turnId blockCount=${updatedTurn.blocks.size} hasError=${updatedTurn.errorMessage != null}"
+            "HomeChatViewModel.UpdateTurn turnId=$turnId blockCount=${updatedTurn.blocks.size} hasError=${updatedTurn.blocks.any { it is HomeChatBlock.Error }}"
         )
         updateState {
             copy(turns = currentTurns.toMutableList().also { it[index] = updatedTurn })
@@ -226,6 +220,11 @@ class HomeChatViewModel internal constructor(
             blocks.filterIsInstance<HomeChatBlock.Text>().joinToString(separator = "") { it.text }
         val delta = fullText.removePrefix(displayedText)
         return appendText(delta)
+    }
+
+    private fun HomeChatTurn.appendError(message: String): HomeChatTurn {
+        if (message.isBlank()) return this
+        return copy(blocks = blocks + HomeChatBlock.Error(message))
     }
 
     private fun HomeChatTurn.appendTool(

@@ -25,10 +25,6 @@ class SettingsViewModel : ComposeMVIViewModel<SettingsIntent, SettingsUiState, S
     }
 
     override suspend fun handleIntent(intent: SettingsIntent) = Unit
-
-    fun isGroupVisible(group: NexusSettingsGroup): Boolean {
-        return currentState.sections.any { section -> group in section.groups }
-    }
 }
 
 private data class SettingsSectionDefinition(

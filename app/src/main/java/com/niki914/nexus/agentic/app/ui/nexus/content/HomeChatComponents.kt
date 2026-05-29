@@ -260,6 +260,31 @@ fun ToolStatusPill(
 }
 
 @Composable
+fun AssistantErrorBlock(
+    message: String,
+    modifier: Modifier = Modifier,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val shape = G2BubbleShape(18.dp)
+
+    BoxWithConstraints(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(
+            text = message,
+            modifier = Modifier
+                .widthIn(max = maxWidth * 0.9f)
+                .clip(shape)
+                .background(colorScheme.errorContainer.copy(alpha = 0.68f), shape)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = colorScheme.onErrorContainer,
+        )
+    }
+}
+
+@Composable
 fun LiquidChatComposer(
     value: String,
     onValueChange: (String) -> Unit,

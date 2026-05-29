@@ -149,8 +149,7 @@ private fun ConfigurePageContentPreview() {
                 endpointInput = ProviderSpecs.find("deepseek").officialEndpoint,
                 modelInput = "deepseek-chat",
                 apiKeyInput = "sk-demo-key",
-                apiKeyVisible = false,
-                saveEnabled = true,
+                apiKeyVisible = false
             ),
             onEndpointOverrideChange = {},
             onEndpointChange = {},

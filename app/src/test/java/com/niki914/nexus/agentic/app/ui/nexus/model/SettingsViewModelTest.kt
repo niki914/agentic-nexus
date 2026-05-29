@@ -31,9 +31,14 @@ class SettingsViewModelTest {
     @Test
     fun settingsViewModel_usesDefaultVisibleGroups() {
         val viewModel = SettingsViewModel()
+        val state = viewModel.uiStateFlow.value
 
-        assertTrue(viewModel.isGroupVisible(NexusSettingsGroup.ProviderModel))
-        assertTrue(viewModel.isGroupVisible(NexusSettingsGroup.BuiltinTools))
-        assertFalse(viewModel.isGroupVisible(NexusSettingsGroup.Network))
+        assertTrue(state.isGroupVisible(NexusSettingsGroup.ProviderModel))
+        assertTrue(state.isGroupVisible(NexusSettingsGroup.BuiltinTools))
+        assertFalse(state.isGroupVisible(NexusSettingsGroup.Network))
     }
+}
+
+private fun SettingsUiState.isGroupVisible(group: NexusSettingsGroup): Boolean {
+    return sections.any { section -> group in section.groups }
 }

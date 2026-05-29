@@ -129,7 +129,29 @@ class HomeChatViewModelTest {
 
         val state = viewModel.uiStateFlow.value
         assertEquals(1, state.turns.size)
-        assertEquals(null, state.turns.single().errorMessage)
+        assertFalse(state.turns.single().blocks.any { it is HomeChatBlock.Error })
+        assertFalse(state.isGenerating)
+    }
+
+    @Test
+    fun send_appendsErrorBlockWhenStreamReportsError() = runTest {
+        val viewModel = HomeChatViewModel(
+            streamProvider = {
+                flowOf(LlmStreamEvent.Error("network failed"))
+            },
+            resetConversation = {},
+        )
+
+        viewModel.sendIntent(HomeChatIntent.InputChanged("hello"))
+        viewModel.sendIntent(HomeChatIntent.Send)
+        advanceUntilIdle()
+
+        val state = viewModel.uiStateFlow.value
+        assertEquals(1, state.turns.size)
+        assertEquals(
+            listOf(HomeChatBlock.Error("network failed")),
+            state.turns.single().blocks,
+        )
         assertFalse(state.isGenerating)
     }
 

@@ -76,20 +76,17 @@ fun HomePageContent(
     var shouldFollowBottom by remember { mutableStateOf(true) }
     var hasPendingUserScrollDecision by remember { mutableStateOf(false) }
     val lastTurn = uiState.turns.lastOrNull()
-    val lastErrorLength = lastTurn?.errorMessage?.length ?: 0
     val bottomContentVersion = remember(
         uiState.turns.size,
         uiState.streamEventCount,
         lastTurn?.id,
         lastTurn?.blocks?.size,
-        lastErrorLength,
     ) {
         listOf(
             uiState.turns.size,
             uiState.streamEventCount,
             lastTurn?.id,
             lastTurn?.blocks?.size,
-            lastErrorLength,
         )
     }
     val isAtBottom by remember(listState, bottomThresholdPx) {
@@ -247,6 +244,13 @@ private fun HomeChatTurnItem(
                         modifier = Modifier.padding(top = 12.dp),
                     )
                 }
+
+                is HomeChatBlock.Error -> {
+                    AssistantErrorBlock(
+                        message = block.message,
+                        modifier = Modifier.padding(top = 12.dp),
+                    )
+                }
             }
         }
 
@@ -294,9 +298,9 @@ private fun HomePageContentPreview() {
                                 state = HomeToolState.Failed,
                             )
                         ),
+                        HomeChatBlock.Error("MCP 工具调用失败，请检查服务配置。"),
                         HomeChatBlock.Text("I've done the check and summarized the result."),
                     ),
-                    errorMessage = "这个错误不会在 Home 文本流里展示。",
                 ),
                 onContentTap = {},
             )
