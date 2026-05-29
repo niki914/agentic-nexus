@@ -333,7 +333,7 @@ private fun ToolStatusIndicator(
 
 @Composable
 private fun HomeToolState.label(): String = when (this) {
-    HomeToolState.Running -> stringResource(R.string.ui_home_tool_running)
-    HomeToolState.Succeeded -> stringResource(R.string.ui_home_tool_succeeded)
-    HomeToolState.Failed -> stringResource(R.string.ui_home_tool_failed)
+    HomeToolState.Running -> stringResource(R.string.ui_tool_status_running)
+    HomeToolState.Succeeded -> stringResource(R.string.ui_tool_status_success)
+    HomeToolState.Failed -> stringResource(R.string.ui_tool_status_failed)
 }

@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,6 +33,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
@@ -46,6 +45,9 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatBlock
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatTurn
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolState
+import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolStatus
+import com.niki914.nexus.cb.BaseTheme
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.flow.collectLatest
@@ -248,14 +250,63 @@ private fun HomeChatTurnItem(
             }
         }
 
-        turn.errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
-            Text(
-                text = message,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+    }
+}
+
+@Preview(
+    name = "Home Page Preview",
+    showBackground = true,
+    widthDp = 420,
+    heightDp = 900,
+)
+@Composable
+private fun HomePageContentPreview() {
+    BaseTheme {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(20.dp),
+        ) {
+            HomeChatTurnItem(
+                turn = HomeChatTurn(
+                    id = 0L,
+                    userText = "帮我检查一下当前工具状态。",
+                    blocks = listOf(
+                        HomeChatBlock.Text("I'll call the available tools first."),
+                        HomeChatBlock.Tool(
+                            HomeToolStatus(
+                                callId = "tool-1",
+                                name = "read_session",
+                                state = HomeToolState.Succeeded,
+                            )
+                        ),
+                        HomeChatBlock.Tool(
+                            HomeToolStatus(
+                                callId = "tool-2",
+                                name = "update_config",
+                                state = HomeToolState.Running,
+                            )
+                        ),
+                        HomeChatBlock.Tool(
+                            HomeToolStatus(
+                                callId = "tool-3",
+                                name = "sync_mcp",
+                                state = HomeToolState.Failed,
+                            )
+                        ),
+                        HomeChatBlock.Text("I've done the check and summarized the result."),
+                    ),
+                    errorMessage = "这个错误不会在 Home 文本流里展示。",
+                ),
+                onContentTap = {},
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            LiquidChatComposer(
+                value = "继续分析",
+                onValueChange = {},
+                onSendClick = {},
+                sendEnabled = true,
+                maxLines = 10,
             )
         }
     }

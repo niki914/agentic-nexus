@@ -2,9 +2,7 @@ package com.niki914.nexus.agentic.mod.feat.hyper
 
 import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.TurnMode
-import com.niki914.nexus.agentic.chat.chunk
-import com.niki914.nexus.agentic.chat.isFinal
-import com.niki914.nexus.agentic.chat.isFirst
+import com.niki914.nexus.agentic.chat.collectAsChunk
 import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.mod.feat.AbstractAssistantHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeTextStreamHook
@@ -95,8 +93,8 @@ class XiaoaiChatHook( // TODO P0 NewRoom / 卡片采用白名单模式避免放�
 
         targetReady.await() // TODO P1 死等风险
 
-        sharedFlow.collect { event ->
-            renderStreamCard(turnId, roomId, event.chunk, event.isFirst, event.isFinal)
+        sharedFlow.collectAsChunk { frame ->
+            renderStreamCard(turnId, roomId, frame.text, frame.isFirst, frame.isFinal)
         }
     }
 
