@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -29,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -37,6 +39,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.LocalLiquidViewportAvoidanceController
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeMenuItem
@@ -70,7 +73,9 @@ fun HomePageContent(
     val listState = rememberLazyListState()
     val imeBottom = with(density) { WindowInsets.ime.getBottom(this).toDp() }
     val navigationBottom = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
-    val composerBottomPadding = (imeBottom + 12.dp).coerceAtLeast(navigationBottom + 20.dp)
+    var isComposerFocused by remember { mutableStateOf(false) }
+    val effectiveImeBottom = if (isComposerFocused) imeBottom else 0.dp
+    val composerBottomPadding = (effectiveImeBottom + 12.dp).coerceAtLeast(navigationBottom + 20.dp)
     val bottomThresholdPx = with(density) { 24.dp.roundToPx() }
     val isUserDragging by listState.interactionSource.collectIsDraggedAsState()
     var shouldFollowBottom by remember { mutableStateOf(true) }
@@ -188,25 +193,30 @@ fun HomePageContent(
             }
         }
 
-        LiquidChatComposer(
-            value = uiState.input,
-            onValueChange = { value ->
-                viewModel.sendIntent(HomeChatIntent.InputChanged(value))
-            },
-            onSendClick = {
-                shouldFollowBottom = true
-                viewModel.sendIntent(HomeChatIntent.Send)
-            },
-            sendEnabled = !uiState.isGenerating,
-            maxLines = 10,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(
-                    start = 20.dp,
-                    end = 20.dp,
-                    bottom = composerBottomPadding,
-                ),
-        )
+        CompositionLocalProvider(LocalLiquidViewportAvoidanceController provides null) {
+            LiquidChatComposer(
+                value = uiState.input,
+                onValueChange = { value ->
+                    viewModel.sendIntent(HomeChatIntent.InputChanged(value))
+                },
+                onSendClick = {
+                    shouldFollowBottom = true
+                    viewModel.sendIntent(HomeChatIntent.Send)
+                },
+                sendEnabled = !uiState.isGenerating,
+                maxLines = 10,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .onFocusChanged { focusState ->
+                        isComposerFocused = focusState.hasFocus
+                    }
+                    .padding(
+                        start = 20.dp,
+                        end = 20.dp,
+                        bottom = composerBottomPadding,
+                    ),
+            )
+        }
     }
 }
 
