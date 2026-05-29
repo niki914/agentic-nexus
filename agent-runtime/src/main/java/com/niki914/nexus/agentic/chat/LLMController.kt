@@ -9,6 +9,7 @@ import com.niki914.nexus.agentic.chat.agentic.mcp.McpDiscoveryCacheStore
 import com.niki914.nexus.agentic.chat.agentic.mcp.McpInterceptorHttpEngine
 import com.niki914.nexus.agentic.chat.agentic.stream.LlmStreamEventMapper
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
+import com.niki914.nexus.agentic.runtime.settings.model.LlmApiType
 import com.niki914.nexus.h.util.xlog
 import com.niki914.s3ss10n.Session
 import com.niki914.s3ss10n.SessionConfig
@@ -38,12 +39,14 @@ object LLMController {
 
     private var runtimeState: RuntimeState? = null
     private var session: Session? = null
+    private var sessionApiType: LlmApiType? = null
     private var lastMcpServersFingerprint: String? = null
 
     suspend fun refresh(): LlmRuntimeSnapshot {
         val previousSnapshot = runtimeState?.snapshot
         val gateway = RuntimeEnvironment.awaitSettingsGateway()
         val llmConfig = gateway.readLlmConfig()
+        val apiType = LlmApiType.fromProvider(llmConfig.provider)
         val mcpServers = gateway.listMcpServers()
         val customTools = gateway.listCustomTools()
         val builtinSettings = gateway.listBuiltinToolSettings()
@@ -71,9 +74,9 @@ object LLMController {
             finalSystemPrompt = prompt.finalSystemPrompt,
             proxy = llmConfig.proxy,
         )
-        val isNewSession = session == null
+        val isNewSession = session == null || sessionApiType != apiType
         val currentMcpServersFingerprint = gateway.fingerprintMcpServers()
-        val activeSession = obtainSession()
+        val activeSession = obtainSession(apiType)
         activeSession.update {
             applyRuntimeConfig(
                 config = config,
@@ -192,10 +195,18 @@ object LLMController {
         }
     }
 
-    private suspend fun obtainSession(): Session = session ?: openSession().also { session = it }
+    private suspend fun obtainSession(apiType: LlmApiType): Session {
+        session?.takeIf { sessionApiType == apiType }?.let { return it }
+        session?.close()
+        lastMcpServersFingerprint = null
+        return openSession(apiType).also {
+            session = it
+            sessionApiType = apiType
+        }
+    }
 
-    private suspend fun openSession(): Session {
-        return Session.open<SessionProtocols.OpenAI> {
+    private suspend fun openSession(apiType: LlmApiType): Session {
+        val configBlock: SessionConfig.Builder.() -> Unit = {
             httpEngine = McpInterceptorHttpEngine(
                 delegate = OkHttpEngine(),
                 onToolsDiscovered = mcpCacheStore::onToolsDiscovered,
@@ -214,6 +225,11 @@ object LLMController {
                     is ToolCallKind.Mcp -> delegate()
                 }
             }
+        }
+        return when (apiType) {
+            LlmApiType.Anthropic -> Session.open(SessionProtocols.Anthropic::class, configBlock)
+            LlmApiType.DeepSeek -> Session.open(SessionProtocols.DeepSeek::class, configBlock)
+            LlmApiType.OpenAI -> Session.open(configBlock)
         }
     }
 
