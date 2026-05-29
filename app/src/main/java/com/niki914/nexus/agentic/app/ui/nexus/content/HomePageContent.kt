@@ -203,7 +203,10 @@ fun HomePageContent(
                     shouldFollowBottom = true
                     viewModel.sendIntent(HomeChatIntent.Send)
                 },
-                sendEnabled = !uiState.isGenerating,
+                onStopClick = {
+                    viewModel.sendIntent(HomeChatIntent.StopGenerating)
+                },
+                isGenerating = uiState.isGenerating,
                 maxLines = 10,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -319,7 +322,8 @@ private fun HomePageContentPreview() {
                 value = "继续分析",
                 onValueChange = {},
                 onSendClick = {},
-                sendEnabled = true,
+                onStopClick = {},
+                isGenerating = false,
                 maxLines = 10,
             )
         }

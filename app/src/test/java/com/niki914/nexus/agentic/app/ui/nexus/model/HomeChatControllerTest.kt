@@ -183,6 +183,47 @@ class HomeChatViewModelTest {
         viewModel.sendIntent(HomeChatIntent.ClearConversation)
         advanceUntilIdle()
     }
+
+    @Test
+    fun stopGenerating_keepsPartialAssistantMessageAndAllowsNextSend() = runTest {
+        var sentQueries = emptyList<String>()
+        val viewModel = HomeChatViewModel(
+            streamProvider = { query ->
+                sentQueries = sentQueries + query
+                flow {
+                    emit(LlmStreamEvent.RoundStarted)
+                    emit(LlmStreamEvent.TextDelta(delta = "partial", fullText = "partial"))
+                    awaitCancellation()
+                }
+            },
+            resetConversation = {},
+        )
+
+        viewModel.sendIntent(HomeChatIntent.InputChanged("first"))
+        viewModel.sendIntent(HomeChatIntent.Send)
+        runCurrent()
+        viewModel.sendIntent(HomeChatIntent.StopGenerating)
+        runCurrent()
+
+        val stoppedState = viewModel.uiStateFlow.value
+        assertFalse(stoppedState.isGenerating)
+        assertEquals(
+            listOf(HomeChatBlock.Text("partial")),
+            stoppedState.turns.single().blocks,
+        )
+
+        viewModel.sendIntent(HomeChatIntent.InputChanged("second"))
+        viewModel.sendIntent(HomeChatIntent.Send)
+        runCurrent()
+
+        val nextState = viewModel.uiStateFlow.value
+        assertTrue(nextState.isGenerating)
+        assertEquals(listOf("first", "second"), sentQueries)
+        assertEquals(2, nextState.turns.size)
+
+        viewModel.sendIntent(HomeChatIntent.ClearConversation)
+        advanceUntilIdle()
+    }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

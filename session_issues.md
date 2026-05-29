@@ -61,13 +61,11 @@ Nexus 曾遇到 OpenAI 兼容服务返回：
 Invalid assistant message: content or toolcalls must be set
 ```
 
-这通常意味着请求历史里出现了既没有 `content` 也没有 `tool_calls` 的 assistant message。
+这通常意味着请求历史里出现了既没有 `content` 也没有 `tool_calls` 的 assistant message。可能存在内部错误导致这种消息的出现
 
-期望 session 库提供：
+## 5. 超时参数
 
-- 在追加历史或发送请求前拒绝/过滤非法 assistant message。
-- 在错误事件中暴露问题消息的 round、role、index，便于宿主定位。
-- 如果是 streaming tool_calls 合并过程产生的空 assistant，应由库侧修复历史建模。
+除了网络超时以外，希望添加一个 llm 超时，口径是若干秒内没有出新的事件
 
 ## Nexus 当前边界
 

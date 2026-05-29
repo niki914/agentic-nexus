@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -289,12 +290,14 @@ fun LiquidChatComposer(
     value: String,
     onValueChange: (String) -> Unit,
     onSendClick: () -> Unit,
-    sendEnabled: Boolean,
+    onStopClick: () -> Unit,
+    isGenerating: Boolean,
     modifier: Modifier = Modifier,
     maxLines: Int = Int.MAX_VALUE,
 ) {
-    val canSend = sendEnabled && value.isNotBlank()
-    val contentColor = if (canSend) {
+    val canSend = !isGenerating && value.isNotBlank()
+    val buttonEnabled = isGenerating || canSend
+    val contentColor = if (buttonEnabled) {
         MaterialTheme.colorScheme.primary
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
@@ -311,13 +314,19 @@ fun LiquidChatComposer(
         trailingContent = {
             CompositionLocalProvider(LocalContentColor provides contentColor) {
                 IconButton(
-                    onClick = onSendClick,
-                    enabled = canSend,
+                    onClick = if (isGenerating) onStopClick else onSendClick,
+                    enabled = buttonEnabled,
                     modifier = Modifier.size(40.dp),
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Send,
-                        contentDescription = stringResource(R.string.ui_home_send_content_description),
+                        imageVector = if (isGenerating) Icons.Default.Stop else Icons.Default.Send,
+                        contentDescription = stringResource(
+                            if (isGenerating) {
+                                R.string.ui_home_stop_content_description
+                            } else {
+                                R.string.ui_home_send_content_description
+                            }
+                        ),
                     )
                 }
             }

@@ -45,6 +45,7 @@
     <string name="ui_home_tool_succeeded">@string/ui_tool_status_success</string>
     <string name="ui_home_tool_failed">@string/ui_tool_status_failed</string>
     <string name="ui_home_send_content_description">发送消息</string>
+    <string name="ui_home_stop_content_description">停止生成</string>
     <string name="ui_root_back_to_home_hint">2 秒内再按一次返回桌面</string>
 
     <!-- Settings Shell -->

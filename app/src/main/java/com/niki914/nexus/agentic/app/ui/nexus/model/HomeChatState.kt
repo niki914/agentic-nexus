@@ -7,6 +7,7 @@ import com.niki914.nexus.cb.ComposeMVIViewModel
 import com.niki914.nexus.h.util.xlog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
@@ -45,6 +46,7 @@ data class HomeChatUiState(
 sealed interface HomeChatIntent {
     data class InputChanged(val value: String) : HomeChatIntent
     data object Send : HomeChatIntent
+    data object StopGenerating : HomeChatIntent
     data object ClearConversation : HomeChatIntent
 }
 
@@ -65,6 +67,7 @@ class HomeChatViewModel internal constructor(
         when (intent) {
             is HomeChatIntent.InputChanged -> onInputChanged(intent.value)
             HomeChatIntent.Send -> sendCurrentInput()
+            HomeChatIntent.StopGenerating -> stopGenerating()
             HomeChatIntent.ClearConversation -> clearConversation()
         }
     }
@@ -111,9 +114,23 @@ class HomeChatViewModel internal constructor(
                 }
             } finally {
                 xlog("HomeChatViewModel.StreamJob finish turnId=$turnId")
-                updateState { copy(isGenerating = false) }
+                if (streamJob == currentCoroutineContext()[Job]) {
+                    streamJob = null
+                    updateState { copy(isGenerating = false) }
+                }
             }
         }
+    }
+
+    private fun stopGenerating() {
+        if (!currentState.isGenerating) {
+            xlog("HomeChatViewModel.Stop ignored=notGenerating")
+            return
+        }
+        xlog("HomeChatViewModel.Stop")
+        streamJob?.cancel()
+        streamJob = null
+        updateState { copy(isGenerating = false) }
     }
 
     private fun clearConversation() {
