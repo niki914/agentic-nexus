@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 
 @Composable
-fun CustomToolsSettingsContent(
+fun CustomShellToolsSettingsContent(
     topPadding: Dp,
     hazeState: HazeState,
     onOpenToolDetail: (toolName: String, toolIndex: Int) -> Unit,

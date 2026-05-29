@@ -21,7 +21,7 @@ sealed interface SettingsEffect
 class SettingsViewModel : ComposeMVIViewModel<SettingsIntent, SettingsUiState, SettingsEffect>() {
 
     override fun initUiState(): SettingsUiState {
-        return buildSettingsUiState(defaultVisibleSettingsGroups())
+        return buildSettingsUiState(defaultHiddenSettingsGroups())
     }
 
     override suspend fun handleIntent(intent: SettingsIntent) = Unit
@@ -33,13 +33,12 @@ private data class SettingsSectionDefinition(
 )
 
 internal fun buildSettingsUiState(
-    visibleGroups: List<NexusSettingsGroup>,
+    hiddenGroups: Set<NexusSettingsGroup>,
 ): SettingsUiState {
-    val visibleGroupSet = visibleGroups.toSet()
     return SettingsUiState(
         sections = settingsSections()
             .mapNotNull { section ->
-                val groups = section.groups.filter(visibleGroupSet::contains)
+                val groups = section.groups.filterNot(hiddenGroups::contains)
                 groups.takeIf { it.isNotEmpty() }?.let {
                     SettingsSectionUiState(
                         titleRes = section.titleRes,
@@ -55,34 +54,28 @@ private fun settingsSections(): List<SettingsSectionDefinition> {
         SettingsSectionDefinition(
             titleRes = R.string.ui_settings_section_model,
             groups = listOf(
-                NexusSettingsGroup.ProviderModel,
-                NexusSettingsGroup.Network,
+                NexusSettingsGroup.ModelConfig,
                 NexusSettingsGroup.Memory,
             ),
         ),
         SettingsSectionDefinition(
-            titleRes = R.string.ui_settings_section_execution,
+            titleRes = R.string.ui_settings_section_capabilities,
             groups = listOf(
                 NexusSettingsGroup.BuiltinTools,
-                NexusSettingsGroup.ShellRules,
+                NexusSettingsGroup.CustomShellTools,
+                NexusSettingsGroup.Mcp,
             ),
         ),
         SettingsSectionDefinition(
-            titleRes = R.string.ui_settings_section_integration,
+            titleRes = R.string.ui_settings_section_app,
             groups = listOf(
-                NexusSettingsGroup.Mcp,
-                NexusSettingsGroup.CustomTools,
+                NexusSettingsGroup.ExecutionRules,
                 NexusSettingsGroup.About,
             ),
         ),
     )
 }
 
-private fun defaultVisibleSettingsGroups(): List<NexusSettingsGroup> {
-    return listOf(
-        NexusSettingsGroup.ProviderModel,
-        NexusSettingsGroup.BuiltinTools,
-        NexusSettingsGroup.Mcp,
-        NexusSettingsGroup.CustomTools,
-    )
+private fun defaultHiddenSettingsGroups(): Set<NexusSettingsGroup> {
+    return emptySet()
 }

@@ -2,40 +2,51 @@ package com.niki914.nexus.agentic.app.ui.nexus.model
 
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusSettingsGroup
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SettingsViewModelTest {
 
     @Test
-    fun buildSettingsUiState_keepsOnlyVisibleGroupsAndDropsEmptySections() {
+    fun buildSettingsUiState_excludesHiddenGroupsAndDropsEmptySections() {
         val state = buildSettingsUiState(
-            listOf(
-                NexusSettingsGroup.BuiltinTools,
-                NexusSettingsGroup.CustomTools,
+            hiddenGroups = setOf(
+                NexusSettingsGroup.Memory,
+                NexusSettingsGroup.Mcp,
+                NexusSettingsGroup.About,
             )
         )
 
-        assertEquals(2, state.sections.size)
+        assertEquals(3, state.sections.size)
         assertEquals(
-            listOf(NexusSettingsGroup.BuiltinTools),
+            listOf(NexusSettingsGroup.ModelConfig),
             state.sections[0].groups,
         )
         assertEquals(
-            listOf(NexusSettingsGroup.CustomTools),
+            listOf(
+                NexusSettingsGroup.BuiltinTools,
+                NexusSettingsGroup.CustomShellTools,
+            ),
             state.sections[1].groups,
+        )
+        assertEquals(
+            listOf(NexusSettingsGroup.ExecutionRules),
+            state.sections[2].groups,
         )
     }
 
     @Test
-    fun settingsViewModel_usesDefaultVisibleGroups() {
+    fun settingsViewModel_usesEmptyDefaultHiddenGroups() {
         val viewModel = SettingsViewModel()
         val state = viewModel.uiStateFlow.value
 
-        assertTrue(state.isGroupVisible(NexusSettingsGroup.ProviderModel))
+        assertTrue(state.isGroupVisible(NexusSettingsGroup.ModelConfig))
+        assertTrue(state.isGroupVisible(NexusSettingsGroup.Memory))
         assertTrue(state.isGroupVisible(NexusSettingsGroup.BuiltinTools))
-        assertFalse(state.isGroupVisible(NexusSettingsGroup.Network))
+        assertTrue(state.isGroupVisible(NexusSettingsGroup.CustomShellTools))
+        assertTrue(state.isGroupVisible(NexusSettingsGroup.Mcp))
+        assertTrue(state.isGroupVisible(NexusSettingsGroup.ExecutionRules))
+        assertTrue(state.isGroupVisible(NexusSettingsGroup.About))
     }
 }
 

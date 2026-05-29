@@ -274,7 +274,7 @@ private fun settingsDetailRightAction(
             },
         )
 
-        NexusSettingsGroup.CustomTools -> TopBarActionSpec(
+        NexusSettingsGroup.CustomShellTools -> TopBarActionSpec(
             icon = androidx.compose.material.icons.Icons.Default.Add,
             onClick = {
                 onPush(

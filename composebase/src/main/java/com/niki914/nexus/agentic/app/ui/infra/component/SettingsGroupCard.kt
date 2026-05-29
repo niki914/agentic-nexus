@@ -41,7 +41,7 @@ fun SettingsGroupCard(
                 color = titleColor,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         }
         Column(
             modifier = Modifier

@@ -8,15 +8,10 @@ enum class NexusSettingsGroup(
     @StringRes val summaryRes: Int,
     val routeSuffix: String,
 ) {
-    ProviderModel(
-        titleRes = R.string.ui_settings_provider_model,
-        summaryRes = R.string.ui_settings_provider_model_summary,
-        routeSuffix = "provider-model",
-    ),
-    Network(
-        titleRes = R.string.ui_settings_network,
-        summaryRes = R.string.ui_settings_network_summary,
-        routeSuffix = "network",
+    ModelConfig(
+        titleRes = R.string.ui_settings_model_config,
+        summaryRes = R.string.ui_settings_model_config_summary,
+        routeSuffix = "model-config",
     ),
     Memory(
         titleRes = R.string.ui_settings_memory,
@@ -28,20 +23,20 @@ enum class NexusSettingsGroup(
         summaryRes = R.string.ui_settings_builtin_tools_summary,
         routeSuffix = "builtin-tools",
     ),
-    ShellRules(
-        titleRes = R.string.ui_settings_shell_rules,
-        summaryRes = R.string.ui_settings_shell_rules_summary,
-        routeSuffix = "shell-rules",
+    CustomShellTools(
+        titleRes = R.string.ui_settings_custom_shell_tools,
+        summaryRes = R.string.ui_settings_custom_shell_tools_summary,
+        routeSuffix = "custom-shell-tools",
     ),
     Mcp(
         titleRes = R.string.ui_settings_mcp,
         summaryRes = R.string.ui_settings_mcp_summary,
         routeSuffix = "mcp",
     ),
-    CustomTools(
-        titleRes = R.string.ui_settings_custom_tools,
-        summaryRes = R.string.ui_settings_custom_tools_summary,
-        routeSuffix = "custom-tools",
+    ExecutionRules(
+        titleRes = R.string.ui_settings_execution_rules,
+        summaryRes = R.string.ui_settings_execution_rules_summary,
+        routeSuffix = "execution-rules",
     ),
     About(
         titleRes = R.string.ui_settings_about,

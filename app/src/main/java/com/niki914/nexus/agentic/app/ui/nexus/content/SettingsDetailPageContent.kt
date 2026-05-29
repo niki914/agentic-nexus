@@ -52,8 +52,8 @@ fun SettingsDetailPageContent(
         return
     }
 
-    if (group == NexusSettingsGroup.ProviderModel) {
-        ProviderModelSettingsContent(
+    if (group == NexusSettingsGroup.ModelConfig) {
+        ModelConfigSettingsContent(
             topPadding = topPadding,
             hazeState = hazeState,
             onBack = onBack,
@@ -69,8 +69,8 @@ fun SettingsDetailPageContent(
         return
     }
 
-    if (group == NexusSettingsGroup.CustomTools) {
-        CustomToolsSettingsContent(
+    if (group == NexusSettingsGroup.CustomShellTools) {
+        CustomShellToolsSettingsContent(
             topPadding = topPadding,
             hazeState = hazeState,
             onOpenToolDetail = { name, index ->
@@ -126,7 +126,7 @@ fun SettingsDetailPageContent(
 }
 
 @Composable
-private fun ProviderModelSettingsContent(
+private fun ModelConfigSettingsContent(
     topPadding: Dp,
     hazeState: HazeState,
     onBack: () -> Unit,
