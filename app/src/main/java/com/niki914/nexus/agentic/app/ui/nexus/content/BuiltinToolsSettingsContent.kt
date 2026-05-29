@@ -1,209 +1,133 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content
 
-import android.content.Context
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
+import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.model.BuiltinToolSettingsIntent
+import com.niki914.nexus.agentic.app.ui.nexus.model.BuiltinToolSettingsUiState
+import com.niki914.nexus.agentic.app.ui.nexus.model.BuiltinToolSettingsViewModel
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolSettingItem
-import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolSettingsManager
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
+import dev.chrisbanes.haze.rememberHazeState
 
 @Composable
 fun BuiltinToolsSettingsContent(
     topPadding: Dp,
     hazeState: HazeState,
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val scrollState = rememberScrollState()
-    val manager = remember { BuiltinToolSettingsManager() }
-
-    var items by remember { mutableStateOf<List<BuiltinToolSettingItem>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var savingToolName by remember { mutableStateOf<String?>(null) }
-    var statusMessage by remember { mutableStateOf<String?>(null) }
+    val viewModel = pageViewModel<BuiltinToolSettingsViewModel>()
+    val uiState by viewModel.uiStateFlow.collectAsState()
 
     LaunchedEffect(Unit) {
-        runCatching {
-            loadBuiltinToolItems(manager)
-        }.onSuccess { loadedItems ->
-            items = loadedItems
-        }.onFailure { throwable ->
-            if (throwable is CancellationException) {
-                throw throwable
-            }
-            statusMessage = context.getString(
-                R.string.builtin_tool_save_failed,
-                throwable.message ?: throwable::class.java.simpleName,
-            )
-        }
-        isLoading = false
+        viewModel.sendIntent(BuiltinToolSettingsIntent.Load)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .hazeSource(hazeState)
-            .verticalScroll(scrollState)
-            .padding(top = topPadding)
-            .padding(horizontal = 16.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+    BuiltinToolsSettingsContentBody(
+        topPadding = topPadding,
+        hazeState = hazeState,
+        uiState = uiState,
+        onItemEnabledChange = { item, checked ->
+            viewModel.sendIntent(
+                BuiltinToolSettingsIntent.ItemEnabledChanged(
+                    name = item.name,
+                    value = checked,
+                )
+            )
+        },
+    )
+}
+
+@Composable
+private fun BuiltinToolsSettingsContentBody(
+    topPadding: Dp,
+    hazeState: HazeState,
+    uiState: BuiltinToolSettingsUiState,
+    onItemEnabledChange: (BuiltinToolSettingItem, Boolean) -> Unit,
+) {
+    SettingsListPageContent(
+        topPadding = topPadding,
+        hazeState = hazeState,
+        description = builtinToolDescription(uiState),
     ) {
-        Text(
-            text = stringResource(R.string.ui_settings_builtin_tools),
-            style = MaterialTheme.typography.headlineSmall,
-        )
-        Text(
-            text = stringResource(R.string.builtin_tool_page_description),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        SettingsGroupCard(title = stringResource(R.string.builtin_tool_list_title)) {
-            when {
-                isLoading -> BuiltinToolMessage(
-                    text = stringResource(R.string.builtin_tool_loading),
-                )
-
-                items.isEmpty() -> BuiltinToolMessage(
-                    text = stringResource(R.string.builtin_tool_empty),
-                )
-
-                else -> items.forEachIndexed { index, item ->
+        if (!uiState.isLoading && uiState.items.isNotEmpty()) {
+            SettingsGroupCard {
+                uiState.items.forEachIndexed { index, item ->
                     SettingToggleItem(
                         title = item.name,
                         description = item.description,
                         checked = item.enabled,
-                        enabled = savingToolName == null,
+                        enabled = !uiState.isSaving,
                         onCheckedChange = { checked ->
-                            val previousItems = items
-                            items = items.map { current ->
-                                if (current.name == item.name) {
-                                    current.copy(enabled = checked)
-                                } else {
-                                    current
-                                }
-                            }
-                            statusMessage = null
-                            savingToolName = item.name
-                            scope.launch {
-                                runCatching {
-                                    val result = manager.setEnabled(item.name, checked)
-                                    if (result.ok) {
-                                        items = loadBuiltinToolItems(manager)
-                                        statusMessage = context.getString(
-                                            if (checked) {
-                                                R.string.builtin_tool_save_success_enabled
-                                            } else {
-                                                R.string.builtin_tool_save_success_disabled
-                                            }
-                                        )
-                                    } else {
-                                        items = refreshBuiltinToolItemsOrFallback(
-                                            context = context,
-                                            manager = manager,
-                                            fallback = previousItems,
-                                        )
-                                        statusMessage = context.getString(
-                                            R.string.builtin_tool_save_failed,
-                                            result.message,
-                                        )
-                                    }
-                                }.onFailure { throwable ->
-                                    if (throwable is CancellationException) {
-                                        throw throwable
-                                    }
-                                    items = refreshBuiltinToolItemsOrFallback(
-                                        context = context,
-                                        manager = manager,
-                                        fallback = previousItems,
-                                    )
-                                    statusMessage = context.getString(
-                                        R.string.builtin_tool_save_failed,
-                                        throwable.message ?: throwable::class.java.simpleName,
-                                    )
-                                }
-                                savingToolName = null
-                            }
+                            onItemEnabledChange(item, checked)
                         },
                     )
-                    if (index != items.lastIndex) {
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.padding(horizontal = 12.dp),
-                        )
+                    if (index != uiState.items.lastIndex) {
+                        SettingsItemDivider()
                     }
                 }
             }
         }
-
-        statusMessage?.let { message ->
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Text(
-            text = stringResource(R.string.builtin_tool_effect_hint),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
 @Composable
-private fun BuiltinToolMessage(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
-    )
+private fun builtinToolDescription(uiState: BuiltinToolSettingsUiState): String {
+    val arg = uiState.descriptionArg
+    return if (arg == null) {
+        stringResource(uiState.descriptionResId)
+    } else {
+        stringResource(uiState.descriptionResId, arg)
+    }
 }
 
-private suspend fun loadBuiltinToolItems(
-    manager: BuiltinToolSettingsManager,
-): List<BuiltinToolSettingItem> {
-    return manager.load()
+@Preview(name = "Builtin Tools Empty", showBackground = true, widthDp = 420, heightDp = 900)
+@Composable
+private fun BuiltinToolsSettingsContentEmptyPreview() {
+    MaterialTheme {
+        BuiltinToolsSettingsContentBody(
+            topPadding = 0.dp,
+            hazeState = rememberHazeState(blurEnabled = true),
+            uiState = BuiltinToolSettingsUiState(
+                isLoading = false,
+                descriptionResId = R.string.builtin_tool_empty,
+            ),
+            onItemEnabledChange = { _, _ -> },
+        )
+    }
 }
 
-private suspend fun refreshBuiltinToolItemsOrFallback(
-    context: Context,
-    manager: BuiltinToolSettingsManager,
-    fallback: List<BuiltinToolSettingItem>,
-): List<BuiltinToolSettingItem> {
-    return runCatching {
-        loadBuiltinToolItems(manager)
-    }.getOrElse { throwable ->
-        if (throwable is CancellationException) {
-            throw throwable
-        }
-        fallback
+@Preview(name = "Builtin Tools Long List", showBackground = true, widthDp = 420, heightDp = 900)
+@Composable
+private fun BuiltinToolsSettingsContentLongListPreview() {
+    MaterialTheme {
+        BuiltinToolsSettingsContentBody(
+            topPadding = 0.dp,
+            hazeState = rememberHazeState(blurEnabled = true),
+            uiState = BuiltinToolSettingsUiState(
+                items = List(20) { index ->
+                    val displayIndex = index + 1
+                    BuiltinToolSettingItem(
+                        name = "builtin_tool_$displayIndex",
+                        description = "用于预览滚动列表的内置工具说明 $displayIndex",
+                        enabled = index % 2 == 0,
+                    )
+                },
+                isLoading = false,
+                descriptionResId = R.string.builtin_tool_page_description,
+            ),
+            onItemEnabledChange = { _, _ -> },
+        )
     }
 }

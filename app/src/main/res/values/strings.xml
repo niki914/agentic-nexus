@@ -81,18 +81,15 @@
     <string name="ui_settings_about_summary">查看版本信息、说明文档和后续支持渠道。</string>
 
     <!-- Builtin Tool Module -->
-    <string name="builtin_tool_page_description">管理内置工具的启用状态。开启后，运行时刷新或下次对话才会注册到当前会话。</string>
-    <string name="builtin_tool_list_title">内置工具列表</string>
+    <string name="builtin_tool_page_description">开启或关闭预设的内置工具。开启后，工具将在下次对话更新。</string>
     <string name="builtin_tool_loading">正在读取内置工具状态...</string>
-    <string name="builtin_tool_empty">当前没有可配置的内置工具。</string>
-    <string name="builtin_tool_save_success_enabled">内置工具已启用。</string>
-    <string name="builtin_tool_save_success_disabled">内置工具已停用。</string>
+    <string name="builtin_tool_empty">当前没有可用的内置工具。</string>
+    <string name="builtin_tool_load_failed">读取失败：%1$s</string>
     <string name="builtin_tool_save_failed">保存失败：%1$s</string>
-    <string name="builtin_tool_effect_hint">变更会在运行时刷新或下次对话后生效。</string>
 
     <!-- Custom Tool Module -->
     <string name="custom_tool_page_description">管理你的自定义工具。</string>
-    <string name="custom_tool_page_empty_description">让你的 Agent帮你——或点击右上方，创建新的工具。</string>
+    <string name="custom_tool_page_empty_description">让你的 Agent 帮你————或点击右上方，创建新的工具。</string>
     <string name="custom_tool_loading">正在读取已保存的自定义工具...</string>
     <string name="custom_tool_editor_title_create">新增自定义工具</string>
     <string name="custom_tool_save_failed">保存失败：%1$s</string>
