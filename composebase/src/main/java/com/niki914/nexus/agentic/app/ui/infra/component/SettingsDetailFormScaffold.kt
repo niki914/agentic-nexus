@@ -69,11 +69,7 @@ fun SettingsDetailFormScaffold(
             ),
         ) {
             if (!description.isNullOrBlank()) {
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                PageDescriptionText(text = description)
             }
             content()
             if (!inlineErrorText.isNullOrBlank()) {

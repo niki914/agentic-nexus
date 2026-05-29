@@ -1,4 +1,4 @@
-package com.niki914.nexus.agentic.app.ui.nexus.content
+package com.niki914.nexus.agentic.app.ui.infra.component
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
@@ -9,14 +9,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 @Composable
-internal fun ConfigureDescriptionBlock(
+fun PageDescriptionText(
     text: String,
     modifier: Modifier = Modifier,
 ) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleMedium.copy(
-            fontSize = 18.sp,
+            fontSize = 16.sp,
             lineHeight = 28.sp,
         ),
         fontWeight = FontWeight.Medium,
