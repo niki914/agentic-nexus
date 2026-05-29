@@ -52,7 +52,7 @@ import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun HomePageContent(
-    topPadding: Dp,
+    topPadding: Dp, // TODO 这种透传代码特别多，看看 topPadding 和 hazeState 能不能用 Local 提供
     hazeState: HazeState,
     onOpenSettings: () -> Unit,
 ) {

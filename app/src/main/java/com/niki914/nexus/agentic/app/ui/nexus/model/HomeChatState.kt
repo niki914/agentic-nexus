@@ -54,7 +54,7 @@ sealed interface HomeChatEffect {
 
 class HomeChatViewModel internal constructor(
     private val streamProvider: (String) -> Flow<LlmStreamEvent> = LLMController::stream,
-    private val resetConversation: suspend () -> Unit = LLMController::resetConversation,
+    private val resetConversation: suspend () -> Unit = LLMController::resetConversation, // TODO 直接内联，改为无参，看是否有对应 factory，也删除
 ) : ComposeMVIViewModel<HomeChatIntent, HomeChatUiState, HomeChatEffect>() {
     private var nextTurnId = 0L
     private var streamJob: Job? = null
