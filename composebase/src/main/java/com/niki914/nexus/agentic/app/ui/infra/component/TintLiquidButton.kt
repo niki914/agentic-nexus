@@ -50,6 +50,8 @@ fun TintLiquidButton(
     val backdrop = rememberLayerBackdrop()
     val disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f)
     val disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+    val hasExplicitContainerColor = darkContainerColor.isSpecified ||
+            lightContainerColor.isSpecified
     val resolvedContainerColor = when {
         darkContainerColor.isSpecified && lightContainerColor.isSpecified -> {
             if (isDarkTheme) darkContainerColor else lightContainerColor
@@ -57,13 +59,9 @@ fun TintLiquidButton(
 
         darkContainerColor.isSpecified -> darkContainerColor
         lightContainerColor.isSpecified -> lightContainerColor
-        else -> Color.Unspecified
+        else -> MaterialTheme.colorScheme.primary
     }
-    val resolvedSurfaceColor = if (resolvedContainerColor.isSpecified) {
-        liquidButtonSurfaceColor(resolvedContainerColor)
-    } else {
-        Color.Unspecified
-    }
+    val resolvedSurfaceColor = liquidButtonSurfaceColor(resolvedContainerColor)
     val resolvedContentColor = when {
         contentColor.isSpecified -> contentColor
         darkContentColor.isSpecified && lightContentColor.isSpecified -> {
@@ -72,13 +70,11 @@ fun TintLiquidButton(
 
         darkContentColor.isSpecified -> darkContentColor
         lightContentColor.isSpecified -> lightContentColor
-        resolvedContainerColor.isSpecified -> {
+        hasExplicitContainerColor -> {
             if (resolvedContainerColor.luminance() > 0.42f) Color(0xFF0F172A) else Color.White
         }
 
-        else -> {
-            if (isDarkTheme) MaterialTheme.colorScheme.onSurface else Color(0xFF111827)
-        }
+        else -> MaterialTheme.colorScheme.onPrimary
     }
 
     Box(
