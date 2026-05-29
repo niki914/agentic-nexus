@@ -257,6 +257,29 @@ class CustomToolApi internal constructor(
         return null
     }
 
+    suspend fun replace(previousName: String?, tool: CustomTool): CustomToolValidation? {
+        validate(tool, overwrite = true)?.let { return it }
+        val normalized = tool.normalized()
+        val existingTools = list()
+        val withoutPrevious = if (previousName != null) {
+            existingTools.filterNot { it.name == previousName }
+        } else {
+            existingTools
+        }
+        if (withoutPrevious.any { it.name == normalized.name }) {
+            return CustomToolValidation("name", "Already exists in custom_tools.")
+        }
+        repo.updateLocal { settings ->
+            val tools = LocalSettingsCodec.parseCustomTools(settings)
+            val withoutPrevious = previousName
+                ?.let { name -> tools.filterNot { it.name == name } }
+                ?: tools
+            val updated = withoutPrevious + normalized
+            LocalSettingsCodec.withCustomTools(settings, updated)
+        }
+        return null
+    }
+
     suspend fun replaceAll(tools: List<CustomTool>): CustomToolValidation? {
         val normalizedTools = tools.map { it.normalized() }
         val duplicateName = normalizedTools

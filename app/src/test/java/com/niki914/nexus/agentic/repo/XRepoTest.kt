@@ -190,6 +190,82 @@ class XRepoTest {
     }
 
     @Test
+    fun customToolReplace_renamesAndPreservesOtherTools() = runTest {
+        val store = FakeLocalSettingsStore(
+            LocalSettingsCodec.withCustomTools(
+                LocalSettings(),
+                listOf(
+                    CustomTool("old_name", "Old description", "dumpsys battery"),
+                    CustomTool("other_tool", "Other description", "settings list system"),
+                ),
+            )
+        )
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        val validation = XRepo.customTools.replace(
+            previousName = "old_name",
+            tool = CustomTool("new_name", "New description", "pm list packages", enabled = false),
+        )
+
+        assertNull(validation)
+        assertEquals(1, store.writeCount)
+        assertEquals(
+            listOf(
+                CustomTool("other_tool", "Other description", "settings list system"),
+                CustomTool("new_name", "New description", "pm list packages", enabled = false),
+            ),
+            XRepo.customTools.list(),
+        )
+    }
+
+    @Test
+    fun customToolReplace_rejectsDuplicateName() = runTest {
+        val initialTools = listOf(
+            CustomTool("old_name", "Old description", "dumpsys battery"),
+            CustomTool("existing_tool", "Existing description", "settings list system"),
+        )
+        val store = FakeLocalSettingsStore(
+            LocalSettingsCodec.withCustomTools(LocalSettings(), initialTools)
+        )
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        val validation = XRepo.customTools.replace(
+            previousName = "old_name",
+            tool = CustomTool("existing_tool", "New description", "pm list packages"),
+        )
+
+        assertNotNull(validation)
+        assertEquals("name", validation!!.field)
+        assertEquals("Already exists in custom_tools.", validation.message)
+        assertEquals(0, store.writeCount)
+        assertEquals(initialTools, XRepo.customTools.list())
+    }
+
+    @Test
+    fun customToolReplace_rejectsUnsafeCommand() = runTest {
+        val initialTools = listOf(
+            CustomTool("old_name", "Old description", "dumpsys battery"),
+        )
+        val store = FakeLocalSettingsStore(
+            LocalSettingsCodec.withCustomTools(LocalSettings(), initialTools)
+        )
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        val validation = XRepo.customTools.replace(
+            previousName = "old_name",
+            tool = CustomTool("new_name", "New description", "rm -rf /data/local/tmp/cache"),
+        )
+
+        assertNotNull(validation)
+        assertEquals("command", validation!!.field)
+        assertEquals(0, store.writeCount)
+        assertEquals(initialTools, XRepo.customTools.list())
+    }
+
+    @Test
     fun builtinSetEnabled_rejectsUnknownTool() = runTest {
         val store = FakeLocalSettingsStore(LocalSettings())
         XRepo.installStoreForTest(store)

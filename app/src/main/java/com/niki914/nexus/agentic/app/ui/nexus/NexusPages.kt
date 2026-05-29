@@ -239,8 +239,10 @@ fun NexusPageContent(
         )
 
         is CustomToolDetailPage -> CustomToolDetailContent(
+            page = page,
             topPadding = topPadding,
             hazeState = hazeState,
+            onBack = onPop,
         )
     }
 }
