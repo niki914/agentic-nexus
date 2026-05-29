@@ -37,7 +37,6 @@
     <string name="ui_home_title">Nexus</string>
     <string name="ui_home_menu_clear">清除</string>
     <string name="ui_home_input_placeholder">输入消息...</string>
-    <string name="ui_tool_status_called">called</string>
     <string name="ui_tool_status_running">running</string>
     <string name="ui_tool_status_success">success</string>
     <string name="ui_tool_status_failed">failed</string>

@@ -6,14 +6,30 @@ import com.niki914.nexus.h.util.call
 const val INJECTED_FLAG = "__nexus_injected" // TODO 上云
 
 fun resolveDialogId(instruction: Any, target: Any?): String? {
-    val dialogIdOptional =
-        instruction.call<Any>(XiaoaiConfigProvider.BlockNativeTextStream.instructionDialogIdGetter)
+    return resolveDialogId(
+        instruction = instruction,
+        target = target,
+        instructionDialogIdGetter = XiaoaiConfigProvider.BlockNativeTextStream.instructionDialogIdGetter,
+        optionalHasValueMethod = XiaoaiConfigProvider.BlockNativeTextStream.optionalHasValueMethod,
+        optionalValueGetter = XiaoaiConfigProvider.BlockNativeTextStream.optionalValueGetter,
+        targetDialogIdGetter = XiaoaiConfigProvider.BlockNativeTextStream.targetDialogIdGetter,
+    )
+}
+
+fun resolveDialogId(
+    instruction: Any,
+    target: Any?,
+    instructionDialogIdGetter: String,
+    optionalHasValueMethod: String,
+    optionalValueGetter: String,
+    targetDialogIdGetter: String,
+): String? {
+    val dialogIdOptional = instruction.call<Any>(instructionDialogIdGetter)
     val dialogId = dialogIdOptional
-        ?.takeIf { it.call<Boolean>(XiaoaiConfigProvider.BlockNativeTextStream.optionalHasValueMethod) == true }
-        ?.call<String>(XiaoaiConfigProvider.BlockNativeTextStream.optionalValueGetter)
+        ?.takeIf { it.call<Boolean>(optionalHasValueMethod) == true }
+        ?.call<String>(optionalValueGetter)
     if (!dialogId.isNullOrBlank()) {
         return dialogId
     }
-    val targetDialogIdGetter = XiaoaiConfigProvider.BlockNativeTextStream.targetDialogIdGetter
     return target?.call<String>(targetDialogIdGetter)
 }

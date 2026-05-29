@@ -5,9 +5,8 @@ import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.agentic.chat.collectAsChunk
 import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.mod.feat.AbstractAssistantHook
-import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeTextStreamHook
+import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeInstructionByWhitelistHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeTtsPlaybackHook
-import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeTtsStreamHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.CaptureInputHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.CaptureResponseTargetHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.RenderTextStreamCardHook
@@ -55,11 +54,7 @@ class XiaoaiChatHook( // TODO P0 NewRoom / 卡片采用白名单模式避免放�
             }
         ).onHook(lpparam)
 
-        BlockNativeTextStreamHook(
-            resolveTurnState = { dialogId -> resolveTurnState(dialogId) }
-        ).onHook(lpparam)
-
-        BlockNativeTtsStreamHook(
+        BlockNativeInstructionByWhitelistHook(
             resolveTurnState = { dialogId -> resolveTurnState(dialogId) }
         ).onHook(lpparam)
 

@@ -1,8 +1,5 @@
 package com.niki914.nexus.agentic.chat
 
-import android.content.Context
-import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.h.util.ContextProvider
 import kotlinx.coroutines.flow.Flow
 
 data class LlmTextFrame(
@@ -15,7 +12,7 @@ suspend fun Flow<LlmStreamEvent>.collectAsFull(
     render: suspend (LlmTextFrame) -> Unit,
 ) {
     collectAsFull(
-        labels = ToolStatusLabels.from(ContextProvider.await()),
+        labels = ToolStatusLabels.Default,
         render = render,
     )
 }
@@ -36,7 +33,7 @@ suspend fun Flow<LlmStreamEvent>.collectAsChunk(
     render: suspend (LlmTextFrame) -> Unit,
 ) {
     collectAsChunk(
-        labels = ToolStatusLabels.from(ContextProvider.await()),
+        labels = ToolStatusLabels.Default,
         render = render,
     )
 }
@@ -60,14 +57,12 @@ internal data class ToolStatusLabels(
     val failed: String,
 ) {
     companion object {
-        fun from(context: Context): ToolStatusLabels {
-            return ToolStatusLabels(
-                called = context.getString(R.string.ui_tool_status_called),
-                running = context.getString(R.string.ui_tool_status_running),
-                success = context.getString(R.string.ui_tool_status_success),
-                failed = context.getString(R.string.ui_tool_status_failed),
-            )
-        }
+        val Default = ToolStatusLabels(
+            called = "called",
+            running = "running",
+            success = "success",
+            failed = "failed",
+        )
     }
 }
 

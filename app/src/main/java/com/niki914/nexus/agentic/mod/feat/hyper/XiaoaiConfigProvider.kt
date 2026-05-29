@@ -82,6 +82,27 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
             get() = getString("$P.business.optional_value_getter")
     }
 
+    object BlockNativeInstructionWhitelist {
+        private const val P = "actions.block_native_instruction_whitelist"
+        val hookTarget: HookTarget?
+            get() = parseHookTarget("$P.target")
+        val targetDialogIdGetter: String
+            get() = getString("$P.business.target_dialog_id_getter")
+        val instructionFullNameGetter: String
+            get() = getString("$P.business.instruction_full_name_getter")
+        val instructionDialogIdGetter: String
+            get() = getString("$P.business.instruction_dialog_id_getter")
+        val optionalHasValueMethod: String
+            get() = getString("$P.business.optional_has_value_method")
+        val optionalValueGetter: String
+            get() = getString("$P.business.optional_value_getter")
+        val allowedInstructionFullNames: Set<String>
+            get() = getList("$P.business.allowed_instruction_full_names")
+                .mapNotNull { it.jsonPrimitive.contentOrNull }
+                .filter { it.isNotBlank() }
+                .toSet()
+    }
+
     object BlockNativeTtsPlayback {
         private const val P = "actions.block_native_tts_playback"
         val hookTarget: HookTarget?
