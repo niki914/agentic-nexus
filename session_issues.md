@@ -2,40 +2,39 @@
 
 本文记录 Nexus 接入 `s3ss10n` 后暴露出的 session 库侧问题。Nexus 当前只做必要 workaround，不继续扩展 MCP 发现、缓存和去重逻辑。
 
-## 1. MCP discovery 状态不可观测
+## 1. MCP discovery 状态不可观测（已解决）
 
 Nexus 需要知道 MCP server 当前是失败、加载中还是可用，以便写入 prompt，让 Agent 理解工具状态。
 
-当前问题：
+历史问题：
 
-- `Session` 能注册 MCP server，也能 `refreshMcpTools()`，但缺少稳定的 discovery 状态订阅或查询入口。
-- `refreshMcpTools()` 返回本次刷新结果，但 Nexus 仍难以表达“当前缓存来自何时、哪些 server 不可达、哪些工具是 stale cache”。
-- Nexus 为了捕获 `tools/list` 结果补了 `McpInterceptorHttpEngine`，这本质是 workaround，不应该成为业务层长期维护的 discovery 机制。
+- 早期 `Session` 能注册 MCP server，也能 `refreshMcpTools()`，但缺少稳定的 discovery 状态订阅或查询入口。
+- 早期 `refreshMcpTools()` 返回本次刷新结果，但 Nexus 仍难以表达“当前缓存来自何时、哪些 server 不可达、哪些工具是 stale cache”。
+- Nexus 曾为了捕获 `tools/list` 结果补充 `McpInterceptorHttpEngine`，这是临时 workaround，不再作为业务层长期 discovery 机制。
 
-期望 session 库提供：
+当前状态：
 
-- MCP discovery 状态模型，例如 `Idle / Discovering / Available / Failed / UsingStaleCache`。
-- server 维度的状态、错误原因、最近成功刷新时间、discovered tool 数量。
-- 能直接被宿主用于 prompt/runtime status 的只读快照。
+- `s3ss10n` `2.1.1` 已提供 `getMcpDiscoverySnapshot()`。
+- Nexus 已消费 `Idle / Discovering / Available / Failed / UsingStaleCache` 状态并写入 prompt runtime section。
+- `Failed` 状态只输出 `load failed`，不把连接错误、异常 message 等原因注入 prompt。
 
-## 2. MCP cache update hook
+## 2. MCP cache update hook（已解决）
 
-Nexus 当前需要在 MCP tools 发现后写入本地 cache，失败时清理对应 server cache。
+Nexus 当前仍需要在 MCP tools 发现后写入本地 cache；这是业务持久化边界，不由 session 内存 cache 替代。
 
-当前问题：
+历史问题：
 
-- cache 更新依赖 Nexus 自定义 HTTP engine 拦截响应。
-- 失败清缓存逻辑散落在 Nexus 的 `LLMController.refresh()` 中，库和业务边界不清晰。
-- session 库最清楚 discovery 生命周期，但业务层反而承担了 discovery 结果落库和失败补偿。
+- cache 更新曾依赖 Nexus 自定义 HTTP engine 拦截响应。
+- 失败清缓存逻辑曾散落在 Nexus 的 `LLMController.refresh()` 中，库和业务边界不清晰。
+- session 库最清楚 discovery 生命周期，但业务层曾承担 discovery 协议响应解析。
 
-期望 session 库提供：
+当前状态：
 
-- 类似 `mcpHooks {}` 的 discovery 生命周期回调。
-- `onToolsDiscovered(server, tools)`，用于业务层持久化 cache。
-- `onDiscoveryFailed(server, error, previousCachePolicy)`，用于明确是否保留 stale cache。
-- `onDiscoveryStateChanged(server, state)`，用于 UI 或 prompt 状态更新。
+- `s3ss10n` `2.1.1` 已提供 `mcpHooks { onToolsDiscovered(serverName, tools) }`。
+- Nexus 已将 discovered tools 持久化入口迁移到 session hook，继续写入本地 cache，支持冷启动 bootstrap。
+- MCP refresh 失败时不再清理 Nexus 持久化 cache，stale/failed 状态交给 session snapshot 表达。
 
-说明：`mcpHooks {}` 不应只是 tool call hooks 的变体，它本质上是 MCP discovery/cache 生命周期 hook。
+说明：`mcpHooks {}` 不只是 tool call hooks 的变体，它本质上是 MCP discovery/cache 生命周期 hook。
 
 ## 3. MCP tool 去重与冲突策略
 
@@ -72,4 +71,4 @@ Invalid assistant message: content or toolcalls must be set
 - Nexus 可以消费 discovery 状态、展示状态、持久化业务 cache。
 - Nexus 不继续实现 MCP discovery 协议细节。
 - Nexus 不在业务层实现最终 tool registry 去重。
-- `McpInterceptorHttpEngine` 只是临时补洞，后续应在 session 库能力完善后移除。
+- `McpInterceptorHttpEngine` 只是历史临时补洞；session API 迁移后不再保留在主运行时链路。

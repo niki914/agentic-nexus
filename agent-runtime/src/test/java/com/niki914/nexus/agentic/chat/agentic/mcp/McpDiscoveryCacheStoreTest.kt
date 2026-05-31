@@ -1,7 +1,9 @@
 package com.niki914.nexus.agentic.chat.agentic.mcp
 
+import com.niki914.nexus.agentic.chat.FakeRuntimeSettingsGateway
 import com.niki914.nexus.agentic.chat.installRuntimeSettingsGatewayForTest
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
+import com.niki914.s3ss10n.McpDiscoveredTool
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -16,27 +18,25 @@ class McpDiscoveryCacheStoreTest {
     }
 
     @Test
-    fun onToolsDiscovered_persistsParsedToolsIntoSettingsGateway() = runTest {
-        val gateway = installRuntimeSettingsGatewayForTest()
-
-        McpDiscoveryCacheStore().onToolsDiscovered(
+    fun onToolsDiscovered_persistsHookToolsIntoSettingsGateway() = runTest {
+        val server = McpServer(
+            name = "aslocate",
             url = "http://127.0.0.1:51338/mcp",
             headers = mapOf("Authorization" to "Bearer token"),
-            responseJson = """
-                {
-                  "jsonrpc": "2.0",
-                  "id": 1,
-                  "result": {
-                    "tools": [
-                      {
-                        "name": "lookupSymbol",
-                        "description": "Lookup symbol definition",
-                        "inputSchema": {"type": "object"}
-                      }
-                    ]
-                  }
-                }
-            """.trimIndent(),
+        )
+        val gateway = installRuntimeSettingsGatewayForTest(
+            FakeRuntimeSettingsGateway(mcpServers = listOf(server))
+        )
+
+        McpDiscoveryCacheStore().onToolsDiscovered(
+            serverName = "aslocate",
+            tools = listOf(
+                McpDiscoveredTool(
+                    name = "lookupSymbol",
+                    description = "Lookup symbol definition",
+                    inputSchema = mapOf("type" to "object"),
+                )
+            ),
         )
 
         assertEquals(1, gateway.writeCount)
@@ -49,12 +49,35 @@ class McpDiscoveryCacheStoreTest {
                 )
             ),
             gateway.listCachedTools(
-                McpServer(
-                    name = "aslocate",
-                    url = "http://127.0.0.1:51338/mcp",
-                    headers = mapOf("Authorization" to "Bearer token"),
+                server
+            ),
+        )
+    }
+
+    @Test
+    fun onToolsDiscovered_ignoresUnknownServerName() = runTest {
+        val gateway = installRuntimeSettingsGatewayForTest(
+            FakeRuntimeSettingsGateway(
+                mcpServers = listOf(
+                    McpServer(
+                        name = "aslocate",
+                        url = "http://127.0.0.1:51338/mcp",
+                    )
+                )
+            )
+        )
+
+        McpDiscoveryCacheStore().onToolsDiscovered(
+            serverName = "missing",
+            tools = listOf(
+                McpDiscoveredTool(
+                    name = "lookupSymbol",
+                    description = "Lookup symbol definition",
+                    inputSchema = mapOf("type" to "object"),
                 )
             ),
         )
+
+        assertEquals(0, gateway.writeCount)
     }
 }

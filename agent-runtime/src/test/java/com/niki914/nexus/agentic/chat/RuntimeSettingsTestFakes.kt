@@ -26,6 +26,7 @@ internal fun installRuntimeSettingsGatewayForTest(
 internal class FakeRuntimeSettingsGateway(
     customTools: List<RuntimeCustomTool> = emptyList(),
     builtinTools: List<RuntimeBuiltinToolSetting> = defaultBuiltinToolSettings(),
+    private val mcpServers: List<RuntimeMcpServer> = emptyList(),
 ) : RuntimeSettingsGateway {
     var customTools: MutableList<RuntimeCustomTool> = customTools.toMutableList()
         private set
@@ -38,7 +39,7 @@ internal class FakeRuntimeSettingsGateway(
 
     override suspend fun readLlmConfig(): RuntimeLlmConfig = RuntimeLlmConfig()
 
-    override suspend fun listMcpServers(): List<RuntimeMcpServer> = emptyList()
+    override suspend fun listMcpServers(): List<RuntimeMcpServer> = mcpServers
 
     override suspend fun listCachedTools(server: RuntimeMcpServer): List<RuntimeMcpTool> {
         return discoveredToolWrites

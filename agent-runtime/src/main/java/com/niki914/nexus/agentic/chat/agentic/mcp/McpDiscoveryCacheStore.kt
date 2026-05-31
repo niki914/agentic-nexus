@@ -1,77 +1,71 @@
 package com.niki914.nexus.agentic.chat.agentic.mcp
 
-import com.niki914.nexus.agentic.chat.McpCachedTool
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
-import com.niki914.nexus.h.util.xTry
 import com.niki914.nexus.h.util.xlog
+import com.niki914.s3ss10n.McpDiscoveredTool
 import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.JsonPrimitive
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 
 class McpDiscoveryCacheStore {
-    private val json = Json { ignoreUnknownKeys = true }
-
     suspend fun onToolsDiscovered(
-        url: String,
-        headers: Map<String, String>,
-        responseJson: String,
+        serverName: String,
+        tools: List<McpDiscoveredTool>,
     ) {
-        val tools =
-            xTry("McpDiscoveryCacheStore.onToolsDiscovered:extract:$url") {
-                extractDiscoveredTools(responseJson)
-            } ?: return
         try {
-            persistDiscoveredTools(url = url, headers = headers, tools = tools)
+            persistDiscoveredTools(serverName = serverName, tools = tools)
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) {
                 throw throwable
             }
-            xlog("McpDiscoveryCacheStore.onToolsDiscovered:persist failed for $url: ${throwable.message}")
+            xlog("McpDiscoveryCacheStore.onToolsDiscovered:persist failed for $serverName: ${throwable.message}")
         }
     }
 
     private suspend fun persistDiscoveredTools(
-        url: String,
-        headers: Map<String, String>,
-        tools: List<McpCachedTool>,
+        serverName: String,
+        tools: List<McpDiscoveredTool>,
     ) {
         val gateway = RuntimeEnvironment.awaitSettingsGateway()
+        val server = gateway.listMcpServers().firstOrNull { it.name == serverName }
+        if (server == null) {
+            xlog("McpDiscoveryCacheStore.onToolsDiscovered server missing: $serverName")
+            return
+        }
         gateway.saveDiscoveredTools(
-            url = url,
-            headers = headers,
-            tools = tools.map { tool ->
-                McpTool(
-                    name = tool.name,
-                    description = tool.description,
-                    inputSchemaJson = tool.inputSchema.toString(),
-                )
-            },
+            url = server.url,
+            headers = server.headers,
+            tools = tools.map { it.toRuntimeTool() },
         )
     }
 
-    private fun extractDiscoveredTools(responseJson: String): List<McpCachedTool> {
-        val root = json.parseToJsonElement(responseJson).jsonObject
-        val result = root["result"]?.jsonObject
-            ?: error("MCP discovery response missing result object")
-        return result["tools"]?.jsonArray.orEmpty().mapNotNull { element ->
-            val tool = element as? JsonObject ?: return@mapNotNull null
-            val name = tool["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
-            val inputSchema = tool["inputSchema"] as? JsonObject ?: return@mapNotNull null
-            if (name.isBlank()) {
-                return@mapNotNull null
-            }
-            McpCachedTool(
-                name = name,
-                description = tool["description"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                inputSchema = inputSchema,
+    private fun McpDiscoveredTool.toRuntimeTool(): McpTool =
+        McpTool(
+            name = name,
+            description = description,
+            inputSchemaJson = inputSchema.toJsonElement().toString(),
+        )
+
+    private fun Any?.toJsonElement(): JsonElement =
+        when (this) {
+            null -> JsonNull
+            is JsonElement -> this
+            is String -> JsonPrimitive(this)
+            is Number -> JsonPrimitive(this)
+            is Boolean -> JsonPrimitive(this)
+            is Map<*, *> -> JsonObject(
+                entries.mapNotNull { (key, value) ->
+                    (key as? String)?.let { it to value.toJsonElement() }
+                }.toMap()
             )
+            is Iterable<*> -> JsonArray(map { it.toJsonElement() })
+            is Array<*> -> JsonArray(map { it.toJsonElement() })
+            else -> JsonPrimitive(toString())
         }
-    }
 
     companion object {
         const val MCP_DISCOVERED_TOOLS_CACHE_KEY: String = "mcp_discovered_tools_cache"

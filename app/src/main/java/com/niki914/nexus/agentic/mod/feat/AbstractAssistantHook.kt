@@ -3,6 +3,7 @@ package com.niki914.nexus.agentic.mod.feat
 import com.niki914.nexus.agentic.chat.ActiveTurnStore
 import com.niki914.nexus.agentic.chat.ConversationJournal
 import com.niki914.nexus.agentic.chat.ConversationTurnState
+import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.h.core.runtime.Hook
 import de.robv.android.xposed.callbacks.XC_LoadPackage
@@ -59,6 +60,7 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
         onTurnStateChanged(nextTurnState)
 
         if (nextTurnState.mode == TurnMode.NativeTakeover) {
+            LLMController.stopCurrentRound(keepCurrentTurn = false)
             onTakeoverTriggered(
                 turnId = nextTurnState.turnId,
                 roomId = roomId,

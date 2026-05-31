@@ -6,16 +6,17 @@ import com.niki914.nexus.agentic.chat.agentic.SessionToolBinder
 import com.niki914.nexus.agentic.chat.agentic.ToolCallDispatcher
 import com.niki914.nexus.agentic.chat.agentic.ToolManager
 import com.niki914.nexus.agentic.chat.agentic.mcp.McpDiscoveryCacheStore
-import com.niki914.nexus.agentic.chat.agentic.mcp.McpInterceptorHttpEngine
 import com.niki914.nexus.agentic.chat.agentic.stream.LlmStreamEventMapper
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.agentic.runtime.settings.model.LlmApiType
 import com.niki914.nexus.h.util.xlog
+import com.niki914.s3ss10n.McpDiscoverySnapshot
+import com.niki914.s3ss10n.McpDiscoveryState
+import com.niki914.s3ss10n.McpServerDiscoverySnapshot
 import com.niki914.s3ss10n.Session
 import com.niki914.s3ss10n.SessionConfig
 import com.niki914.s3ss10n.SessionProtocols
 import com.niki914.s3ss10n.ToolCallKind
-import com.niki914.s3ss10n.ext.net.OkHttpEngine
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.SendChannel
@@ -25,8 +26,6 @@ import kotlinx.coroutines.flow.flowOn
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 
 // TODO P1 [Parse] HTTP 400 , body={"error":{"message":"Invalid assistant message: content or toolcalls must be set","type":"invalidrequesterror","param":null,"code":"invalidrequest_error"}}
-// TODO P0 PromptComposer 添加 mcp 发现状态的提示，让 Agent 知道 mcp 是失败、加载中还是可用
-// TODO session 库应提供 MCP discovery 状态、cache update hook 与 tool 去重/冲突策略；当前 HttpEngine interceptor 只是 Nexus 侧 workaround
 object LLMController {
     private val promptComposer =
         PromptComposer()
@@ -50,7 +49,7 @@ object LLMController {
         val mcpServers = gateway.listMcpServers()
         val customTools = gateway.listCustomTools()
         val builtinSettings = gateway.listBuiltinToolSettings()
-        var resolvedTools = toolManager.resolve(
+        val resolvedTools = toolManager.resolve(
             customTools = customTools,
             mcpServers = mcpServers,
             builtinSettings = builtinSettings,
@@ -58,20 +57,12 @@ object LLMController {
                 server.name to gateway.listCachedTools(server)
             },
         )
-        val prompt = promptComposer.compose(
-            PromptComposerInput(
-                baseSystemPrompt = llmConfig.prompt,
-                memorySections = buildMemorySections(llmConfig),
-                toolSections = resolvedTools.promptLines,
-                runtimeSections = buildRuntimeSections(llmConfig),
-            )
-        )
-        val config = ResolvedLlmConfig(
+        val configWithoutRuntimePrompt = ResolvedLlmConfig(
             endpoint = llmConfig.endpoint,
             apiKey = llmConfig.apiKey,
             model = llmConfig.model,
             baseSystemPrompt = llmConfig.prompt,
-            finalSystemPrompt = prompt.finalSystemPrompt,
+            finalSystemPrompt = llmConfig.prompt,
             proxy = llmConfig.proxy,
         )
         val isNewSession = session == null || sessionApiType != apiType
@@ -79,7 +70,7 @@ object LLMController {
         val activeSession = obtainSession(apiType)
         activeSession.update {
             applyRuntimeConfig(
-                config = config,
+                config = configWithoutRuntimePrompt,
                 tools = resolvedTools,
                 previousTools = previousSnapshot?.tools,
             )
@@ -94,26 +85,6 @@ object LLMController {
                 xlog(
                     "LLMController.refreshMcpTools refreshed=${refreshResult.refreshedServers} failed=${refreshResult.failedServers} count=${refreshResult.discoveredToolCount}"
                 )
-                if (refreshResult.failedServers.isNotEmpty()) {
-                    gateway.clearMcpCacheByServerNames(
-                        refreshResult.failedServers.map { it.serverName }.toSet()
-                    )
-                    resolvedTools = toolManager.resolve(
-                        customTools = customTools,
-                        mcpServers = mcpServers,
-                        builtinSettings = builtinSettings,
-                        mcpCachedTools = mcpServers.associate { server ->
-                            server.name to gateway.listCachedTools(server)
-                        },
-                    )
-                    activeSession.update {
-                        applyRuntimeConfig(
-                            config = config,
-                            tools = resolvedTools,
-                            previousTools = previousSnapshot?.tools,
-                        )
-                    }
-                }
             } catch (throwable: Throwable) {
                 if (throwable is CancellationException) {
                     throw throwable
@@ -129,7 +100,25 @@ object LLMController {
             lastMcpServersFingerprint = currentMcpServersFingerprint
         }
 
-        return LlmRuntimeSnapshot(config, resolvedTools, prompt).also { snapshot ->
+        val mcpSnapshot = activeSession.getMcpDiscoverySnapshot()
+        val prompt = promptComposer.compose(
+            PromptComposerInput(
+                baseSystemPrompt = llmConfig.prompt,
+                memorySections = buildMemorySections(llmConfig),
+                toolSections = resolvedTools.promptLines,
+                runtimeSections = buildRuntimeSections(mcpSnapshot),
+            )
+        )
+        val finalConfig = configWithoutRuntimePrompt.copy(finalSystemPrompt = prompt.finalSystemPrompt)
+        activeSession.update {
+            applyRuntimeConfig(
+                config = finalConfig,
+                tools = resolvedTools,
+                previousTools = previousSnapshot?.tools,
+            )
+        }
+
+        return LlmRuntimeSnapshot(finalConfig, resolvedTools, prompt).also { snapshot ->
             runtimeState = RuntimeState(snapshot = snapshot, session = activeSession)
         }
     }
@@ -183,6 +172,10 @@ object LLMController {
         session?.resetConversation()
     }
 
+    suspend fun stopCurrentRound(keepCurrentTurn: Boolean = false) {
+        session?.stop(keepCurrentTurn = keepCurrentTurn)
+    }
+
     private suspend fun refreshIfPossibleFromHookContext(): RuntimeState? {
         return try {
             refresh()
@@ -207,10 +200,9 @@ object LLMController {
 
     private suspend fun openSession(apiType: LlmApiType): Session {
         val configBlock: SessionConfig.Builder.() -> Unit = {
-            httpEngine = McpInterceptorHttpEngine(
-                delegate = OkHttpEngine(),
-                onToolsDiscovered = mcpCacheStore::onToolsDiscovered,
-            )
+            mcpHooks {
+                onToolsDiscovered = mcpCacheStore::onToolsDiscovered
+            }
             hooks {
                 when (kind) {
                     ToolCallKind.Local -> {
@@ -236,7 +228,35 @@ object LLMController {
     private fun buildMemorySections(config: LlmConfig): List<String> =
         listOfNotNull(config.memoryPrompt.trim().takeIf { it.isNotBlank() })
 
-    private fun buildRuntimeSections(config: LlmConfig): List<String> = emptyList()
+    private fun buildRuntimeSections(snapshot: McpDiscoverySnapshot?): List<String> {
+        val servers = snapshot?.servers?.values.orEmpty()
+        if (servers.isEmpty()) {
+            return emptyList()
+        }
+        return listOf(
+            servers
+                .sortedBy { it.serverName }
+                .joinToString(separator = "\n") { formatMcpStatusLine(it) }
+        )
+    }
+
+    private fun formatMcpStatusLine(server: McpServerDiscoverySnapshot): String =
+        when (server.state) {
+            McpDiscoveryState.Available ->
+                "${server.serverName} MCP: loaded ${server.discoveredToolCount} tools"
+
+            McpDiscoveryState.Discovering ->
+                "${server.serverName} MCP: loading"
+
+            McpDiscoveryState.Failed ->
+                "${server.serverName} MCP: load failed"
+
+            McpDiscoveryState.UsingStaleCache ->
+                "${server.serverName} MCP: using cached ${server.discoveredToolCount} tools"
+
+            McpDiscoveryState.Idle ->
+                "${server.serverName} MCP: not loaded"
+        }
 
     private fun SessionConfig.Builder.applyRuntimeConfig(
         config: ResolvedLlmConfig,
