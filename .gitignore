@@ -53,5 +53,7 @@ pnpm-debug.log*
 ### JADX
 *.kotlin_builtins
 
-openhook.zip
+### External
+s3ss10n-main
+
 /server/server.pid
