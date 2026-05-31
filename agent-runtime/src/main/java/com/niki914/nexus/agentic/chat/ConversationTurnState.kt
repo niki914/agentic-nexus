@@ -2,11 +2,6 @@ package com.niki914.nexus.agentic.chat
 
 import java.util.concurrent.atomic.AtomicLong
 
-enum class TurnMode {
-    InjectedLLM,
-    NativeTakeover
-}
-
 data class HiddenTurnSummary(
     val turnId: Long,
     val roomId: String,

@@ -3,6 +3,7 @@ package com.niki914.nexus.agentic.mod.feat
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import com.niki914.nexus.agentic.chat.ActiveTurnStore
 import com.niki914.nexus.agentic.chat.ConversationJournal
 import com.niki914.nexus.agentic.chat.ConversationTurnState
 import com.niki914.nexus.agentic.chat.TurnMode
@@ -131,6 +132,7 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
             }
         )
         turnState = nextTurnState
+        ActiveTurnStore.setCurrent(nextTurnState)
         onTurnStateChanged(nextTurnState)
 
         if (nextTurnState.mode == TurnMode.NativeTakeover) {
@@ -160,6 +162,7 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
         if (turnState.roomId.isNotBlank()) {
             ConversationJournal.clearRoom(turnState.roomId)
         }
+        ActiveTurnStore.clear(roomId)
         turnState = turnState.resetForRoom(roomId)
     }
 

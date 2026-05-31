@@ -126,9 +126,10 @@ class XiaoaiChatHook( // TODO P0 NewRoom / 卡片采用白名单模式避免放�
         return activeTurn?.turnId == turnId && activeTurn.mode == TurnMode.InjectedLLM
     }
 
-    private fun resolveTurnState(dialogId: String?) =
-        dialogId
+    private fun resolveTurnState(dialogId: String?): com.niki914.nexus.agentic.chat.ConversationTurnState? {
+        return dialogId
             ?.takeIf { it.isNotBlank() }
             ?.takeIf { it == turnState.roomId }
             ?.let { turnState }
+    }
 }
