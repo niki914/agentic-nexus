@@ -1,6 +1,6 @@
 package com.niki914.nexus.agentic.mod.feat.hyper.subhooks
 
-import com.niki914.nexus.agentic.chat.ConversationTurnState
+import com.niki914.nexus.agentic.chat.ActiveTurnStore
 import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.agentic.mod.feat.HookTarget
 import com.niki914.nexus.agentic.mod.feat.SubHook
@@ -10,9 +10,7 @@ import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.XC_MethodHook
 
 /** 在 InjectedLLM 模式下拦截原生 TTS 播放调用，阻止注入回复期间的原生语音播报。 */
-class BlockNativeTtsPlaybackHook(
-    private val resolveTurnState: (String?) -> ConversationTurnState?
-) : SubHook() {
+class BlockNativeTtsPlaybackHook : SubHook() {
 
     override val hookTarget: HookTarget?
         get() = XiaoaiConfigProvider.BlockNativeTtsPlayback.hookTarget
@@ -20,7 +18,7 @@ class BlockNativeTtsPlaybackHook(
     override fun beforeHook(param: XC_MethodHook.MethodHookParam) {
         val dialogIdGetter = XiaoaiConfigProvider.BlockNativeTtsPlayback.targetDialogIdGetter
         val dialogId = param.thisObject.call<String>(dialogIdGetter)
-        when (resolveTurnState(dialogId)?.mode) {
+        when (ActiveTurnStore.getCurrent()?.mode) {
             TurnMode.InjectedLLM -> {
                 xlog("[$name] 注入模式，拦截原生 TTS 播放: dialogId=$dialogId")
                 param.result = true

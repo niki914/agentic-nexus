@@ -27,6 +27,7 @@ class ActiveTurnStoreTest {
         assertNull(ActiveTurnStore.getCurrent())
         assertFalse(ActiveTurnStore.hasActiveTurn())
         assertFalse(ActiveTurnStore.isCurrentInjected())
+        assertFalse(ActiveTurnStore.isActiveInjection(1L))
     }
 
     @Test
@@ -45,7 +46,7 @@ class ActiveTurnStoreTest {
     }
 
     @Test
-    fun clear_removesCurrentState() {
+    fun clear_removesSingleActiveTurn() {
         ActiveTurnStore.setCurrent(
             ConversationTurnState(
                 roomId = "room-a",
@@ -56,23 +57,6 @@ class ActiveTurnStoreTest {
         )
 
         ActiveTurnStore.clear()
-
-        assertNull(ActiveTurnStore.getCurrent())
-        assertFalse(ActiveTurnStore.hasActiveTurn())
-    }
-
-    @Test
-    fun clearWithDifferentRoomId_stillClearsSingleActiveTurn() {
-        ActiveTurnStore.setCurrent(
-            ConversationTurnState(
-                roomId = "room-a",
-                turnId = 1L,
-                lastQuery = "hello",
-                mode = TurnMode.InjectedLLM,
-            )
-        )
-
-        ActiveTurnStore.clear("room-b")
 
         assertNull(ActiveTurnStore.getCurrent())
         assertFalse(ActiveTurnStore.hasActiveTurn())
@@ -101,6 +85,37 @@ class ActiveTurnStoreTest {
         )
 
         assertFalse(ActiveTurnStore.isCurrentInjected())
+    }
+
+    @Test
+    fun isActiveInjection_trueOnlyWhenTurnIdMatchesAndModeInjected() {
+        ActiveTurnStore.setCurrent(
+            ConversationTurnState(
+                roomId = "room-a",
+                turnId = 42L,
+                lastQuery = "hello",
+                mode = TurnMode.InjectedLLM,
+            )
+        )
+
+        assertTrue(ActiveTurnStore.isActiveInjection(42L))
+        assertFalse(ActiveTurnStore.isActiveInjection(41L))
+
+        ActiveTurnStore.setCurrent(
+            ConversationTurnState(
+                roomId = "room-a",
+                turnId = 42L,
+                lastQuery = "takeover",
+                mode = TurnMode.NativeTakeover,
+            )
+        )
+
+        assertFalse(ActiveTurnStore.isActiveInjection(42L))
+    }
+
+    @Test
+    fun isActiveInjection_falseWhenNoActiveTurn() {
+        assertFalse(ActiveTurnStore.isActiveInjection(42L))
     }
 
     @Test

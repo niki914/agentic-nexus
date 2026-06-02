@@ -1,15 +1,10 @@
 package com.niki914.nexus.agentic.mod.feat
 
-import android.os.Handler
-import android.os.Looper
-import android.os.SystemClock
 import com.niki914.nexus.agentic.chat.ActiveTurnStore
 import com.niki914.nexus.agentic.chat.ConversationJournal
 import com.niki914.nexus.agentic.chat.ConversationTurnState
 import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.h.core.runtime.Hook
-import com.niki914.nexus.h.util.hookMethod
-import com.niki914.nexus.h.util.resolveParamTypes
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -20,92 +15,21 @@ import kotlinx.coroutines.launch
  * TODO 统一所有业务下的 subhooks、云 config、AbstractAssistantHook 方法命名
  */
 abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook {
-    protected var turnState: ConversationTurnState = ConversationTurnState()
-
     protected open val floatResumeGraceWindowMs: Long = 700L
-
-    private var lastFloatDetachObservedElapsed: Long = 0
-    private var lastFloatResumeObservedElapsed: Long = 0
-    private val floatResetHandler = Handler(Looper.getMainLooper())
-    private var pendingFloatResetCheck: Runnable? = null
 
     protected fun installFloatScreenDetachHooks(
         lpparam: XC_LoadPackage.LoadPackageParam,
         detachTarget: HookTarget?,
         resumeTarget: HookTarget?
     ) {
-        if (detachTarget == null || resumeTarget == null) return
-
-        installHookTargetObserver(
+        FloatScreenResetDetector(
+            graceWindowMs = floatResumeGraceWindowMs,
+            onReset = { scope.launch { onSessionReset("") } }
+        ).install(
             lpparam = lpparam,
-            target = detachTarget,
-            onObserved = ::onFloatScreenDetachObserved
+            detachTarget = detachTarget,
+            resumeTarget = resumeTarget
         )
-        installHookTargetObserver(
-            lpparam = lpparam,
-            target = resumeTarget,
-            onObserved = ::onFloatResumeObserved
-        )
-    }
-
-    protected fun onFloatScreenDetachObserved() {
-        val detachObservedElapsed = SystemClock.elapsedRealtime()
-        lastFloatDetachObservedElapsed = detachObservedElapsed
-        pendingFloatResetCheck?.let { floatResetHandler.removeCallbacks(it) }
-
-        val check = Runnable {
-            val resumeObservedElapsed = lastFloatResumeObservedElapsed
-            val hasResumedAfterDetach = resumeObservedElapsed >= detachObservedElapsed
-            val resumeElapsedSinceDetach = resumeObservedElapsed - detachObservedElapsed
-            if (!hasResumedAfterDetach || resumeElapsedSinceDetach > floatResumeGraceWindowMs) {
-                scope.launch { onSessionReset("") }
-            }
-        }
-        pendingFloatResetCheck = check
-        floatResetHandler.postDelayed(check, floatResumeGraceWindowMs)
-    }
-
-    protected fun onFloatResumeObserved() {
-        lastFloatResumeObservedElapsed = SystemClock.elapsedRealtime()
-    }
-
-    private fun installHookTargetObserver(
-        lpparam: XC_LoadPackage.LoadPackageParam,
-        target: HookTarget,
-        onObserved: () -> Unit
-    ) {
-        val paramTypes = resolveParamTypes(target.methodParams, lpparam) ?: return
-        registerBeforeOrAfterObserver(
-            lpparam = lpparam,
-            target = target,
-            paramTypes = paramTypes,
-            onObserved = onObserved
-        )
-    }
-
-    private fun registerBeforeOrAfterObserver(
-        lpparam: XC_LoadPackage.LoadPackageParam,
-        target: HookTarget,
-        paramTypes: Array<Class<*>>,
-        onObserved: () -> Unit
-    ) {
-        when (target.hookTiming?.lowercase()) {
-            "before" -> lpparam.hookMethod(
-                className = target.ownerClass,
-                methodName = target.methodName,
-                *paramTypes,
-                before = { onObserved() }
-            )
-
-            "after" -> lpparam.hookMethod(
-                className = target.ownerClass,
-                methodName = target.methodName,
-                *paramTypes,
-                after = { onObserved() }
-            )
-
-            else -> Unit
-        }
     }
 
     final override fun onHook(lpparam: XC_LoadPackage.LoadPackageParam) {
@@ -122,7 +46,7 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
     protected open fun onBeforeInstallHooks(lpparam: XC_LoadPackage.LoadPackageParam) = Unit
 
     private suspend fun handleCapturedQuery(roomId: String, query: String) {
-        val nextTurnState = turnState.nextTurn(
+        val nextTurnState = ConversationTurnState().nextTurn(
             roomId = roomId,
             query = query,
             mode = if (shouldTakeOver(query)) {
@@ -131,7 +55,6 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
                 TurnMode.InjectedLLM
             }
         )
-        turnState = nextTurnState
         ActiveTurnStore.setCurrent(nextTurnState)
         onTurnStateChanged(nextTurnState)
 
@@ -159,11 +82,11 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
         Unit
 
     protected open suspend fun onSessionReset(roomId: String = "") {
-        if (turnState.roomId.isNotBlank()) {
-            ConversationJournal.clearRoom(turnState.roomId)
+        val previousRoomId = ActiveTurnStore.getCurrent()?.roomId
+        if (!previousRoomId.isNullOrBlank()) {
+            ConversationJournal.clearRoom(previousRoomId)
         }
-        ActiveTurnStore.clear(roomId)
-        turnState = turnState.resetForRoom(roomId)
+        ActiveTurnStore.clear()
     }
 
     protected abstract fun installSessionHooks(lpparam: XC_LoadPackage.LoadPackageParam)

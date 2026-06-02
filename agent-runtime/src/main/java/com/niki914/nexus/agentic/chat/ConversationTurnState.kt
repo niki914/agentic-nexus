@@ -15,8 +15,6 @@ data class ConversationTurnState(
     val lastQuery: String = "",
     val mode: TurnMode = TurnMode.InjectedLLM
 ) {
-    fun resetForRoom(roomId: String = "") = ConversationTurnState(roomId = roomId)
-
     fun nextTurn(roomId: String, query: String, mode: TurnMode) = ConversationTurnState(
         roomId = roomId,
         turnId = TurnIdGenerator.next(),

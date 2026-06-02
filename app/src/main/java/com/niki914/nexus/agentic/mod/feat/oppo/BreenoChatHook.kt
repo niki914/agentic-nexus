@@ -1,5 +1,6 @@
 package com.niki914.nexus.agentic.mod.feat.oppo
 
+import com.niki914.nexus.agentic.chat.ActiveTurnStore
 import com.niki914.nexus.agentic.chat.ConversationJournal
 import com.niki914.nexus.agentic.chat.ConversationTurnState
 import com.niki914.nexus.agentic.chat.HiddenTurnSummary
@@ -50,7 +51,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     }
 
     override suspend fun onSessionReset(roomId: String) {
-        val previousRoomId = turnState.roomId
+        val previousRoomId = ActiveTurnStore.getCurrent()?.roomId.orEmpty()
         super.onSessionReset(roomId)
         LLMController.resetConversation()
         clearRenderSessionByRoom(previousRoomId, roomId)
@@ -90,13 +91,10 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
 
     override fun installResponseHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
         BlockNativeCardHook(
-            resolveTurnState = { roomId -> resolveTurnState(roomId) },
             selfInjectedFlagKey = BreenoConfigProvider.CaptureResponseTarget.selfInjectedFlagKey
         ).onHook(lpparam)
 
-        SuppressCleanupHook(
-            resolveTurnState = { turnState }
-        ).onHook(lpparam)
+        SuppressCleanupHook().onHook(lpparam)
     }
 
     override fun installInputHooks(
@@ -127,13 +125,12 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         isFirst: Boolean,
         isFinal: Boolean
     ) {
-        val activeTurn = resolveTurnState(roomId)
-        if (activeTurn?.turnId != turnId || activeTurn.mode != TurnMode.InjectedLLM) {
+        if (!ActiveTurnStore.isActiveInjection(turnId)) {
             if (isFinal) {
                 clearRenderSession(turnId)
             }
             xlog(
-                "[$name] 丢弃非当前注入轮次的渲染片段: roomId=$roomId, turnId=$turnId, activeTurn=${activeTurn?.turnId}, mode=${activeTurn?.mode}"
+                "[$name] 丢弃非当前注入轮次的渲染片段: roomId=$roomId, turnId=$turnId, activeTurn=${ActiveTurnStore.getCurrent()?.turnId}, mode=${ActiveTurnStore.getCurrent()?.mode}"
             )
             return
         }
@@ -200,12 +197,6 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
             clearRenderSession(turnId)
         }
     }
-
-    private fun resolveTurnState(roomId: String?): ConversationTurnState? =
-        roomId
-            ?.takeIf { it.isNotBlank() }
-            ?.takeIf { it == turnState.roomId }
-            ?.let { turnState }
 
     private suspend fun obtainRenderSession(turnId: Long, roomId: String): BreenoRenderSession =
         renderSessionMutex.withLock {

@@ -1,6 +1,6 @@
 package com.niki914.nexus.agentic.mod.feat.oppo.subhooks
 
-import com.niki914.nexus.agentic.chat.ConversationTurnState
+import com.niki914.nexus.agentic.chat.ActiveTurnStore
 import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.agentic.mod.feat.HookTarget
 import com.niki914.nexus.agentic.mod.feat.SubHook
@@ -15,13 +15,12 @@ import de.robv.android.xposed.XC_MethodHook
  * 逻辑：
  * - 检查 bean 的 chatType 是否为回答类型（answer），非回答类型直接放行
  * - 检查 bean 是否已包含自注入标记，若已标记则放行（不拦自己注入的卡片）
- * - 通过 roomId 解析当前轮次状态：
+ * - 通过 ActiveTurnStore 读取当前轮次状态：
  *   - InjectedLLM → 拦截（param.result = null）
  *   - NativeTakeover → 放行
  *   - 无状态 → 保守放行
  */
 class BlockNativeCardHook(
-    private val resolveTurnState: (String?) -> ConversationTurnState?,
     private val selfInjectedFlagKey: String
 ) : SubHook() {
 
@@ -48,14 +47,11 @@ class BlockNativeCardHook(
             return
         }
 
-        val roomId =
-            bean.call<String>(BreenoConfigProvider.CaptureResponseTarget.beanGetRoomIdMethod)
-        if (roomId.isNullOrBlank()) {
-            xlog("[$name] 回答卡片缺失 roomId，保守放行原生回答卡片")
-            return
-        }
+        val roomId = bean
+            .call<String>(BreenoConfigProvider.CaptureResponseTarget.beanGetRoomIdMethod)
+            .orEmpty()
 
-        when (resolveTurnState(roomId)?.mode) {
+        when (ActiveTurnStore.getCurrent()?.mode) {
             TurnMode.NativeTakeover -> {
                 xlog("[$name] takeover 模式，放行原生回答卡片: roomId=$roomId")
             }
@@ -66,7 +62,7 @@ class BlockNativeCardHook(
             }
 
             null -> {
-                xlog("[$name] 未命中 room 级轮次状态，保守放行原生回答卡片: roomId=$roomId")
+                xlog("[$name] 无 active turn，保守放行原生回答卡片: roomId=$roomId")
             }
         }
     }
