@@ -10,6 +10,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 data class PageChromeContribution(
     val rightAction: TopBarActionSpec? = null,
     val menuItems: List<PageChromeMenuItem> = emptyList(),
+    val onBackRequest: (() -> Unit)? = null,
 ) {
     companion object {
         val Empty = PageChromeContribution()

@@ -56,18 +56,18 @@ fun ConfirmationLiquidDialog(
         },
         actions = {
             MaterialTintLiquidButton(
-                text = negativeButtonText,
-                onClick = onNegativeClick,
-                modifier = Modifier.weight(1f),
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            )
-            MaterialTintLiquidButton(
                 text = positiveButtonText,
                 onClick = onPositiveClick,
                 modifier = Modifier.weight(1f),
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
+            )
+            MaterialTintLiquidButton(
+                text = negativeButtonText,
+                onClick = onNegativeClick,
+                modifier = Modifier.weight(1f),
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                contentColor = MaterialTheme.colorScheme.onSurface,
             )
         },
     )

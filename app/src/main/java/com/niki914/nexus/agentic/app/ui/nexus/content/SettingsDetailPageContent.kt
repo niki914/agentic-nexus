@@ -12,6 +12,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -22,14 +24,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.ConfigureViewModelFactory
+import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
+import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
 import com.niki914.nexus.agentic.app.ui.nexus.content.mcp.McpSettingsContent
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureEffect
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureScene
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.SettingsViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.model.hasUnsavedChanges
 import com.niki914.nexus.agentic.app.ui.nexus.nav.CustomToolDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
@@ -117,9 +123,27 @@ private fun ModelConfigSettingsContent(
         factory = ConfigureViewModelFactory,
     )
     val uiState by viewModel.uiStateFlow.collectAsState()
+    val latestUiState by rememberUpdatedState(uiState)
+    val latestOnBack by rememberUpdatedState(onBack)
     var pendingFocusField by rememberSaveable {
         mutableStateOf<ConfigureEditableField?>(null)
     }
+    var showUnsavedChangesDialog by rememberSaveable { mutableStateOf(false) }
+
+    val requestBack = remember {
+        {
+            if (latestUiState.scene == ConfigureScene.Settings && latestUiState.hasUnsavedChanges) {
+                showUnsavedChangesDialog = true
+            } else {
+                latestOnBack()
+            }
+        }
+    }
+    RegisterPageChrome(
+        PageChromeContribution(
+            onBackRequest = requestBack,
+        ),
+    )
 
     LaunchedEffect(viewModel) {
         viewModel.sendIntent(ConfigureIntent.Initialize(scene = ConfigureScene.Settings))
@@ -179,6 +203,24 @@ private fun ModelConfigSettingsContent(
         requestedFocusField = pendingFocusField,
         onRequestedFocusHandled = {
             pendingFocusField = null
+        },
+    )
+
+    ConfirmationLiquidDialog(
+        visible = showUnsavedChangesDialog,
+        onDismissRequest = {
+            showUnsavedChangesDialog = false
+        },
+        title = stringResource(R.string.unsaved_changes_dialog_title),
+        text = stringResource(R.string.unsaved_changes_dialog_text),
+        negativeButtonText = stringResource(R.string.unsaved_changes_dialog_cancel),
+        positiveButtonText = stringResource(R.string.unsaved_changes_dialog_confirm_exit),
+        onNegativeClick = {
+            showUnsavedChangesDialog = false
+        },
+        onPositiveClick = {
+            showUnsavedChangesDialog = false
+            latestOnBack()
         },
     )
 }

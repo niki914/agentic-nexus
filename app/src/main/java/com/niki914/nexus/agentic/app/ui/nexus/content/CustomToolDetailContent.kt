@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsDetailFormScaffold
@@ -28,6 +29,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.CustomToolSettingsEffect
 import com.niki914.nexus.agentic.app.ui.nexus.model.CustomToolSettingsIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.CustomToolSettingsUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.CustomToolSettingsViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.model.hasUnsavedChanges
 import com.niki914.nexus.agentic.app.ui.nexus.nav.CustomToolDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 import dev.chrisbanes.haze.HazeState
@@ -42,23 +44,37 @@ fun CustomToolDetailContent(
     val viewModel = pageViewModel<CustomToolSettingsViewModel>()
     val uiState by viewModel.uiStateFlow.collectAsState()
     val latestViewModel by rememberUpdatedState(viewModel)
+    val latestUiState by rememberUpdatedState(uiState)
+    val latestOnBack by rememberUpdatedState(onBack)
     var requestedFocusField by rememberSaveable {
         mutableStateOf<CustomToolEditableField?>(null)
     }
+    var showUnsavedChangesDialog by rememberSaveable { mutableStateOf(false) }
 
-    val pageChromeContribution = remember(page.isCreating) {
-        if (page.isCreating) {
-            PageChromeContribution.Empty
-        } else {
-            PageChromeContribution(
-                rightAction = TopBarActionSpec(
+    val requestBack = remember {
+        {
+            if (latestUiState.formState.hasUnsavedChanges) {
+                showUnsavedChangesDialog = true
+            } else {
+                latestOnBack()
+            }
+        }
+    }
+
+    val pageChromeContribution = remember(page.isCreating, requestBack) {
+        PageChromeContribution(
+            rightAction = if (page.isCreating) {
+                null
+            } else {
+                TopBarActionSpec(
                     icon = Icons.Default.Delete,
                     onClick = {
                         latestViewModel.sendIntent(CustomToolSettingsIntent.DeleteCurrent)
                     },
-                ),
-            )
-        }
+                )
+            },
+            onBackRequest = requestBack,
+        )
     }
     RegisterPageChrome(pageChromeContribution)
 
@@ -117,6 +133,24 @@ fun CustomToolDetailContent(
         },
         onSave = {
             viewModel.sendIntent(CustomToolSettingsIntent.Save)
+        },
+    )
+
+    ConfirmationLiquidDialog(
+        visible = showUnsavedChangesDialog,
+        onDismissRequest = {
+            showUnsavedChangesDialog = false
+        },
+        title = stringResource(R.string.unsaved_changes_dialog_title),
+        text = stringResource(R.string.unsaved_changes_dialog_text),
+        negativeButtonText = stringResource(R.string.unsaved_changes_dialog_cancel),
+        positiveButtonText = stringResource(R.string.unsaved_changes_dialog_confirm_exit),
+        onNegativeClick = {
+            showUnsavedChangesDialog = false
+        },
+        onPositiveClick = {
+            showUnsavedChangesDialog = false
+            latestOnBack()
         },
     )
 }

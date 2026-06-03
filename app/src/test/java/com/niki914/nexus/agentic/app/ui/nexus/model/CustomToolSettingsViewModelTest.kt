@@ -204,6 +204,51 @@ class CustomToolSettingsViewModelTest {
         assertFalse(viewModel.uiStateFlow.value.isSaving)
     }
 
+    @Test
+    fun formState_tracksUnsavedChangesForCreateAndRestoredTrimmedFields() = runTest {
+        installStore(LocalSettings())
+        val viewModel = CustomToolSettingsViewModel()
+
+        viewModel.sendIntent(CustomToolSettingsIntent.Load)
+        advanceUntilIdle()
+        viewModel.sendIntent(CustomToolSettingsIntent.StartCreate)
+        advanceUntilIdle()
+        assertFalse(viewModel.uiStateFlow.value.formState.hasUnsavedChanges)
+
+        viewModel.sendIntent(CustomToolSettingsIntent.DescriptionChanged(" Show battery state "))
+        advanceUntilIdle()
+        assertTrue(viewModel.uiStateFlow.value.formState.hasUnsavedChanges)
+
+        viewModel.sendIntent(CustomToolSettingsIntent.DescriptionChanged(" "))
+        advanceUntilIdle()
+        assertFalse(viewModel.uiStateFlow.value.formState.hasUnsavedChanges)
+    }
+
+    @Test
+    fun formState_tracksUnsavedChangesForEditedEnabledAndRestoredValue() = runTest {
+        installStore(
+            LocalSettingsCodec.withCustomTools(
+                LocalSettings(),
+                listOf(CustomTool("battery_status", "Show battery state", "dumpsys battery")),
+            )
+        )
+        val viewModel = CustomToolSettingsViewModel()
+
+        viewModel.sendIntent(CustomToolSettingsIntent.Load)
+        advanceUntilIdle()
+        viewModel.sendIntent(CustomToolSettingsIntent.StartEdit(0))
+        advanceUntilIdle()
+        assertFalse(viewModel.uiStateFlow.value.formState.hasUnsavedChanges)
+
+        viewModel.sendIntent(CustomToolSettingsIntent.EnabledChanged(false))
+        advanceUntilIdle()
+        assertTrue(viewModel.uiStateFlow.value.formState.hasUnsavedChanges)
+
+        viewModel.sendIntent(CustomToolSettingsIntent.EnabledChanged(true))
+        advanceUntilIdle()
+        assertFalse(viewModel.uiStateFlow.value.formState.hasUnsavedChanges)
+    }
+
     private fun installStore(initialSettings: LocalSettings) {
         XRepo.installStoreForTest(FakeLocalSettingsStore(initialSettings))
         XRepo.init(context)

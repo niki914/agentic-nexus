@@ -286,4 +286,59 @@ class ConfigureViewModelTest {
 
         assertEquals("abc", viewModel.uiStateFlow.value.endpointInput)
     }
+
+    @Test
+    fun hasUnsavedChanges_isFalseForUneditedSettingsAndRestoredPrompt() = runTest {
+        val viewModel = ConfigureViewModel(
+            loadLlmConfig = {
+                LlmConfig(
+                    provider = "openai",
+                    endpoint = "https://user.example.com/v1",
+                    model = "gpt-4o-mini",
+                    apiKey = "sk-demo",
+                    prompt = "original prompt",
+                    proxy = "http://127.0.0.1:7890",
+                )
+            },
+        )
+
+        viewModel.sendIntent(ConfigureIntent.Initialize(scene = ConfigureScene.Settings))
+        advanceUntilIdle()
+        assertFalse(viewModel.uiStateFlow.value.hasUnsavedChanges)
+
+        viewModel.sendIntent(ConfigureIntent.UpdatePrompt("changed prompt"))
+        advanceUntilIdle()
+        assertTrue(viewModel.uiStateFlow.value.hasUnsavedChanges)
+
+        viewModel.sendIntent(ConfigureIntent.UpdatePrompt("original prompt"))
+        advanceUntilIdle()
+        assertFalse(viewModel.uiStateFlow.value.hasUnsavedChanges)
+    }
+
+    @Test
+    fun hasUnsavedChanges_isAlwaysFalseForOnboardingScene() = runTest {
+        val viewModel = ConfigureViewModel(
+            loadLlmConfig = {
+                LlmConfig(
+                    provider = "openai",
+                    endpoint = ProviderSpecs.find("openai").officialEndpoint,
+                    model = "gpt-4o",
+                    apiKey = "sk-demo",
+                )
+            },
+        )
+
+        viewModel.sendIntent(
+            ConfigureIntent.Initialize(
+                providerId = "openai",
+                scene = ConfigureScene.Onboarding,
+            )
+        )
+        advanceUntilIdle()
+        viewModel.sendIntent(ConfigureIntent.UpdateModel("gpt-4.1"))
+        viewModel.sendIntent(ConfigureIntent.UpdateApiKey("sk-new"))
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiStateFlow.value.hasUnsavedChanges)
+    }
 }

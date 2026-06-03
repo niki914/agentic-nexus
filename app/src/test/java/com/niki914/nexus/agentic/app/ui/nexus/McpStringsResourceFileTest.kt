@@ -23,4 +23,18 @@ class McpStringsResourceFileTest {
         assertTrue(xml.contains("""name="mcp_error_headers_non_string""""))
         assertTrue(xml.contains("""name="mcp_field_enabled""""))
     }
+
+    @Test
+    fun stringsXml_containsUnsavedChangesDialogKeys() {
+        val xml = File("src/main/res/values/strings.xml").readText()
+
+        assertTrue(xml.contains("""name="unsaved_changes_dialog_title""""))
+        assertTrue(xml.contains(">有未保存的修改<"))
+        assertTrue(xml.contains("""name="unsaved_changes_dialog_text""""))
+        assertTrue(xml.contains(">确定退出吗？<"))
+        assertTrue(xml.contains("""name="unsaved_changes_dialog_confirm_exit""""))
+        assertTrue(xml.contains(">确定<"))
+        assertTrue(xml.contains("""name="unsaved_changes_dialog_cancel""""))
+        assertTrue(xml.contains(">取消<"))
+    }
 }

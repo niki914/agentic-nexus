@@ -25,10 +25,21 @@ data class CustomToolFormState(
     val description: String = "",
     val command: String = "",
     val enabled: Boolean = true,
+    val initialSnapshot: CustomToolFormSnapshot? = null,
     @param:StringRes val nameErrorResId: Int? = null,
     @param:StringRes val descriptionErrorResId: Int? = null,
     @param:StringRes val commandErrorResId: Int? = null,
 )
+
+data class CustomToolFormSnapshot(
+    val name: String,
+    val description: String,
+    val command: String,
+    val enabled: Boolean,
+)
+
+val CustomToolFormState.hasUnsavedChanges: Boolean
+    get() = initialSnapshot?.let { it != toSnapshot() } ?: false
 
 data class CustomToolSettingsUiState(
     val items: List<CustomToolItem> = emptyList(),
@@ -158,9 +169,10 @@ class CustomToolSettingsViewModel :
     }
 
     private fun startCreate() {
+        val formState = CustomToolFormState()
         updateState {
             copy(
-                formState = CustomToolFormState(),
+                formState = formState.withCurrentSnapshotAsInitial(),
                 inlineError = null,
             )
         }
@@ -168,16 +180,17 @@ class CustomToolSettingsViewModel :
 
     private fun startEdit(index: Int) {
         val item = currentState.items.getOrNull(index) ?: return
+        val formState = CustomToolFormState(
+            editingIndex = index,
+            previousName = item.name,
+            name = item.name,
+            description = item.description,
+            command = item.command,
+            enabled = item.enabled,
+        )
         updateState {
             copy(
-                formState = CustomToolFormState(
-                    editingIndex = index,
-                    previousName = item.name,
-                    name = item.name,
-                    description = item.description,
-                    command = item.command,
-                    enabled = item.enabled,
-                ),
+                formState = formState.withCurrentSnapshotAsInitial(),
                 inlineError = null,
             )
         }
@@ -193,7 +206,7 @@ class CustomToolSettingsViewModel :
             copy(
                 items = updatedItems,
                 formState = if (formState.editingIndex == index) {
-                    formState.copy(enabled = enabled)
+                        formState.copy(enabled = enabled).withCurrentSnapshotAsInitial()
                 } else {
                     formState
                 },
@@ -214,6 +227,7 @@ class CustomToolSettingsViewModel :
                     items = previousItems,
                     formState = if (formState.editingIndex == index) {
                         formState.copy(enabled = previousItems[index].enabled)
+                            .withCurrentSnapshotAsInitial()
                     } else {
                         formState
                     },
@@ -280,7 +294,7 @@ class CustomToolSettingsViewModel :
                         nameErrorResId = null,
                         descriptionErrorResId = null,
                         commandErrorResId = null,
-                    ),
+                    ).withCurrentSnapshotAsInitial(),
                     isSaving = false,
                     inlineError = null,
                 )
@@ -401,6 +415,19 @@ private data class CustomToolFieldErrors(
         get() = nameErrorResId != null ||
                 descriptionErrorResId != null ||
                 commandErrorResId != null
+}
+
+private fun CustomToolFormState.toSnapshot(): CustomToolFormSnapshot {
+    return CustomToolFormSnapshot(
+        name = name.trim(),
+        description = description.trim(),
+        command = command.trim(),
+        enabled = enabled,
+    )
+}
+
+private fun CustomToolFormState.withCurrentSnapshotAsInitial(): CustomToolFormState {
+    return copy(initialSnapshot = toSnapshot())
 }
 
 private fun requiredFieldErrors(formState: CustomToolFormState): CustomToolFieldErrors {

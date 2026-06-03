@@ -18,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsDetailFormScaffold
@@ -31,6 +32,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsEffect
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.model.hasUnsavedChanges
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 import dev.chrisbanes.haze.HazeState
@@ -46,21 +48,35 @@ fun McpServerDetailContent(
     val viewModel = pageViewModel<McpSettingsViewModel>()
     val uiState by viewModel.uiStateFlow.collectAsState()
     val latestViewModel by rememberUpdatedState(viewModel)
+    val latestUiState by rememberUpdatedState(uiState)
+    val latestOnBack by rememberUpdatedState(onBack)
     var requestedFocusField by rememberSaveable { mutableStateOf<McpEditableField?>(null) }
+    var showUnsavedChangesDialog by rememberSaveable { mutableStateOf(false) }
 
-    val pageChromeContribution = remember(page.isCreating) {
-        if (page.isCreating) {
-            PageChromeContribution.Empty
-        } else {
-            PageChromeContribution(
-                rightAction = TopBarActionSpec(
+    val requestBack = remember {
+        {
+            if (latestUiState.formState.hasUnsavedChanges) {
+                showUnsavedChangesDialog = true
+            } else {
+                latestOnBack()
+            }
+        }
+    }
+
+    val pageChromeContribution = remember(page.isCreating, requestBack) {
+        PageChromeContribution(
+            rightAction = if (page.isCreating) {
+                null
+            } else {
+                TopBarActionSpec(
                     icon = Icons.Default.Delete,
                     onClick = {
                         latestViewModel.sendIntent(McpSettingsIntent.DeleteCurrent)
                     },
-                ),
-            )
-        }
+                )
+            },
+            onBackRequest = requestBack,
+        )
     }
     RegisterPageChrome(pageChromeContribution)
 
@@ -111,6 +127,24 @@ fun McpServerDetailContent(
         },
         onSave = {
             viewModel.sendIntent(McpSettingsIntent.Save)
+        },
+    )
+
+    ConfirmationLiquidDialog(
+        visible = showUnsavedChangesDialog,
+        onDismissRequest = {
+            showUnsavedChangesDialog = false
+        },
+        title = stringResource(R.string.unsaved_changes_dialog_title),
+        text = stringResource(R.string.unsaved_changes_dialog_text),
+        negativeButtonText = stringResource(R.string.unsaved_changes_dialog_cancel),
+        positiveButtonText = stringResource(R.string.unsaved_changes_dialog_confirm_exit),
+        onNegativeClick = {
+            showUnsavedChangesDialog = false
+        },
+        onPositiveClick = {
+            showUnsavedChangesDialog = false
+            latestOnBack()
         },
     )
 }

@@ -29,10 +29,22 @@ data class McpServerFormState(
     val url: String = "",
     val enabled: Boolean = true,
     val headersInput: String = "",
+    val initialSnapshot: McpServerFormSnapshot? = null,
     @param:StringRes val nameErrorResId: Int? = null,
     @param:StringRes val urlErrorResId: Int? = null,
     @param:StringRes val headersErrorResId: Int? = null,
 )
+
+data class McpServerFormSnapshot(
+    val name: String,
+    val url: String,
+    val enabled: Boolean,
+    val headers: Map<String, String>?,
+    val headersInputFallback: String,
+)
+
+val McpServerFormState.hasUnsavedChanges: Boolean
+    get() = initialSnapshot?.let { it != toSnapshot() } ?: false
 
 data class McpSettingsUiState(
     val items: List<McpServerItem> = emptyList(),
@@ -149,9 +161,10 @@ class McpSettingsViewModel :
     }
 
     private fun startCreate() {
+        val formState = McpServerFormState()
         updateState {
             copy(
-                formState = McpServerFormState(),
+                formState = formState.withCurrentSnapshotAsInitial(),
                 inlineError = null,
             )
         }
@@ -159,15 +172,16 @@ class McpSettingsViewModel :
 
     private fun startEdit(index: Int) {
         val item = currentState.items.getOrNull(index) ?: return
+        val formState = McpServerFormState(
+            editingIndex = index,
+            name = item.name,
+            url = item.url,
+            enabled = item.enabled,
+            headersInput = headersToInput(item.headers),
+        )
         updateState {
             copy(
-                formState = McpServerFormState(
-                    editingIndex = index,
-                    name = item.name,
-                    url = item.url,
-                    enabled = item.enabled,
-                    headersInput = headersToInput(item.headers),
-                ),
+                formState = formState.withCurrentSnapshotAsInitial(),
                 inlineError = null,
             )
         }
@@ -195,7 +209,7 @@ class McpSettingsViewModel :
             copy(
                 items = updatedItems,
                 formState = if (formState.editingIndex == index) {
-                    formState.copy(enabled = enabled)
+                        formState.copy(enabled = enabled).withCurrentSnapshotAsInitial()
                 } else {
                     formState
                 },
@@ -218,6 +232,7 @@ class McpSettingsViewModel :
                     items = previousItems,
                     formState = if (formState.editingIndex == index) {
                         formState.copy(enabled = previousItems[index].enabled)
+                            .withCurrentSnapshotAsInitial()
                     } else {
                         formState
                     },
@@ -317,7 +332,7 @@ class McpSettingsViewModel :
                         nameErrorResId = null,
                         urlErrorResId = null,
                         headersErrorResId = null,
-                    ),
+                    ).withCurrentSnapshotAsInitial(),
                     isSaving = false,
                     inlineError = null,
                 )
@@ -405,6 +420,25 @@ private fun normalizedHeadersOrError(input: String): McpHeadersParseResult {
         headers[key] = content
     }
     return McpHeadersParseResult.Success(headers.toSortedMap())
+}
+
+private fun McpServerFormState.toSnapshot(): McpServerFormSnapshot {
+    val headersResult = normalizedHeadersOrError(headersInput)
+    return McpServerFormSnapshot(
+        name = name.trim(),
+        url = url.trim(),
+        enabled = enabled,
+        headers = (headersResult as? McpHeadersParseResult.Success)?.headers,
+        headersInputFallback = if (headersResult is McpHeadersParseResult.Success) {
+            ""
+        } else {
+            headersInput
+        },
+    )
+}
+
+private fun McpServerFormState.withCurrentSnapshotAsInitial(): McpServerFormState {
+    return copy(initialSnapshot = toSnapshot())
 }
 
 private fun headersToInput(headers: Map<String, String>): String {

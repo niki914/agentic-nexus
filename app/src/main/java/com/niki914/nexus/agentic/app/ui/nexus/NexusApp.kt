@@ -114,20 +114,30 @@ fun NexusApp(
         navigator.resetTo(page)
     }
 
+    fun popOrMoveTaskToBack() {
+        if (controller.canGoBack) {
+            navigator.pop()
+            return
+        }
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastRootBackPressedAt <= rootBackToHomeWindowMillis) {
+            activity?.moveTaskToBack(true)
+        } else {
+            lastRootBackPressedAt = now
+            Toast.makeText(context.applicationContext, rootBackToHomeHint, Toast.LENGTH_SHORT)
+                .show() // TODO rm
+        }
+    }
+
+    fun requestBack() {
+        currentChrome.onBackRequest?.invoke() ?: popOrMoveTaskToBack()
+    }
+
     BackHandler(enabled = true) {
         if (chromeMenuExpanded) {
             closeChromeMenu()
-        } else if (controller.canGoBack) {
-            navigator.pop()
         } else {
-            val now = SystemClock.elapsedRealtime()
-            if (now - lastRootBackPressedAt <= rootBackToHomeWindowMillis) {
-                activity?.moveTaskToBack(true)
-            } else {
-                lastRootBackPressedAt = now
-                Toast.makeText(context.applicationContext, rootBackToHomeHint, Toast.LENGTH_SHORT)
-                    .show() // TODO rm
-            }
+            requestBack()
         }
     }
 
@@ -136,12 +146,13 @@ fun NexusApp(
         controller.lastDirection,
         currentTitle,
         currentRightAction,
-        currentChrome.menuItems
+        currentChrome.menuItems,
+        currentChrome.onBackRequest,
     ) {
         if (currentChrome.menuItems.isEmpty()) {
             closeChromeMenu()
         }
-        val onLeftClick = bindAction(currentLeftAction) { navigator.pop() }
+        val onLeftClick = bindAction(currentLeftAction, fallback = ::requestBack)
         val onRightClick = bindAction(currentRightAction)
 
         when (controller.lastDirection) {

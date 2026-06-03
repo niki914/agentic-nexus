@@ -30,7 +30,21 @@ data class ConfigureUiState(
     @param:StringRes val proxyErrorResId: Int? = null,
     val isSaving: Boolean = false,
     val inlineError: ConfigureInlineError? = null,
+    val initialSettingsSnapshot: ConfigureSnapshot? = null,
 )
+
+data class ConfigureSnapshot(
+    val providerId: String,
+    val endpoint: String,
+    val model: String,
+    val apiKey: String,
+    val prompt: String,
+    val proxy: String,
+)
+
+val ConfigureUiState.hasUnsavedChanges: Boolean
+    get() = scene == ConfigureScene.Settings &&
+            initialSettingsSnapshot?.let { it != toSettingsSnapshot() } == true
 
 sealed interface ConfigureInlineError {
     data class LoadFailed(val reason: ConfigureErrorReason.LoadSettingsFailed) :
@@ -163,6 +177,7 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
                 proxyErrorResId = null,
                 isSaving = false,
                 inlineError = null,
+                initialSettingsSnapshot = null,
             )
         }
     }
@@ -193,7 +208,7 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
                 proxyErrorResId = null,
                 isSaving = false,
                 inlineError = null,
-            )
+            ).withCurrentSettingsSnapshotAsInitial()
         }
     }
 
@@ -411,7 +426,7 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
                     apiKeyErrorResId = null,
                     proxyErrorResId = null,
                     inlineError = null,
-                )
+                ).withCurrentSettingsSnapshotAsInitial()
             }
             sendEffect(ConfigureEffect.SettingsSaveSucceeded)
         } catch (throwable: Throwable) {
@@ -435,6 +450,21 @@ private fun ConfigureUiState.resolvedEndpoint(): String {
     } else {
         providerSpec.officialEndpoint
     }
+}
+
+private fun ConfigureUiState.toSettingsSnapshot(): ConfigureSnapshot {
+    return ConfigureSnapshot(
+        providerId = providerSpec.id,
+        endpoint = resolvedEndpoint(),
+        model = modelInput.trim(),
+        apiKey = apiKeyInput,
+        prompt = promptInput,
+        proxy = proxyInput.trim(),
+    )
+}
+
+private fun ConfigureUiState.withCurrentSettingsSnapshotAsInitial(): ConfigureUiState {
+    return copy(initialSettingsSnapshot = toSettingsSnapshot())
 }
 
 private enum class ConfigureFieldTarget {

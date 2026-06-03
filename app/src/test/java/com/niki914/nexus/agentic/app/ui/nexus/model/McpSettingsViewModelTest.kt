@@ -326,6 +326,72 @@ class McpSettingsViewModelTest {
     }
 
     @Test
+    fun formState_tracksUnsavedChangesForCreateAndRestoredFields() = runTest {
+        installStore(LocalSettings())
+        val viewModel = McpSettingsViewModel()
+
+        viewModel.sendIntent(McpSettingsIntent.Load)
+        advanceUntilIdle()
+        viewModel.sendIntent(McpSettingsIntent.StartCreate)
+        advanceUntilIdle()
+        assertFalse(viewModel.uiStateFlow.value.formState.hasUnsavedChanges)
+
+        viewModel.sendIntent(McpSettingsIntent.NameChanged("demo"))
+        advanceUntilIdle()
+        assertTrue(viewModel.uiStateFlow.value.formState.hasUnsavedChanges)
+
+        viewModel.sendIntent(McpSettingsIntent.NameChanged(""))
+        advanceUntilIdle()
+        assertFalse(viewModel.uiStateFlow.value.formState.hasUnsavedChanges)
+    }
+
+    @Test
+    fun formState_comparesValidHeadersByNormalizedMap() = runTest {
+        installStore(
+            localSettings(
+                """
+                {
+                  "mcp_servers": [
+                    {
+                      "name": "demo",
+                      "url": "http://127.0.0.1:51338/mcp",
+                      "enabled": true,
+                      "headers": {
+                        "X-Trace-Id": "trace-1",
+                        "Authorization": "Bearer xxx"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+        )
+        val viewModel = McpSettingsViewModel()
+
+        viewModel.sendIntent(McpSettingsIntent.Load)
+        advanceUntilIdle()
+        viewModel.sendIntent(McpSettingsIntent.StartEdit(0))
+        advanceUntilIdle()
+        assertFalse(viewModel.uiStateFlow.value.formState.hasUnsavedChanges)
+
+        viewModel.sendIntent(
+            McpSettingsIntent.HeadersChanged(
+                """{"X-Trace-Id":"trace-1","Authorization":"Bearer xxx"}"""
+            )
+        )
+        advanceUntilIdle()
+        assertFalse(viewModel.uiStateFlow.value.formState.hasUnsavedChanges)
+
+        viewModel.sendIntent(
+            McpSettingsIntent.HeadersChanged(
+                """{"X-Trace-Id":"trace-2","Authorization":"Bearer xxx"}"""
+            )
+        )
+        advanceUntilIdle()
+        assertTrue(viewModel.uiStateFlow.value.formState.hasUnsavedChanges)
+    }
+
+    @Test
     fun save_renameFailureDoesNotDeleteExistingServer() = runTest {
         val existing = McpServer(name = "old", url = "http://127.0.0.1:1/mcp", enabled = true)
         installStore(buildLocalSettings(listOf(existing)), failWrites = true)

@@ -7,17 +7,32 @@ import java.io.File
 
 class CustomToolDetailContentSourceTest {
     @Test
-    fun customToolDetailContent_usesDetailScaffoldAndChromeContract() {
+    fun customToolDetailContent_usesDetailScaffoldAndChromeBackContract() {
         val source = readCustomToolDetailContentSource()
 
         assertTrue(source.contains("SettingsDetailFormScaffold("))
         assertTrue(source.contains("RegisterPageChrome(pageChromeContribution)"))
-        assertTrue(source.contains("PageChromeContribution.Empty"))
         assertTrue(source.contains("PageChromeContribution("))
+        assertTrue(source.contains("onBackRequest = requestBack"))
         assertTrue(source.contains("Icons.Default.Delete"))
         assertTrue(source.contains("CustomToolSettingsIntent.DeleteCurrent"))
         assertTrue(source.contains("onBackgroundTap = ::clearActiveField"))
         assertTrue(source.contains("requestedFocusField"))
+    }
+
+    @Test
+    fun customToolDetailContent_routesBackThroughUnsavedChangesDialog() {
+        val source = readCustomToolDetailContentSource()
+
+        assertTrue(source.contains("val requestBack = remember"))
+        assertTrue(source.contains("latestUiState.formState.hasUnsavedChanges"))
+        assertTrue(source.contains("showUnsavedChangesDialog = true"))
+        assertTrue(source.contains("latestOnBack()"))
+        assertTrue(source.contains("ConfirmationLiquidDialog("))
+        assertTrue(source.contains("visible = showUnsavedChangesDialog"))
+        assertTrue(source.contains("negativeButtonText = stringResource(R.string.unsaved_changes_dialog_cancel)"))
+        assertTrue(source.contains("positiveButtonText = stringResource(R.string.unsaved_changes_dialog_confirm_exit)"))
+        assertTrue(source.contains("onPositiveClick = {"))
     }
 
     @Test
@@ -48,6 +63,10 @@ class CustomToolDetailContentSourceTest {
         assertTrue(source.contains("R.string.custom_tool_error_load_failed"))
         assertTrue(source.contains("R.string.custom_tool_error_save_failed"))
         assertTrue(source.contains("R.string.custom_tool_error_delete_failed"))
+        assertTrue(source.contains("R.string.unsaved_changes_dialog_title"))
+        assertTrue(source.contains("R.string.unsaved_changes_dialog_text"))
+        assertTrue(source.contains("R.string.unsaved_changes_dialog_confirm_exit"))
+        assertTrue(source.contains("R.string.unsaved_changes_dialog_cancel"))
     }
 
     private fun readCustomToolDetailContentSource(): String {
