@@ -76,7 +76,14 @@ internal fun ProviderAccessSettingsBlock(
             onValueChange = onModelChange,
             placeholder = stringResource(R.string.ui_onboard_configure_model_placeholder),
             description = uiState.modelErrorResId?.let { stringResource(it) }
-                ?: uiState.providerSpec.onboardingModelHint,
+                ?: if (uiState.modelInput.isBlank()) {
+                    stringResource(
+                        R.string.ui_onboard_configure_model_example,
+                        uiState.providerSpec.exampleModelId,
+                    )
+                } else {
+                    null
+                },
             enabled = !uiState.isSaving,
             minLines = 1,
             maxLines = 1,

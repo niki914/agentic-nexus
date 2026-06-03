@@ -50,4 +50,12 @@ class ProviderSpecTest {
         assertNull(claude.visualTokens.page)
         assertNotNull(claude.visualTokens.button)
     }
+
+    @Test
+    fun providersExposeExampleModelIds() {
+        assertEquals("deepseek-v4-pro", ProviderSpecs.find("deepseek").exampleModelId)
+        assertEquals("gpt-5.4", ProviderSpecs.find("openai").exampleModelId)
+        assertEquals("claude-sonnet-4-6", ProviderSpecs.find("anthropic").exampleModelId)
+        assertEquals("gemini-3.5-flash", ProviderSpecs.find("google").exampleModelId)
+    }
 }

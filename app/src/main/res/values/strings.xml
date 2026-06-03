@@ -23,6 +23,7 @@
     <string name="ui_onboard_configure_endpoint_placeholder">输入你的接口地址</string>
     <string name="ui_onboard_configure_model_label">模型代号</string>
     <string name="ui_onboard_configure_model_placeholder">输入你的模型代号</string>
+    <string name="ui_onboard_configure_model_example">如：%1$s</string>
     <string name="ui_onboard_configure_api_key_label">API Key</string>
     <string name="ui_onboard_configure_api_key_placeholder">输入你的 API Key</string>
     <string name="ui_onboard_configure_api_key_show">显示 API Key</string>

@@ -20,7 +20,7 @@ class ConfigureViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun save_withIncompleteFields_staysOnPageAndRequestsFieldFocus() = runTest {
+    fun save_withMissingApiKey_staysOnPageAndRequestsFieldFocus() = runTest {
         var saveCalled = false
         val viewModel = ConfigureViewModel(
             loadLlmConfig = { LlmConfig() },
@@ -37,8 +37,8 @@ class ConfigureViewModelTest {
         assertFalse(saveCalled)
         assertFalse(state.isSaving)
         assertNull(state.inlineError)
-        assertEquals(R.string.ui_settings_configure_error_required, state.modelErrorResId)
-        assertEquals(ConfigureEffect.FocusModel, effectDeferred.await())
+        assertEquals(R.string.ui_settings_configure_error_required, state.apiKeyErrorResId)
+        assertEquals(ConfigureEffect.FocusApiKey, effectDeferred.await())
     }
 
     @Test
@@ -97,8 +97,33 @@ class ConfigureViewModelTest {
         assertEquals(ConfigureScene.Onboarding, state.scene)
         assertEquals(officialEndpoint, state.endpointInput)
         assertFalse(state.endpointOverrideEnabled)
+        assertEquals("gpt-4o", state.modelInput)
         assertEquals("", state.promptInput)
         assertEquals("", state.proxyInput)
+    }
+
+    @Test
+    fun initialize_onboarding_usesProviderExampleModelWhenSavedModelBlank() = runTest {
+        val viewModel = ConfigureViewModel(
+            loadLlmConfig = {
+                LlmConfig(
+                    provider = "openai",
+                    endpoint = ProviderSpecs.find("openai").officialEndpoint,
+                    model = "   ",
+                    apiKey = "sk-demo",
+                )
+            },
+        )
+
+        viewModel.sendIntent(
+            ConfigureIntent.Initialize(
+                providerId = "openai",
+                scene = ConfigureScene.Onboarding,
+            )
+        )
+        advanceUntilIdle()
+
+        assertEquals("gpt-5.4", viewModel.uiStateFlow.value.modelInput)
     }
 
     @Test
@@ -124,8 +149,28 @@ class ConfigureViewModelTest {
         assertEquals("openai", state.providerSpec.id)
         assertEquals("https://user.example.com/v1", state.endpointInput)
         assertTrue(state.endpointOverrideEnabled)
+        assertEquals("gpt-4o-mini", state.modelInput)
         assertEquals("settings assistant prompt", state.promptInput)
         assertEquals("http://127.0.0.1:7890", state.proxyInput)
+    }
+
+    @Test
+    fun initialize_settings_usesProviderExampleModelWhenSavedModelBlank() = runTest {
+        val viewModel = ConfigureViewModel(
+            loadLlmConfig = {
+                LlmConfig(
+                    provider = "anthropic",
+                    endpoint = "https://api.anthropic.com/v1/messages",
+                    model = "",
+                    apiKey = "sk-demo",
+                )
+            },
+        )
+
+        viewModel.sendIntent(ConfigureIntent.Initialize(scene = ConfigureScene.Settings))
+        advanceUntilIdle()
+
+        assertEquals("claude-sonnet-4-6", viewModel.uiStateFlow.value.modelInput)
     }
 
     @Test

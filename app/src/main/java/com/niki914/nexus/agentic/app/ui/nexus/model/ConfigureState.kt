@@ -131,7 +131,7 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
             savedProviderId == providerSpec.id
         }
         val savedEndpoint = if (shouldReuseSavedValues) llmConfig.endpoint.trim() else ""
-        val savedModel = if (shouldReuseSavedValues) llmConfig.model else ""
+        val savedModel = if (shouldReuseSavedValues) llmConfig.model.trim() else ""
         val savedApiKey = if (shouldReuseSavedValues) llmConfig.apiKey else ""
         val endpointOverrideEnabled = savedEndpoint.isNotBlank() &&
                 savedEndpoint != providerSpec.officialEndpoint
@@ -152,7 +152,7 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
                 endpointOverrideEnabled = endpointOverrideEnabled,
                 endpointInput = endpointInput,
                 lastCustomEndpointInput = lastCustomEndpointInput,
-                modelInput = savedModel,
+                modelInput = savedModel.ifBlank { providerSpec.exampleModelId },
                 apiKeyInput = savedApiKey,
                 apiKeyVisible = false,
                 endpointErrorResId = null,
@@ -172,6 +172,9 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
         val endpointInput = llmConfig.endpoint.trim().ifBlank {
             providerSpec.officialEndpoint
         }
+        val modelInput = llmConfig.model.trim().ifBlank {
+            providerSpec.exampleModelId
+        }
         updateState {
             copy(
                 scene = ConfigureScene.Settings,
@@ -179,7 +182,7 @@ class ConfigureViewModel internal constructor( // TODO 内联改无参，看是�
                 endpointOverrideEnabled = true,
                 endpointInput = endpointInput,
                 lastCustomEndpointInput = endpointInput,
-                modelInput = llmConfig.model,
+                modelInput = modelInput,
                 apiKeyInput = llmConfig.apiKey,
                 apiKeyVisible = false,
                 endpointErrorResId = null,
