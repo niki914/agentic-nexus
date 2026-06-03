@@ -217,11 +217,12 @@ object LLMController {
                     is ToolCallKind.Mcp -> delegate()
                 }
             }
+            llmIdleTimeoutSeconds = 25
         }
         return when (apiType) {
-            LlmApiType.Anthropic -> Session.open(SessionProtocols.Anthropic::class, configBlock)
-            LlmApiType.DeepSeek -> Session.open(SessionProtocols.DeepSeek::class, configBlock)
-            LlmApiType.OpenAI -> Session.open(configBlock)
+            LlmApiType.Anthropic -> Session.open<SessionProtocols.Anthropic>(configBlock)
+            LlmApiType.DeepSeek -> Session.open<SessionProtocols.DeepSeek>(configBlock)
+            else -> Session.open<SessionProtocols.OpenAI>(configBlock)
         }
     }
 
