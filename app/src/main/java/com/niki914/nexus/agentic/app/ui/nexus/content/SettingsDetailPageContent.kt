@@ -91,38 +91,19 @@ fun SettingsDetailPageContent(
         return
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .hazeSource(hazeState)
-            .padding(top = topPadding)
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = stringResource(group.titleRes),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = stringResource(group.summaryRes),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = stringResource(R.string.ui_settings_detail_placeholder),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-        }
+    if (group == NexusSettingsGroup.Memory || group == NexusSettingsGroup.ExecutionRules) {
+        TODOPageContent(
+            topPadding = topPadding,
+            hazeState = hazeState,
+        )
+        return
     }
+
+    TODOPageContent(
+        topPadding = topPadding,
+        hazeState = hazeState,
+    )
+    return
 }
 
 @Composable
