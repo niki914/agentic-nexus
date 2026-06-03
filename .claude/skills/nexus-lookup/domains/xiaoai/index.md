@@ -1,33 +1,42 @@
 # XiaoAi Domain
 
-## 整体心智模型
+## 整体模型
 
-XiaoAi 宿主（`com.miui.voiceassist`）的注入模型是**增量文本分片注入**，走的是响应目标与 Instruction 流层，其 Hook 点更为底层。由于是在指令分片级别进行操作，除了注入大模型的流式分片，还必须严格拦截与屏蔽原生的文字流、TTS 指令流及播报链路，以防止原生回复与注入回复交错冲突。
+XiaoAi 侧当前走**响应目标 + Instruction 分片注入**。LLM 累计文本会被切成 delta，再包装成宿主 `Instruction` 注入已捕获的响应目标。
 
-## 响应目标的捕获与复用
+## 关键 Hook
 
-响应目标在 `CaptureResponseTargetHook` 处，于原生响应目标创建链路被捕获。`dispatchQueryToLLM()` 会先启动 `LLMController.stream(query)` 并通过 `shareIn(..., SharingStarted.Eagerly, replay = Int.MAX_VALUE)` 预热共享流，随后等待响应目标就绪后再开始 collect。在后续的文本流渲染阶段（`RenderTextStreamCardHook`），会直接复用已捕获的响应目标对象，而不是重新去查找目标对象，确保了注入指令能够准确路由到目标。
+### `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/`
 
-## 原生链路阻断
+- `XiaoaiChatHook.kt`：主编排入口；安装输入、响应、生命周期 subhook，并协调目标捕获与流式消费。
+- `XiaoaiConfigProvider.kt`：提供响应目标、白名单拦截、文字流注入、TTS 播放拦截所需的运行时类名和方法名。
+- `XiaoaiRenderSession.kt`：记录当前渲染轮次的 session 状态。
 
-原生链路的阻断分布在以下关键 Hook 中：
-- **原生文字流**：由 `BlockNativeTextStreamHook` 拦截，屏蔽与注入轮次冲突的原生文本分片。
-- **原生 TTS 指令流**：由 `BlockNativeTtsStreamHook` 拦截，阻断下发给播报引擎的 TTS 指令。
-- **原生 TTS 播放链路**：由 `BlockNativeTtsPlaybackHook` 拦截，屏蔽漏网的底层原生播报。
+### `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/subhooks/`
 
-## 增量文本分片注入机制
+- `CaptureInputHook.kt`：捕获 query。
+- `CaptureResponseTargetHook.kt`：捕获后续注入用的响应目标对象。
+- `BlockNativeInstructionByWhitelistHook.kt`：在 `InjectedLLM` 模式下按白名单放行原生 `Instruction`，其余默认拦截。
+- `BlockNativeTtsPlaybackHook.kt`：拦截原生 TTS 播放。
+- `RenderTextStreamCardHook.kt`：计算 delta、构造宿主 `Instruction`、注入分片并管理当前 `XiaoaiRenderSession`。
 
-注入阶段的关键状态和约束：
-- 渲染前必须校验当前轮次是否仍为活跃的 `InjectedLLM` 轮次。
-- 文本注入由 `RenderTextStreamCardHook` 维护当前活动的 `XiaoaiRenderSession` 进行，不是全局单例对象。
-- 渲染逻辑是根据大模型返回的累计文本计算出本次增量 `delta`，对宿主执行的是分片注入，而非整段覆盖。
-- 每个增量块会被包装为宿主可消费的 `Instruction` 对象。其中涉及的 `namespace`、`name`、`idPrefix` 等元数据，均通过 `XiaoaiConfigProvider` 提供。
-- 在最后一帧终帧处理时，还会额外注入由配置定义的 `renderTextStreamCardFinalChunkText`（终帧补片文本），随后清空当前的渲染 session 状态。
+## 当前数据流
 
-## 关键源码导航
+1. `dispatchQueryToLLM()` 先启动 `LLMController.stream(query)`，并用 `shareIn(..., SharingStarted.Eagerly, replay = Int.MAX_VALUE)` 预热共享流。
+2. 等待 `CaptureResponseTargetHook` 完成响应目标捕获。
+3. `collectAsChunk` 消费共享流，把累计文本交给 `RenderTextStreamCardHook.render()`。
+4. `RenderTextStreamCardHook` 根据上次已渲染全文计算增量 `delta`。
+5. 终帧额外注入 `finalChunkText`，随后清空当前 session。
 
-调试 XiaoAi 注入逻辑与查阅实现细节时，优先查看以下相对路径：
-- **主入口与总线**：`app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`
-- **配置提取与转换**：`app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiConfigProvider.kt`
-- **渲染会话状态**：`app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiRenderSession.kt`
-- **底层拦截与注入子 Hook**：`app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/subhooks/`
+## 边界与注意点
+
+- 当前源码里没有单独的 `BlockNativeTextStreamHook` 或 `BlockNativeTtsStreamHook`；原生阻断已经收敛为 Instruction 白名单拦截加 TTS 播放拦截。
+- `targetReady.await()` 仍带有死等风险 TODO；目标捕获失败时不会自动降级到其他注入路径。
+- `RenderTextStreamCardHook` 只维护一个活跃 `XiaoaiRenderSession`，session reset 时会被显式清空。
+
+## 调试入口
+
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiConfigProvider.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiRenderSession.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/subhooks/`

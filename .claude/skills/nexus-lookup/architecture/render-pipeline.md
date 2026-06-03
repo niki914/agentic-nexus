@@ -1,49 +1,74 @@
 # Render Pipeline
 
-本文件描述 Breeno 与 XiaoAi 两条响应注入链路的架构模型及关键差异。
+本文件描述 Breeno 与 XiaoAi 两条响应注入链路的当前实现差异。
 
 ## Breeno 渲染管线
 
-**注入模型**：单卡片全量刷新
-Breeno 的注入发生在卡片渲染层。每次接收到 LLM 增量内容时，直接用累计全量文本覆盖卡片的 `content`，并通过 `DataCenter.updateMessage` 持续刷新同一卡片对象。
+### 注入模型
 
-**前置捕获点**
-- **用户输入**：通过 `CaptureInputHook` 拦截 `DataCenter#insertMessage` 捕获 Query。
-- **实例缓存**：同步缓存 `DataCenter` 实例，为后续卡片注入提供句柄。
+Breeno 走**单卡片全量刷新**：
 
-**原生阻断机制**
-- **卡片拦截**：在 `InjectedLLM` 模式下，`BlockNativeCardHook` 拦截 `DataCenter#insertMessage` 中的原生回答卡片。
-- **防清理**：`SuppressCleanupHook` 将系统清理操作替换为 `DoNothingOperation`，避免注入卡片被意外移除。
+- 首帧通过 `dataCenter.insertMessage()` 插入回答卡片。
+- 后续分片和终帧通过 `dataCenter.updateMessage()` 持续刷新同一张卡片。
+- `chunk` 传入的是累计文本，不是 delta。
 
-**生命周期与并发**
-- **并发控制**：`BreenoChatHook` 使用 `Mutex + currentRenderSession` 保证单个流式渲染会话的唯一性。
-- **终帧处理**：收到终帧后，更新卡片状态反转反馈视图，并清空当前 Render Session。
-- **会话清理**：`ResetConversationSignalHook` 监听宿主重置信号；浮窗 Detach 事件结合 700ms 阈值判断退出并触发重置。
+### 前置捕获与阻断
 
-**源码参考**
-- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/subhooks/`
+- `CaptureInputHook`：在 `DataCenter#insertMessage` 前捕获 query，并缓存 `DataCenter` 实例。
+- `BlockNativeCardHook`：在 `InjectedLLM` 模式下拦截原生回答卡片。
+- `SuppressCleanupHook`：把命中的清理操作替换为 `DoNothingOperation`，避免注入卡片被宿主清掉。
+
+### 生命周期
+
+- `BreenoChatHook` 用 `Mutex + currentRenderSession` 维持单个活跃渲染会话。
+- takeover 模式或 session reset 时会清空当前 render session。
+- 终帧时会补做一次卡片刷新并恢复反馈区显示。
 
 ## XiaoAi 渲染管线
 
-**注入模型**：增量文本分片注入
-XiaoAi 注入点位于底层指令流层。框架根据累计文本计算每次的增量 `delta`，将其封装为宿主 `Instruction` 分片进行逐块投递，而非全量覆盖。
+### 注入模型
 
-**前置捕获点**
-- **用户输入**：通过 `CaptureInputHook` 捕获 Query。
-- **目标捕获**：在响应目标创建链路中，由 `CaptureResponseTargetHook` 捕获文字流分片注入的 `Target` 对象。LLM 调度会在捕获完成后再消费共享流。
+XiaoAi 走**Instruction 分片注入**：
 
-**原生阻断机制**
-在 `InjectedLLM` 模式下，全面阻断冲突链路：
-- **文字流**：`BlockNativeTextStreamHook` 屏蔽原生文本分片。
-- **TTS 流**：`BlockNativeTtsStreamHook` 屏蔽原生 TTS 指令流。
-- **播放层**：`BlockNativeTtsPlaybackHook` 屏蔽原生 TTS 播报。
+- `LLMController.stream(query)` 先被 `shareIn(scope, SharingStarted.Eagerly, replay = Int.MAX_VALUE)` 预热。
+- `CaptureResponseTargetHook` 捕获宿主响应目标后，`RenderTextStreamCardHook` 才开始向目标注入分片。
+- `RenderTextStreamCardHook` 根据累计文本计算本次 `delta`，再构造宿主 `Instruction` 注入。
 
-**生命周期与并发**
-- **并发控制**：`RenderTextStreamCardHook` 维护单个 `XiaoaiRenderSession` 处理分片。
-- **终帧处理**：计算并注入 `renderTextStreamCardFinalChunkText`，完成后清空 Render Session。
-- **会话清理**：`XiaoaiChatHook.onSessionReset` 清空当前 Dialog 状态与渲染 Session。
+### 原生阻断
 
-**源码参考**
-- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/subhooks/`
+当前源码里实际安装的是：
+
+- `BlockNativeInstructionByWhitelistHook`：在 `InjectedLLM` 模式下，除白名单外默认拦截原生 `Instruction`。
+- `BlockNativeTtsPlaybackHook`：拦截原生 TTS 播放调用。
+
+当前源码里**未见**单独的 `BlockNativeTextStreamHook` 或 `BlockNativeTtsStreamHook` 类；旧说法不再成立。
+
+### 生命周期
+
+- `RenderTextStreamCardHook` 内部用 `Mutex + currentSession` 维护单个 `XiaoaiRenderSession`。
+- 首帧为空时只记录日志，等待后续 delta。
+- 终帧会额外注入 `XiaoaiConfigProvider.RenderTextStreamCard.finalChunkText`，随后清空 session。
+- `XiaoaiChatHook.onSessionReset()` 会同时清掉响应目标与渲染 session。
+
+## 关键源码
+
+### `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/`
+
+- `BreenoChatHook.kt`
+- `BreenoConfigProvider.kt`
+- `BreenoFeedbackAssembler.kt`
+- `subhooks/BlockNativeCardHook.kt`
+- `subhooks/CaptureInputHook.kt`
+- `subhooks/ResetConversationSignalHook.kt`
+- `subhooks/SuppressCleanupHook.kt`
+
+### `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/`
+
+- `XiaoaiChatHook.kt`
+- `XiaoaiConfigProvider.kt`
+- `XiaoaiRenderSession.kt`
+- `subhooks/CaptureInputHook.kt`
+- `subhooks/CaptureResponseTargetHook.kt`
+- `subhooks/BlockNativeInstructionByWhitelistHook.kt`
+- `subhooks/BlockNativeTtsPlaybackHook.kt`
+- `subhooks/RenderTextStreamCardHook.kt`

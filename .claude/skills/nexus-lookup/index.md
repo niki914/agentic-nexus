@@ -44,20 +44,21 @@
 | 文件 | 层级 | 预期内容 |
 | --- | --- | --- |
 | `reference/source-map.md` | Stable | 关键类、目录、文件入口的相对路径地图 |
-| `reference/task-docs-registry.md` | In Progress | PRD、设计稿与源码落地状态的注册表 |
+| `reference/task-docs-registry.md` | Stable | 仓库根目录任务文档与参考文档的注册表，并给出源码核对入口 |
 
 ### repo root docs — 仓库根目录参考文档
 
 | 文件 | 层级 | 预期内容 |
 | --- | --- | --- |
 | `SESSION.md` | Reference | S3ss10n 库、LLM 与 MCP 网络请求相关记录 |
+| `apple-liquid-glass-philosophy.md` | Reference | Liquid Glass 视觉原则与组件设计参考 |
 
 ## 检索建议
 
 | 场景 | 推荐阅读顺序 |
 | --- | --- |
 | 工程结构、模块职责、关键入口 | `overview/project-overview.md` -> `reference/source-map.md` |
-| 现在项目做到哪、哪些能力还没正式落地 | `overview/current-status.md` -> `reference/task-docs-registry.md` |
+| 现在项目做到哪、哪些能力还没正式落地 | `overview/current-status.md` -> `reference/source-map.md` |
 | Xposed 启动、宿主匹配、Hook 安装顺序 | `architecture/boot-sequence.md` -> `reference/source-map.md` |
 | 会话状态、takeover、turnId、reset | `architecture/turn-state.md` |
 | Breeno 响应注入、卡片刷新、相关子 Hook | `domains/breeno/index.md` -> `architecture/render-pipeline.md` |
@@ -65,5 +66,5 @@
 | 配置来源、IPC、server、版本回退 | `architecture/config-resolution.md` -> `reference/source-map.md` |
 | LLMController、Prompt、Tool、MCP、事件流 | `architecture/llm-runtime.md` -> `overview/current-status.md` |
 | S3ss10n 库、LLM 及 MCP 网络请求 | `SESSION.md` |
-| UI、onboarding、settings tree、Liquid Glass、导航状态机 | `domains/ui-shell/index.md` -> `reference/task-docs-registry.md` |
-| 某个设计文档是否已经实现 | `reference/task-docs-registry.md` -> `overview/current-status.md` -> 相关源码路径 |
+| UI、onboarding、settings tree、Liquid Glass、导航状态机 | `domains/ui-shell/index.md` -> `reference/task-docs-registry.md` -> `reference/source-map.md` |
+| 某个仓库根目录文档还能否作为现状参考 | `reference/task-docs-registry.md` -> `overview/current-status.md` -> 相关源码路径 |

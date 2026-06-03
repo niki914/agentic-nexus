@@ -1,52 +1,80 @@
 # UI Shell Domain
 
-## 现状
+## 结构边界
 
-- UI Shell 当前拆成两个模块：页面层在 `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/`，基建层在 `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/`。
-- 当前实现使用 Compose 自定义栈，不引入 Jetpack Navigation；`NexusPage` 负责声明标题、按钮和 blur layer，栈行为由 `NavigationController` 统一管理。
-- 当前已落地 onboarding 主链路、Home/Settings 壳层、Builtin/MCP/CustomTools 列表页；部分 settings 分组和详情编辑仍是占位或空壳。
+UI Shell 当前明确拆成两层：
 
-## `app/src/main/java/com/niki914/nexus/agentic/app/`
+- 页面与业务状态在 `app/`
+- 导航、壳层、交互与通用组件在 `composebase/`
+
+当前实现使用自定义导航栈，不依赖 Jetpack Navigation。
+
+## 当前页面流
+
+### `app/src/main/java/com/niki914/nexus/agentic/app/`
 
 - `MainActivity.kt`：解析 `StartupAssistantUi`，调用 `AppLaunchDecision.resolve()`，再进入 `NexusApp`。
+- `EXT.kt`：根据 `OsUtils.getCurr()` 解析 `StartupAssistantUi`，并选择优先宿主包名。
 
-## `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/`
+### `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/`
 
-- `StartupAssistantUi.kt`：宿主分为 `Breeno`、`XiaoAi`、`ChatOnly`。
-- `AppLaunchDecision.kt`：`onboardingCompleted && endpointPresent` 时直接进入 `HomePage()`；否则进入 `StartupPage`。
-- `AppLaunchDecision.kt`：三个 `StartupAssistantUi` 分支当前都会把 `startupPage` 解析为 `StartupPage`；宿主分流不发生在初始页判定阶段。
-- `SettingsState.kt`：settings 声明 3 个 section、8 个分组：`ProviderModel`、`Network`、`Memory`、`BuiltinTools`、`ShellRules`、`Mcp`、`CustomTools`、`About`；默认可见分组只有 `BuiltinTools`、`Mcp`、`CustomTools`。
+- `NexusApp.kt`：持有导航栈与 page chrome。
+- `NexusPages.kt`：页面分发；`StartupPage` 点击继续后，`Breeno` / `XiaoAi` 进入 `ProviderPickPage`，`ChatOnly` 进入 `HomePage`。
+- `PageChrome.kt`：页面 chrome 注入点。
 
-## `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/nav/`
+### `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/nav/`
 
-- `NexusPage.kt`：当前页面模型包括 `StartupPage`、`ProviderPickPage`、`ConfigurePage`、`DonePage`、`HomePage`、`SettingsHomePage`、`SettingsDetailPage`、`McpServerDetailPage`、`CustomToolDetailPage`。
-- `NexusSettingsGroup.kt`：分组 title、summary 和 route suffix 在这里集中定义。
+- `NexusPage.kt`：定义 `StartupPage`、`ProviderPickPage`、`ConfigurePage`、`DonePage`、`HomePage`、`SettingsHomePage`、`SettingsDetailPage`、`McpServerDetailPage`、`CustomToolDetailPage`。
+- `NexusSettingsGroup.kt`：当前分组为 `ModelConfig`、`Memory`、`BuiltinTools`、`CustomShellTools`、`Mcp`、`ExecutionRules`、`About`。
 
-## `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/`
+### `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/`
 
-- `NexusApp.kt`：`NexusApp` 持有导航栈，页面内容通过 `LiquidScreen` + `LiquidScreenSwipeContent` 装配；顶栏是稳定 chrome，不跟随页面局部布局重建。
-- `NexusPages.kt`：`NexusPageContent` 负责页面分发。
-- `NexusPages.kt`：`StartupPage` 点击继续后，`Breeno` / `XiaoAi` 进入 `ProviderPickPage`，`ChatOnly` 直接进入 `HomePage()`。
-- `NexusPages.kt`：`DonePage` 仍复用 `ConfigurePageContent`，不是独立页面实现。
+- `StartupAssistantUi.kt`：当前宿主枚举为 `Breeno`、`XiaoAi`、`ChatOnly`。
+- `AppLaunchDecision.kt`：当前只根据 `onboardingCompleted` 决定 `StartupPage` 或 `HomePage`；不再检查 `endpointPresent`。
+- `SettingsState.kt`：所有 settings group 当前默认都可见；不再隐藏大部分分组。
 
-## `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/`
+### `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/`
 
-- `SettingsHomePageContent.kt`：按 `SettingsSectionUiState` 渲染 section。
-- `SettingsDetailPageContent.kt`：只有 `BuiltinTools`、`Mcp`、`CustomTools` 走真实内容分支；其他分组当前只会落到占位内容。
-- `BuiltinToolsSettingsContent.kt`：已支持 builtin tool 列表加载与开关写回。
-- `McpSettingsContent.kt`：已支持 MCP server 列表展示、启用开关和跳转详情页。
-- `CustomToolsSettingsContent.kt`：已支持 `custom_tools` 列表读取、启用开关写回和跳转详情页。
-- `McpServerDetailContent.kt`、`CustomToolDetailContent.kt`：当前仍是空内容壳层。
+- `StartupPageContent.kt`
+- `ConfigurePageContent.kt`
+- `DonePageContent.kt`：当前是独立完成页实现，不再复用配置页内容。
+- `SettingsHomePageContent.kt`
+- `SettingsDetailPageContent.kt`：`ModelConfig`、`BuiltinTools`、`CustomShellTools`、`Mcp` 走真实内容；`Memory`、`ExecutionRules`、`About` 仍走 placeholder。
+- `BuiltinToolsSettingsContent.kt`：builtin tool 列表与启用开关。
+- `CustomToolsSettingsContent.kt`：custom tool 列表与启用开关。
+- `mcp/McpSettingsContent.kt`：MCP server 列表与启用开关。
+- `CustomToolDetailContent.kt`：custom tool 详情编辑页。
+- `mcp/McpServerDetailContent.kt`：MCP server 详情编辑页。
 
-## `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/`
+## 基建层
 
-- `LiquidScreen.kt`、`LiquidScreenState.kt`、`LiquidScreenSwipeContent.kt`：负责 action bar、标题方向切换、blur layer、viewport avoidance 和页面转场。
-- `nav/NavigationController.kt`：提供 `push` / `pop` / `resetTo` 的自定义栈管理，不使用路由图。
-- `component/`：已集中 `LiquidButton`、`LiquidTextField`、`LiquidSecretTextField`、`LiquidToggle`、`SettingsGroupCard`、`SettingNavigationItem`、`SettingExpandableTextItem`、`SettingExpandableTextCard`、`SettingsToggleListItemCard`。
-- `interaction/`、`shape/G2Shapes.kt`：承载液态按压、拖拽变形、高亮、手势检测和形状定义。
+### `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/`
 
-## 边界
+- `LiquidScreen.kt`
+- `LiquidScreenState.kt`
+- `LiquidScreenSwipeContent.kt`
+- `LiquidViewportAvoidance.kt`
+- `nav/NavigationController.kt`
+- `interaction/`
+- `shape/G2Shapes.kt`
 
-- 不要把 UI Shell 理解成“只有页面”；当前源码已拆成 `app/` 内的页面层，以及 `composebase/` 内的导航层、壳层、交互层和组件层。
-- 不要把 `McpServerDetailPage`、`CustomToolDetailPage` 误判为已完成 CRUD；当前只落地了列表页入口、部分动作位和详情页路由，详情内容本身仍未实现。
-- 不要把宿主分流理解成初始页差异；当前三种宿主都会先进入 `StartupPage`，分流发生在继续按钮逻辑里。
+### `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/component/`
+
+- `LiquidButton.kt`
+- `LiquidTextField.kt`
+- `LiquidSecretTextField.kt`
+- `LiquidToggle.kt`
+- `SettingsGroupCard.kt`
+- `SettingNavigationItem.kt`
+- `SettingExpandableTextItem.kt`
+- `SettingExpandableTextCard.kt`
+- `SettingToggleItem.kt`
+- `SettingsToggleListItemCard.kt`
+- `SettingsDetailFormScaffold.kt`
+- `SettingsListPageContent.kt`
+
+## 当前边界
+
+- 不要把 UI Shell 理解成只有页面层；导航、page chrome、交互层和组件层已明确下沉到 `composebase/`。
+- 不要把 settings 全部视为已完成；当前只有 `ModelConfig`、`BuiltinTools`、`CustomShellTools`、`Mcp` 有真实内容，其余分组仍是占位。
+- 不要把宿主差异理解成初始页差异；当前差异发生在 `StartupPage` 的继续按钮逻辑，而不是 `AppLaunchDecision`。

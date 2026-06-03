@@ -1,73 +1,87 @@
 # Config Resolution
 
-本文件描述本地配置、远程配置、IPC 桥接、server 回退策略的完整读写链路。
+本文件描述当前源码里的配置来源、IPC 边界与落盘方式。
 
-## 配置读取优先级
+## 读取优先级
 
-配置读取严格遵循以下优先级（高到低）：
-1. 远程配置刷新后的持久化结果
-2. 已缓存或已落盘的本地持久化结果
+当前读取顺序是：
+
+1. 已刷新并落盘的 JSON
+2. 进程内缓存（仅 `WEB_SETTINGS` 有内存缓存）
 3. 空 JSON `{}`
 
 ## 主 App 刷新链路
 
-负责从本地 Python 服务获取最新配置并落盘。读写方向：`Server -> Main App -> IPC / Local Disk`。
+主 App 在 `MainActivity.onResume()` 中执行：
 
-1. **触发与系统判定**：`MainActivity.onResume()` 调用 `OsUtils.getCurr()` 获取当前系统类型。
-2. **宿主选择**：`resolveTargetHostPackage(osFamily)` 根据系统类型和已安装包列表选择目标宿主包名。
-3. **版本获取**：`getInstalledPackageVersionCode(targetPkg)` 读取目标宿主版本号。
-4. **远程拉取**：调用 `XService.refreshWebSettings(context, packageName, versionCode)` 发起 HTTP GET 请求，目标地址为 `http://127.0.0.1:8788/<packageName>/<versionCode>/config.json`。
-5. **分发写入**：拉取到 JSON 后，调用 `XIpcBridge.writeWebSettingsJson()`。
-6. **IPC 路由**：`XIpcBridge` 根据传入的 `Context` 判断所在进程，主 App 进程直接写入，宿主进程通过 `SettingsContentProvider.call()` 转发写入。
-7. **本地落盘**：最终由 `XIpcStoreRepository` 持 Store 级 `Mutex` 调用 `ConfigPersistence` 写入 JSON 文件。
+1. `OsUtils.getCurr()` 判断系统族。
+2. `resolveTargetHostPackage(osFamily)` 选择优先宿主包名。
+3. `getInstalledPackageVersionCode(targetPkg)` 读取宿主版本号。
+4. `XRepo.refreshWebSettings(context, packageName, versionCode)` 调到 `XService.refreshWebSettings()`。
+5. `XService` 访问 `http://127.0.0.1:8788/<packageName>/<versionCode>/config.json`。
+6. 成功后通过 `XIpcBridge.writeWebSettingsJson()` 写入 `WEB_SETTINGS`。
+7. 最终由 `XIpcStoreRepository` -> `ConfigPersistence` 原子写盘。
 
 ## 宿主进程读取链路
 
-供目标应用在 Hook 运行时动态读取参数与模型配置。读写方向：`Local Disk / IPC -> Host App -> Hook Logic`。
+宿主侧读取走 `XService`：
 
-1. **发起读取**：Hook 业务逻辑调用 `XService.getWebSettings(context)` 或 `getLocalSettings(context)`，底层由 `XIpcBridge.read*Json()` 获取配置文本。
-2. **文件流读取**：宿主进程读取 Store 时，`XIpcBridge` 通过 `ContentResolver.openInputStream(store.fileUri)` 打开 `SettingsContentProvider.openFile()` 暴露的只读文件流，不通过 `Bundle` 返回整段 JSON。
-3. **JSON 解析**：通过 `parseJsonObject()` 将读取到的字符串反序列化为 `JsonObject`。
-4. **领域对象暴露**：
-   - `WebSettings` 暴露通用的 `config` 属性。
-   - `LocalSettings` 暴露 LLM 特定配置，包含 endpoint、apiKey、model、prompt、proxy、takeoverKeywords、memoryPrompt、tools、MCP、commandTools 等字段。
-5. **云端路径寻址**：具体业务 Hook 通过 `BaseConfigProvider.getElement(path)` 使用点号路径读取深层动态字段。
+- `getWebSettings(context)` -> `XIpcBridge.readWebSettingsJson(context)`
+- `getLocalSettings(context)` -> `XIpcBridge.readLocalSettingsJson(context)`
 
-## 核心模块与持久化职责
+`XIpcBridge` 会根据 `XValues.getAppTypeOf(context)` 分流：
 
-- **`XIpcBridge`**：作为配置流转的核心路由，根据当前 `Context` 自动判断调用方处于主进程还是宿主进程，隐藏进程差异。
-- **`IpcContract.Store`**：定义 `WEB_SETTINGS` 与 `LOCAL_SETTINGS` 的读写 method、payload field 与文件流 URI。当前文件流 URI 为 `content://com.niki914.nexus.ipc.provider/stores/web_settings` 和 `content://com.niki914.nexus.ipc.provider/stores/local_settings`。
-- **`SettingsContentProvider`**：处理跨进程请求。`call()` 负责写入、mutate、通知等命令型操作；`openFile()` 负责按 Store URI 返回只读 `ParcelFileDescriptor`。两个入口共用 UID / package 鉴权。
-- **`XProviderDispatcher`**：Provider call 分发器。GET 类 method 返回 `store_uri` 句柄，PUT / MUTATE 类 method 返回 success-only，不返回 Store JSON payload。
-- **持久化层 (`XIpcStoreRepository` / `ConfigPersistence`)**：封装 Store 级并发控制与文件 I/O。`WEB_SETTINGS` 落盘到 `web_settings.json`，`LOCAL_SETTINGS` 落盘到 `local_settings.json`，写入使用 `AtomicFile`。
+- 主 App 进程：直接访问 `XIpcStoreRepository`
+- 宿主进程：通过 `ContentResolver.openInputStream(store.fileUri)` 读取 `SettingsContentProvider.openFile()` 暴露的只读文件流
 
-## Store 持久化与 IPC 边界
+当前 provider contract 里虽然保留了 `GET_WEB_SETTINGS` / `GET_LOCAL_SETTINGS`，但实际 host 读取主路径是**直接打开 Store 文件流**，不是把整段 JSON 放进 `Bundle` 返回。
 
-| Store | 文件名 | 宿主读取方式 | 写入方式 |
+## 持久化职责
+
+- `XIpcBridge`：屏蔽主进程与宿主进程的读写差异。
+- `SettingsContentProvider`：做 caller 校验，并提供 `call()` 与 `openFile()` 两个 IPC 入口。
+- `XProviderDispatcher`：处理 PUT / MUTATE / NOTIFICATION 这类命令式请求。
+- `XIpcStoreRepository`：按 Store 加锁，做读、写、局部 mutate。
+- `ConfigPersistence`：把 `WEB_SETTINGS` 和 `LOCAL_SETTINGS` 写入 `filesDir` 下的 JSON 文件，使用 `AtomicFile` 原子落盘。
+
+## Store 边界
+
+| Store | 文件名 | 读取方式 | 写入方式 |
 | --- | --- | --- | --- |
-| `WEB_SETTINGS` | `web_settings.json` | `ContentResolver.openInputStream(WEB_SETTINGS.fileUri)` | `XIpcBridge.writeWebSettingsJson()` -> provider call 或本地 repository |
-| `LOCAL_SETTINGS` | `local_settings.json` | `ContentResolver.openInputStream(LOCAL_SETTINGS.fileUri)` | `XIpcBridge.writeLocalSettingsJson()` / `mutateSetting()` -> provider call 或本地 repository |
+| `WEB_SETTINGS` | `web_settings.json` | 主进程直接读；宿主通过 `openInputStream(store.fileUri)` | `XIpcBridge.writeWebSettingsJson()` |
+| `LOCAL_SETTINGS` | `local_settings.json` | 主进程直接读；宿主通过 `openInputStream(store.fileUri)` | `XIpcBridge.writeLocalSettingsJson()` / `mutateSetting()` |
 
-- `WEB_SETTINGS` 在 `XIpcBridge` 中保留内存缓存，写入成功后更新缓存。
-- `LOCAL_SETTINGS` 不做长期缓存，读取走 uncached 路径，以便设置页和 MCP discovery cache 更新后尽快可见。
-- 旧的 LocalSettings SharedPreferences 持久化路径已经不再使用。
+- `WEB_SETTINGS` 在 `XIpcBridge` 有进程内缓存。
+- `LOCAL_SETTINGS` 当前不做长期缓存，读路径始终走 uncached。
+- 旧 SharedPreferences 路径不再是当前实现。
 
-## Server 端策略
+## Server 回退策略
 
-本地 Python 静态服务 (`server/server.py`) 负责下发配置：
+本地服务实现位于：
 
-- **路径匹配规则**：强制按包名作为一级目录结构，匹配规则为 `/<packageName>/<versionCode>/config.json`。不使用 alias。
-- **最近版本回退**：若请求对应的 `<versionCode>` 目录不存在，服务会在同包名 (`<packageName>`) 目录下寻找版本号“距离最近”的配置并返回。
-
-## 核心源码参考
-
-- `app/src/main/java/com/niki914/nexus/agentic/app/MainActivity.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/mod/XService.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/mod/HookLocalSettings.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/mod/SettingModels.kt`
-- `ipc/src/main/java/com/niki914/nexus/ipc/XIpcBridge.kt`
-- `ipc/src/main/java/com/niki914/nexus/ipc/XRes.kt`
-- `ipc/src/main/java/com/niki914/nexus/ipc/cp/SettingsContentProvider.kt`
-- `ipc/src/main/java/com/niki914/nexus/ipc/cp/XProviderDispatcher.kt`
-- `ipc/src/main/java/com/niki914/nexus/ipc/store/`
 - `server/server.py`
+
+当前规则：
+
+- 请求路径匹配 `/<packageName>/<versionCode>/config.json`
+- 精确命中时直接返回文件
+- 未命中时，在同包名目录下选择数值距离最近的版本目录回退
+- 不使用宿主 alias
+
+## 关键源码
+
+### `app/src/main/java/com/niki914/nexus/agentic/`
+
+- `app/MainActivity.kt`
+- `app/EXT.kt`
+- `mod/XService.kt`
+- `mod/HookLocalSettings.kt`
+
+### `ipc/src/main/java/com/niki914/nexus/ipc/`
+
+- `XIpcBridge.kt`
+- `XRes.kt`
+- `cp/SettingsContentProvider.kt`
+- `cp/XProviderDispatcher.kt`
+- `store/XIpcStoreRepository.kt`
+- `store/ConfigPersistence.kt`

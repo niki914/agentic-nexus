@@ -1,32 +1,31 @@
 # Current Status
 
-## 已落地能力
+## 已实现
 
-- **基础架构与路由**：Xposed 入口与多宿主分发支持 `ColorOS / Breeno` 与 `HyperOS / XiaoAi`，位于 `app/` 与 `h/` 模块。
-- **配置同步机制**：本地 Python 配置服务器按包名/版本号下发 WebSettings；`WEB_SETTINGS` 与 `LOCAL_SETTINGS` 均由 `XIpcStoreRepository` / `ConfigPersistence` 文件化持久化，宿主读取通过 `SettingsContentProvider.openFile()` 暴露的文件流完成，写入与 mutate 仍通过 provider call 分发。
-- **Breeno 注入实现**：基于卡片层拦截原生回答，使用单卡片全量刷新模式渲染 LLM 输出。
-- **XiaoAi 注入实现**：基于底层指令流与文字流拦截做增量文本分片注入，并拦截 TTS 流与原生播放。
-- **LLM Runtime**：`agent-runtime` 模块中的 `LLMController` 持有单例 `Session` 与 runtime snapshot，支持配置刷新、流式请求、会话重置和统一事件映射。
-- **HTTP MCP**：MCP server 配置解析、Session 注册、discovered tools cache 与 HTTP interceptor 已落地。
-- **Builtin Tool**：`builtin_tool_flags` 由 `XRepo.builtinTools` 基于 `BuiltinToolRegistry` 解析并持久化，`ToolManager` 会将启用项解析为 `LocalTool.Builtin`、写入 prompt lines，并通过 `SessionToolBinder`、`ToolCallDispatcher`、`BuiltinToolExecutor` 打通执行链路；默认注册 `create_custom_tool`、`notify`、`run_command`。
-- **CustomTool**：`custom_tools` 从 `LocalSettings` 解析到 `LocalTool.Custom`、local tool 注册、`ToolCallDispatcher` 与 `CustomToolExecutor` 执行链路已落地；可通过 builtin `create_custom_tool` 写回配置。
-- **UI Shell 与导航**：`app` 模块中的 `NexusApp`、`NexusPages`、`NexusPage` 与 `composebase` 模块中的 `NavigationController`、`LiquidScreen` 壳层已落地，页面覆盖 Startup、ProviderPick、Configure、Done、Home、SettingsHome、SettingsDetail。
-- **UI 基建组件**：`composebase` 模块中的 `LiquidScreenState`、`LiquidScreenSwipeContent`、`SettingsGroupCard`、`SettingNavigationItem`、`SettingToggleItem`、`SettingExpandableTextCard`、`SettingsToggleListItemCard`、`LiquidTextField`、`LiquidSecretTextField` 以及 liquid 交互层已落地，形成统一风格的 Compose 基建层。
-- **UI 设置页能力**：`BuiltinToolsSettingsContent`、`McpSettingsContent`、`CustomToolsSettingsContent` 均已接入真实配置读写，不再只有自定义工具设置页落地。
+- **双宿主注入主链**：`Entrance` 已按 `HostApp.fromPackageName()` 路由到 `BreenoChatHook` 或 `XiaoaiChatHook`，并通过 `RuntimeBootstrap.installIfNeeded()` 安装业务 Hook。
+- **配置同步与落盘**：主 App 在 `MainActivity.onResume()` 调用 `XRepo.refreshWebSettings()`；配置经 `XService` -> `XIpcBridge` -> `SettingsContentProvider` / `XIpcStoreRepository` 落盘到 `web_settings.json`、`local_settings.json`。
+- **Breeno 注入链**：已落地 query 捕获、原生回答卡片拦截、清理抑制、单卡片全量刷新渲染、会话 reset。
+- **XiaoAi 注入链**：已落地 query 捕获、响应目标捕获、Instruction 白名单拦截、TTS 播放拦截、增量文本分片注入、终帧补片与渲染 session 清理。
+- **LLM runtime**：`LLMController` 已落地 session 复用、配置 refresh、Prompt 组装、local tool 调度、MCP tools refresh、流式事件映射。
+- **Builtin / Custom / MCP**：三类工具的配置解析、启用状态、执行链与缓存写回均已接通。
+- **UI Shell 主链**：已落地 `StartupPage`、`ProviderPickPage`、`ConfigurePage`、`DonePage`、`HomePage`、`SettingsHomePage`、`SettingsDetailPage`，并接入 `LiquidScreen` 自定义导航壳层。
+- **设置页真实内容**：`ModelConfig`、`BuiltinTools`、`CustomShellTools`、`Mcp` 已接入真实读写；`McpServerDetailContent` 与 `CustomToolDetailContent` 已是可编辑详情页，不再是空壳路由。
 
-## 半落地能力
+## 部分实现
 
-- **UI 完整态**：Settings 分组模型已定义 ProviderModel、Network、Memory、BuiltinTools、ShellRules、Mcp、CustomTools、About，但默认可见分组目前只有 BuiltinTools、Mcp、CustomTools，未接入独立内容的分组仍是隐藏或占位状态。
-- **DonePage**：`DonePage` 仍复用 `ConfigurePageContent`，未形成独立页面实现。
+- **启动分流**：`AppLaunchDecision.resolve()` 目前只根据 `onboardingCompleted` 决定 `StartupPage` 或 `HomePage`；宿主差异分流发生在 `StartupPage` 的继续按钮逻辑里，不在初始页决策阶段。
+- **Settings 分组**：分组本身已全部可见，但 `Memory`、`ExecutionRules`、`About` 仍落到通用 placeholder；只有 `ModelConfig`、`BuiltinTools`、`CustomShellTools`、`Mcp` 有独立内容实现。
+- **命令执行安全**：`run_command` 与 custom tool 都有基础安全策略和超时控制，但当前仍是基础黑名单拦截，不是完整沙箱或审批体系。
 
-## 提案
+## 未见实现
 
-- **多语言支持**：为 Breeno 分支提供多语言注入支持。
+- **独立的宿主差异化启动页**：当前没有针对 `Breeno` / `XiaoAi` 的独立 startup 页面实现。
+- **Memory / ExecutionRules / About 详情内容**：当前源码里没有对应独立设置内容组件。
+- **stdio / 本地进程型 MCP transport**：当前 `McpServerDefinition` 只有 `Http`。
 
-## 已知技术债、待重构点、重要 TODO
+## 提案或技术债
 
-- `RenderTextStreamCardHook`：当前使用监视器锁且硬编码类名，需将类名上云并重构锁机制。
-- `BaseConfigProvider` / `BreenoConfigProvider`：需引入 Dataclass 描述 hook spot，并将下游读参方式重构为 `suspend`。
-- `AbstractAssistantHook`：需统一所有业务分支的 subhooks 命名、云 config 结构及生命周期方法名。
-- `LLMController`：需补充前置配置检查与快速失败逻辑。
-- `AppLaunchDecision`：当前已按 `onboardingCompleted` 与 `endpointPresent` 计算 `initialPage`，启动流与该决策保持一致；但 `StartupAssistantUi` 三个分支仍共用 `StartupPage`，尚未体现宿主差异化启动页。
+- **多语言注入支持**：Breeno 多语言支持仍停留在提案层。
+- **Breeno 云控建模**：`BreenoConfigProvider` 仍有 dataclass 化与 `suspend` 化重构 TODO。
+- **通用 Hook 抽象收敛**：`AbstractAssistantHook` 仍保留统一 subhook / config / 方法命名的 TODO。
+- **XiaoAi 等待目标就绪**：`XiaoaiChatHook.dispatchQueryToLLM()` 仍存在 `targetReady.await()` 的死等风险注释。
