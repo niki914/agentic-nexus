@@ -33,22 +33,14 @@ class BlockNativeInstructionByWhitelistHook : SubHook() {
         }
 
         val config = XiaoaiConfigProvider.BlockNativeInstructionWhitelist
-        val dialogId = resolveDialogId(
-            instruction = instruction,
-            target = param.thisObject,
-            instructionDialogIdGetter = config.instructionDialogIdGetter,
-            optionalHasValueMethod = config.optionalHasValueMethod,
-            optionalValueGetter = config.optionalValueGetter,
-            targetDialogIdGetter = config.targetDialogIdGetter,
-        )
         val fullName = instruction.call<String>(config.instructionFullNameGetter)
         val allowedFullNames = config.allowedInstructionFullNames
         if (fullName != null && fullName in allowedFullNames) {
-            xlog("[$name] 注入模式，白名单放行原生 Instruction: fullName=$fullName, dialogId=$dialogId")
+            xlog("[$name] 注入模式，白名单放行原生 Instruction: fullName=$fullName")
             return
         }
 
-        xlog("[$name] 注入模式，拦截非白名单原生 Instruction: fullName=$fullName, dialogId=$dialogId")
+        xlog("[$name] 注入模式，拦截非白名单原生 Instruction: fullName=$fullName")
         param.result = null
     }
 }

@@ -1,9 +1,7 @@
 package com.niki914.nexus.agentic.mod.feat.oppo
 
 import com.niki914.nexus.agentic.chat.ActiveTurnStore
-import com.niki914.nexus.agentic.chat.ConversationJournal
 import com.niki914.nexus.agentic.chat.ConversationTurnState
-import com.niki914.nexus.agentic.chat.HiddenTurnSummary
 import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.agentic.chat.collectAsFull
@@ -34,7 +32,6 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
 
     private data class BreenoRenderSession(
         val turnId: Long,
-        val roomId: String,
         val recordId: String,
         var bean: Any? = null
     )
@@ -50,11 +47,10 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         }
     }
 
-    override suspend fun onSessionReset(roomId: String) {
-        val previousRoomId = ActiveTurnStore.getCurrent()?.roomId.orEmpty()
-        super.onSessionReset(roomId)
+    override suspend fun onSessionReset() {
+        super.onSessionReset()
         LLMController.resetConversation()
-        clearRenderSessionByRoom(previousRoomId, roomId)
+        clearRenderSession()
     }
 
     override fun shouldTakeOver(query: String): Boolean {
@@ -63,22 +59,11 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         }
     }
 
-    override suspend fun onTakeoverTriggered(turnId: Long, roomId: String, query: String) {
-        ConversationJournal.appendHiddenSummary(
-            HiddenTurnSummary(
-                turnId = turnId,
-                roomId = roomId,
-                query = query,
-                summary = "This turn of user message has been handled by the system assistant：$query"
-            )
-        )
-    }
-
     override fun installSessionHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
         ResetConversationSignalHook(
-            onSessionReset = { roomId ->
+            onSessionReset = {
                 scope.launch {
-                    onSessionReset(roomId)
+                    onSessionReset()
                 }
             }
         ).onHook(lpparam)
@@ -121,7 +106,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     override suspend fun renderStreamCard(
         turnId: Long,
         roomId: String,
-        fullText: String,
+        chunk: String,
         isFirst: Boolean,
         isFinal: Boolean
     ) {
@@ -173,7 +158,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
 
         val mockBean = renderSession.bean ?: return
 
-        mockBean.call<Unit>(setContentMethod, fullText)
+        mockBean.call<Unit>(setContentMethod, chunk)
         mockBean.call<Unit>(setFinalMethod, isFinal)
         mockBean.call<Unit>(setFirstSliceMethod, isFirst)
         mockBeanMethodsUnit.filter { it.first == "setHasTextPrintAnimPlayed" }
@@ -202,7 +187,6 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         renderSessionMutex.withLock {
             currentRenderSession?.takeIf { it.turnId == turnId } ?: BreenoRenderSession(
                 turnId = turnId,
-                roomId = roomId,
                 recordId = "mock_record_${roomId}_${turnId}"
             ).also { currentRenderSession = it }
         }
@@ -215,12 +199,9 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         }
     }
 
-    private suspend fun clearRenderSessionByRoom(previousRoomId: String, roomId: String) {
+    private suspend fun clearRenderSession() {
         renderSessionMutex.withLock {
-            val session = currentRenderSession ?: return@withLock
-            if (session.roomId == previousRoomId || (roomId.isNotBlank() && session.roomId == roomId)) {
-                currentRenderSession = null
-            }
+            currentRenderSession = null
         }
     }
 }

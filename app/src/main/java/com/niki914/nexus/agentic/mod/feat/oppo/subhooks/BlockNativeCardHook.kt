@@ -47,22 +47,18 @@ class BlockNativeCardHook(
             return
         }
 
-        val roomId = bean
-            .call<String>(BreenoConfigProvider.CaptureResponseTarget.beanGetRoomIdMethod)
-            .orEmpty()
-
         when (ActiveTurnStore.getCurrent()?.mode) {
             TurnMode.NativeTakeover -> {
-                xlog("[$name] takeover 模式，放行原生回答卡片: roomId=$roomId")
+                xlog("[$name] takeover 模式，放行原生回答卡片")
             }
 
             TurnMode.InjectedLLM -> {
-                xlog("[$name] 注入模式，拦截原生回答卡片: roomId=$roomId")
+                xlog("[$name] 注入模式，拦截原生回答卡片")
                 param.result = null
             }
 
             null -> {
-                xlog("[$name] 无 active turn，保守放行原生回答卡片: roomId=$roomId")
+                xlog("[$name] 无 active turn，保守放行原生回答卡片")
             }
         }
     }

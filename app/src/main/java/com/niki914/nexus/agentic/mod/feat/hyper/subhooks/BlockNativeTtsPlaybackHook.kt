@@ -5,7 +5,6 @@ import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.agentic.mod.feat.HookTarget
 import com.niki914.nexus.agentic.mod.feat.SubHook
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiConfigProvider
-import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.XC_MethodHook
 
@@ -16,16 +15,14 @@ class BlockNativeTtsPlaybackHook : SubHook() {
         get() = XiaoaiConfigProvider.BlockNativeTtsPlayback.hookTarget
 
     override fun beforeHook(param: XC_MethodHook.MethodHookParam) {
-        val dialogIdGetter = XiaoaiConfigProvider.BlockNativeTtsPlayback.targetDialogIdGetter
-        val dialogId = param.thisObject.call<String>(dialogIdGetter)
         when (ActiveTurnStore.getCurrent()?.mode) {
             TurnMode.InjectedLLM -> {
-                xlog("[$name] 注入模式，拦截原生 TTS 播放: dialogId=$dialogId")
+                xlog("[$name] 注入模式，拦截原生 TTS 播放")
                 param.result = true
             }
 
             TurnMode.NativeTakeover -> {
-                xlog("[$name] takeover 模式，放行原生 TTS 播放: dialogId=$dialogId")
+                xlog("[$name] takeover 模式，放行原生 TTS 播放")
             }
 
             null -> Unit

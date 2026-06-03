@@ -1,7 +1,6 @@
 package com.niki914.nexus.agentic.mod.feat
 
 import com.niki914.nexus.agentic.chat.ActiveTurnStore
-import com.niki914.nexus.agentic.chat.ConversationJournal
 import com.niki914.nexus.agentic.chat.ConversationTurnState
 import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.TurnMode
@@ -25,7 +24,7 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
     ) {
         FloatScreenResetDetector(
             graceWindowMs = floatResumeGraceWindowMs,
-            onReset = { scope.launch { onSessionReset("") } }
+            onReset = { scope.launch { onSessionReset() } }
         ).install(
             lpparam = lpparam,
             detachTarget = detachTarget,
@@ -48,7 +47,6 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
 
     private suspend fun handleCapturedQuery(roomId: String, query: String) {
         val nextTurnState = ConversationTurnState().nextTurn(
-            roomId = roomId,
             query = query,
             mode = if (shouldTakeOver(query)) {
                 TurnMode.NativeTakeover
@@ -61,11 +59,6 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
 
         if (nextTurnState.mode == TurnMode.NativeTakeover) {
             LLMController.stopCurrentRound(keepCurrentTurn = false)
-            onTakeoverTriggered(
-                turnId = nextTurnState.turnId,
-                roomId = roomId,
-                query = query
-            )
             return
         }
 
@@ -80,14 +73,7 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
 
     protected open fun shouldTakeOver(query: String): Boolean = false
 
-    protected open suspend fun onTakeoverTriggered(turnId: Long, roomId: String, query: String) =
-        Unit
-
-    protected open suspend fun onSessionReset(roomId: String = "") {
-        val previousRoomId = ActiveTurnStore.getCurrent()?.roomId
-        if (!previousRoomId.isNullOrBlank()) {
-            ConversationJournal.clearRoom(previousRoomId)
-        }
+    protected open suspend fun onSessionReset() {
         ActiveTurnStore.clear()
     }
 

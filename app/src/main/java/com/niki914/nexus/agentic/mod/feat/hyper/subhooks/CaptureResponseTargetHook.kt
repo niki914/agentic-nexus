@@ -5,9 +5,9 @@ import com.niki914.nexus.agentic.mod.feat.SubHook
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiConfigProvider
 import de.robv.android.xposed.XC_MethodHook
 
-/** 在宿主创建响应目标时捕获目标对象及其 dialogId，通过回调传给 XiaoaiChatHook 供后续文字流分片注入。 */
+/** 在宿主创建响应目标时捕获目标对象，供后续文字流分片注入。 */
 class CaptureResponseTargetHook(
-    private val onCaptured: (target: Any, dialogId: String) -> Unit = { _, _ -> }
+    private val onCaptured: (target: Any) -> Unit = {}
 ) : SubHook() {
 
     override val hookTarget: HookTarget?
@@ -19,6 +19,6 @@ class CaptureResponseTargetHook(
         if (dialogId.isNullOrBlank()) {
             return
         }
-        onCaptured(param.thisObject, dialogId)
+        onCaptured(param.thisObject)
     }
 }

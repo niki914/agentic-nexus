@@ -33,7 +33,6 @@ class ActiveTurnStoreTest {
     @Test
     fun setCurrent_makesStateReadable() {
         val state = ConversationTurnState(
-            roomId = "room-a",
             turnId = 1L,
             lastQuery = "hello",
             mode = TurnMode.InjectedLLM,
@@ -46,10 +45,20 @@ class ActiveTurnStoreTest {
     }
 
     @Test
+    fun conversationTurnState_doesNotCarryRoomId() {
+        val state = ConversationTurnState(
+            turnId = 1L,
+            lastQuery = "hello",
+            mode = TurnMode.InjectedLLM,
+        )
+
+        assertFalse(state.toString().contains("roomId"))
+    }
+
+    @Test
     fun clear_removesSingleActiveTurn() {
         ActiveTurnStore.setCurrent(
             ConversationTurnState(
-                roomId = "room-a",
                 turnId = 1L,
                 lastQuery = "hello",
                 mode = TurnMode.InjectedLLM,
@@ -66,7 +75,6 @@ class ActiveTurnStoreTest {
     fun isCurrentInjected_returnsTrueOnlyForInjectedMode() {
         ActiveTurnStore.setCurrent(
             ConversationTurnState(
-                roomId = "room-a",
                 turnId = 1L,
                 lastQuery = "hello",
                 mode = TurnMode.InjectedLLM,
@@ -77,7 +85,6 @@ class ActiveTurnStoreTest {
 
         ActiveTurnStore.setCurrent(
             ConversationTurnState(
-                roomId = "room-a",
                 turnId = 2L,
                 lastQuery = "takeover",
                 mode = TurnMode.NativeTakeover,
@@ -91,7 +98,6 @@ class ActiveTurnStoreTest {
     fun isActiveInjection_trueOnlyWhenTurnIdMatchesAndModeInjected() {
         ActiveTurnStore.setCurrent(
             ConversationTurnState(
-                roomId = "room-a",
                 turnId = 42L,
                 lastQuery = "hello",
                 mode = TurnMode.InjectedLLM,
@@ -103,7 +109,6 @@ class ActiveTurnStoreTest {
 
         ActiveTurnStore.setCurrent(
             ConversationTurnState(
-                roomId = "room-a",
                 turnId = 42L,
                 lastQuery = "takeover",
                 mode = TurnMode.NativeTakeover,
@@ -121,13 +126,11 @@ class ActiveTurnStoreTest {
     @Test
     fun setCurrent_overwritesPreviousState() {
         val first = ConversationTurnState(
-            roomId = "room-a",
             turnId = 1L,
             lastQuery = "first",
             mode = TurnMode.InjectedLLM,
         )
         val second = ConversationTurnState(
-            roomId = "room-b",
             turnId = 2L,
             lastQuery = "second",
             mode = TurnMode.NativeTakeover,
@@ -140,9 +143,8 @@ class ActiveTurnStoreTest {
     }
 
     @Test
-    fun setCurrent_acceptsBlankRoomAndBlankQuery() {
+    fun setCurrent_acceptsBlankQuery() {
         val state = ConversationTurnState(
-            roomId = "",
             turnId = 1L,
             lastQuery = "",
             mode = TurnMode.InjectedLLM,
@@ -151,7 +153,6 @@ class ActiveTurnStoreTest {
         ActiveTurnStore.setCurrent(state)
 
         assertEquals(state, ActiveTurnStore.getCurrent())
-        assertEquals("", ActiveTurnStore.getCurrent()?.roomId)
         assertEquals("", ActiveTurnStore.getCurrent()?.lastQuery)
     }
 
@@ -163,7 +164,6 @@ class ActiveTurnStoreTest {
                 repeat(100) { index ->
                     ActiveTurnStore.setCurrent(
                         ConversationTurnState(
-                            roomId = "room-$worker",
                             turnId = index.toLong(),
                             lastQuery = "query-$index",
                             mode = if (index % 2 == 0) {
