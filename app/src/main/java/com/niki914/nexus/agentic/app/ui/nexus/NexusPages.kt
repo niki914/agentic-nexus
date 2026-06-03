@@ -53,6 +53,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.StartupPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TextTitle
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 import com.niki914.nexus.agentic.repo.XRepo
+import androidx.compose.material.icons.Icons
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
 
@@ -262,7 +263,7 @@ private fun settingsDetailRightAction(
 ): TopBarActionSpec? {
     return when (group) {
         NexusSettingsGroup.Mcp -> TopBarActionSpec(
-            icon = androidx.compose.material.icons.Icons.Default.Add,
+            icon = Icons.Default.Add,
             onClick = {
                 onPush(
                     McpServerDetailPage(
@@ -275,7 +276,7 @@ private fun settingsDetailRightAction(
         )
 
         NexusSettingsGroup.CustomShellTools -> TopBarActionSpec(
-            icon = androidx.compose.material.icons.Icons.Default.Add,
+            icon = Icons.Default.Add,
             onClick = {
                 onPush(
                     CustomToolDetailPage(

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.cb.ComposeMVIViewModel
+import com.niki914.nexus.h.util.xTry
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
@@ -426,12 +427,12 @@ private fun headersToInput(headers: Map<String, String>): String {
 }
 
 private fun isValidUrl(value: String): Boolean {
-    return runCatching {
+    return xTry("McpSettingsState.isValidUrl") {
         val uri = URI(value)
         val scheme = uri.scheme?.lowercase()
         val isHttpScheme = scheme == "http" || scheme == "https"
         isHttpScheme && !uri.host.isNullOrBlank()
-    }.getOrDefault(false)
+    } ?: false
 }
 
 private fun firstInvalidFieldEffect(

@@ -1,5 +1,6 @@
 package com.niki914.nexus.ipc.store
 
+import com.niki914.nexus.h.util.xTry
 import org.json.JSONArray
 import org.json.JSONObject
 import org.json.JSONTokener
@@ -31,18 +32,18 @@ internal object IpcJsonMutator {
     }
 
     private fun parseJsonObject(json: String): JSONObject {
-        return runCatching {
+        return xTry("IpcJsonMutator.parseJsonObject") {
             if (json.isBlank()) JSONObject() else JSONObject(json)
-        }.getOrElse { JSONObject() }
+        } ?: JSONObject()
     }
 
     private fun parseValueJson(valueJson: String): Any? {
-        return runCatching {
+        return xTry("IpcJsonMutator.parseValueJson") {
             val tokener = JSONTokener(valueJson)
             val value = tokener.nextValue()
             check(tokener.nextClean() == 0.toChar())
             value
-        }.getOrElse { valueJson }
+        }
     }
 
     private fun toJsonValue(value: Any?): Any {
