@@ -326,7 +326,7 @@ private fun ProviderButtonTokens.toProviderButtonColors(): ProviderButtonColors 
     )
 }
 
-internal object ConfigureViewModelFactory : ViewModelProvider.Factory { // TODO 删除
+internal object ConfigureViewModelFactory : ViewModelProvider.Factory { // TODO P2 删除
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         require(modelClass == ConfigureViewModel::class.java)

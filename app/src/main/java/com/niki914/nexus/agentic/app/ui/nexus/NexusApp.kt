@@ -125,7 +125,7 @@ fun NexusApp(
         } else {
             lastRootBackPressedAt = now
             Toast.makeText(context.applicationContext, rootBackToHomeHint, Toast.LENGTH_SHORT)
-                .show() // TODO rm
+                .show()
         }
     }
 

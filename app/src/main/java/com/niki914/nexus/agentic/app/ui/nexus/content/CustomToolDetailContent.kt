@@ -236,7 +236,7 @@ private fun CustomToolIdentitySettingsBlock(
 ) {
     SettingsGroupCard {
         SettingExpandableTextItem(
-            title = stringResource(R.string.custom_tool_field_name), // TODO 工具备注（可选）
+            title = stringResource(R.string.custom_tool_field_name),
             value = uiState.formState.name,
             onValueChange = onNameChange,
             placeholder = stringResource(R.string.custom_tool_field_name_hint),

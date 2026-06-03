@@ -85,7 +85,7 @@ sealed interface ConfigureEffect {
     data object FocusProxy : ConfigureEffect
 }
 
-class ConfigureViewModel internal constructor( // TODO 内联改无参，看是否有对应 factory，也删除
+class ConfigureViewModel internal constructor( // TODO P2 内联改无参，看是否有对应 factory，也删除
     private val loadLlmConfig: suspend () -> LlmConfig = { XRepo.llm() },
     private val saveLlmAccess: suspend (
         provider: String,

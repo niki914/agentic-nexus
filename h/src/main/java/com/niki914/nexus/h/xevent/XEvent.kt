@@ -113,6 +113,6 @@ object XEvent {
 
         val jsonString = Json.encodeToString(envelope)
 
-        xtlog("XEvent", jsonString) // TODO: py server --> db --> script check
+        xtlog("XEvent", jsonString) // TODO P1 py server --> db --> script check
     }
 }
