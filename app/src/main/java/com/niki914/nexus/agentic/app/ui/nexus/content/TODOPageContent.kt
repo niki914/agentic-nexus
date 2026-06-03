@@ -39,6 +39,7 @@ fun TODOPageContent(
             Text(
                 text = stringResource(R.string.ui_todo_page_title),
                 style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
             )
