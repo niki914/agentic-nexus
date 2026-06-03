@@ -14,8 +14,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.nav.NavigationEntry
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
@@ -118,7 +116,6 @@ fun NexusPageContent(
         is ConfigurePage -> {
             val viewModel = pageViewModel<ConfigureViewModel>(
                 key = page.providerId,
-                factory = ConfigureViewModelFactory,
             )
             val uiState by viewModel.uiStateFlow.collectAsState()
             val colors = providerButtonColors(uiState.providerSpec)
@@ -324,12 +321,4 @@ private fun ProviderButtonTokens.toProviderButtonColors(): ProviderButtonColors 
         lightContentColor = lightContentColorRes?.let { id -> colorResource(id) }
             ?: colorScheme.onPrimary,
     )
-}
-
-internal object ConfigureViewModelFactory : ViewModelProvider.Factory { // TODO P2 删除
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        require(modelClass == ConfigureViewModel::class.java)
-        return ConfigureViewModel() as T
-    }
 }

@@ -5,6 +5,7 @@ import com.niki914.nexus.agentic.chat.ToolCallStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -30,7 +31,7 @@ class HomeChatViewModelTest {
     @Test
     fun send_collectsTextAndToolCallsInStreamOrder() = runTest {
         val viewModel = HomeChatViewModel(
-            streamProvider = { query ->
+            runtime = FakeHomeChatRuntime(stream = { query ->
                 assertEquals("hello", query)
                 flowOf(
                     LlmStreamEvent.RoundStarted,
@@ -54,8 +55,7 @@ class HomeChatViewModelTest {
                     ),
                     LlmStreamEvent.Completed(fullText = "hello back"),
                 )
-            },
-            resetConversation = {},
+            }),
         )
 
         viewModel.sendIntent(HomeChatIntent.InputChanged("  hello  "))
@@ -95,8 +95,10 @@ class HomeChatViewModelTest {
     fun clearConversation_clearsUiStateAndResetsRuntime() = runTest {
         var resetCalled = false
         val viewModel = HomeChatViewModel(
-            streamProvider = { flowOf(LlmStreamEvent.Completed("done")) },
-            resetConversation = { resetCalled = true },
+            runtime = FakeHomeChatRuntime(
+                stream = { flowOf(LlmStreamEvent.Completed("done")) },
+                resetConversation = { resetCalled = true },
+            ),
         )
         viewModel.sendIntent(HomeChatIntent.InputChanged("hello"))
         viewModel.sendIntent(HomeChatIntent.Send)
@@ -115,12 +117,11 @@ class HomeChatViewModelTest {
     @Test
     fun send_doesNotCreateVisibleFallbackWhenUnexpectedErrorHasNoMessage() = runTest {
         val viewModel = HomeChatViewModel(
-            streamProvider = {
+            runtime = FakeHomeChatRuntime(stream = {
                 flow {
                     throw RuntimeException()
                 }
-            },
-            resetConversation = {},
+            }),
         )
 
         viewModel.sendIntent(HomeChatIntent.InputChanged("hello"))
@@ -136,10 +137,9 @@ class HomeChatViewModelTest {
     @Test
     fun send_appendsErrorBlockWhenStreamReportsError() = runTest {
         val viewModel = HomeChatViewModel(
-            streamProvider = {
+            runtime = FakeHomeChatRuntime(stream = {
                 flowOf(LlmStreamEvent.Error("network failed"))
-            },
-            resetConversation = {},
+            }),
         )
 
         viewModel.sendIntent(HomeChatIntent.InputChanged("hello"))
@@ -158,13 +158,12 @@ class HomeChatViewModelTest {
     @Test
     fun send_ignoresSecondSendWhileGenerating() = runTest {
         val viewModel = HomeChatViewModel(
-            streamProvider = {
+            runtime = FakeHomeChatRuntime(stream = {
                 flow {
                     emit(LlmStreamEvent.RoundStarted)
                     awaitCancellation()
                 }
-            },
-            resetConversation = {},
+            }),
         )
 
         viewModel.sendIntent(HomeChatIntent.InputChanged("first"))
@@ -188,15 +187,14 @@ class HomeChatViewModelTest {
     fun stopGenerating_keepsPartialAssistantMessageAndAllowsNextSend() = runTest {
         var sentQueries = emptyList<String>()
         val viewModel = HomeChatViewModel(
-            streamProvider = { query ->
+            runtime = FakeHomeChatRuntime(stream = { query ->
                 sentQueries = sentQueries + query
                 flow {
                     emit(LlmStreamEvent.RoundStarted)
                     emit(LlmStreamEvent.TextDelta(delta = "partial", fullText = "partial"))
                     awaitCancellation()
                 }
-            },
-            resetConversation = {},
+            }),
         )
 
         viewModel.sendIntent(HomeChatIntent.InputChanged("first"))
@@ -224,6 +222,14 @@ class HomeChatViewModelTest {
         viewModel.sendIntent(HomeChatIntent.ClearConversation)
         advanceUntilIdle()
     }
+}
+
+private class FakeHomeChatRuntime(
+    private val stream: (String) -> Flow<LlmStreamEvent>,
+    private val resetConversation: suspend () -> Unit = {},
+) : HomeChatRuntime {
+    override fun stream(query: String): Flow<LlmStreamEvent> = stream.invoke(query)
+    override suspend fun resetConversation() = resetConversation.invoke()
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

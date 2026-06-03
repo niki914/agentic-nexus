@@ -50,9 +50,18 @@ sealed interface HomeChatIntent {
     data object ClearConversation : HomeChatIntent
 }
 
+internal interface HomeChatRuntime {
+    fun stream(query: String): Flow<LlmStreamEvent>
+    suspend fun resetConversation()
+}
+
+private object LlmHomeChatRuntime : HomeChatRuntime {
+    override fun stream(query: String): Flow<LlmStreamEvent> = LLMController.stream(query)
+    override suspend fun resetConversation() = LLMController.resetConversation()
+}
+
 class HomeChatViewModel internal constructor(
-    private val streamProvider: (String) -> Flow<LlmStreamEvent> = LLMController::stream,
-    private val resetConversation: suspend () -> Unit = LLMController::resetConversation, // TODO P2 直接内联，改为无参，看是否有对应 factory，也删除
+    private val runtime: HomeChatRuntime = LlmHomeChatRuntime,
 ) : ComposeMVIViewModel<HomeChatIntent, HomeChatUiState, Nothing>() {
     private var nextTurnId = 0L
     private var streamJob: Job? = null
@@ -140,7 +149,7 @@ class HomeChatViewModel internal constructor(
         updateState { HomeChatUiState() }
         viewModelScope.launch {
             try {
-                resetConversation()
+                runtime.resetConversation()
                 xlog("HomeChatViewModel.ClearConversation resetDone")
             } catch (throwable: Throwable) {
                 if (throwable is CancellationException) throw throwable
@@ -152,7 +161,7 @@ class HomeChatViewModel internal constructor(
     }
 
     private suspend fun collectLlmStream(turnId: Long, query: String) {
-        streamProvider(query).collect { event ->
+        runtime.stream(query).collect { event ->
             val eventName = eventName(event)
             val eventCount = currentState.streamEventCount + 1
             xlog("HomeChatViewModel.StreamEvent turnId=$turnId type=$eventName count=$eventCount")

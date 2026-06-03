@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
-import com.niki914.nexus.agentic.app.ui.nexus.ConfigureViewModelFactory
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
 import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
 import com.niki914.nexus.agentic.app.ui.nexus.content.mcp.McpSettingsContent
@@ -120,7 +119,6 @@ private fun ModelConfigSettingsContent(
 ) {
     val viewModel = pageViewModel<ConfigureViewModel>(
         key = "settings-configure",
-        factory = ConfigureViewModelFactory,
     )
     val uiState by viewModel.uiStateFlow.collectAsState()
     val latestUiState by rememberUpdatedState(uiState)
