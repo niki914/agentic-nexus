@@ -5,6 +5,8 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.CreateCustomToolBuiltin
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.MemorizeBuiltin
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.ReadCustomToolBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.RunCommandBuildin_WIP_SAFE
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.serialization.json.Json
@@ -61,12 +63,25 @@ class BuiltinToolTest {
         val registry = BuiltinToolRegistry.default()
 
         assertEquals(
-            listOf("create_custom_tool", "notify", "run_command"),
+            listOf("create_custom_tool", "memorize", "notify", "read_custom_tool", "run_command"),
             registry.all().map { it.name }.sorted()
         )
         assertEquals("create_custom_tool", registry.find("create_custom_tool")?.name)
+        assertEquals("memorize", registry.find("memorize")?.name)
         assertEquals("notify", registry.find("notify")?.name)
+        assertEquals("read_custom_tool", registry.find("read_custom_tool")?.name)
         assertEquals("run_command", registry.find("run_command")?.name)
+    }
+
+    @Test
+    fun memorizeAndReadCustomToolDescription_matchesConfigureDescription() {
+        listOf(MemorizeBuiltin(), ReadCustomToolBuiltin()).forEach { tool ->
+            val config = LocalToolConfig()
+
+            tool.configure(config)
+
+            assertEquals(tool.description, config.description)
+        }
     }
 
     @Test

@@ -26,11 +26,14 @@ internal fun installRuntimeSettingsGatewayForTest(
 internal class FakeRuntimeSettingsGateway(
     customTools: List<RuntimeCustomTool> = emptyList(),
     builtinTools: List<RuntimeBuiltinToolSetting> = defaultBuiltinToolSettings(),
+    memories: List<String> = emptyList(),
     private val mcpServers: List<RuntimeMcpServer> = emptyList(),
 ) : RuntimeSettingsGateway {
     var customTools: MutableList<RuntimeCustomTool> = customTools.toMutableList()
         private set
     var builtinTools: MutableList<RuntimeBuiltinToolSetting> = builtinTools.toMutableList()
+        private set
+    var memories: MutableList<String> = memories.toMutableList()
         private set
     var writeCount: Int = 0
         private set
@@ -60,6 +63,15 @@ internal class FakeRuntimeSettingsGateway(
     override suspend fun clearMcpCacheByServerNames(names: Set<String>) = Unit
 
     override suspend fun fingerprintMcpServers(): String = ""
+
+    override suspend fun addMemory(value: String) {
+        val normalized = value.trim()
+        if (normalized.isBlank()) {
+            return
+        }
+        recordWrite()
+        memories.add(normalized)
+    }
 
     override suspend fun listCustomTools(): List<RuntimeCustomTool> = customTools.toList()
 
@@ -139,7 +151,9 @@ private object FakeRuntimeHostGateway : RuntimeHostGateway {
 private fun defaultBuiltinToolSettings(): List<RuntimeBuiltinToolSetting> {
     return listOf(
         RuntimeBuiltinToolSetting("create_custom_tool", "Create custom tools.", enabled = true),
+        RuntimeBuiltinToolSetting("memorize", "Add a memory item.", enabled = true),
         RuntimeBuiltinToolSetting("notify", "Post host notifications.", enabled = true),
+        RuntimeBuiltinToolSetting("read_custom_tool", "Read custom tool implementations.", enabled = true),
         RuntimeBuiltinToolSetting("run_command", "Run shell commands.", enabled = true),
     )
 }

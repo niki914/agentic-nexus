@@ -33,6 +33,10 @@ class XRepoRuntimeGateway(
 
     override suspend fun fingerprintMcpServers(): String = repo.mcp.fingerprint()
 
+    override suspend fun addMemory(value: String) {
+        repo.memory.add(value)
+    }
+
     override suspend fun listCustomTools(): List<RuntimeCustomTool> = repo.customTools.list()
 
     override suspend fun saveCustomTool(

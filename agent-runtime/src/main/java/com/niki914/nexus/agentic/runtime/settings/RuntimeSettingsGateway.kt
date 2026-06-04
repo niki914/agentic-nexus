@@ -24,6 +24,8 @@ interface RuntimeSettingsGateway {
 
     suspend fun fingerprintMcpServers(): String
 
+    suspend fun addMemory(value: String)
+
     suspend fun listCustomTools(): List<RuntimeCustomTool>
 
     suspend fun saveCustomTool(

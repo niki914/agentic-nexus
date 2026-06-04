@@ -1,7 +1,9 @@
 package com.niki914.nexus.agentic.chat.agentic.buildin
 
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.CreateCustomToolBuiltin
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.MemorizeBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.NotifyBuiltin
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.ReadCustomToolBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.RunCommandBuildin_WIP_SAFE
 
 class BuiltinToolRegistry(
@@ -17,7 +19,9 @@ class BuiltinToolRegistry(
         fun default(): BuiltinToolRegistry = BuiltinToolRegistry(
             listOf(
                 CreateCustomToolBuiltin(),
+                MemorizeBuiltin(),
                 NotifyBuiltin(),
+                ReadCustomToolBuiltin(),
                 RunCommandBuildin_WIP_SAFE(),
             )
         )
