@@ -73,6 +73,9 @@ class LocalSettings(props: JsonObject = JsonObject(emptyMap())) : XSettings(prop
     val memoryPrompt: String
         get() = getString("memory_prompt")
 
+    val memories: List<String>
+        get() = getStringList("memories")
+
     val builtinToolFlags: JsonObject?
         get() = getObject("builtin_tool_flags")
 

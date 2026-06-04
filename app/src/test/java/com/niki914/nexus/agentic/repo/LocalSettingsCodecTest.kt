@@ -177,6 +177,60 @@ class LocalSettingsCodecTest {
         assertEquals(1, updated.customTools!!.size)
     }
 
+    @Test
+    fun parseLlm_readsMemoriesArray() {
+        val settings = localSettings(
+            """
+            {
+              "memory_prompt": "legacy memory",
+              "memories": [" A ", " ", "B"]
+            }
+            """.trimIndent()
+        )
+
+        val config = LocalSettingsCodec.parseLlm(settings)
+
+        assertEquals(listOf("A", "B"), config.memories)
+        assertEquals("legacy memory", config.memoryPrompt)
+    }
+
+    @Test
+    fun withMemories_writesTrimmedArray() {
+        val updated = LocalSettingsCodec.withMemories(
+            settings = localSettings("""{"provider":"openai"}"""),
+            memories = listOf(" A ", " ", "B"),
+        )
+
+        assertEquals("openai", updated.provider)
+        assertEquals(
+            listOf("A", "B"),
+            updated.props["memories"]!!.jsonArray.map { it.jsonPrimitive.content },
+        )
+    }
+
+    @Test
+    fun withLlm_preservesMemoryPromptAndWritesMemories() {
+        val settings = localSettings(
+            """
+            {
+              "provider": "openai",
+              "memory_prompt": "legacy memory"
+            }
+            """.trimIndent()
+        )
+        val config = LocalSettingsCodec.parseLlm(settings).copy(
+            memories = listOf(" A ", "", "B "),
+        )
+
+        val updated = LocalSettingsCodec.withLlm(settings, config)
+
+        assertEquals("legacy memory", updated.memoryPrompt)
+        assertEquals(
+            listOf("A", "B"),
+            updated.props["memories"]!!.jsonArray.map { it.jsonPrimitive.content },
+        )
+    }
+
     private fun localSettings(json: String): LocalSettings {
         return LocalSettings(Json.parseToJsonElement(json).jsonObject)
     }

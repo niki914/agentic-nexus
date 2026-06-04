@@ -19,6 +19,7 @@ object XRepo {
     val mcp: McpApi = McpApi(this)
     val customTools: CustomToolApi = CustomToolApi(this)
     val builtinTools: BuiltinToolApi = BuiltinToolApi(this)
+    val memory: MemoryApi = MemoryApi(this)
 
     private val writeMutex = Mutex()
     private var appContext: Context? = null
@@ -55,6 +56,16 @@ object XRepo {
             val context = context()
             val latest = store.read(context)
             val updated = transform(latest)
+            store.write(context, updated)
+            updated
+        }
+    }
+
+    internal suspend fun updateLocalOrNull(transform: (LocalSettings) -> LocalSettings?): LocalSettings? {
+        return writeMutex.withLock {
+            val context = context()
+            val latest = store.read(context)
+            val updated = transform(latest) ?: return@withLock null
             store.write(context, updated)
             updated
         }
@@ -118,6 +129,66 @@ object XRepo {
     }
 
     private const val ONBOARDING_COMPLETED_KEY = "onboarding_completed"
+}
+
+class MemoryApi internal constructor(
+    private val repo: XRepo,
+) {
+    suspend fun list(): List<String> {
+        return LocalSettingsCodec.parseMemories(repo.readLocal())
+    }
+
+    suspend fun replaceAll(memories: List<String>) {
+        repo.updateLocal { settings ->
+            LocalSettingsCodec.withMemories(settings, normalizeMemories(memories))
+        }
+    }
+
+    suspend fun add(value: String) {
+        val normalizedValue = value.trim()
+        if (normalizedValue.isBlank()) {
+            return
+        }
+        repo.updateLocal { settings ->
+            val updated = LocalSettingsCodec.parseMemories(settings) + normalizedValue
+            LocalSettingsCodec.withMemories(settings, updated)
+        }
+    }
+
+    suspend fun update(index: Int, value: String) {
+        val normalizedValue = value.trim()
+        repo.updateLocalOrNull { settings ->
+            val currentMemories = LocalSettingsCodec.parseMemories(settings)
+            if (index !in currentMemories.indices) {
+                return@updateLocalOrNull null
+            }
+            val updated = if (normalizedValue.isBlank()) {
+                currentMemories.filterIndexed { itemIndex, _ -> itemIndex != index }
+            } else {
+                currentMemories.mapIndexed { itemIndex, item ->
+                    if (itemIndex == index) normalizedValue else item
+                }
+            }
+            LocalSettingsCodec.withMemories(settings, updated)
+        }
+    }
+
+    suspend fun delete(index: Int) {
+        repo.updateLocalOrNull { settings ->
+            val currentMemories = LocalSettingsCodec.parseMemories(settings)
+            if (index !in currentMemories.indices) {
+                return@updateLocalOrNull null
+            }
+            LocalSettingsCodec.withMemories(
+                settings = settings,
+                memories = currentMemories.filterIndexed { itemIndex, _ -> itemIndex != index },
+            )
+        }
+    }
+
+    private fun normalizeMemories(memories: List<String>): List<String> {
+        return memories.map(String::trim).filter(String::isNotBlank)
+    }
 }
 
 class McpApi internal constructor(

@@ -117,6 +117,30 @@ class XRepoTest {
     }
 
     @Test
+    fun memoryApi_replacesAndMutatesMemories() = runTest {
+        val store = FakeLocalSettingsStore(LocalSettings())
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        XRepo.memory.replaceAll(listOf(" A ", " ", "B"))
+        XRepo.memory.add(" C ")
+        XRepo.memory.update(1, " B2 ")
+        XRepo.memory.delete(0)
+        val writeCountBeforeOutOfBoundsUpdate = store.writeCount
+        XRepo.memory.update(99, "ignored")
+        assertEquals(writeCountBeforeOutOfBoundsUpdate, store.writeCount)
+        val writeCountBeforeOutOfBoundsDelete = store.writeCount
+        XRepo.memory.delete(-1)
+        assertEquals(writeCountBeforeOutOfBoundsDelete, store.writeCount)
+        val writeCountBeforeBlankAdd = store.writeCount
+        XRepo.memory.add(" ")
+
+        assertEquals(writeCountBeforeBlankAdd, store.writeCount)
+        assertEquals(listOf("B2", "C"), XRepo.memory.list())
+        assertEquals(listOf("B2", "C"), LocalSettingsCodec.parseMemories(store.settings))
+    }
+
+    @Test
     fun mcpSave_replacesByNameAndPreservesOtherServers() = runTest {
         val store = FakeLocalSettingsStore(
             LocalSettingsCodec.withMcpServers(

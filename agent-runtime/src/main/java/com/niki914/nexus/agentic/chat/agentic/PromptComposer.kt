@@ -10,9 +10,15 @@ data class PromptSection(
     val content: String,
 )
 
+data class PromptXMLSection(
+    val title: String,
+    val tag: String,
+    val items: List<String>,
+)
+
 data class PromptComposerInput(
     val baseSystemPrompt: String,
-    val memorySections: List<String> = emptyList(),
+    val memoryItems: List<String> = emptyList(),
     val toolSections: List<String> = emptyList(),
     val runtimeSections: List<String> = emptyList(),
 )
@@ -23,24 +29,26 @@ class PromptComposer {
         val sections = buildList {
             add(
                 PromptSection(
-                    title = "system",
+                    title = "Core system instructions",
                     content = input.baseSystemPrompt.ifBlank { DEFAULT_SYSTEM_PROMPT },
                 )
             )
-            input.memorySections
-                .filter { it.isNotBlank() }
-                .forEachIndexed { index, text ->
-                    add(PromptSection(title = "memory_$index", content = text))
-                }
+            addXmlSection(
+                PromptXMLSection(
+                    title = "Persistent memory",
+                    tag = "memory",
+                    items = input.memoryItems,
+                )
+            )
             input.toolSections
                 .filter { it.isNotBlank() }
                 .forEachIndexed { index, text ->
-                    add(PromptSection(title = "tool_$index", content = text))
+                    add(PromptSection(title = "Available tool instructions ${index + 1}", content = text))
                 }
             input.runtimeSections
                 .filter { it.isNotBlank() }
                 .forEachIndexed { index, text ->
-                    add(PromptSection(title = "runtime_$index", content = text))
+                    add(PromptSection(title = "Runtime context ${index + 1}", content = text))
                 }
         }
 
@@ -54,4 +62,21 @@ class PromptComposer {
     companion object {
         private const val DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant."
     }
+}
+
+private fun MutableList<PromptSection>.addXmlSection(section: PromptXMLSection) {
+    val items = section.items.map(String::trim).filter(String::isNotBlank)
+    if (items.isEmpty()) {
+        return
+    }
+    add(
+        PromptSection(
+            title = section.title,
+            content = items.joinToString(
+                separator = "\n",
+                prefix = "<${section.tag}>\n",
+                postfix = "\n</${section.tag}>",
+            ),
+        )
+    )
 }

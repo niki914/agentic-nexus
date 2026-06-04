@@ -103,7 +103,7 @@ object LLMController {
         val prompt = promptComposer.compose(
             PromptComposerInput(
                 baseSystemPrompt = llmConfig.prompt,
-                memorySections = buildMemorySections(llmConfig),
+                memoryItems = buildMemoryItems(llmConfig),
                 toolSections = resolvedTools.promptLines,
                 runtimeSections = buildRuntimeSections(mcpSnapshot),
             )
@@ -225,8 +225,13 @@ object LLMController {
         }
     }
 
-    private fun buildMemorySections(config: LlmConfig): List<String> =
-        listOfNotNull(config.memoryPrompt.trim().takeIf { it.isNotBlank() })
+    private fun buildMemoryItems(config: LlmConfig): List<String> {
+        val memories = config.memories.map(String::trim).filter(String::isNotBlank)
+        if (memories.isNotEmpty()) {
+            return memories
+        }
+        return listOfNotNull(config.memoryPrompt.trim().takeIf { it.isNotBlank() })
+    }
 
     private fun buildRuntimeSections(snapshot: McpDiscoverySnapshot?): List<String> {
         val servers = snapshot?.servers?.values.orEmpty()

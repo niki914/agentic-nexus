@@ -76,8 +76,13 @@ fun SettingsDetailPageContent(
         return
     }
 
-    if (group == NexusSettingsGroup.Memory || group == NexusSettingsGroup.ExecutionRules) {
-        TODOPageContent()
+    if (group == NexusSettingsGroup.Memory) {
+        MemorySettingsContent()
+        return
+    }
+
+    if (group == NexusSettingsGroup.ExecutionRules) {
+        ExecutionRulesSettingsContent()
         return
     }
 

@@ -26,6 +26,7 @@ internal object LocalSettingsCodec {
             prompt = settings.prompt,
             proxy = settings.proxy,
             memoryPrompt = settings.memoryPrompt,
+            memories = parseMemories(settings),
             takeoverKeywords = settings.takeoverKeywords,
         )
     }
@@ -39,8 +40,20 @@ internal object LocalSettingsCodec {
         props[PROMPT_KEY] = JsonPrimitive(config.prompt)
         props[PROXY_KEY] = JsonPrimitive(config.proxy)
         props[MEMORY_PROMPT_KEY] = JsonPrimitive(config.memoryPrompt)
+        props[MEMORIES_KEY] = JsonArray(normalizeMemories(config.memories).map(::JsonPrimitive))
         props[TAKEOVER_KEYWORDS_KEY] = JsonArray(config.takeoverKeywords.map(::JsonPrimitive))
         return LocalSettings(JsonObject(props))
+    }
+
+    fun parseMemories(settings: LocalSettings): List<String> {
+        return normalizeMemories(settings.memories)
+    }
+
+    fun withMemories(settings: LocalSettings, memories: List<String>): LocalSettings {
+        return settings.withTopLevel(
+            MEMORIES_KEY,
+            JsonArray(normalizeMemories(memories).map(::JsonPrimitive)),
+        )
     }
 
     fun withLlmAccess(
@@ -257,6 +270,10 @@ internal object LocalSettingsCodec {
         return this[key] as? JsonObject
     }
 
+    private fun normalizeMemories(memories: List<String>): List<String> {
+        return memories.map(String::trim).filter(String::isNotBlank)
+    }
+
     private fun mcpCacheKey(url: String, headers: Map<String, String>): String {
         val normalizedHeaders = headers
             .mapKeys { (key, _) -> key.lowercase() }
@@ -280,6 +297,7 @@ internal object LocalSettingsCodec {
     private const val PROMPT_KEY = "prompt"
     private const val PROXY_KEY = "proxy"
     private const val MEMORY_PROMPT_KEY = "memory_prompt"
+    private const val MEMORIES_KEY = "memories"
     private const val TAKEOVER_KEYWORDS_KEY = "takeover_keywords"
     private const val MCP_SERVERS_KEY = "mcp_servers"
     private const val MCP_CACHE_KEY = "mcp_discovered_tools_cache"

@@ -8,6 +8,7 @@ data class RuntimeLlmConfig(
     val prompt: String = "",
     val proxy: String = "",
     val memoryPrompt: String = "",
+    val memories: List<String> = emptyList(),
     val takeoverKeywords: List<String> = emptyList(),
 )
 
