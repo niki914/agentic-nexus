@@ -72,9 +72,10 @@ private fun SettingsHomeSectionCard(
 ) {
     SettingsGroupCard(title = title) {
         groups.forEachIndexed { index, group ->
+            val summary = stringResource(group.summaryRes)
             SettingNavigationItem(
                 title = stringResource(group.titleRes),
-                summary = stringResource(group.summaryRes),
+                summary = summary.takeIf { it.isNotBlank() },
                 onClick = { onOpenGroup(group) },
             )
             if (index != groups.lastIndex) {

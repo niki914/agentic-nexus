@@ -1,6 +1,6 @@
 package com.niki914.nexus.agentic.chat.agentic.shell
 
-data class ShellCommandPolicyDecision( // TODO P0 工具 UI 状态提示失败。不能总是提示成功
+data class ShellCommandPolicyDecision(
     // TODO P0 接入真的安全逻辑
     val allowed: Boolean,
     val code: String = "OK",

@@ -1,0 +1,42 @@
+package com.niki914.nexus.agentic.chat
+
+import com.niki914.nexus.agentic.chat.agentic.stream.LocalToolResultClassifier
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class LocalToolResultClassifierTest {
+    @Test
+    fun failureMessage_returnsNullForZeroExitCode() {
+        val message = LocalToolResultClassifier.failureMessage(
+            """{"exit_code":0,"stdout":"ok"}"""
+        )
+
+        assertNull(message)
+    }
+
+    @Test
+    fun failureMessage_usesStderrForNonZeroExitCode() {
+        val message = LocalToolResultClassifier.failureMessage(
+            """{"exit_code":1,"stderr":"not found"}"""
+        )
+
+        assertEquals("not found", message)
+    }
+
+    @Test
+    fun failureMessage_usesMessageForExplicitOkFalse() {
+        val message = LocalToolResultClassifier.failureMessage(
+            """{"ok":false,"message":"blocked"}"""
+        )
+
+        assertEquals("blocked", message)
+    }
+
+    @Test
+    fun failureMessage_ignoresUnstructuredToolOutput() {
+        val message = LocalToolResultClassifier.failureMessage("plain text")
+
+        assertNull(message)
+    }
+}

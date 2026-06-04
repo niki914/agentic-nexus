@@ -69,7 +69,7 @@ fun SettingsListItem(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (summary != null) {
+                    if (!summary.isNullOrBlank()) {
                         Text(
                             text = summary,
                             style = MaterialTheme.typography.bodySmall,

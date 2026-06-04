@@ -85,16 +85,29 @@ sealed interface ConfigureEffect {
     data object FocusProxy : ConfigureEffect
 }
 
-class ConfigureViewModel internal constructor( // TODO P2 内联改无参，看是否有对应 factory，也删除
-    private val loadLlmConfig: suspend () -> LlmConfig = { XRepo.llm() },
-    private val saveLlmAccess: suspend (
+internal data class ConfigureViewModelDependencies(
+    val loadLlmConfig: suspend () -> LlmConfig,
+    val saveLlmAccess: suspend (
         provider: String,
         endpoint: String,
         model: String,
         apiKey: String,
-    ) -> Unit = XRepo::saveLlmAccess,
-    private val saveLlmConfig: suspend (LlmConfig) -> Unit = XRepo::saveLlm,
+    ) -> Unit,
+    val saveLlmConfig: suspend (LlmConfig) -> Unit,
+) {
+    companion object {
+        val Default = ConfigureViewModelDependencies(
+            loadLlmConfig = { XRepo.llm() },
+            saveLlmAccess = XRepo::saveLlmAccess,
+            saveLlmConfig = XRepo::saveLlm,
+        )
+    }
+}
+
+class ConfigureViewModel internal constructor(
+    private val dependencies: ConfigureViewModelDependencies,
 ) : ComposeMVIViewModel<ConfigureIntent, ConfigureUiState, ConfigureEffect>() {
+    constructor() : this(ConfigureViewModelDependencies.Default)
 
     override fun initUiState(): ConfigureUiState = ConfigureUiState()
 
@@ -114,7 +127,7 @@ class ConfigureViewModel internal constructor( // TODO P2 内联改无参，看�
 
     private suspend fun initialize(scene: ConfigureScene, initialProviderId: String?) {
         try {
-            val llmConfig = loadLlmConfig()
+            val llmConfig = dependencies.loadLlmConfig()
             when (scene) {
                 ConfigureScene.Onboarding -> initializeOnboarding(llmConfig, initialProviderId)
                 ConfigureScene.Settings -> initializeSettings(llmConfig)
@@ -365,7 +378,7 @@ class ConfigureViewModel internal constructor( // TODO P2 内联改无参，看�
             )
         }
         try {
-            saveLlmAccess(
+            dependencies.saveLlmAccess(
                 currentState.providerSpec.id,
                 currentState.resolvedEndpoint(),
                 currentState.modelInput,
@@ -407,8 +420,8 @@ class ConfigureViewModel internal constructor( // TODO P2 内联改无参，看�
             )
         }
         try {
-            val currentConfig = loadLlmConfig()
-            saveLlmConfig(
+            val currentConfig = dependencies.loadLlmConfig()
+            dependencies.saveLlmConfig(
                 currentConfig.copy(
                     provider = currentState.providerSpec.id,
                     endpoint = currentState.resolvedEndpoint(),

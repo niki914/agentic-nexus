@@ -25,10 +25,18 @@ object LlmStreamEventMapper {
             }
 
             is SessionEvent.ToolRunning -> LlmStreamEvent.ToolRunning(event.toToolCallStatus())
-            is SessionEvent.ToolSucceeded -> LlmStreamEvent.ToolSucceeded(
-                call = event.toToolCallStatus(),
-                outputText = event.resultJson,
-            )
+            is SessionEvent.ToolSucceeded -> {
+                val call = event.toToolCallStatus()
+                val failureMessage = LocalToolResultClassifier.failureMessage(event.resultJson)
+                if (failureMessage != null) {
+                    LlmStreamEvent.ToolFailed(call = call, message = failureMessage)
+                } else {
+                    LlmStreamEvent.ToolSucceeded(
+                        call = call,
+                        outputText = event.resultJson,
+                    )
+                }
+            }
 
             is SessionEvent.ToolFailed -> LlmStreamEvent.ToolFailed(
                 call = event.toToolCallStatus(),

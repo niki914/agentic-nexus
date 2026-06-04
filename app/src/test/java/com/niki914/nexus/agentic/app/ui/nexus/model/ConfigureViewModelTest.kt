@@ -22,10 +22,10 @@ class ConfigureViewModelTest {
     @Test
     fun save_withMissingApiKey_staysOnPageAndRequestsFieldFocus() = runTest {
         var saveCalled = false
-        val viewModel = ConfigureViewModel(
+        val viewModel = ConfigureViewModel(ConfigureViewModelDependencies.Default.copy(
             loadLlmConfig = { LlmConfig() },
             saveLlmAccess = { _, _, _, _ -> saveCalled = true },
-        )
+        ))
         val effectDeferred = async { viewModel.uiEffect.first() }
 
         viewModel.sendIntent(ConfigureIntent.Initialize("deepseek"))
@@ -44,7 +44,7 @@ class ConfigureViewModelTest {
     @Test
     fun save_withCompleteFields_persistsSettings() = runTest {
         var savedConfig: LlmConfig? = null
-        val viewModel = ConfigureViewModel(
+        val viewModel = ConfigureViewModel(ConfigureViewModelDependencies.Default.copy(
             loadLlmConfig = { LlmConfig() },
             saveLlmAccess = { provider, endpoint, model, apiKey ->
                 savedConfig = LlmConfig(
@@ -54,7 +54,7 @@ class ConfigureViewModelTest {
                     apiKey = apiKey,
                 )
             },
-        )
+        ))
 
         viewModel.sendIntent(ConfigureIntent.Initialize("deepseek"))
         advanceUntilIdle()
@@ -72,7 +72,7 @@ class ConfigureViewModelTest {
     @Test
     fun initialize_onboarding_preservesOfficialEndpointPolicy() = runTest {
         val officialEndpoint = ProviderSpecs.find("openai").officialEndpoint
-        val viewModel = ConfigureViewModel(
+        val viewModel = ConfigureViewModel(ConfigureViewModelDependencies.Default.copy(
             loadLlmConfig = {
                 LlmConfig(
                     provider = "openai",
@@ -83,7 +83,7 @@ class ConfigureViewModelTest {
                     proxy = "http://127.0.0.1:7890",
                 )
             },
-        )
+        ))
 
         viewModel.sendIntent(
             ConfigureIntent.Initialize(
@@ -104,7 +104,7 @@ class ConfigureViewModelTest {
 
     @Test
     fun initialize_onboarding_usesProviderExampleModelWhenSavedModelBlank() = runTest {
-        val viewModel = ConfigureViewModel(
+        val viewModel = ConfigureViewModel(ConfigureViewModelDependencies.Default.copy(
             loadLlmConfig = {
                 LlmConfig(
                     provider = "openai",
@@ -113,7 +113,7 @@ class ConfigureViewModelTest {
                     apiKey = "sk-demo",
                 )
             },
-        )
+        ))
 
         viewModel.sendIntent(
             ConfigureIntent.Initialize(
@@ -128,7 +128,7 @@ class ConfigureViewModelTest {
 
     @Test
     fun initialize_settings_usesSavedEndpoint() = runTest {
-        val viewModel = ConfigureViewModel(
+        val viewModel = ConfigureViewModel(ConfigureViewModelDependencies.Default.copy(
             loadLlmConfig = {
                 LlmConfig(
                     provider = "openai",
@@ -139,7 +139,7 @@ class ConfigureViewModelTest {
                     proxy = "http://127.0.0.1:7890",
                 )
             },
-        )
+        ))
 
         viewModel.sendIntent(ConfigureIntent.Initialize(scene = ConfigureScene.Settings))
         advanceUntilIdle()
@@ -156,7 +156,7 @@ class ConfigureViewModelTest {
 
     @Test
     fun initialize_settings_usesProviderExampleModelWhenSavedModelBlank() = runTest {
-        val viewModel = ConfigureViewModel(
+        val viewModel = ConfigureViewModel(ConfigureViewModelDependencies.Default.copy(
             loadLlmConfig = {
                 LlmConfig(
                     provider = "anthropic",
@@ -165,7 +165,7 @@ class ConfigureViewModelTest {
                     apiKey = "sk-demo",
                 )
             },
-        )
+        ))
 
         viewModel.sendIntent(ConfigureIntent.Initialize(scene = ConfigureScene.Settings))
         advanceUntilIdle()
@@ -187,11 +187,11 @@ class ConfigureViewModelTest {
         )
         var saveAccessCalled = false
         var savedConfig: LlmConfig? = null
-        val viewModel = ConfigureViewModel(
+        val viewModel = ConfigureViewModel(ConfigureViewModelDependencies.Default.copy(
             loadLlmConfig = { existingConfig },
             saveLlmAccess = { _, _, _, _ -> saveAccessCalled = true },
             saveLlmConfig = { config -> savedConfig = config },
-        )
+        ))
         val effectDeferred = async { viewModel.uiEffect.first() }
 
         viewModel.sendIntent(ConfigureIntent.Initialize(scene = ConfigureScene.Settings))
@@ -220,7 +220,7 @@ class ConfigureViewModelTest {
     @Test
     fun save_settings_invalidProxyFocusesProxy() = runTest {
         var savedConfig: LlmConfig? = null
-        val viewModel = ConfigureViewModel(
+        val viewModel = ConfigureViewModel(ConfigureViewModelDependencies.Default.copy(
             loadLlmConfig = {
                 LlmConfig(
                     provider = "openai",
@@ -230,7 +230,7 @@ class ConfigureViewModelTest {
                 )
             },
             saveLlmConfig = { config -> savedConfig = config },
-        )
+        ))
         val effectDeferred = async { viewModel.uiEffect.first() }
 
         viewModel.sendIntent(ConfigureIntent.Initialize(scene = ConfigureScene.Settings))
@@ -250,7 +250,7 @@ class ConfigureViewModelTest {
     @Test
     fun endpointOverrideToggle_usesDefaultWhenDisabledAndRestoresCustomWhenEnabled() = runTest {
         var savedConfig: LlmConfig? = null
-        val viewModel = ConfigureViewModel(
+        val viewModel = ConfigureViewModel(ConfigureViewModelDependencies.Default.copy(
             loadLlmConfig = { LlmConfig() },
             saveLlmAccess = { provider, endpoint, model, apiKey ->
                 savedConfig = LlmConfig(
@@ -260,7 +260,7 @@ class ConfigureViewModelTest {
                     apiKey = apiKey,
                 )
             },
-        )
+        ))
         val officialEndpoint = ProviderSpecs.find("openai").officialEndpoint
 
         viewModel.sendIntent(ConfigureIntent.Initialize("openai"))
@@ -289,7 +289,7 @@ class ConfigureViewModelTest {
 
     @Test
     fun hasUnsavedChanges_isFalseForUneditedSettingsAndRestoredPrompt() = runTest {
-        val viewModel = ConfigureViewModel(
+        val viewModel = ConfigureViewModel(ConfigureViewModelDependencies.Default.copy(
             loadLlmConfig = {
                 LlmConfig(
                     provider = "openai",
@@ -300,7 +300,7 @@ class ConfigureViewModelTest {
                     proxy = "http://127.0.0.1:7890",
                 )
             },
-        )
+        ))
 
         viewModel.sendIntent(ConfigureIntent.Initialize(scene = ConfigureScene.Settings))
         advanceUntilIdle()
@@ -317,7 +317,7 @@ class ConfigureViewModelTest {
 
     @Test
     fun hasUnsavedChanges_isAlwaysFalseForOnboardingScene() = runTest {
-        val viewModel = ConfigureViewModel(
+        val viewModel = ConfigureViewModel(ConfigureViewModelDependencies.Default.copy(
             loadLlmConfig = {
                 LlmConfig(
                     provider = "openai",
@@ -326,7 +326,7 @@ class ConfigureViewModelTest {
                     apiKey = "sk-demo",
                 )
             },
-        )
+        ))
 
         viewModel.sendIntent(
             ConfigureIntent.Initialize(

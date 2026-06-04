@@ -57,3 +57,4 @@ pnpm-debug.log*
 s3ss10n-main
 
 /server/server.pid
+/.as-run/app.run.xml
