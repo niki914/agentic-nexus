@@ -28,6 +28,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
 @Composable
 fun StartupPageContent(
     assistantUi: StartupAssistantUi,
+    isLoading: Boolean = false,
     onContinue: () -> Unit,
 ) {
     val isDarkTheme = isSystemInDarkTheme()
@@ -94,6 +95,7 @@ fun StartupPageContent(
             TintLiquidButton(
                 text = stringResource(assistantUi.buttonTextRes),
                 onClick = onContinue,
+                isLoading = isLoading,
                 darkContainerColor = Color(0xFF8FD8FF),
                 lightContainerColor = Color(0xFF4B6BFF),
             )

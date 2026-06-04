@@ -12,14 +12,19 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredWidthIn
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -67,11 +72,25 @@ fun LiquidDialog(
                     animationSpec = tween(180, easing = FastOutSlowInEasing),
                 ),
     ) {
-        Box(
+        BoxWithConstraints(
             modifier = modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+                .imePadding(),
             contentAlignment = Alignment.Center,
         ) {
+            val horizontalMargin = 24.dp
+            val verticalMargin = 24.dp
+            val maxPanelWidth = (maxWidth - horizontalMargin * 2)
+                .coerceAtLeast(0.dp)
+                .coerceAtMost(360.dp)
+            val minPanelWidth = if (maxPanelWidth < 200.dp) {
+                maxPanelWidth
+            } else {
+                200.dp
+            }
+            val maxPanelHeight = (maxHeight - verticalMargin * 2).coerceAtLeast(0.dp)
+            val scrollState = rememberScrollState()
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -86,8 +105,10 @@ fun LiquidDialog(
 
             Column(
                 modifier = Modifier
-                    .padding(horizontal = 24.dp)
-                    .requiredWidthIn(min = 200.dp, max = 360.dp)
+                    .padding(horizontal = horizontalMargin, vertical = verticalMargin)
+                    .widthIn(min = minPanelWidth, max = maxPanelWidth)
+                    .heightIn(max = maxPanelHeight)
+                    .verticalScroll(scrollState)
                     .drawBackdrop(
                         backdrop = backdrop,
                         shape = { panelShape },

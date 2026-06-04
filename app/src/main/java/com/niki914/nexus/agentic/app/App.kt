@@ -22,6 +22,7 @@ class App : Application() {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         DynamicColors.applyToActivitiesIfAvailable(this)
         applicationScope.launch {
+            XRepo.web.await()
             XRepo.tryPutDefaultSettings()
         }
     }

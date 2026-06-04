@@ -41,6 +41,9 @@ abstract class XSettings(
 }
 
 class WebSettings(props: JsonObject = JsonObject(emptyMap())) : XSettings(props) {
+    val isBeta: Boolean
+        get() = getBoolean("is_beta", false)
+
     val config: JsonObject?
         get() = getObject("config")
 }

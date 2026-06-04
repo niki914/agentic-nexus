@@ -2,31 +2,10 @@ package com.niki914.nexus.agentic.mod
 
 import android.content.Context
 import com.niki914.nexus.h.util.ContextProvider
-import com.niki914.nexus.h.util.xTry
 import com.niki914.nexus.h.util.xlog
 import com.niki914.nexus.ipc.XIpcBridge
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
 
 object XService {
-
-    suspend fun refreshWebSettings(context: Context, packageName: String, versionCode: Long) {
-        withContext(Dispatchers.IO) {
-            val remoteJson = fetchWebSettingsSync(packageName, versionCode)
-            if (remoteJson != null) {
-                XIpcBridge.writeWebSettingsJson(context, remoteJson)
-                xlog("WebSettings refreshed for $packageName ($versionCode)")
-            } else {
-                xlog("WebSettings refresh failed for $packageName ($versionCode): remote JSON is null")
-            }
-        }
-    }
-
-    suspend fun getWebSettings(context: Context): WebSettings {
-        return WebSettings(parseJsonObject(XIpcBridge.readWebSettingsJson(context)))
-    }
 
     suspend fun getLocalSettings(context: Context): LocalSettings {
         return LocalSettings(parseJsonObject(XIpcBridge.readLocalSettingsJson(context))).also {
@@ -48,29 +27,3 @@ object XService {
         return XIpcBridge.postNotification(context, title, content, uri)
     }
 }
-
-private fun fetchWebSettingsSync(packageName: String, versionCode: Long): String? {
-    val url = buildWebSettingsUrl(packageName, versionCode)
-    val request = Request.Builder()
-        .url(url)
-        .build()
-    return xTry("fetchWebSettingsSync") {
-        httpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful || response.body == null) {
-                xlog("fetchWebSettingsSync failed for $url: code=${response.code}")
-                return@xTry null
-            }
-            response.body?.string()
-        }
-    }
-}
-
-private fun buildWebSettingsUrl(packageName: String, versionCode: Long): String {
-    val host = "127.0.0.1:8788" // TODO P0 gitee && Error UI
-    val baseUrl = "https://gitee.com/niki914/nexus-res/raw/main/"
-    return "$baseUrl$packageName/$versionCode/config.json"
-//    val host = "10.85.9.38:8788"
-//    return "http://$host/$packageName/$versionCode/config.json"
-}
-
-private val httpClient = OkHttpClient()

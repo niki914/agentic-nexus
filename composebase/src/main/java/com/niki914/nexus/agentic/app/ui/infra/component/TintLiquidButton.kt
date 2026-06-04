@@ -2,6 +2,7 @@ package com.niki914.nexus.agentic.app.ui.infra.component
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -45,6 +47,7 @@ fun TintLiquidButton(
     lightContentColor: Color = Color.Unspecified,
     contentColor: Color = Color.Unspecified,
     buttonHeight: Dp = 48.dp,
+    isLoading: Boolean = false,
 ) {
     val isDarkTheme = isSystemInDarkTheme()
     val backdrop = rememberLayerBackdrop()
@@ -77,6 +80,8 @@ fun TintLiquidButton(
         else -> MaterialTheme.colorScheme.onPrimary
     }
 
+    val isButtonEnabled = enabled && !isLoading
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -85,23 +90,39 @@ fun TintLiquidButton(
         contentAlignment = Alignment.Center,
     ) {
         LiquidButton(
-            onClick = if (enabled) onClick else { -> },
+            onClick = if (isButtonEnabled) onClick else { -> },
             backdrop = backdrop,
             modifier = Modifier.fillMaxWidth(),
-            isInteractive = enabled,
-            tint = if (enabled) resolvedContainerColor else disabledContainerColor,
-            surfaceColor = if (enabled) resolvedSurfaceColor else Color.Transparent,
+            isInteractive = isButtonEnabled,
+            tint = if (isButtonEnabled) resolvedContainerColor else disabledContainerColor,
+            surfaceColor = if (isButtonEnabled) resolvedSurfaceColor else Color.Transparent,
             height = buttonHeight,
         ) {
-            val currentContentColor = if (enabled) resolvedContentColor else disabledContentColor
+            val currentContentColor = if (isButtonEnabled || isLoading) {
+                resolvedContentColor
+            } else {
+                disabledContentColor
+            }
             if (leadingIconRes == null && trailingIconRes == null && trailingIcon == null) {
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = currentContentColor,
-                    textAlign = TextAlign.Center,
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                )
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            color = currentContentColor,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = currentContentColor,
+                        textAlign = TextAlign.Center,
+                    )
+                }
             } else {
                 Row(
                     modifier = Modifier

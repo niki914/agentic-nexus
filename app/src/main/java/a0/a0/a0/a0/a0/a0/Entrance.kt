@@ -1,7 +1,6 @@
 package a0.a0.a0.a0.a0.a0
 
 import com.niki914.nexus.agentic.mod.HookLocalSettings
-import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiChatHook
 import com.niki914.nexus.agentic.mod.feat.oppo.BreenoChatHook
 import com.niki914.nexus.agentic.repo.XRepo
@@ -42,9 +41,9 @@ class Entrance : IXposed() {
             xlog("Entrance: context initialized: $ctx")
 
             HookLocalSettings.update(ctx)
-            val webSettings = XService.getWebSettings(ctx)
+            val webSettingsResult = XRepo.web.await()
             val targetPkg = params.packageName
-            val configObj = webSettings.config
+            val configObj = webSettingsResult.configOrNull()
 
             if (configObj != null) {
                 onSettingsFetched(params, targetPkg)

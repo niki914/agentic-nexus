@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.nav.NavigationEntry
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigureEditableField
@@ -50,6 +51,8 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.StartupPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TextTitle
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.agentic.repo.WebSettingsFailureReason
+import com.niki914.nexus.agentic.repo.WebSettingsResult
 import androidx.compose.material.icons.Icons
 import kotlinx.coroutines.launch
 
@@ -66,19 +69,92 @@ fun NexusPageContent(
     val customToolCreateTitle = stringResource(R.string.custom_tool_editor_title_create)
 
     when (val page = entry.page) {
-        StartupPage -> StartupPageContent(
-            assistantUi = startupAssistantUi,
-            onContinue = {
-                onPush(
-                    when (startupAssistantUi) {
-                        StartupAssistantUi.Breeno,
-                        StartupAssistantUi.XiaoAi -> ProviderPickPage
+        StartupPage -> {
+            var isCheckingWebSettings by rememberSaveable { mutableStateOf(false) }
+            var webSettingsDialog by rememberSaveable {
+                mutableStateOf<StartupWebSettingsDialog?>(null)
+            }
 
-                        StartupAssistantUi.ChatOnly -> HomePage
+            fun nextPage(): NexusPage {
+                return when (startupAssistantUi) {
+                    StartupAssistantUi.Breeno,
+                    StartupAssistantUi.XiaoAi -> ProviderPickPage
+
+                    StartupAssistantUi.ChatOnly -> HomePage
+                }
+            }
+
+            fun enterNextPage() {
+                webSettingsDialog = null
+                onPush(nextPage())
+            }
+
+            fun handleWebSettingsResult(result: WebSettingsResult) {
+                isCheckingWebSettings = false
+                when (result) {
+                    is WebSettingsResult.Success -> {
+                        webSettingsDialog = when {
+                            result.isFallbackVersion -> StartupWebSettingsDialog.UnsupportedVersion
+                            result.settings.isBeta -> StartupWebSettingsDialog.Beta
+                            else -> null
+                        }
+                        if (webSettingsDialog == null) {
+                            enterNextPage()
+                        }
                     }
+
+                    is WebSettingsResult.RequestFailed -> {
+                        webSettingsDialog = when (result.reason) {
+                            WebSettingsFailureReason.NetworkUnavailable -> StartupWebSettingsDialog.NetworkError
+                            WebSettingsFailureReason.ServerError,
+                            WebSettingsFailureReason.InvalidConfig -> StartupWebSettingsDialog.FetchFailed
+
+                            WebSettingsFailureReason.UnsupportedVersion -> {
+                                StartupWebSettingsDialog.UnsupportedVersion
+                            }
+                        }
+                    }
+                }
+            }
+
+            fun requestWebSettings(forceRetry: Boolean) {
+                scope.launch {
+                    isCheckingWebSettings = true
+                    webSettingsDialog = null
+                    val result = if (forceRetry) {
+                        XRepo.web.retry()
+                    } else {
+                        XRepo.web.await()
+                    }
+                    handleWebSettingsResult(result)
+                }
+            }
+
+            StartupPageContent(
+                assistantUi = startupAssistantUi,
+                isLoading = isCheckingWebSettings,
+                onContinue = {
+                    if (startupAssistantUi == StartupAssistantUi.ChatOnly) {
+                        enterNextPage()
+                    } else {
+                        requestWebSettings(forceRetry = false)
+                    }
+                },
+            )
+
+            webSettingsDialog?.let { dialog ->
+                StartupWebSettingsDialogContent(
+                    dialog = dialog,
+                    onEnterNextPage = ::enterNextPage,
+                    onRetry = {
+                        requestWebSettings(forceRetry = true)
+                    },
+                    onDismiss = {
+                        webSettingsDialog = null
+                    },
                 )
-            },
-        )
+            }
+        }
 
         ProviderPickPage -> {
             SelectionPageContent(
@@ -222,6 +298,74 @@ fun NexusPageContent(
             onBack = onPop,
         )
     }
+}
+
+@Composable
+private fun StartupWebSettingsDialogContent(
+    dialog: StartupWebSettingsDialog,
+    onEnterNextPage: () -> Unit,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val titleRes = when (dialog) {
+        StartupWebSettingsDialog.Beta -> R.string.ui_onboard_web_beta_title
+        StartupWebSettingsDialog.FetchFailed -> R.string.ui_onboard_web_fetch_failed_title
+        StartupWebSettingsDialog.UnsupportedVersion -> R.string.ui_onboard_web_unsupported_title
+        StartupWebSettingsDialog.NetworkError -> R.string.ui_onboard_web_network_error_title
+    }
+    val bodyRes = when (dialog) {
+        StartupWebSettingsDialog.Beta -> R.string.ui_onboard_web_beta_body
+        StartupWebSettingsDialog.FetchFailed -> R.string.ui_onboard_web_fetch_failed_body
+        StartupWebSettingsDialog.UnsupportedVersion -> R.string.ui_onboard_web_unsupported_body
+        StartupWebSettingsDialog.NetworkError -> R.string.ui_onboard_web_network_error_body
+    }
+    val positiveTextRes = when (dialog) {
+        StartupWebSettingsDialog.Beta,
+        StartupWebSettingsDialog.UnsupportedVersion -> R.string.ui_onboard_web_confirm
+
+        StartupWebSettingsDialog.FetchFailed -> R.string.ui_onboard_web_enter_directly
+        StartupWebSettingsDialog.NetworkError -> R.string.ui_onboard_web_retry
+    }
+    val negativeTextRes = when (dialog) {
+        StartupWebSettingsDialog.Beta,
+        StartupWebSettingsDialog.UnsupportedVersion,
+        StartupWebSettingsDialog.NetworkError -> R.string.ui_onboard_web_cancel
+
+        StartupWebSettingsDialog.FetchFailed -> R.string.ui_onboard_web_retry
+    }
+    val onPositiveClick = when (dialog) {
+        StartupWebSettingsDialog.Beta,
+        StartupWebSettingsDialog.UnsupportedVersion,
+        StartupWebSettingsDialog.FetchFailed -> onEnterNextPage
+
+        StartupWebSettingsDialog.NetworkError -> onRetry
+    }
+    val onNegativeClick = when (dialog) {
+        StartupWebSettingsDialog.Beta,
+        StartupWebSettingsDialog.UnsupportedVersion,
+        StartupWebSettingsDialog.NetworkError -> onDismiss
+
+        StartupWebSettingsDialog.FetchFailed -> onRetry
+    }
+
+    ConfirmationLiquidDialog(
+        visible = true,
+        onDismissRequest = onDismiss,
+        title = stringResource(titleRes),
+        text = stringResource(bodyRes),
+        positiveButtonText = stringResource(positiveTextRes),
+        negativeButtonText = stringResource(negativeTextRes),
+        onPositiveClick = onPositiveClick,
+        onNegativeClick = onNegativeClick,
+        dismissOnBackgroundTap = false,
+    )
+}
+
+private enum class StartupWebSettingsDialog {
+    Beta,
+    FetchFailed,
+    UnsupportedVersion,
+    NetworkError,
 }
 
 private fun settingsDetailTitleSpec(group: NexusSettingsGroup): PageTitleSpec? {
