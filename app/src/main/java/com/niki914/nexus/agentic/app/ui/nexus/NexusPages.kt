@@ -21,6 +21,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigureEditableField
 import com.niki914.nexus.agentic.app.ui.nexus.content.ConfigurePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.CustomToolDetailContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.DonePageContent
+import com.niki914.nexus.agentic.app.ui.nexus.content.ExecutionRuleDetailContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.HomePageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.SelectionOption
 import com.niki914.nexus.agentic.app.ui.nexus.content.SelectionPageContent
@@ -38,6 +39,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
 import com.niki914.nexus.agentic.app.ui.nexus.nav.ConfigurePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.CustomToolDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.DonePage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.ExecutionRuleDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
@@ -67,6 +69,7 @@ fun NexusPageContent(
     val scope = rememberCoroutineScope()
     val mcpCreateTitle = stringResource(R.string.mcp_editor_title_create)
     val customToolCreateTitle = stringResource(R.string.custom_tool_editor_title_create)
+    val executionRuleCreateTitle = stringResource(R.string.execution_rules_editor_title_create)
 
     when (val page = entry.page) {
         StartupPage -> {
@@ -275,6 +278,7 @@ fun NexusPageContent(
                             group = group,
                             mcpCreateTitle = mcpCreateTitle,
                             customToolCreateTitle = customToolCreateTitle,
+                            executionRuleCreateTitle = executionRuleCreateTitle,
                             onPush = onPush,
                         ),
                     )
@@ -291,6 +295,10 @@ fun NexusPageContent(
         is McpServerDetailPage -> McpServerDetailContent(
             page = page,
             onBack = onPop,
+        )
+
+        is ExecutionRuleDetailPage -> ExecutionRuleDetailContent(
+            page = page,
         )
 
         is CustomToolDetailPage -> CustomToolDetailContent(
@@ -376,6 +384,7 @@ private fun settingsDetailRightAction(
     group: NexusSettingsGroup,
     mcpCreateTitle: String,
     customToolCreateTitle: String,
+    executionRuleCreateTitle: String,
     onPush: (NexusPage) -> Unit,
 ): TopBarActionSpec? {
     return when (group) {
@@ -399,6 +408,19 @@ private fun settingsDetailRightAction(
                     CustomToolDetailPage(
                         toolName = customToolCreateTitle,
                         toolIndex = -1,
+                        isCreating = true,
+                    )
+                )
+            },
+        )
+
+        NexusSettingsGroup.ExecutionRules -> TopBarActionSpec(
+            icon = Icons.Default.Add,
+            onClick = {
+                onPush(
+                    ExecutionRuleDetailPage(
+                        ruleName = executionRuleCreateTitle,
+                        ruleIndex = -1,
                         isCreating = true,
                     )
                 )

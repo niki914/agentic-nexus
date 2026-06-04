@@ -113,6 +113,18 @@ data class McpServerDetailPage(
         if (isCreating) null else TopBarActionSpec(Icons.Default.Delete)
 }
 
+data class ExecutionRuleDetailPage(
+    val ruleName: String,
+    val ruleIndex: Int,
+    val isCreating: Boolean = false,
+) : NexusPage {
+    override val routeKey: String = "execution-rule-detail:$ruleIndex:$ruleName"
+    override val titleSpec: PageTitleSpec = TextTitle(ruleName)
+    override val leftAction: TopBarActionSpec =
+        TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
+    override val rightAction: TopBarActionSpec? = null
+}
+
 data class CustomToolDetailPage(
     val toolName: String,
     val toolIndex: Int,

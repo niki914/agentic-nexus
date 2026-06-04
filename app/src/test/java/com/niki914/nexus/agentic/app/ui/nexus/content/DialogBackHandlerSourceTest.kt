@@ -20,18 +20,4 @@ class DialogBackHandlerSourceTest {
         assertTrue(source.contains("MemorySettingsIntent.DismissEditDialog"))
     }
 
-    @Test
-    fun executionRulesSettingsContent_consumesBackWhenDetailDialogVisible() {
-        val source = File(
-            "src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/ExecutionRulesSettingsContent.kt"
-        ).readText()
-
-        assertTrue(source.contains("import androidx.compose.runtime.rememberUpdatedState"))
-        assertTrue(source.contains("import com.niki914.nexus.agentic.app.ui.nexus.PageBackHandler"))
-        assertTrue(source.contains("val latestUiState by rememberUpdatedState(uiState)"))
-        assertTrue(source.contains("val latestViewModel by rememberUpdatedState(viewModel)"))
-        assertTrue(source.contains("backHandler = PageBackHandler("))
-        assertTrue(source.contains("latestUiState.editingRule != null"))
-        assertTrue(source.contains("ExecutionRulesSettingsIntent.DismissEditingRule"))
-    }
 }

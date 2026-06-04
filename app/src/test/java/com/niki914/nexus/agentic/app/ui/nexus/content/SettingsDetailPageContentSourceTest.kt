@@ -17,7 +17,8 @@ class SettingsDetailPageContentSourceTest {
 
         assertTrue(memoryBranch.contains("MemorySettingsContent()"))
         assertFalse(memoryBranch.contains("TODOPageContent()"))
-        assertTrue(executionRulesBranch.contains("ExecutionRulesSettingsContent()"))
+        assertTrue(executionRulesBranch.contains("ExecutionRulesSettingsContent("))
+        assertTrue(executionRulesBranch.contains("ExecutionRuleDetailPage"))
         assertFalse(executionRulesBranch.contains("TODOPageContent()"))
     }
 

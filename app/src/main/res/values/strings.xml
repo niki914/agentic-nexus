@@ -134,6 +134,7 @@
     <string name="execution_rules_page_description">配置 Shell 与工具执行规则。本页当前仅提供规则 UI 壳，暂不接入实际拦截链路。</string>
     <string name="execution_rules_empty">当前没有规则草稿。</string>
     <string name="execution_rules_empty_action_hint">点击右上方，添加第一条规则草稿。</string>
+    <string name="execution_rules_loading">正在读取执行规则…</string>
     <string name="execution_rules_editor_title_create">新增执行规则</string>
     <string name="execution_rules_editor_title_edit">编辑执行规则</string>
     <string name="execution_rules_mode_blacklist">黑名单</string>

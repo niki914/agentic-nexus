@@ -24,6 +24,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.SettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.hasUnsavedChanges
 import com.niki914.nexus.agentic.app.ui.nexus.nav.CustomToolDetailPage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.ExecutionRuleDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusSettingsGroup
@@ -82,7 +83,11 @@ fun SettingsDetailPageContent(
     }
 
     if (group == NexusSettingsGroup.ExecutionRules) {
-        ExecutionRulesSettingsContent()
+        ExecutionRulesSettingsContent(
+            onOpenRuleDetail = { name, index ->
+                onPush(ExecutionRuleDetailPage(name, index))
+            },
+        )
         return
     }
 
