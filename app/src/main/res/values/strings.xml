@@ -20,7 +20,6 @@
     <string name="ui_onboard_web_network_error_title">网络请求错误</string>
     <string name="ui_onboard_web_network_error_body">当前网络异常。你可以选择重试，或先进入完成配置。确保网络可用后再重试。</string>
     <string name="ui_onboard_web_confirm">确定</string>
-    <string name="ui_onboard_web_cancel">取消</string>
     <string name="ui_onboard_web_enter_directly">直接进入</string>
     <string name="ui_onboard_web_retry">重试</string>
     <string name="ui_onboard_provider_pick_title">选择提供商</string>
@@ -53,9 +52,6 @@
     <string name="ui_tool_status_running">running</string>
     <string name="ui_tool_status_success">success</string>
     <string name="ui_tool_status_failed">failed</string>
-    <string name="ui_home_tool_running">@string/ui_tool_status_running</string>
-    <string name="ui_home_tool_succeeded">@string/ui_tool_status_success</string>
-    <string name="ui_home_tool_failed">@string/ui_tool_status_failed</string>
     <string name="ui_home_send_content_description">发送消息</string>
     <string name="ui_home_stop_content_description">停止生成</string>
     <string name="ui_root_back_to_home_hint">再按一次返回桌面</string>
@@ -96,7 +92,6 @@
     <!-- Settings Detail Shared -->
     <string name="ui_todo_page_title">功能正在开发中</string>
     <string name="ui_todo_page_description">将在后续版本支持，敬请期待。</string>
-    <string name="ui_settings_detail_placeholder">此分组内容将在后续补齐</string>
     <string name="unsaved_changes_dialog_title">有未保存的修改</string>
     <string name="unsaved_changes_dialog_text">确定退出吗？</string>
     <string name="unsaved_changes_dialog_confirm_exit">确定</string>
@@ -117,38 +112,21 @@
     <string name="memory_page_description">管理记忆，你可以通过左右滑动来删除、点击来编辑单条记忆。添加后，Agent 会记得这些内容，即使是新的对话。</string>
     <string name="memory_page_empty_description">当前没有保存的记忆。点击右上方添加第一条记忆。</string>
     <string name="memory_loading">正在读取记忆...</string>
-    <string name="memory_empty">当前没有保存的记忆。</string>
-    <string name="memory_empty_action_hint">点击右上方，添加第一条记忆。</string>
     <string name="memory_editor_title_create">新增记忆</string>
     <string name="memory_editor_title_edit">编辑记忆</string>
     <string name="memory_field_content">输入内容</string>
     <string name="memory_field_content_hint">例如：用户的生日是 X 月 Y 日</string>
     <string name="memory_save_action">保存记忆</string>
     <string name="memory_cancel_action">取消</string>
-    <string name="memory_delete_content_description">删除记忆</string>
     <string name="memory_error_load_failed">读取记忆失败：%1$s</string>
     <string name="memory_error_save_failed">保存记忆失败：%1$s</string>
     <string name="memory_error_delete_failed">删除记忆失败：%1$s</string>
 
     <!-- Execution Rules Module -->
     <string name="execution_rules_page_description">配置 Shell 与工具执行规则。本页当前仅提供规则 UI 壳，暂不接入实际拦截链路。</string>
-    <string name="execution_rules_empty">当前没有规则草稿。</string>
     <string name="execution_rules_empty_action_hint">点击右上方，添加第一条规则草稿。</string>
     <string name="execution_rules_loading">正在读取执行规则…</string>
     <string name="execution_rules_editor_title_create">新增执行规则</string>
-    <string name="execution_rules_editor_title_edit">编辑执行规则</string>
-    <string name="execution_rules_mode_blacklist">黑名单</string>
-    <string name="execution_rules_mode_whitelist">白名单</string>
-    <string name="execution_rules_matcher_keywords">关键词</string>
-    <string name="execution_rules_matcher_regex">Regex</string>
-    <string name="execution_rules_field_note">备注</string>
-    <string name="execution_rules_field_note_hint">例如：禁止删除文件</string>
-    <string name="execution_rules_field_keywords">关键词</string>
-    <string name="execution_rules_field_keywords_hint">每行一个关键词</string>
-    <string name="execution_rules_field_regex">Regex</string>
-    <string name="execution_rules_field_regex_hint">输入正则表达式</string>
-    <string name="execution_rules_save_action">保存规则草稿</string>
-    <string name="execution_rules_cancel_action">取消</string>
 
     <!-- Builtin Tool Module -->
     <string name="builtin_tool_page_description">开启或关闭预设的内置工具。开启后，工具将在下次对话更新。</string>
