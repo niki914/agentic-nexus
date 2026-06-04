@@ -80,7 +80,7 @@ fun TintLiquidButton(
         else -> MaterialTheme.colorScheme.onPrimary
     }
 
-    val isButtonEnabled = enabled && !isLoading
+    val isButtonInteractive = enabled && !isLoading
 
     Box(
         modifier = Modifier
@@ -90,32 +90,36 @@ fun TintLiquidButton(
         contentAlignment = Alignment.Center,
     ) {
         LiquidButton(
-            onClick = if (isButtonEnabled) onClick else { -> },
+            onClick = if (isButtonInteractive) onClick else { -> },
             backdrop = backdrop,
             modifier = Modifier.fillMaxWidth(),
-            isInteractive = isButtonEnabled,
-            tint = if (isButtonEnabled) resolvedContainerColor else disabledContainerColor,
-            surfaceColor = if (isButtonEnabled) resolvedSurfaceColor else Color.Transparent,
+            isInteractive = isButtonInteractive,
+            tint = if (enabled) resolvedContainerColor else disabledContainerColor,
+            surfaceColor = if (enabled) resolvedSurfaceColor else Color.Transparent,
             height = buttonHeight,
         ) {
-            val currentContentColor = if (isButtonEnabled || isLoading) {
+            val currentContentColor = if (enabled) {
                 resolvedContentColor
             } else {
                 disabledContentColor
             }
-            if (leadingIconRes == null && trailingIconRes == null && trailingIcon == null) {
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(
+                        color = currentContentColor,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            } else if (leadingIconRes == null && trailingIconRes == null && trailingIcon == null) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            color = currentContentColor,
-                            strokeWidth = 2.dp,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
                     Text(
                         text = text,
                         style = MaterialTheme.typography.titleMedium,
