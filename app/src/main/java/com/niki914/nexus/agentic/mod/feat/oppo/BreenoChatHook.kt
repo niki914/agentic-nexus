@@ -21,6 +21,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /** Breeno 宿主主 Hook，走回答卡片层做注入：复用同一张卡片并持续用累计文本全量刷新内容。 */
+// TODO P0 float window
 class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
 
     override val name: String = "BreenoChatHook"

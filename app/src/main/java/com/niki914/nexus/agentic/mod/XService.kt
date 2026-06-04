@@ -66,9 +66,11 @@ private fun fetchWebSettingsSync(packageName: String, versionCode: Long): String
 }
 
 private fun buildWebSettingsUrl(packageName: String, versionCode: Long): String {
-    val host = "127.0.0.1:8788"
+    val host = "127.0.0.1:8788" // TODO P0 gitee && Error UI
+    val baseUrl = "https://gitee.com/niki914/nexus-res/raw/main/"
+    return "$baseUrl$packageName/$versionCode/config.json"
 //    val host = "10.85.9.38:8788"
-    return "http://$host/$packageName/$versionCode/config.json"
+//    return "http://$host/$packageName/$versionCode/config.json"
 }
 
 private val httpClient = OkHttpClient()

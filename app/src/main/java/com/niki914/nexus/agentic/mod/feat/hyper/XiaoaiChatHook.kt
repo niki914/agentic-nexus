@@ -18,8 +18,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.shareIn
 
 /** XiaoAi 宿主主 Hook，编排全部子 Hook 安装、会话生命周期、关键词接管判定及 LLM 流式分片注入管线。 */
-// TODO P0 提示小爱为 Beta，先发版
-class XiaoaiChatHook( // TODO P0 NewRoom / 卡片采用白名单模式避免放行不正确的卡片
+// TODO P0 提示小爱为 Beta，先发版 <---- ！在 config 里面加上 is_beta 然后设计怎么提示 beta
+class XiaoaiChatHook( // TODO P2(由于标记 Beta 所以放缓) NewRoom / 卡片采用白名单模式避免放行不正确的卡片
     scope: CoroutineScope
 ) : AbstractAssistantHook(scope) {
     override val name: String = "XiaoaiChatHook"
