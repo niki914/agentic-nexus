@@ -1,19 +1,15 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content
 
 import android.content.res.Configuration
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -41,7 +37,7 @@ private fun AboutSettingsContentBody() {
                 title = stringResource(R.string.ui_settings_about_author_homepage),
                 showChevron = true,
                 leadingContent = {
-                    AboutSettingsIcon(imageVector = Icons.Default.Person)
+                    AboutSettingsDrawableIcon(drawableRes = R.drawable.github)
                 },
                 onClick = {},
             )
@@ -50,7 +46,7 @@ private fun AboutSettingsContentBody() {
                 title = stringResource(R.string.ui_settings_about_github),
                 showChevron = true,
                 leadingContent = {
-                    AboutSettingsIcon(imageVector = Icons.Default.Code)
+                    AboutSettingsDrawableIcon(drawableRes = R.drawable.github)
                 },
                 onClick = {},
             )
@@ -59,7 +55,7 @@ private fun AboutSettingsContentBody() {
                 title = stringResource(R.string.ui_settings_about_afdian),
                 showChevron = true,
                 leadingContent = {
-                    AboutSettingsIcon(imageVector = Icons.Default.Favorite)
+                    AboutSettingsDrawableIcon(drawableRes = R.drawable.aifadian)
                 },
                 onClick = {},
             )
@@ -68,17 +64,14 @@ private fun AboutSettingsContentBody() {
                 title = stringResource(R.string.ui_settings_about_telegram),
                 showChevron = true,
                 leadingContent = {
-                    AboutSettingsIcon(imageVector = Icons.Default.Groups)
+                    AboutSettingsDrawableIcon(drawableRes = R.drawable.telegram)
                 },
                 onClick = {},
-            )
+            ) // TODO P0 反馈
             SettingsItemDivider()
             SettingsListItem(
                 title = stringResource(R.string.ui_settings_about_version),
                 currentState = BuildConfig.VERSION_NAME,
-                leadingContent = {
-                    AboutSettingsIcon(imageVector = Icons.Default.Info)
-                },
             )
         }
     }
@@ -88,6 +81,16 @@ private fun AboutSettingsContentBody() {
 private fun AboutSettingsIcon(imageVector: ImageVector) {
     Icon(
         imageVector = imageVector,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.size(20.dp),
+    )
+}
+
+@Composable
+private fun AboutSettingsDrawableIcon(@DrawableRes drawableRes: Int) {
+    Icon(
+        painter = painterResource(drawableRes),
         contentDescription = null,
         tint = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.size(20.dp),

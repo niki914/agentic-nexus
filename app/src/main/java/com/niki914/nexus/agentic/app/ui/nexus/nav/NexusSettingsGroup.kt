@@ -40,7 +40,7 @@ enum class NexusSettingsGroup(
     ),
     About(
         titleRes = R.string.ui_settings_about,
-        summaryRes = R.string.ui_settings_about_summary,
+        summaryRes = R.string.ui_settings_about_summary, // TODO P0 检查当 summary 为空白是否会让 title 居中
         routeSuffix = "about",
     ),
 }
