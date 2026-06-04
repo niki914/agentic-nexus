@@ -18,12 +18,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
+import kotlinx.coroutines.delay
 import com.niki914.nexus.agentic.app.ui.infra.LiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
@@ -148,9 +151,13 @@ private fun MemoryEditDialog(
     onSaveClick: () -> Unit,
 ) {
     var retainedState by remember { mutableStateOf<MemoryEditDialogState?>(null) }
+    val focusRequester = remember { FocusRequester() }
+
     LaunchedEffect(state) {
         if (state != null) {
             retainedState = state
+            delay(100)
+            focusRequester.requestFocus()
         }
     }
     val dialogState = state ?: retainedState
@@ -194,7 +201,9 @@ private fun MemoryEditDialog(
                 singleLine = true,
                 minLines = 1,
                 maxLines = 1,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
             )
         },
         actions = {
