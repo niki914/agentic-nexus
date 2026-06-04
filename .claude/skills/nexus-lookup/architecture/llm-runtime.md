@@ -24,7 +24,8 @@
 2. refresh 失败时回退到最近一次 `runtimeState`；若仍为空，则发出 `LlmStreamEvent.Error`。
 3. `session.send(query)` 的底层事件交给 `LlmStreamEventMapper.map()`。
 4. 文本流累计全文并计算 `charsPerSecond`。
-5. tool 相关事件交给宿主层按需用 `ToolEventFormatter` 转成展示文案。
+5. tool 结果先经 `LocalToolResultClassifier` 判定成功或失败。
+6. tool 相关事件交给宿主层按需用 `ToolEventFormatter` 转成展示文案。
 
 ## 组件边界
 
@@ -45,11 +46,13 @@
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/`
 
-- `BuiltinToolRegistry.kt`：当前默认注册 `create_custom_tool`、`notify`、`run_command`。
+- `BuiltinToolRegistry.kt`：当前默认注册 `create_custom_tool`、`memorize`、`notify`、`read_custom_tool`、`run_command`。
 - `BuiltinToolExecutor.kt`：builtin 执行入口。
 - `BuiltinToolSettingsManager.kt`：builtin 设置读写辅助。
 - `impl/CreateCustomToolBuiltin.kt`
+- `impl/MemorizeBuiltin.kt`
 - `impl/NotifyBuiltin.kt`
+- `impl/ReadCustomToolBuiltin.kt`
 - `impl/RunCommandBuildin_WIP_SAFE.kt`
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/`
@@ -69,6 +72,7 @@
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/`
 
 - `LlmStreamEventMapper.kt`：`SessionEvent` -> `LlmStreamEvent`。
+- `LocalToolResultClassifier.kt`：根据 local tool result 判断 tool 调用是否失败。
 - `ToolEventFormatter.kt`：tool 事件文案格式化，支持 `AppendOnly` 与 `ReplaceStatus`。
 
 ## 能力状态
@@ -76,7 +80,7 @@
 ### Builtin
 
 - 已实现：注册表、启用状态读取、执行分发。
-- 当前默认 builtin：`create_custom_tool`、`notify`、`run_command`。
+- 当前默认 builtin：`create_custom_tool`、`memorize`、`notify`、`read_custom_tool`、`run_command`。
 - 边界：`run_command` 运行在 Android 设备 `/system/bin/sh` 环境，不是桌面 shell；安全策略仍是基础黑名单拦截。
 
 ### Custom
@@ -91,7 +95,7 @@
 
 ### Stream
 
-- 已实现：`RoundStarted`、`TextDelta`、`ToolRunning`、`ToolSucceeded`、`ToolFailed`、`Error`、`Completed` 映射。
+- 已实现：`RoundStarted`、`TextDelta`、`ToolRunning`、`ToolSucceeded`、`ToolFailed`、`Error`、`Completed` 映射；local tool 结果会先经过 `LocalToolResultClassifier` 做失败分类。
 - 边界：tool 展示文本由 `ToolEventFormatter` 生成；`LlmStreamEvent` 自身只承载结构化状态。
 
 ## 关键源码
@@ -114,7 +118,9 @@
 - `buildin/BuiltinToolExecutor.kt`
 - `buildin/BuiltinToolSettingsManager.kt`
 - `buildin/impl/CreateCustomToolBuiltin.kt`
+- `buildin/impl/MemorizeBuiltin.kt`
 - `buildin/impl/NotifyBuiltin.kt`
+- `buildin/impl/ReadCustomToolBuiltin.kt`
 - `buildin/impl/RunCommandBuildin_WIP_SAFE.kt`
 - `custom/CustomToolManager.kt`
 - `custom/CustomToolExecutor.kt`
@@ -122,4 +128,5 @@
 - `shell/ShellCommandSafetyPolicy.kt`
 - `shell/ShellCommandRunner.kt`
 - `stream/LlmStreamEventMapper.kt`
+- `stream/LocalToolResultClassifier.kt`
 - `stream/ToolEventFormatter.kt`

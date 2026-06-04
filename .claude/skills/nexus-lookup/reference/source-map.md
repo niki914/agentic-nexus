@@ -74,7 +74,9 @@
 ## agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/
 
 - `CreateCustomToolBuiltin.kt`: 内建创建 custom tool
+- `MemorizeBuiltin.kt`: 内建记忆写入工具
 - `NotifyBuiltin.kt`: 内建通知工具
+- `ReadCustomToolBuiltin.kt`: 内建读取 custom tool 定义工具
 - `RunCommandBuildin_WIP_SAFE.kt`: 内建命令执行工具
 
 ## agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/
@@ -94,6 +96,7 @@
 ## agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/
 
 - `LlmStreamEventMapper.kt`: `SessionEvent` 到 `LlmStreamEvent` 的映射
+- `LocalToolResultClassifier.kt`: local tool 结果失败分类
 - `ToolEventFormatter.kt`: 工具事件格式化
 
 ## app/src/main/java/com/niki914/nexus/agentic/app/
@@ -110,10 +113,13 @@
 ## app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/
 
 - `AppLaunchDecision.kt`: 初始页面判定
+- `AboutSettingsState.kt`: About 设置页状态
 - `BuiltinToolSettingsState.kt`: builtin tools 设置页状态
 - `ConfigureState.kt`: 配置页状态
 - `CustomToolSettingsState.kt`: 自定义工具设置页状态
+- `ExecutionRulesSettingsState.kt`: 执行规则设置页状态
 - `HomeChatState.kt`: 首页对话状态
+- `MemorySettingsState.kt`: Memory 设置页状态
 - `McpSettingsState.kt`: MCP 设置页状态
 - `ProviderSpec.kt`: provider 规格定义
 - `SettingsState.kt`: 设置页状态
@@ -124,8 +130,13 @@
 - `NexusPage.kt`: 页面定义
 - `NexusSettingsGroup.kt`: 设置组模型
 
+## app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/route/
+
+- `ExecutionRuleDetailRoute.kt`: 执行规则详情页路由装配
+
 ## app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/
 
+- `AboutSettingsContent.kt`: About 设置页
 - `BuiltinToolsSettingsContent.kt`: Builtin Tools 设置页
 - `ConfigureEditableField.kt`: 配置字段编辑块
 - `ConfigurePageContent.kt`: 配置页内容
@@ -133,8 +144,11 @@
 - `CustomToolDetailContent.kt`: 自定义工具详情页
 - `CustomToolsSettingsContent.kt`: 自定义工具设置页
 - `DonePageContent.kt`: 完成页内容
+- `ExecutionRuleDetailContent.kt`: 执行规则详情页壳
+- `ExecutionRulesSettingsContent.kt`: 执行规则设置页列表壳
 - `HomeChatComponents.kt`: 首页对话组件
 - `HomePageContent.kt`: 首页内容
+- `MemorySettingsContent.kt`: Memory 设置页
 - `ProviderAccessSettingsBlock.kt`: provider 接入设置块
 - `ProviderAdvancedSettingsBlock.kt`: provider 高级设置块
 - `SelectionPageContent.kt`: Provider 选择页内容
