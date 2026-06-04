@@ -10,8 +10,9 @@ class NexusAppSourceTest {
         val source = readNexusAppSource()
 
         assertTrue(source.contains("fun requestBack()"))
-        assertTrue(source.contains("currentChrome.onBackRequest"))
-        assertTrue(source.contains("currentChrome.onBackRequest?.invoke()"))
+        assertTrue(source.contains("val backHandler = currentChrome.backHandler"))
+        assertTrue(source.contains("backHandler.shouldConsumeBack()"))
+        assertTrue(source.contains("backHandler.onConsumeBack()"))
         assertTrue(source.contains("popOrMoveTaskToBack()"))
         assertTrue(source.contains("bindAction(currentLeftAction, fallback = ::requestBack)"))
     }

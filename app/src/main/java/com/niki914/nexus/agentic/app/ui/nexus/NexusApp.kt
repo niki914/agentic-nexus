@@ -130,7 +130,12 @@ fun NexusApp(
     }
 
     fun requestBack() {
-        currentChrome.onBackRequest?.invoke() ?: popOrMoveTaskToBack()
+        val backHandler = currentChrome.backHandler
+        if (backHandler != null && backHandler.shouldConsumeBack()) {
+            backHandler.onConsumeBack()
+        } else {
+            popOrMoveTaskToBack()
+        }
     }
 
     BackHandler(enabled = true) {
@@ -147,7 +152,7 @@ fun NexusApp(
         currentTitle,
         currentRightAction,
         currentChrome.menuItems,
-        currentChrome.onBackRequest,
+        currentChrome.backHandler,
     ) {
         if (currentChrome.menuItems.isEmpty()) {
             closeChromeMenu()

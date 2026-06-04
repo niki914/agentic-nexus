@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.PageBackHandler
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
 import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
 import com.niki914.nexus.agentic.app.ui.nexus.content.mcp.McpSettingsContent
@@ -94,18 +95,16 @@ private fun ModelConfigSettingsContent(
     }
     var showUnsavedChangesDialog by rememberSaveable { mutableStateOf(false) }
 
-    val requestBack = remember {
-        {
-            if (latestUiState.scene == ConfigureScene.Settings && latestUiState.hasUnsavedChanges) {
-                showUnsavedChangesDialog = true
-            } else {
-                latestOnBack()
-            }
-        }
-    }
     RegisterPageChrome(
         PageChromeContribution(
-            onBackRequest = requestBack,
+            backHandler = PageBackHandler(
+                shouldConsumeBack = {
+                    latestUiState.scene == ConfigureScene.Settings && latestUiState.hasUnsavedChanges
+                },
+                onConsumeBack = {
+                    showUnsavedChangesDialog = true
+                },
+            ),
         ),
     )
 

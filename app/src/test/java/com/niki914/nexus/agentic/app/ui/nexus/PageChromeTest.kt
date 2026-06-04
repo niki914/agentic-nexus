@@ -6,15 +6,18 @@ import org.junit.Test
 
 class PageChromeTest {
     @Test
-    fun emptyContribution_hasNoBackRequestHandler() {
-        assertNull(PageChromeContribution.Empty.onBackRequest)
+    fun emptyContribution_hasNoBackHandler() {
+        assertNull(PageChromeContribution.Empty.backHandler)
     }
 
     @Test
-    fun contribution_retainsBackRequestHandler() {
-        val onBackRequest = {}
-        val contribution = PageChromeContribution(onBackRequest = onBackRequest)
+    fun contribution_retainsBackHandler() {
+        val backHandler = PageBackHandler(
+            shouldConsumeBack = { true },
+            onConsumeBack = {},
+        )
+        val contribution = PageChromeContribution(backHandler = backHandler)
 
-        assertSame(onBackRequest, contribution.onBackRequest)
+        assertSame(backHandler, contribution.backHandler)
     }
 }

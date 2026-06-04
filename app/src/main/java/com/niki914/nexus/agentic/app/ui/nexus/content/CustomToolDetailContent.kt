@@ -21,6 +21,7 @@ import com.niki914.nexus.agentic.app.ui.infra.component.SettingsDetailFormScaffo
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.PageBackHandler
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
 import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
 import com.niki914.nexus.agentic.app.ui.nexus.model.CustomToolInlineError
@@ -47,17 +48,7 @@ fun CustomToolDetailContent(
     }
     var showUnsavedChangesDialog by rememberSaveable { mutableStateOf(false) }
 
-    val requestBack = remember {
-        {
-            if (latestUiState.formState.hasUnsavedChanges) {
-                showUnsavedChangesDialog = true
-            } else {
-                latestOnBack()
-            }
-        }
-    }
-
-    val pageChromeContribution = remember(page.isCreating, requestBack) {
+    val pageChromeContribution = remember(page.isCreating) {
         PageChromeContribution(
             rightAction = if (page.isCreating) {
                 null
@@ -69,7 +60,14 @@ fun CustomToolDetailContent(
                     },
                 )
             },
-            onBackRequest = requestBack,
+            backHandler = PageBackHandler(
+                shouldConsumeBack = {
+                    latestUiState.formState.hasUnsavedChanges
+                },
+                onConsumeBack = {
+                    showUnsavedChangesDialog = true
+                },
+            ),
         )
     }
     RegisterPageChrome(pageChromeContribution)

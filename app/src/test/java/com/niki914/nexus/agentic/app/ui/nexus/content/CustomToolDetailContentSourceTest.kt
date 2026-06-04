@@ -13,7 +13,7 @@ class CustomToolDetailContentSourceTest {
         assertTrue(source.contains("SettingsDetailFormScaffold("))
         assertTrue(source.contains("RegisterPageChrome(pageChromeContribution)"))
         assertTrue(source.contains("PageChromeContribution("))
-        assertTrue(source.contains("onBackRequest = requestBack"))
+        assertTrue(source.contains("backHandler = PageBackHandler("))
         assertTrue(source.contains("Icons.Default.Delete"))
         assertTrue(source.contains("CustomToolSettingsIntent.DeleteCurrent"))
         assertTrue(source.contains("onBackgroundTap = ::clearActiveField"))
@@ -24,8 +24,9 @@ class CustomToolDetailContentSourceTest {
     fun customToolDetailContent_routesBackThroughUnsavedChangesDialog() {
         val source = readCustomToolDetailContentSource()
 
-        assertTrue(source.contains("val requestBack = remember"))
+        assertTrue(source.contains("shouldConsumeBack = {"))
         assertTrue(source.contains("latestUiState.formState.hasUnsavedChanges"))
+        assertTrue(source.contains("onConsumeBack = {"))
         assertTrue(source.contains("showUnsavedChangesDialog = true"))
         assertTrue(source.contains("latestOnBack()"))
         assertTrue(source.contains("ConfirmationLiquidDialog("))
