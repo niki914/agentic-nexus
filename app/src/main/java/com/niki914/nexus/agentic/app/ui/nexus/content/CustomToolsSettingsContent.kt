@@ -2,6 +2,8 @@ package com.niki914.nexus.agentic.app.ui.nexus.content
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -10,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -17,13 +20,16 @@ import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleListItemCard
+import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
+import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
+import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 import com.niki914.nexus.agentic.repo.XRepo
 import kotlinx.coroutines.launch
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 
 @Composable
 fun CustomShellToolsSettingsContent(
-    onOpenToolDetail: (toolName: String, toolIndex: Int) -> Unit,
+    onOpenToolDetail: (toolName: String, toolIndex: Int, isCreating: Boolean) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
 
@@ -33,6 +39,20 @@ fun CustomShellToolsSettingsContent(
     var statusMessage by remember { mutableStateOf<String?>(null) }
 
     val saveFailedTemplate = stringResource(R.string.custom_tool_save_failed)
+    val createTitle = stringResource(R.string.custom_tool_editor_title_create)
+    val latestOnOpenToolDetail by rememberUpdatedState(onOpenToolDetail)
+    val pageChromeContribution = remember(createTitle) {
+        PageChromeContribution(
+            rightAction = TopBarActionSpec(
+                icon = Icons.Default.Add,
+                onClick = {
+                    latestOnOpenToolDetail(createTitle, -1, true)
+                },
+                contentDescription = createTitle,
+            ),
+        )
+    }
+    RegisterPageChrome(pageChromeContribution)
 
     LaunchedEffect(Unit) {
         items = XRepo.customTools.list().map { it.toItem() }
@@ -83,7 +103,7 @@ fun CustomShellToolsSettingsContent(
                             }
                         },
                         onClick = {
-                            onOpenToolDetail(item.name, index)
+                            onOpenToolDetail(item.name, index, false)
                         },
                     )
                 }

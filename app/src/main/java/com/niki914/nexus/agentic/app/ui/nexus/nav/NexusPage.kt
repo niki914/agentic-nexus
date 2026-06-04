@@ -91,13 +91,12 @@ data object SettingsHomePage : NexusPage {
 data class SettingsDetailPage(
     val group: NexusSettingsGroup,
     val explicitTitleSpec: PageTitleSpec? = null,
-    val explicitRightAction: TopBarActionSpec? = null,
 ) : NexusPage {
     override val routeKey: String = "settings-detail:${group.routeSuffix}"
     override val titleSpec: PageTitleSpec = explicitTitleSpec ?: ResTitle(group.titleRes)
     override val leftAction: TopBarActionSpec =
         TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
-    override val rightAction: TopBarActionSpec? = explicitRightAction
+    override val rightAction: TopBarActionSpec? = null
 }
 
 data class McpServerDetailPage(
