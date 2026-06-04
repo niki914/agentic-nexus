@@ -1,24 +1,51 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content
 
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
 class AboutSettingsContentSourceTest {
     @Test
-    fun aboutSettingsContent_containsSingleCardFiveItemsAndVersionState() {
+    fun aboutSettingsContent_containsAboutLinksFeedbackAndVersionState() {
         val source = readAboutSettingsContentSource()
 
         assertTrue(source.contains("SettingsListPageContent("))
         assertTrue(source.contains("SettingsGroupCard"))
-        assertEquals(5, source.countOccurrences("SettingsListItem("))
+        assertTrue(source.contains("uiState.items.forEach"))
         assertTrue(source.contains("BuildConfig.VERSION_NAME"))
         assertTrue(source.contains("R.string.ui_settings_about_author_homepage"))
         assertTrue(source.contains("R.string.ui_settings_about_github"))
         assertTrue(source.contains("R.string.ui_settings_about_afdian"))
         assertTrue(source.contains("R.string.ui_settings_about_telegram"))
+        assertTrue(source.contains("R.string.ui_settings_about_feedback_feature"))
+        assertTrue(source.contains("R.string.ui_settings_about_feedback_bug"))
         assertTrue(source.contains("R.string.ui_settings_about_version"))
+    }
+
+    @Test
+    fun aboutSettingsContent_usesViewModelEffectsToOpenUris() {
+        val source = readAboutSettingsContentSource()
+
+        assertTrue(source.contains("pageViewModel<AboutSettingsViewModel>()"))
+        assertTrue(source.contains("AboutSettingsIntent.OpenItem"))
+        assertTrue(source.contains("AboutSettingsEffect.OpenUri"))
+        assertTrue(source.contains("openUri(effect.uri)"))
+    }
+
+    @Test
+    fun aboutSettingsViewModel_keepsIssueTemplatesReadableAndEncodesWhenOpening() {
+        val source = File(
+            "src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/AboutSettingsState.kt"
+        ).readText()
+
+        assertTrue(source.contains("FEATURE_FEEDBACK_TITLE"))
+        assertTrue(source.contains("FEATURE_FEEDBACK_BODY"))
+        assertTrue(source.contains("BUG_FEEDBACK_TITLE"))
+        assertTrue(source.contains("BUG_FEEDBACK_BODY"))
+        assertTrue(source.contains("Uri.encode(title)"))
+        assertTrue(source.contains("Uri.encode(body)"))
+        assertTrue(source.contains("\"[Feature] \""))
+        assertTrue(source.contains("\"[Bug] \""))
     }
 
     @Test
@@ -48,7 +75,4 @@ class AboutSettingsContentSourceTest {
         ).readText()
     }
 
-    private fun String.countOccurrences(needle: String): Int {
-        return split(needle).size - 1
-    }
 }

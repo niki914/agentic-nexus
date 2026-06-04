@@ -77,6 +77,8 @@
     <string name="ui_settings_about_github">GitHub</string>
     <string name="ui_settings_about_afdian">爱发电</string>
     <string name="ui_settings_about_telegram">Telegram 群组</string>
+    <string name="ui_settings_about_feedback_feature">功能建议</string>
+    <string name="ui_settings_about_feedback_bug">Bug 反馈</string>
     <string name="ui_settings_about_version">版本号</string>
 
     <!-- Settings Detail Shared -->
