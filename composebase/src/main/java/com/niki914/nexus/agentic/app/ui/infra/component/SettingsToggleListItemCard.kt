@@ -1,33 +1,19 @@
 package com.niki914.nexus.agentic.app.ui.infra.component
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsToggleListItemCard(
@@ -61,49 +47,17 @@ private fun SettingsToggleListItemRow(
     onClick: (() -> Unit)?,
 ) {
     val currentChecked by rememberUpdatedState(checked)
-    val haptics = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
-    val restingColor = Color.Transparent
-    val pressedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-
-    var backgroundColor by remember { mutableStateOf(restingColor) }
-    val animatedBackgroundColor by animateColorAsState(
-        targetValue = backgroundColor,
-        animationSpec = tween(durationMillis = 500),
-        label = "settingsToggleListItemBackground",
-    )
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(animatedBackgroundColor)
-            .heightIn(min = 64.dp)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .pointerInput(enabled, onClick) {
-                    detectTapGestures(
-                        onPress = {
-                            if (enabled && onClick != null) {
-                                backgroundColor = pressedColor
-                                tryAwaitRelease()
-                                backgroundColor = restingColor
-                            }
-                        },
-                        onTap = {
-                            if (enabled && onClick != null) {
-                                scope.launch {
-                                    haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
-                                }
-                                onClick()
-                            }
-                        },
-                    )
-                },
+        SettingsItemSurface(
+            modifier = Modifier.weight(1f),
+            enabled = enabled,
+            contentPadding = PaddingValues(start = 16.dp, top = 14.dp, end = 0.dp, bottom = 14.dp),
+            onClick = onClick,
         ) {
             Text(
                 text = title,
@@ -115,6 +69,7 @@ private fun SettingsToggleListItemRow(
         }
 
         LiquidToggle(
+            modifier = Modifier.padding(end = 16.dp),
             checked = checked,
             enabled = enabled,
             onCheckedChange = { newChecked ->

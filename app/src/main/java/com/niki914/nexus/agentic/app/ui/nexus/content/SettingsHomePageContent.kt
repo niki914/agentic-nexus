@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -21,6 +19,7 @@ import com.niki914.nexus.agentic.app.ui.infra.liquidScreenHazeSource
 import com.niki914.nexus.agentic.app.ui.infra.liquidScreenTopPadding
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingNavigationItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.SettingsUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.SettingsViewModel
@@ -79,11 +78,7 @@ private fun SettingsHomeSectionCard(
                 onClick = { onOpenGroup(group) },
             )
             if (index != groups.lastIndex) {
-                HorizontalDivider(
-                    thickness = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                )
+                SettingsItemDivider()
             }
         }
     }

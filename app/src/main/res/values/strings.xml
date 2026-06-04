@@ -72,6 +72,12 @@
     <string name="ui_settings_execution_rules_summary">设置 Shell 的安全策略</string>
     <string name="ui_settings_about">关于</string>
     <string name="ui_settings_about_summary">作者、说明与支持</string>
+    <string name="ui_settings_about_description">查看作者主页、项目地址、支持方式与当前版本信息。</string>
+    <string name="ui_settings_about_author_homepage">作者主页</string>
+    <string name="ui_settings_about_github">GitHub</string>
+    <string name="ui_settings_about_afdian">爱发电</string>
+    <string name="ui_settings_about_telegram">Telegram 群</string>
+    <string name="ui_settings_about_version">版本号</string>
 
     <!-- Settings Detail Shared -->
     <string name="ui_todo_page_title">功能正在开发中</string>

@@ -8,7 +8,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -20,6 +23,8 @@ import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextCar
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingNavigationItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListItem
 import com.niki914.nexus.cb.BaseTheme
 
 @Composable
@@ -44,16 +49,51 @@ private fun SettingsInfraPreviewContent() {
                 currentState = "DeepSeek",
                 onClick = {},
             )
-            HorizontalDivider(
-                thickness = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                modifier = Modifier.padding(horizontal = 12.dp),
-            )
+            SettingsItemDivider()
             SettingToggleItem(
                 title = "启用工具调用",
                 description = "允许模型在回答过程中调用已启用的本地工具与 MCP 工具。",
                 checked = true,
                 onCheckedChange = {},
+            )
+        }
+
+        SettingsGroupCard(title = "基础列表项样例") {
+            SettingsListItem(
+                title = "带副标题的基础项",
+                summary = "用于确认基础列表项在双行文案下的间距与样式。",
+                onClick = {},
+            )
+            SettingsItemDivider()
+            SettingsListItem(
+                title = "仅标题基础项",
+                onClick = {},
+            )
+            SettingsItemDivider()
+            SettingsListItem(
+                title = "带 leading 的基础项",
+                summary = "左侧图标通过 leadingContent 注入。",
+                leadingContent = {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                },
+                onClick = {},
+            )
+            SettingsItemDivider()
+            SettingsListItem(
+                title = "带状态值的基础项",
+                currentState = "v1.0.0",
+                leadingContent = {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                },
+                onClick = {},
             )
         }
 
@@ -65,11 +105,7 @@ private fun SettingsInfraPreviewContent() {
                 enabled = false,
                 onClick = {},
             )
-            HorizontalDivider(
-                thickness = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                modifier = Modifier.padding(horizontal = 12.dp),
-            )
+            SettingsItemDivider()
             SettingToggleItem(
                 title = "同步远程配置并在需要时自动回退到本地缓存",
                 description = "这是一个很长的说明文案，用来验证开关项的标题和副标题都被限制在两行以内，同时观察整行点击和透明 item 语义保持不变。",
@@ -77,11 +113,7 @@ private fun SettingsInfraPreviewContent() {
                 enabled = false,
                 onCheckedChange = {},
             )
-            HorizontalDivider(
-                thickness = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                modifier = Modifier.padding(horizontal = 12.dp),
-            )
+            SettingsItemDivider()
             SettingToggleItem(
                 title = "仅标题开关项",
                 description = null,
