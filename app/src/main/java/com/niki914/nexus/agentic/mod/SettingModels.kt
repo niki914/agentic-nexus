@@ -11,6 +11,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 
 abstract class XSettings(
     val props: JsonObject
@@ -23,6 +24,9 @@ abstract class XSettings(
 
     fun getInt(key: String, default: Int = 0): Int =
         props[key]?.jsonPrimitive?.intOrNull ?: default
+
+    fun getLong(key: String, default: Long = 0L): Long =
+        props[key]?.jsonPrimitive?.longOrNull ?: default
 
     fun getStringList(key: String): List<String> =
         props[key]
@@ -41,6 +45,18 @@ abstract class XSettings(
 }
 
 class WebSettings(props: JsonObject = JsonObject(emptyMap())) : XSettings(props) {
+    val packageName: String
+        get() = getString("package_name")
+
+    val versionCode: Long
+        get() = getLong("version_code")
+
+    val requestedVersionCode: Long
+        get() = getLong("requested_version_code", versionCode)
+
+    val resolvedVersionCode: Long
+        get() = getLong("resolved_version_code", versionCode)
+
     val isBeta: Boolean
         get() = getBoolean("is_beta", false)
 

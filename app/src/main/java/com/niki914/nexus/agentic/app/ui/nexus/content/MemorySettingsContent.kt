@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -35,6 +36,7 @@ import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
 import com.niki914.nexus.agentic.app.ui.infra.component.SwipeDismissSettingsItemCard
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.PageBackHandler
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
 import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
 import com.niki914.nexus.agentic.app.ui.nexus.model.MemoryEditDialogState
@@ -48,12 +50,22 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 fun MemorySettingsContent() {
     val viewModel = pageViewModel<MemorySettingsViewModel>()
     val uiState by viewModel.uiStateFlow.collectAsState()
+    val latestUiState by rememberUpdatedState(uiState)
+    val latestViewModel by rememberUpdatedState(viewModel)
     val pageChromeContribution = remember(viewModel) {
         PageChromeContribution(
             rightAction = TopBarActionSpec(
                 icon = Icons.Default.Add,
                 onClick = {
                     viewModel.sendIntent(MemorySettingsIntent.StartCreate)
+                },
+            ),
+            backHandler = PageBackHandler(
+                shouldConsumeBack = {
+                    latestUiState.editingDialog != null
+                },
+                onConsumeBack = {
+                    latestViewModel.sendIntent(MemorySettingsIntent.DismissEditDialog)
                 },
             ),
         )

@@ -26,6 +26,26 @@ class WebSettingsModelsTest {
     }
 
     @Test
+    fun versionMetadata_defaultsRequestedAndResolvedToConfigVersion() {
+        val settings = WebSettings(
+            jsonObject(
+                """
+                {
+                  "package_name":"com.heytap.speechassist",
+                  "version_code":120803,
+                  "config":{"actions":{}}
+                }
+                """.trimIndent()
+            )
+        )
+
+        assertEquals("com.heytap.speechassist", settings.packageName)
+        assertEquals(120803L, settings.versionCode)
+        assertEquals(120803L, settings.requestedVersionCode)
+        assertEquals(120803L, settings.resolvedVersionCode)
+    }
+
+    @Test
     fun nearestVersionCode_returnsClosestVersionByAbsoluteDistance() {
         val nearest = WebSettingsVersionFallback.nearestVersionCode(
             requestedVersionCode = 105,

@@ -19,6 +19,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +34,7 @@ import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.PageBackHandler
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
 import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
 import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRuleDraft
@@ -47,12 +49,22 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 fun ExecutionRulesSettingsContent() {
     val viewModel = pageViewModel<ExecutionRulesSettingsViewModel>()
     val uiState by viewModel.uiStateFlow.collectAsState()
+    val latestUiState by rememberUpdatedState(uiState)
+    val latestViewModel by rememberUpdatedState(viewModel)
     val pageChromeContribution = remember(viewModel) {
         PageChromeContribution(
             rightAction = TopBarActionSpec(
                 icon = Icons.Default.Add,
                 onClick = {
                     viewModel.sendIntent(ExecutionRulesSettingsIntent.StartCreate)
+                },
+            ),
+            backHandler = PageBackHandler(
+                shouldConsumeBack = {
+                    latestUiState.editingRule != null
+                },
+                onConsumeBack = {
+                    latestViewModel.sendIntent(ExecutionRulesSettingsIntent.DismissEditingRule)
                 },
             ),
         )

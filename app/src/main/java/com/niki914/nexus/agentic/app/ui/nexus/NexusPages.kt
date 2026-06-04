@@ -107,20 +107,20 @@ fun NexusPageContent(
                         webSettingsDialog = when (result.reason) {
                             WebSettingsFailureReason.NetworkUnavailable -> StartupWebSettingsDialog.NetworkError
                             WebSettingsFailureReason.ServerError,
+                            WebSettingsFailureReason.UnsupportedVersion,
                             WebSettingsFailureReason.InvalidConfig -> StartupWebSettingsDialog.FetchFailed
-
-                            WebSettingsFailureReason.UnsupportedVersion -> {
-                                StartupWebSettingsDialog.UnsupportedVersion
-                            }
                         }
                     }
                 }
             }
 
             fun requestWebSettings(forceRetry: Boolean) {
+                if (isCheckingWebSettings) {
+                    return
+                }
+                isCheckingWebSettings = true
+                webSettingsDialog = null
                 scope.launch {
-                    isCheckingWebSettings = true
-                    webSettingsDialog = null
                     val result = if (forceRetry) {
                         XRepo.web.retry()
                     } else {
@@ -323,29 +323,26 @@ private fun StartupWebSettingsDialogContent(
         StartupWebSettingsDialog.Beta,
         StartupWebSettingsDialog.UnsupportedVersion -> R.string.ui_onboard_web_confirm
 
-        StartupWebSettingsDialog.FetchFailed -> R.string.ui_onboard_web_enter_directly
-        StartupWebSettingsDialog.NetworkError -> R.string.ui_onboard_web_retry
+        StartupWebSettingsDialog.FetchFailed,
+        StartupWebSettingsDialog.NetworkError -> R.string.ui_onboard_web_enter_directly
     }
     val negativeTextRes = when (dialog) {
         StartupWebSettingsDialog.Beta,
         StartupWebSettingsDialog.UnsupportedVersion,
-        StartupWebSettingsDialog.NetworkError -> R.string.ui_onboard_web_cancel
-
-        StartupWebSettingsDialog.FetchFailed -> R.string.ui_onboard_web_retry
+        StartupWebSettingsDialog.FetchFailed,
+        StartupWebSettingsDialog.NetworkError -> R.string.ui_onboard_web_retry
     }
     val onPositiveClick = when (dialog) {
         StartupWebSettingsDialog.Beta,
         StartupWebSettingsDialog.UnsupportedVersion,
-        StartupWebSettingsDialog.FetchFailed -> onEnterNextPage
-
-        StartupWebSettingsDialog.NetworkError -> onRetry
+        StartupWebSettingsDialog.FetchFailed,
+        StartupWebSettingsDialog.NetworkError -> onEnterNextPage
     }
     val onNegativeClick = when (dialog) {
         StartupWebSettingsDialog.Beta,
         StartupWebSettingsDialog.UnsupportedVersion,
-        StartupWebSettingsDialog.NetworkError -> onDismiss
-
-        StartupWebSettingsDialog.FetchFailed -> onRetry
+        StartupWebSettingsDialog.FetchFailed,
+        StartupWebSettingsDialog.NetworkError -> onRetry
     }
 
     ConfirmationLiquidDialog(

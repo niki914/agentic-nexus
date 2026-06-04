@@ -23,6 +23,8 @@ class App : Application() {
         DynamicColors.applyToActivitiesIfAvailable(this)
         applicationScope.launch {
             XRepo.web.await()
+        }
+        applicationScope.launch {
             XRepo.tryPutDefaultSettings()
         }
     }

@@ -17,6 +17,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
@@ -30,38 +32,56 @@ class WebSettingsApi internal constructor(
 
     suspend fun await(): WebSettingsResult {
         val context = repo.context()
-        readCachedSettings(context)?.let { return it }
-        return refreshFromNetwork(context, useCacheBeforeNetwork = true)
+        val target = resolveTarget(context)
+            ?: return WebSettingsResult.RequestFailed(WebSettingsFailureReason.UnsupportedVersion)
+        readCachedSettings(context, target)?.let { return it }
+        return refreshFromNetwork(
+            context = context,
+            target = target,
+            useCacheBeforeNetwork = true,
+        )
     }
 
     suspend fun retry(): WebSettingsResult {
-        return refreshFromNetwork(repo.context(), useCacheBeforeNetwork = false)
+        val context = repo.context()
+        val target = resolveTarget(context)
+            ?: return WebSettingsResult.RequestFailed(WebSettingsFailureReason.UnsupportedVersion)
+        return refreshFromNetwork(
+            context = context,
+            target = target,
+            useCacheBeforeNetwork = false,
+        )
     }
 
-    private suspend fun readCachedSettings(context: Context): WebSettingsResult.Success? {
+    private suspend fun readCachedSettings(
+        context: Context,
+        target: WebSettingsTarget,
+    ): WebSettingsResult.Success? {
         val settings = WebSettings(parseJsonObject(XIpcBridge.readWebSettingsJson(context)))
         if (settings.config == null) {
             return null
         }
+        if (!settings.matches(target)) {
+            return null
+        }
         return WebSettingsResult.Success(
             settings = settings,
-            requestedVersionCode = null,
-            resolvedVersionCode = null,
+            requestedVersionCode = settings.requestedVersionCode,
+            resolvedVersionCode = settings.resolvedVersionCode,
             source = WebSettingsSource.Cache,
-            isFallbackVersion = false,
+            isFallbackVersion = settings.requestedVersionCode != settings.resolvedVersionCode,
         )
     }
 
     private suspend fun refreshFromNetwork(
         context: Context,
+        target: WebSettingsTarget,
         useCacheBeforeNetwork: Boolean,
     ): WebSettingsResult {
         return refreshMutex.withLock {
             if (useCacheBeforeNetwork) {
-                readCachedSettings(context)?.let { return@withLock it }
+                readCachedSettings(context, target)?.let { return@withLock it }
             }
-            val target = resolveTarget(context)
-                ?: return@withLock WebSettingsResult.RequestFailed(WebSettingsFailureReason.UnsupportedVersion)
             val exactResult = fetchConfig(target.packageName, target.versionCode)
             when (exactResult) {
                 is ConfigFetchResult.Success -> persistSuccess(
@@ -96,7 +116,7 @@ class WebSettingsApi internal constructor(
         val nearestVersionCode = WebSettingsVersionFallback.nearestVersionCode(
             requestedVersionCode = target.versionCode,
             supportedVersionCodes = supportedVersions,
-        ) ?: return WebSettingsResult.RequestFailed(WebSettingsFailureReason.UnsupportedVersion)
+        ) ?: return WebSettingsResult.RequestFailed(WebSettingsFailureReason.ServerError)
         val fallbackResult = fetchConfig(target.packageName, nearestVersionCode)
         return when (fallbackResult) {
             is ConfigFetchResult.Success -> persistSuccess(
@@ -107,9 +127,7 @@ class WebSettingsApi internal constructor(
                 isFallbackVersion = true,
             )
 
-            ConfigFetchResult.NotFound -> WebSettingsResult.RequestFailed(
-                WebSettingsFailureReason.UnsupportedVersion
-            )
+            ConfigFetchResult.NotFound -> WebSettingsResult.RequestFailed(WebSettingsFailureReason.ServerError)
 
             is ConfigFetchResult.Failed -> WebSettingsResult.RequestFailed(
                 reason = fallbackResult.reason,
@@ -125,11 +143,15 @@ class WebSettingsApi internal constructor(
         resolvedVersionCode: Long,
         isFallbackVersion: Boolean,
     ): WebSettingsResult {
-        val settings = WebSettings(parseJsonObject(json))
+        val rawSettings = WebSettings(parseJsonObject(json))
+        val settings = rawSettings.withResolvedMetadata(
+            requestedVersionCode = requestedVersionCode,
+            resolvedVersionCode = resolvedVersionCode,
+        )
         if (settings.config == null) {
             return WebSettingsResult.RequestFailed(WebSettingsFailureReason.InvalidConfig)
         }
-        XIpcBridge.writeWebSettingsJson(context, json)
+        XIpcBridge.writeWebSettingsJson(context, settings.props.toString())
         xlog(
             "WebSettings refreshed requested=$requestedVersionCode resolved=$resolvedVersionCode fallback=$isFallbackVersion"
         )
@@ -165,7 +187,7 @@ class WebSettingsApi internal constructor(
             }
 
             is HttpTextResult.Failed -> VersionsFetchResult.Failed(response.reason, response.cause)
-            HttpTextResult.NotFound -> VersionsFetchResult.Success(emptyList())
+            HttpTextResult.NotFound -> VersionsFetchResult.Failed(WebSettingsFailureReason.ServerError)
         }
     }
 
@@ -253,6 +275,23 @@ class WebSettingsApi internal constructor(
 
     private fun buildVersionsUrl(packageName: String): String {
         return "$REMOTE_BASE_URL$packageName/versions.json"
+    }
+
+    private fun WebSettings.matches(target: WebSettingsTarget): Boolean {
+        return packageName == target.packageName && requestedVersionCode == target.versionCode
+    }
+
+    private fun WebSettings.withResolvedMetadata(
+        requestedVersionCode: Long,
+        resolvedVersionCode: Long,
+    ): WebSettings {
+        val updatedProps = JsonObject(
+            props + mapOf(
+                "requested_version_code" to JsonPrimitive(requestedVersionCode),
+                "resolved_version_code" to JsonPrimitive(resolvedVersionCode),
+            )
+        )
+        return WebSettings(updatedProps)
     }
 
     private data class WebSettingsTarget(
