@@ -23,7 +23,6 @@ data class ResolvedTools(
     val builtinTools: List<LocalTool> = emptyList(),
     val customTools: List<LocalTool> = emptyList(),
     val mcpServers: List<McpServerDefinition> = emptyList(),
-    val promptLines: List<String> = emptyList(),
 )
 
 sealed interface LocalTool {

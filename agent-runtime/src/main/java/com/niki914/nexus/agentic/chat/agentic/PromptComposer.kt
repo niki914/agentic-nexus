@@ -1,5 +1,11 @@
 package com.niki914.nexus.agentic.chat.agentic
 
+import com.niki914.nexus.agentic.chat.McpServerDefinition
+import com.niki914.nexus.agentic.chat.ResolvedTools
+import com.niki914.s3ss10n.McpDiscoverySnapshot
+import com.niki914.s3ss10n.McpDiscoveryState
+import com.niki914.s3ss10n.McpServerDiscoverySnapshot
+
 data class PromptComposeResult(
     val finalSystemPrompt: String,
     val sections: List<PromptSection>,
@@ -10,73 +16,144 @@ data class PromptSection(
     val content: String,
 )
 
-data class PromptXMLSection(
-    val title: String,
-    val tag: String,
-    val items: List<String>,
-)
-
 data class PromptComposerInput(
-    val baseSystemPrompt: String,
+    val additionalInstructions: String,
     val memoryItems: List<String> = emptyList(),
-    val toolSections: List<String> = emptyList(),
-    val runtimeSections: List<String> = emptyList(),
+    val tools: ResolvedTools = ResolvedTools(),
+    val mcpDiscoverySnapshot: McpDiscoverySnapshot? = null,
 )
 
 class PromptComposer {
 
     fun compose(input: PromptComposerInput): PromptComposeResult {
-        val sections = buildList {
-            add(
-                PromptSection(
-                    title = "Core system instructions",
-                    content = input.baseSystemPrompt.ifBlank { DEFAULT_SYSTEM_PROMPT },
-                )
-            )
-            addXmlSection(
-                PromptXMLSection(
-                    title = "Persistent memory",
-                    tag = "memory",
-                    items = input.memoryItems,
-                )
-            )
-            input.toolSections
-                .filter { it.isNotBlank() }
-                .forEachIndexed { index, text ->
-                    add(PromptSection(title = "Available tool instructions ${index + 1}", content = text))
-                }
-            input.runtimeSections
-                .filter { it.isNotBlank() }
-                .forEachIndexed { index, text ->
-                    add(PromptSection(title = "Runtime context ${index + 1}", content = text))
-                }
-        }
+        val sections = listOfNotNull(
+            renderMemorySection(input.memoryItems),
+            renderToolContextSection(input.tools, input.mcpDiscoverySnapshot),
+            renderAdditionalInstructions(input.additionalInstructions),
+        )
 
         return PromptComposeResult(
-            finalSystemPrompt = sections.joinToString(separator = "\n\n") { it.content.trim() }
+            finalSystemPrompt = (listOf("# System Prompt") + sections.map { it.content.trim() })
+                .joinToString(separator = "\n\n")
                 .trim(),
             sections = sections,
         )
     }
 
-    companion object {
-        private const val DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant."
-    }
-}
-
-private fun MutableList<PromptSection>.addXmlSection(section: PromptXMLSection) {
-    val items = section.items.map(String::trim).filter(String::isNotBlank)
-    if (items.isEmpty()) {
-        return
-    }
-    add(
-        PromptSection(
-            title = section.title,
-            content = items.joinToString(
-                separator = "\n",
-                prefix = "<${section.tag}>\n",
-                postfix = "\n</${section.tag}>",
-            ),
+    private fun renderMemorySection(items: List<String>): PromptSection? {
+        val normalizedItems = items.map(String::trim).filter(String::isNotBlank)
+        if (normalizedItems.isEmpty()) {
+            return null
+        }
+        return PromptSection(
+            title = "Agent Memory",
+            content = buildString {
+                appendLine("## Agent Memory")
+                appendLine()
+                appendLine("<memory>")
+                normalizedItems.forEach { item -> appendLine("- $item") }
+                append("</memory>")
+            },
         )
-    )
+    }
+
+    private fun renderToolContextSection(
+        tools: ResolvedTools,
+        snapshot: McpDiscoverySnapshot?,
+    ): PromptSection? {
+        val blocks = listOfNotNull(
+            renderNameBlock("builtin_tools", tools.builtinTools.map { it.name }),
+            renderNameBlock("custom_tools", tools.customTools.map { it.name }),
+            renderMcpServers(tools, snapshot),
+        )
+        if (blocks.isEmpty()) {
+            return null
+        }
+        return PromptSection(
+            title = "Tool Context",
+            content = buildString {
+                appendLine("## Tool Context")
+                appendLine()
+                append(blocks.joinToString(separator = "\n\n"))
+            },
+        )
+    }
+
+    private fun renderNameBlock(tag: String, names: List<String>): String? {
+        val normalizedNames = names
+            .map(String::trim)
+            .filter(String::isNotBlank)
+            .distinct()
+            .sorted()
+        if (normalizedNames.isEmpty()) {
+            return null
+        }
+        return normalizedNames.joinToString(
+            separator = "\n",
+            prefix = "<$tag>\n",
+            postfix = "\n</$tag>",
+        ) { name -> "- $name" }
+    }
+
+    private fun renderMcpServers(
+        tools: ResolvedTools,
+        snapshot: McpDiscoverySnapshot?,
+    ): String? {
+        val enabledServers = tools.mcpServers
+            .filter(McpServerDefinition::enabled)
+            .map { it.name.trim() }
+            .filter(String::isNotBlank)
+            .distinct()
+            .sorted()
+        if (enabledServers.isEmpty()) {
+            return null
+        }
+        val snapshotByName = snapshot?.servers?.values.orEmpty().associateBy { it.serverName }
+        return enabledServers.joinToString(
+            separator = "\n",
+            prefix = "<mcp_servers>\n",
+            postfix = "\n</mcp_servers>",
+        ) { serverName ->
+            "- ${snapshotByName[serverName]?.let(::renderMcpStatus) ?: "$serverName: idle"}"
+        }
+    }
+
+    private fun renderMcpStatus(server: McpServerDiscoverySnapshot): String =
+        when (server.state) {
+            McpDiscoveryState.Available ->
+                "${server.serverName}: loaded ${server.discoveredToolCount} tools"
+
+            McpDiscoveryState.Discovering ->
+                "${server.serverName}: loading"
+
+            McpDiscoveryState.Failed -> {
+                val message = server.errorMessage?.trim().takeUnless { it.isNullOrBlank() }
+                if (message == null) {
+                    "${server.serverName}: failed"
+                } else {
+                    "${server.serverName}: failed, msg: $message"
+                }
+            }
+
+            McpDiscoveryState.UsingStaleCache ->
+                "${server.serverName}: using cached ${server.discoveredToolCount} tools"
+
+            McpDiscoveryState.Idle ->
+                "${server.serverName}: idle"
+        }
+
+    private fun renderAdditionalInstructions(text: String): PromptSection? {
+        val normalizedText = text.trim()
+        if (normalizedText.isEmpty()) {
+            return null
+        }
+        return PromptSection(
+            title = "Additional instructions",
+            content = buildString {
+                appendLine("## Additional instructions")
+                appendLine()
+                append(normalizedText)
+            },
+        )
+    }
 }

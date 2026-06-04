@@ -35,11 +35,6 @@ class ToolManager(
             builtinTools = builtinTools,
             customTools = customRuntimeTools,
             mcpServers = mcpRuntimeServers,
-            promptLines = buildPromptLines(
-                builtinTools = builtinTools,
-                customTools = customRuntimeTools,
-                mcpServers = mcpRuntimeServers,
-            ),
         )
     }
 
@@ -112,33 +107,6 @@ class ToolManager(
         } catch (_: IllegalArgumentException) {
             JsonObject(emptyMap())
         }
-    }
-
-    fun buildPromptLines(
-        builtinTools: List<LocalTool>,
-        customTools: List<LocalTool>,
-        mcpServers: List<McpServerDefinition>,
-    ): List<String> {
-        val lines = mutableListOf<String>()
-        val builtinToolNames = builtinTools.map { it.name }
-        if (builtinToolNames.isNotEmpty()) {
-            lines += "Available builtin tools: ${builtinToolNames.joinToString()}"
-        }
-
-        val customToolNames = customTools
-            .filterIsInstance<LocalTool.Custom>()
-            .map { it.name }
-        if (customToolNames.isNotEmpty()) {
-            lines += "Available custom tools: ${customToolNames.joinToString()}"
-        }
-
-        val enabledMcpServers = mcpServers.filter { it.enabled }
-        if (enabledMcpServers.isNotEmpty()) {
-            val serverNames = enabledMcpServers.joinToString { it.name }
-            lines += "Available MCP servers: $serverNames"
-        }
-
-        return lines
     }
 
 }

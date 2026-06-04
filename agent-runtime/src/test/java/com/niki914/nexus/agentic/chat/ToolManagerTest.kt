@@ -67,14 +67,7 @@ class ToolManagerTest {
         assertEquals("lookupSymbol", cachedTool.name)
         assertEquals("Lookup symbol definition", cachedTool.description)
         assertEquals("""{"type":"object"}""", cachedTool.inputSchema.toString())
-        assertEquals(
-            listOf(
-                "Available builtin tools: time",
-                "Available custom tools: current_time",
-                "Available MCP servers: aslocate",
-            ),
-            resolved.promptLines,
-        )
+        assertEquals(listOf("time", "current_time"), resolved.allLocalToolNames())
     }
 
     @Test
@@ -124,14 +117,7 @@ class ToolManagerTest {
         assertEquals(mapOf("Authorization" to "Bearer token"), mcpServer.headers)
         assertEquals("lookupSymbol", mcpServer.cachedTools.single().name)
         assertEquals("""{"type":"object"}""", mcpServer.cachedTools.single().inputSchema.toString())
-        assertEquals(
-            listOf(
-                "Available builtin tools: time",
-                "Available custom tools: current_time",
-                "Available MCP servers: aslocate",
-            ),
-            resolved.promptLines,
-        )
+        assertTrue(resolved.allLocalTools().all { it.name in setOf("time", "current_time") })
     }
 
     private class FakeBuiltinTool(

@@ -10,9 +10,6 @@ import com.niki914.nexus.agentic.chat.agentic.stream.LlmStreamEventMapper
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.agentic.runtime.settings.model.LlmApiType
 import com.niki914.nexus.h.util.xlog
-import com.niki914.s3ss10n.McpDiscoverySnapshot
-import com.niki914.s3ss10n.McpDiscoveryState
-import com.niki914.s3ss10n.McpServerDiscoverySnapshot
 import com.niki914.s3ss10n.Session
 import com.niki914.s3ss10n.SessionConfig
 import com.niki914.s3ss10n.SessionProtocols
@@ -102,10 +99,10 @@ object LLMController {
         val mcpSnapshot = activeSession.getMcpDiscoverySnapshot()
         val prompt = promptComposer.compose(
             PromptComposerInput(
-                baseSystemPrompt = llmConfig.prompt,
+                additionalInstructions = llmConfig.prompt,
                 memoryItems = buildMemoryItems(llmConfig),
-                toolSections = resolvedTools.promptLines,
-                runtimeSections = buildRuntimeSections(mcpSnapshot),
+                tools = resolvedTools,
+                mcpDiscoverySnapshot = mcpSnapshot,
             )
         )
         val finalConfig = configWithoutRuntimePrompt.copy(finalSystemPrompt = prompt.finalSystemPrompt)
@@ -232,36 +229,6 @@ object LLMController {
         }
         return listOfNotNull(config.memoryPrompt.trim().takeIf { it.isNotBlank() })
     }
-
-    private fun buildRuntimeSections(snapshot: McpDiscoverySnapshot?): List<String> {
-        val servers = snapshot?.servers?.values.orEmpty()
-        if (servers.isEmpty()) {
-            return emptyList()
-        }
-        return listOf(
-            servers
-                .sortedBy { it.serverName }
-                .joinToString(separator = "\n") { formatMcpStatusLine(it) }
-        )
-    }
-
-    private fun formatMcpStatusLine(server: McpServerDiscoverySnapshot): String =
-        when (server.state) {
-            McpDiscoveryState.Available ->
-                "${server.serverName} MCP: loaded ${server.discoveredToolCount} tools"
-
-            McpDiscoveryState.Discovering ->
-                "${server.serverName} MCP: loading"
-
-            McpDiscoveryState.Failed ->
-                "${server.serverName} MCP: load failed"
-
-            McpDiscoveryState.UsingStaleCache ->
-                "${server.serverName} MCP: using cached ${server.discoveredToolCount} tools"
-
-            McpDiscoveryState.Idle ->
-                "${server.serverName} MCP: not loaded"
-        }
 
     private fun SessionConfig.Builder.applyRuntimeConfig(
         config: ResolvedLlmConfig,
