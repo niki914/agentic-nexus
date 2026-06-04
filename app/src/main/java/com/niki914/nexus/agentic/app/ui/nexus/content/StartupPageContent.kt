@@ -18,16 +18,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenTopPadding
 import com.niki914.nexus.agentic.app.ui.infra.component.TintLiquidButton
 import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
 
 @Composable
 fun StartupPageContent(
-    topPadding: Dp,
     assistantUi: StartupAssistantUi,
     onContinue: () -> Unit,
 ) {
@@ -55,7 +54,7 @@ fun StartupPageContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = topPadding)
+                .padding(top = liquidScreenTopPadding())
                 .padding(horizontal = 24.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {

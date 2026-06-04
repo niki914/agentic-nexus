@@ -244,7 +244,7 @@ fun NexusApp(
                 }
             }
         },
-    ) { hazeState ->
+    ) {
         Box(modifier = Modifier.fillMaxSize()) {
             LiquidScreenSwipeContent(
                 targetState = currentEntry,
@@ -263,8 +263,6 @@ fun NexusApp(
                 ) {
                     NexusPageContent(
                         entry = entry,
-                        topPadding = screenState.actionBarHeight.value,
-                        hazeState = hazeState,
                         startupAssistantUi = startupAssistantUi,
                         onPush = ::push,
                         onPop = { navigator.pop() },

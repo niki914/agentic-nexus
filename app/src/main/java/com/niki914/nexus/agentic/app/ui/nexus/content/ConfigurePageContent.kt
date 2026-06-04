@@ -11,21 +11,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsDetailFormScaffold
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureInlineError
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureScene
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.ProviderSpecs
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.rememberHazeState
 
 @Composable
 fun ConfigurePageContent(
-    topPadding: Dp,
-    hazeState: HazeState,
     uiState: ConfigureUiState,
     buttonDarkContainerColor: Color = MaterialTheme.colorScheme.primary,
     buttonLightContainerColor: Color = MaterialTheme.colorScheme.primary,
@@ -77,8 +73,6 @@ fun ConfigurePageContent(
     }
 
     SettingsDetailFormScaffold(
-        topPadding = topPadding,
-        hazeState = hazeState,
         actionText = actionText,
         onActionClick = onComplete,
         description = description,
@@ -139,24 +133,23 @@ private fun configureInlineErrorText(error: ConfigureInlineError?): String? {
 @Composable
 private fun ConfigurePageContentPreview() {
     MaterialTheme {
-        val hazeState = rememberHazeState(blurEnabled = true)
-        ConfigurePageContent(
-            topPadding = 0.dp,
-            hazeState = hazeState,
-            uiState = ConfigureUiState(
-                providerSpec = ProviderSpecs.find("deepseek"),
-                endpointOverrideEnabled = false,
-                endpointInput = ProviderSpecs.find("deepseek").officialEndpoint,
-                modelInput = "deepseek-chat",
-                apiKeyInput = "sk-demo-key",
-                apiKeyVisible = false
-            ),
-            onEndpointOverrideChange = {},
-            onEndpointChange = {},
-            onModelChange = {},
-            onApiKeyChange = {},
-            onToggleApiKeyVisibility = {},
-            onComplete = {},
-        )
+        ProvideLiquidScreenContentForPreview(topPadding = 0.dp) {
+            ConfigurePageContent(
+                uiState = ConfigureUiState(
+                    providerSpec = ProviderSpecs.find("deepseek"),
+                    endpointOverrideEnabled = false,
+                    endpointInput = ProviderSpecs.find("deepseek").officialEndpoint,
+                    modelInput = "deepseek-chat",
+                    apiKeyInput = "sk-demo-key",
+                    apiKeyVisible = false
+                ),
+                onEndpointOverrideChange = {},
+                onEndpointChange = {},
+                onModelChange = {},
+                onApiKeyChange = {},
+                onToggleApiKeyVisibility = {},
+                onComplete = {},
+            )
+        }
     }
 }

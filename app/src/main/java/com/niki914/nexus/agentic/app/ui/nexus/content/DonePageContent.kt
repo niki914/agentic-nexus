@@ -16,25 +16,22 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenHazeSource
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenTopPadding
 import com.niki914.nexus.agentic.app.ui.infra.component.TintLiquidButton
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
 
 @Composable
 fun DonePageContent(
-    topPadding: Dp,
-    hazeState: HazeState,
     onEnterHome: () -> Unit,
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .hazeSource(hazeState)
-            .padding(top = topPadding)
+            .liquidScreenHazeSource()
+            .padding(top = liquidScreenTopPadding())
             .padding(horizontal = 24.dp, vertical = 24.dp),
     ) {
         Column(

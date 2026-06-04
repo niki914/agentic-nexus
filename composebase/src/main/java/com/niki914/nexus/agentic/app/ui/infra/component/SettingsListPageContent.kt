@@ -9,15 +9,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenHazeSource
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenTopPadding
 
+/**
+ * 设置列表页容器，必须运行在 `LiquidScreen` 内容树内。
+ *
+ * Preview 或独立样例请用 `ProvideLiquidScreenContentForPreview` 提供壳层上下文。
+ */
 @Composable
 fun SettingsListPageContent(
-    topPadding: Dp,
-    hazeState: HazeState,
     description: String? = null,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
@@ -25,9 +27,9 @@ fun SettingsListPageContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .hazeSource(hazeState)
+            .liquidScreenHazeSource()
             .verticalScroll(rememberScrollState())
-            .padding(top = topPadding)
+            .padding(top = liquidScreenTopPadding())
             .padding(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {

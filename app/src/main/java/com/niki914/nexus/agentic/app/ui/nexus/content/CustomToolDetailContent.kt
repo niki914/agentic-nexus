@@ -13,7 +13,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
@@ -32,13 +31,10 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.CustomToolSettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.hasUnsavedChanges
 import com.niki914.nexus.agentic.app.ui.nexus.nav.CustomToolDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
-import dev.chrisbanes.haze.HazeState
 
 @Composable
 fun CustomToolDetailContent(
     page: CustomToolDetailPage,
-    topPadding: Dp,
-    hazeState: HazeState,
     onBack: () -> Unit,
 ) {
     val viewModel = pageViewModel<CustomToolSettingsViewModel>()
@@ -112,8 +108,6 @@ fun CustomToolDetailContent(
     }
 
     CustomToolDetailContentBody(
-        topPadding = topPadding,
-        hazeState = hazeState,
         uiState = uiState,
         requestedFocusField = requestedFocusField,
         onRequestedFocusHandled = {
@@ -157,8 +151,6 @@ fun CustomToolDetailContent(
 
 @Composable
 private fun CustomToolDetailContentBody(
-    topPadding: Dp,
-    hazeState: HazeState,
     uiState: CustomToolSettingsUiState,
     requestedFocusField: CustomToolEditableField?,
     onRequestedFocusHandled: () -> Unit,
@@ -186,8 +178,6 @@ private fun CustomToolDetailContentBody(
     }
 
     SettingsDetailFormScaffold(
-        topPadding = topPadding,
-        hazeState = hazeState,
         actionText = stringResource(R.string.custom_tool_save_action),
         onActionClick = {
             clearActiveField()

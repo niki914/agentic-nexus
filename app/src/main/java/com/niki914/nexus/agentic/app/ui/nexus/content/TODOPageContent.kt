@@ -13,22 +13,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenHazeSource
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenTopPadding
 
 @Composable
-fun TODOPageContent(
-    topPadding: Dp,
-    hazeState: HazeState,
-) {
+fun TODOPageContent() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .hazeSource(hazeState)
-            .padding(top = topPadding)
+            .liquidScreenHazeSource()
+            .padding(top = liquidScreenTopPadding())
             .padding(horizontal = 24.dp, vertical = 24.dp),
         contentAlignment = Alignment.Center,
     ) {

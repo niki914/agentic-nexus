@@ -16,14 +16,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.Dp
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenHazeSource
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenTopPadding
 
+/**
+ * 设置详情表单脚手架，必须运行在 `LiquidScreen` 内容树内。
+ *
+ * Preview 或独立样例请用 `ProvideLiquidScreenContentForPreview` 提供壳层上下文。
+ */
 @Composable
 fun SettingsDetailFormScaffold(
-    topPadding: Dp,
-    hazeState: HazeState,
     actionText: String,
     onActionClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -49,7 +51,7 @@ fun SettingsDetailFormScaffold(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .hazeSource(hazeState),
+            .liquidScreenHazeSource(),
     ) {
         Column(
             modifier = contentModifier
@@ -59,7 +61,7 @@ fun SettingsDetailFormScaffold(
                     horizontal = SettingsDetailPageDefaults.HorizontalPadding,
                 )
                 .padding(
-                    top = topPadding + SettingsDetailPageDefaults.VerticalPadding,
+                    top = liquidScreenTopPadding(SettingsDetailPageDefaults.VerticalPadding),
                     bottom = SettingsDetailPageDefaults.VerticalPadding +
                             SettingsDetailPageDefaults.RootVerticalSpacing +
                             SettingsDetailPageDefaults.ActionButtonReservedHeight,

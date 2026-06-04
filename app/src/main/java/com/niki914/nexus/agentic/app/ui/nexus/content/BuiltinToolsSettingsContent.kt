@@ -7,9 +7,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
@@ -19,14 +19,9 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.BuiltinToolSettingsIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.BuiltinToolSettingsUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.BuiltinToolSettingsViewModel
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolSettingItem
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.rememberHazeState
 
 @Composable
-fun BuiltinToolsSettingsContent(
-    topPadding: Dp,
-    hazeState: HazeState,
-) {
+fun BuiltinToolsSettingsContent() {
     val viewModel = pageViewModel<BuiltinToolSettingsViewModel>()
     val uiState by viewModel.uiStateFlow.collectAsState()
 
@@ -35,8 +30,6 @@ fun BuiltinToolsSettingsContent(
     }
 
     BuiltinToolsSettingsContentBody(
-        topPadding = topPadding,
-        hazeState = hazeState,
         uiState = uiState,
         onItemEnabledChange = { item, checked ->
             viewModel.sendIntent(
@@ -51,14 +44,10 @@ fun BuiltinToolsSettingsContent(
 
 @Composable
 private fun BuiltinToolsSettingsContentBody(
-    topPadding: Dp,
-    hazeState: HazeState,
     uiState: BuiltinToolSettingsUiState,
     onItemEnabledChange: (BuiltinToolSettingItem, Boolean) -> Unit,
 ) {
     SettingsListPageContent(
-        topPadding = topPadding,
-        hazeState = hazeState,
         description = builtinToolDescription(uiState),
     ) {
         if (!uiState.isLoading && uiState.items.isNotEmpty()) {
@@ -96,15 +85,15 @@ private fun builtinToolDescription(uiState: BuiltinToolSettingsUiState): String 
 @Composable
 private fun BuiltinToolsSettingsContentEmptyPreview() {
     MaterialTheme {
-        BuiltinToolsSettingsContentBody(
-            topPadding = 0.dp,
-            hazeState = rememberHazeState(blurEnabled = true),
-            uiState = BuiltinToolSettingsUiState(
-                isLoading = false,
-                descriptionResId = R.string.builtin_tool_empty,
-            ),
-            onItemEnabledChange = { _, _ -> },
-        )
+        ProvideLiquidScreenContentForPreview(topPadding = 0.dp) {
+            BuiltinToolsSettingsContentBody(
+                uiState = BuiltinToolSettingsUiState(
+                    isLoading = false,
+                    descriptionResId = R.string.builtin_tool_empty,
+                ),
+                onItemEnabledChange = { _, _ -> },
+            )
+        }
     }
 }
 
@@ -112,22 +101,22 @@ private fun BuiltinToolsSettingsContentEmptyPreview() {
 @Composable
 private fun BuiltinToolsSettingsContentLongListPreview() {
     MaterialTheme {
-        BuiltinToolsSettingsContentBody(
-            topPadding = 0.dp,
-            hazeState = rememberHazeState(blurEnabled = true),
-            uiState = BuiltinToolSettingsUiState(
-                items = List(20) { index ->
-                    val displayIndex = index + 1
-                    BuiltinToolSettingItem(
-                        name = "builtin_tool_$displayIndex",
-                        description = "用于预览滚动列表的内置工具说明 $displayIndex",
-                        enabled = index % 2 == 0,
-                    )
-                },
-                isLoading = false,
-                descriptionResId = R.string.builtin_tool_page_description,
-            ),
-            onItemEnabledChange = { _, _ -> },
-        )
+        ProvideLiquidScreenContentForPreview(topPadding = 0.dp) {
+            BuiltinToolsSettingsContentBody(
+                uiState = BuiltinToolSettingsUiState(
+                    items = List(20) { index ->
+                        val displayIndex = index + 1
+                        BuiltinToolSettingItem(
+                            name = "builtin_tool_$displayIndex",
+                            description = "用于预览滚动列表的内置工具说明 $displayIndex",
+                            enabled = index % 2 == 0,
+                        )
+                    },
+                    isLoading = false,
+                    descriptionResId = R.string.builtin_tool_page_description,
+                ),
+                onItemEnabledChange = { _, _ -> },
+            )
+        }
     }
 }

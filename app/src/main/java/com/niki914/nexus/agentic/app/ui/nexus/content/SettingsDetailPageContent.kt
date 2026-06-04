@@ -1,12 +1,5 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -16,13 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
@@ -39,14 +26,10 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.CustomToolDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusSettingsGroup
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
 
 @Composable
 fun SettingsDetailPageContent(
     group: NexusSettingsGroup,
-    topPadding: Dp,
-    hazeState: HazeState,
     onPush: (NexusPage) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -59,25 +42,18 @@ fun SettingsDetailPageContent(
 
     if (group == NexusSettingsGroup.ModelConfig) {
         ModelConfigSettingsContent(
-            topPadding = topPadding,
-            hazeState = hazeState,
             onBack = onBack,
         )
         return
     }
 
     if (group == NexusSettingsGroup.BuiltinTools) {
-        BuiltinToolsSettingsContent(
-            topPadding = topPadding,
-            hazeState = hazeState,
-        )
+        BuiltinToolsSettingsContent()
         return
     }
 
     if (group == NexusSettingsGroup.CustomShellTools) {
         CustomShellToolsSettingsContent(
-            topPadding = topPadding,
-            hazeState = hazeState,
             onOpenToolDetail = { name, index ->
                 onPush(CustomToolDetailPage(name, index))
             },
@@ -87,8 +63,6 @@ fun SettingsDetailPageContent(
 
     if (group == NexusSettingsGroup.Mcp) {
         McpSettingsContent(
-            topPadding = topPadding,
-            hazeState = hazeState,
             onOpenServerDetail = { name, index ->
                 onPush(McpServerDetailPage(name, index))
             },
@@ -97,24 +71,16 @@ fun SettingsDetailPageContent(
     }
 
     if (group == NexusSettingsGroup.Memory || group == NexusSettingsGroup.ExecutionRules) {
-        TODOPageContent(
-            topPadding = topPadding,
-            hazeState = hazeState,
-        )
+        TODOPageContent()
         return
     }
 
-    TODOPageContent(
-        topPadding = topPadding,
-        hazeState = hazeState,
-    )
+    TODOPageContent()
     return
 }
 
 @Composable
 private fun ModelConfigSettingsContent(
-    topPadding: Dp,
-    hazeState: HazeState,
     onBack: () -> Unit,
 ) {
     val viewModel = pageViewModel<ConfigureViewModel>(
@@ -173,8 +139,6 @@ private fun ModelConfigSettingsContent(
     }
 
     ConfigurePageContent(
-        topPadding = topPadding,
-        hazeState = hazeState,
         uiState = uiState,
         onEndpointOverrideChange = { enabled ->
             viewModel.sendIntent(ConfigureIntent.SetEndpointOverride(enabled))

@@ -12,21 +12,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleListItemCard
 import com.niki914.nexus.agentic.repo.XRepo
-import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 
 @Composable
 fun CustomShellToolsSettingsContent(
-    topPadding: Dp,
-    hazeState: HazeState,
     onOpenToolDetail: (toolName: String, toolIndex: Int) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -48,8 +44,6 @@ fun CustomShellToolsSettingsContent(
     }
 
     SettingsListPageContent(
-        topPadding = topPadding,
-        hazeState = hazeState,
         description = pageDescription,
     ) {
         if (isLoading) {

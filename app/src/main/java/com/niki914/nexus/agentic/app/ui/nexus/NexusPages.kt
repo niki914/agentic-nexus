@@ -13,7 +13,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.nav.NavigationEntry
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
@@ -52,14 +51,11 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.TextTitle
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 import com.niki914.nexus.agentic.repo.XRepo
 import androidx.compose.material.icons.Icons
-import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
 
 @Composable
 fun NexusPageContent(
     entry: NavigationEntry<NexusPage>,
-    topPadding: Dp,
-    hazeState: HazeState,
     startupAssistantUi: StartupAssistantUi,
     onPush: (NexusPage) -> Unit,
     onPop: () -> Unit,
@@ -71,7 +67,6 @@ fun NexusPageContent(
 
     when (val page = entry.page) {
         StartupPage -> StartupPageContent(
-            topPadding = topPadding,
             assistantUi = startupAssistantUi,
             onContinue = {
                 onPush(
@@ -87,8 +82,6 @@ fun NexusPageContent(
 
         ProviderPickPage -> {
             SelectionPageContent(
-                topPadding = topPadding,
-                hazeState = hazeState,
                 options = ProviderSpecs.all.map { spec ->
                     val colors = providerButtonColors(spec)
                     SelectionOption(
@@ -153,8 +146,6 @@ fun NexusPageContent(
             }
 
             ConfigurePageContent(
-                topPadding = topPadding,
-                hazeState = hazeState,
                 uiState = uiState,
                 buttonDarkContainerColor = colors.darkContainerColor,
                 buttonLightContainerColor = colors.lightContainerColor,
@@ -184,8 +175,6 @@ fun NexusPageContent(
         }
 
         DonePage -> DonePageContent(
-            topPadding = topPadding,
-            hazeState = hazeState,
             onEnterHome = {
                 scope.launch {
                     completeOnboarding()
@@ -195,16 +184,12 @@ fun NexusPageContent(
         )
 
         HomePage -> HomePageContent(
-            topPadding = topPadding,
-            hazeState = hazeState,
             onOpenSettings = {
                 onPush(SettingsHomePage)
             },
         )
 
         SettingsHomePage -> SettingsHomePageContent(
-            topPadding = topPadding,
-            hazeState = hazeState,
             onOpenGroup = { group ->
                 onPush(
                     SettingsDetailPage(
@@ -223,23 +208,17 @@ fun NexusPageContent(
 
         is SettingsDetailPage -> SettingsDetailPageContent(
             group = page.group,
-            topPadding = topPadding,
-            hazeState = hazeState,
             onPush = onPush,
             onBack = onPop,
         )
 
         is McpServerDetailPage -> McpServerDetailContent(
             page = page,
-            topPadding = topPadding,
-            hazeState = hazeState,
             onBack = onPop,
         )
 
         is CustomToolDetailPage -> CustomToolDetailContent(
             page = page,
-            topPadding = topPadding,
-            hazeState = hazeState,
             onBack = onPop,
         )
     }

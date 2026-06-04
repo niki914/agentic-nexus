@@ -16,13 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenHazeSource
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenTopPadding
 import com.niki914.nexus.agentic.app.ui.infra.component.TintLiquidButton
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
 
 data class SelectionOption(
     val id: String,
@@ -38,16 +37,14 @@ data class SelectionOption(
 
 @Composable
 fun SelectionPageContent(
-    topPadding: Dp,
-    hazeState: HazeState,
     options: List<SelectionOption>,
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .hazeSource(hazeState)
+            .liquidScreenHazeSource()
             .verticalScroll(rememberScrollState())
-            .padding(top = topPadding)
+            .padding(top = liquidScreenTopPadding())
             .padding(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {

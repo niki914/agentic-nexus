@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -40,6 +41,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.LocalLiquidViewportAvoidanceController
+import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenHazeSource
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenTopPadding
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeMenuItem
@@ -47,18 +51,15 @@ import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatBlock
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatTurn
+import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolState
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolStatus
 import com.niki914.nexus.cb.BaseTheme
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun HomePageContent(
-    topPadding: Dp, // TODO P2 这种透传代码特别多，看看 topPadding 和 hazeState 能不能用 Local 提供
-    hazeState: HazeState,
     onOpenSettings: () -> Unit,
 ) {
     val viewModel = pageViewModel<HomeChatViewModel>()
@@ -151,10 +152,42 @@ fun HomePageContent(
     }
     RegisterPageChrome(pageChromeContribution)
 
+    HomePageContentBody(
+        uiState = uiState,
+        listState = listState,
+        composerBottomPadding = composerBottomPadding,
+        onContentTap = dismissInputFocus,
+        onInputChange = { value ->
+            viewModel.sendIntent(HomeChatIntent.InputChanged(value))
+        },
+        onSendClick = {
+            shouldFollowBottom = true
+            viewModel.sendIntent(HomeChatIntent.Send)
+        },
+        onStopClick = {
+            viewModel.sendIntent(HomeChatIntent.StopGenerating)
+        },
+        onComposerFocusChanged = { focused ->
+            isComposerFocused = focused
+        },
+    )
+}
+
+@Composable
+private fun HomePageContentBody(
+    uiState: HomeChatUiState,
+    listState: LazyListState,
+    composerBottomPadding: Dp,
+    onContentTap: () -> Unit,
+    onInputChange: (String) -> Unit,
+    onSendClick: () -> Unit,
+    onStopClick: () -> Unit,
+    onComposerFocusChanged: (Boolean) -> Unit,
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .hazeSource(hazeState),
+            .liquidScreenHazeSource(),
     ) {
         LazyColumn(
             state = listState,
@@ -163,11 +196,11 @@ fun HomePageContent(
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
-                    onClick = dismissInputFocus,
+                    onClick = onContentTap,
                 ),
             contentPadding = PaddingValues(
                 start = 20.dp,
-                top = topPadding + 24.dp,
+                top = liquidScreenTopPadding(24.dp),
                 end = 20.dp,
                 bottom = 128.dp,
             ),
@@ -178,7 +211,7 @@ fun HomePageContent(
             ) { turn ->
                 HomeChatTurnItem(
                     turn = turn,
-                    onContentTap = dismissInputFocus,
+                    onContentTap = onContentTap,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 18.dp),
@@ -196,22 +229,15 @@ fun HomePageContent(
         CompositionLocalProvider(LocalLiquidViewportAvoidanceController provides null) {
             LiquidChatComposer(
                 value = uiState.input,
-                onValueChange = { value ->
-                    viewModel.sendIntent(HomeChatIntent.InputChanged(value))
-                },
-                onSendClick = {
-                    shouldFollowBottom = true
-                    viewModel.sendIntent(HomeChatIntent.Send)
-                },
-                onStopClick = {
-                    viewModel.sendIntent(HomeChatIntent.StopGenerating)
-                },
+                onValueChange = onInputChange,
+                onSendClick = onSendClick,
+                onStopClick = onStopClick,
                 isGenerating = uiState.isGenerating,
                 maxLines = 10,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .onFocusChanged { focusState ->
-                        isComposerFocused = focusState.hasFocus
+                        onComposerFocusChanged(focusState.hasFocus)
                     }
                     .padding(
                         start = 20.dp,
@@ -279,52 +305,50 @@ private fun HomeChatTurnItem(
 @Composable
 private fun HomePageContentPreview() {
     BaseTheme {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp),
-        ) {
-            HomeChatTurnItem(
-                turn = HomeChatTurn(
-                    id = 0L,
-                    userText = "帮我检查一下当前工具状态。",
-                    blocks = listOf(
-                        HomeChatBlock.Text("I'll call the available tools first."),
-                        HomeChatBlock.Tool(
-                            HomeToolStatus(
-                                callId = "tool-1",
-                                name = "read_session",
-                                state = HomeToolState.Succeeded,
-                            )
+        ProvideLiquidScreenContentForPreview(topPadding = 0.dp) {
+            HomePageContentBody(
+                uiState = HomeChatUiState(
+                    input = "继续分析",
+                    turns = listOf(
+                        HomeChatTurn(
+                        id = 0L,
+                        userText = "帮我检查一下当前工具状态。",
+                        blocks = listOf(
+                            HomeChatBlock.Text("I'll call the available tools first."),
+                            HomeChatBlock.Tool(
+                                HomeToolStatus(
+                                    callId = "tool-1",
+                                    name = "read_session",
+                                    state = HomeToolState.Succeeded,
+                                )
+                            ),
+                            HomeChatBlock.Tool(
+                                HomeToolStatus(
+                                    callId = "tool-2",
+                                    name = "update_config",
+                                    state = HomeToolState.Running,
+                                )
+                            ),
+                            HomeChatBlock.Tool(
+                                HomeToolStatus(
+                                    callId = "tool-3",
+                                    name = "sync_mcp",
+                                    state = HomeToolState.Failed,
+                                )
+                            ),
+                            HomeChatBlock.Error("MCP 工具调用失败，请检查服务配置。"),
+                            HomeChatBlock.Text("I've done the check and summarized the result."),
                         ),
-                        HomeChatBlock.Tool(
-                            HomeToolStatus(
-                                callId = "tool-2",
-                                name = "update_config",
-                                state = HomeToolState.Running,
-                            )
                         ),
-                        HomeChatBlock.Tool(
-                            HomeToolStatus(
-                                callId = "tool-3",
-                                name = "sync_mcp",
-                                state = HomeToolState.Failed,
-                            )
-                        ),
-                        HomeChatBlock.Error("MCP 工具调用失败，请检查服务配置。"),
-                        HomeChatBlock.Text("I've done the check and summarized the result."),
                     ),
                 ),
+                listState = rememberLazyListState(),
+                composerBottomPadding = 20.dp,
                 onContentTap = {},
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            LiquidChatComposer(
-                value = "继续分析",
-                onValueChange = {},
+                onInputChange = {},
                 onSendClick = {},
                 onStopClick = {},
-                isGenerating = false,
-                maxLines = 10,
+                onComposerFocusChanged = {},
             )
         }
     }

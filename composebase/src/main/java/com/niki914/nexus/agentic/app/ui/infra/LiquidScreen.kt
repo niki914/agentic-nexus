@@ -52,7 +52,6 @@ import androidx.compose.ui.zIndex
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import dev.chrisbanes.haze.HazeProgressive
-import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.rememberHazeState
@@ -65,7 +64,7 @@ fun LiquidScreen(
     actionsEnabled: Boolean = true,
     leftButton: (@Composable () -> Unit)? = null,
     rightButton: (@Composable () -> Unit)? = null,
-    content: @Composable (hazeState: HazeState) -> Unit,
+    content: @Composable () -> Unit,
 ) {
     val isDarkTheme = isSystemInDarkTheme()
     val density = LocalDensity.current
@@ -108,6 +107,10 @@ fun LiquidScreen(
     ) {
         // Layer 1: page content owns the haze source placement.
         CompositionLocalProvider(
+            LocalLiquidScreenContentContext provides LiquidScreenContentContext(
+                topPadding = actionBarHeight,
+                hazeState = hazeState,
+            ),
             LocalLiquidViewportAvoidanceController provides state.viewportAvoidanceController,
         ) {
             Box(
@@ -117,7 +120,7 @@ fun LiquidScreen(
                         translationY = avoidanceOffsetPx
                     },
             ) {
-                content(hazeState)
+                content()
             }
         }
 

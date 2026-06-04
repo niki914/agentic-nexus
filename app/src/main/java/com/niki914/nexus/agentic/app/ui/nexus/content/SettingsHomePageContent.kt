@@ -15,8 +15,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenHazeSource
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenTopPadding
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingNavigationItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
@@ -25,22 +27,15 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.SettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.buildSettingsUiState
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusSettingsGroup
 import com.niki914.nexus.cb.BaseTheme
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
 
 @Composable
 fun SettingsHomePageContent(
-    topPadding: Dp,
-    hazeState: HazeState,
     onOpenGroup: (NexusSettingsGroup) -> Unit,
 ) {
     val viewModel = pageViewModel<SettingsViewModel>()
     val uiState by viewModel.uiStateFlow.collectAsState()
 
     SettingsHomePageContentBody(
-        topPadding = topPadding,
-        hazeState = hazeState,
         uiState = uiState,
         onOpenGroup = onOpenGroup,
     )
@@ -48,17 +43,15 @@ fun SettingsHomePageContent(
 
 @Composable
 private fun SettingsHomePageContentBody(
-    topPadding: Dp,
-    hazeState: HazeState,
     uiState: SettingsUiState,
     onOpenGroup: (NexusSettingsGroup) -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .hazeSource(hazeState)
+            .liquidScreenHazeSource()
             .verticalScroll(rememberScrollState())
-            .padding(top = topPadding)
+            .padding(top = liquidScreenTopPadding())
             .padding(horizontal = 16.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
@@ -101,12 +94,12 @@ private fun SettingsHomeSectionCard(
 private fun SettingsHomePageContentPreview() {
     BaseTheme(darkTheme = false, dynamicColor = false) {
         Surface {
-            SettingsHomePageContentBody(
-                topPadding = 0.dp,
-                hazeState = rememberHazeState(blurEnabled = true),
-                uiState = buildSettingsUiState(hiddenGroups = emptySet()),
-                onOpenGroup = {},
-            )
+            ProvideLiquidScreenContentForPreview(topPadding = 0.dp) {
+                SettingsHomePageContentBody(
+                    uiState = buildSettingsUiState(hiddenGroups = emptySet()),
+                    onOpenGroup = {},
+                )
+            }
         }
     }
 }

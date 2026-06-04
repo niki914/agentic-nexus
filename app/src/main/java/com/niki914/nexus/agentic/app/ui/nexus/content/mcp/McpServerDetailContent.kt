@@ -15,10 +15,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
+import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsDetailFormScaffold
@@ -35,14 +35,10 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.hasUnsavedChanges
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.rememberHazeState
 
 @Composable
 fun McpServerDetailContent(
     page: McpServerDetailPage,
-    topPadding: Dp,
-    hazeState: HazeState,
     onBack: () -> Unit,
 ) {
     val viewModel = pageViewModel<McpSettingsViewModel>()
@@ -106,8 +102,6 @@ fun McpServerDetailContent(
     }
 
     McpServerDetailContentBody(
-        topPadding = topPadding,
-        hazeState = hazeState,
         uiState = uiState,
         requestedFocusField = requestedFocusField,
         onRequestedFocusHandled = {
@@ -151,8 +145,6 @@ fun McpServerDetailContent(
 
 @Composable
 private fun McpServerDetailContentBody(
-    topPadding: Dp,
-    hazeState: HazeState,
     uiState: McpSettingsUiState,
     requestedFocusField: McpEditableField?,
     onRequestedFocusHandled: () -> Unit,
@@ -178,8 +170,6 @@ private fun McpServerDetailContentBody(
     }
 
     SettingsDetailFormScaffold(
-        topPadding = topPadding,
-        hazeState = hazeState,
         actionText = stringResource(R.string.mcp_save_action),
         onActionClick = {
             clearActiveField()
@@ -316,28 +306,28 @@ private fun mcpInlineErrorText(error: McpInlineError?): String? {
 @Composable
 private fun McpServerDetailContentPreview() {
     MaterialTheme {
-        McpServerDetailContentBody(
-            topPadding = 0.dp,
-            hazeState = rememberHazeState(blurEnabled = true),
-            uiState = McpSettingsUiState(
-                items = emptyList(),
-                formState = com.niki914.nexus.agentic.app.ui.nexus.model.McpServerFormState(
-                    name = "demo-mcp",
-                    url = "https://a.b.c/mcp",
-                    enabled = true,
-                    headersInput = "{\n  \"Authorization\": \"Bearer xxx\"\n}",
-                    headersErrorResId = R.string.mcp_error_headers_not_object,
+        ProvideLiquidScreenContentForPreview(topPadding = 0.dp) {
+            McpServerDetailContentBody(
+                uiState = McpSettingsUiState(
+                    items = emptyList(),
+                    formState = com.niki914.nexus.agentic.app.ui.nexus.model.McpServerFormState(
+                        name = "demo-mcp",
+                        url = "https://a.b.c/mcp",
+                        enabled = true,
+                        headersInput = "{\n  \"Authorization\": \"Bearer xxx\"\n}",
+                        headersErrorResId = R.string.mcp_error_headers_not_object,
+                    ),
+                    isLoading = false,
+                    isSaving = false,
                 ),
-                isLoading = false,
-                isSaving = false,
-            ),
-            requestedFocusField = McpEditableField.Headers,
-            onRequestedFocusHandled = {},
-            onNameChange = {},
-            onEnabledChange = {},
-            onUrlChange = {},
-            onHeadersChange = {},
-            onSave = {},
-        )
+                requestedFocusField = McpEditableField.Headers,
+                onRequestedFocusHandled = {},
+                onNameChange = {},
+                onEnabledChange = {},
+                onUrlChange = {},
+                onHeadersChange = {},
+                onSave = {},
+            )
+        }
     }
 }
