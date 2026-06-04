@@ -1,11 +1,11 @@
 package com.niki914.nexus.agentic.app.ui.nexus.route
 
-import android.content.res.Configuration
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -176,7 +176,8 @@ private fun StartupWebSettingsDialogContent(
     }
     val negativeTextRes = when (dialog) {
         StartupWebSettingsDialog.Beta,
-        StartupWebSettingsDialog.UnsupportedVersion,
+        StartupWebSettingsDialog.UnsupportedVersion -> R.string.ui_onboard_web_cancel
+
         StartupWebSettingsDialog.FetchFailed,
         StartupWebSettingsDialog.NetworkError -> R.string.ui_onboard_web_retry
     }
@@ -188,7 +189,8 @@ private fun StartupWebSettingsDialogContent(
     }
     val onNegativeClick = when (dialog) {
         StartupWebSettingsDialog.Beta,
-        StartupWebSettingsDialog.UnsupportedVersion,
+        StartupWebSettingsDialog.UnsupportedVersion -> onDismiss
+
         StartupWebSettingsDialog.FetchFailed,
         StartupWebSettingsDialog.NetworkError -> onRetry
     }
@@ -322,43 +324,10 @@ private fun StartupPageRouteLoadingPreview() {
     StartupPageRoutePreview(initialLoading = true)
 }
 
-@Preview(name = "Startup Dialog Beta", showBackground = true, widthDp = 420, heightDp = 900)
+@Preview(name = "Startup Dialog Cycle", showBackground = true, widthDp = 420, heightDp = 900)
 @Composable
-private fun StartupPageRouteBetaDialogPreview() {
-    StartupPageRoutePreview(initialDialog = StartupWebSettingsDialog.Beta)
-}
-
-@Preview(name = "Startup Dialog Unsupported", showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun StartupPageRouteUnsupportedDialogPreview() {
-    StartupPageRoutePreview(initialDialog = StartupWebSettingsDialog.UnsupportedVersion)
-}
-
-@Preview(name = "Startup Dialog Fetch Failed", showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun StartupPageRouteFetchFailedDialogPreview() {
-    StartupPageRoutePreview(initialDialog = StartupWebSettingsDialog.FetchFailed)
-}
-
-@Preview(name = "Startup Dialog Network Error", showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun StartupPageRouteNetworkErrorDialogPreview() {
-    StartupPageRoutePreview(initialDialog = StartupWebSettingsDialog.NetworkError)
-}
-
-@Preview(
-    name = "Startup Dialog Network Error Dark",
-    showBackground = true,
-    widthDp = 420,
-    heightDp = 900,
-    uiMode = Configuration.UI_MODE_NIGHT_YES,
-)
-@Composable
-private fun StartupPageRouteNetworkErrorDarkDialogPreview() {
-    StartupPageRoutePreview(
-        darkTheme = true,
-        initialDialog = StartupWebSettingsDialog.NetworkError,
-    )
+private fun StartupPageRouteDialogCyclePreview() {
+    StartupPageRouteDialogCyclePreviewContent()
 }
 
 @Composable
@@ -377,6 +346,73 @@ private fun StartupPageRoutePreview(
                     initialLoading = initialLoading,
                     initialDialog = initialDialog,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StartupPageRouteDialogCyclePreviewContent() {
+    val dialogCases = remember {
+        listOf(
+            StartupWebSettingsDialog.Beta,
+            StartupWebSettingsDialog.UnsupportedVersion,
+            StartupWebSettingsDialog.FetchFailed,
+            StartupWebSettingsDialog.NetworkError,
+        )
+    }
+    var nextCaseIndex by rememberSaveable {
+        mutableStateOf(0)
+    }
+    var currentDialog by rememberSaveable {
+        mutableStateOf<StartupWebSettingsDialog?>(null)
+    }
+    var retainedDialog by rememberSaveable {
+        mutableStateOf<StartupWebSettingsDialog?>(null)
+    }
+    var isDialogVisible by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    LaunchedEffect(currentDialog) {
+        val dialog = currentDialog
+        if (dialog == null) {
+            isDialogVisible = false
+        } else {
+            retainedDialog = dialog
+            isDialogVisible = false
+            withFrameNanos { }
+            isDialogVisible = true
+        }
+    }
+
+    BaseTheme(darkTheme = false, dynamicColor = false) {
+        Surface {
+            ProvideLiquidScreenContentForPreview(topPadding = 0.dp) {
+                StartupPageContent(
+                    assistantUi = StartupAssistantUi.XiaoAi,
+                    isLoading = false,
+                    onContinue = {
+                        currentDialog = dialogCases[nextCaseIndex]
+                        nextCaseIndex = (nextCaseIndex + 1) % dialogCases.size
+                    },
+                )
+
+                retainedDialog?.let { dialog ->
+                    StartupWebSettingsDialogContent(
+                        dialog = dialog,
+                        visible = isDialogVisible,
+                        onEnterNextPage = {
+                            currentDialog = null
+                        },
+                        onRetry = {
+                            currentDialog = null
+                        },
+                        onDismiss = {
+                            currentDialog = null
+                        },
+                    )
+                }
             }
         }
     }
