@@ -18,7 +18,7 @@ class BlockNativeInstructionByWhitelistHook : SubHook() {
 
     override fun beforeHook(param: XC_MethodHook.MethodHookParam) {
         val instruction = param.args.firstOrNull() ?: return
-        if (instruction.getTag<Boolean>(INJECTED_FLAG) == true) {
+        if (instruction.getTag<Boolean>(injectedFlagKey()) == true) {
             return
         }
 

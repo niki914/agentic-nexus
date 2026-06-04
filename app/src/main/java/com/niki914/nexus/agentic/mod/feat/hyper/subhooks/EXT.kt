@@ -3,7 +3,7 @@ package com.niki914.nexus.agentic.mod.feat.hyper.subhooks
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiConfigProvider
 import com.niki914.nexus.h.util.call
 
-const val INJECTED_FLAG = "__nexus_injected" // TODO P0 上云
+fun injectedFlagKey(): String = XiaoaiConfigProvider.RenderTextStreamCard.injectedFlagKey
 
 fun resolveDialogId(instruction: Any, target: Any?): String? {
     return resolveDialogId(

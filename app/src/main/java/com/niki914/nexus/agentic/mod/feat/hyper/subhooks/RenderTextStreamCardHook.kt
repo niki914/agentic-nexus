@@ -109,7 +109,7 @@ class RenderTextStreamCardHook : SubHook() {
             XiaoaiConfigProvider.RenderTextStreamCard.instructionPayloadSetter,
             payload
         )
-        instruction.setTag(INJECTED_FLAG, true)
+        instruction.setTag(injectedFlagKey(), true)
         target.call<Unit>(methodName, instruction)
         xlog("[$name] 已注入文字流分片: dialogId=$dialogId, text=$text")
     }

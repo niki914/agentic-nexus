@@ -146,6 +146,8 @@ object XiaoaiConfigProvider : BaseConfigProvider() {
             get() = getString("$P.business.instruction_id_prefix")
         val finalChunkText: String
             get() = getString("$P.business.final_chunk_text")
+        val injectedFlagKey: String
+            get() = getString("$P.business.injected_flag_key")
     }
 
     object RenderTts {

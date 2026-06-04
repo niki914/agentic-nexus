@@ -128,6 +128,8 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
             BreenoConfigProvider.RenderCard.dataCenterUpdateMessageMethod
 
         val mockBeanMethodsUnit = BreenoConfigProvider.RenderCard.mockBeanMethodsUnit
+        val mockBeanMethodsReplayOnUpdate =
+            BreenoConfigProvider.RenderCard.mockBeanMethodsReplayOnUpdate
         val mockBeanLocalDataUnit = BreenoConfigProvider.RenderCard.mockBeanLocalDataUnit
         val typeAnswer = BreenoConfigProvider.RenderCard.chatTypeAnswer
         val hideFeedbackViewLocalDataKey =
@@ -162,7 +164,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         mockBean.call<Unit>(setContentMethod, chunk)
         mockBean.call<Unit>(setFinalMethod, isFinal)
         mockBean.call<Unit>(setFirstSliceMethod, isFirst)
-        mockBeanMethodsUnit.filter { it.first == "setHasTextPrintAnimPlayed" }
+        mockBeanMethodsUnit.filter { it.first in mockBeanMethodsReplayOnUpdate }
             .forEach { (methodName, value) ->
                 mockBean.call<Unit>(methodName, value)
             }

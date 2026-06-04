@@ -97,6 +97,11 @@ object BreenoConfigProvider : BaseConfigProvider() {
             get() = getString("$P.business.hide_feedback_view_local_data_key")
         val mockBeanMethodsUnit: List<Pair<String, Any>>
             get() = readConfigPairs("$P.business.mock_bean_methods")
+        val mockBeanMethodsReplayOnUpdate: Set<String>
+            get() = getList("$P.business.mock_bean_methods_replay_on_update")
+                .mapNotNull { it.jsonPrimitive.contentOrNull }
+                .filter { it.isNotBlank() }
+                .toSet()
         val mockBeanLocalDataUnit: List<Pair<String, Any>>
             get() = readConfigPairs("$P.business.mock_bean_local_data")
         val feedbackInfoClass: String
