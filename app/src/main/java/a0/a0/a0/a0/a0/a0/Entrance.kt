@@ -24,7 +24,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-class Entrance : IXposed() { // TODO P0 配置未配置时的 UI 报错
+// TODO P0 日志清理
+// TODO P025 -> 1min
+// 仅在锁屏时生效
+class Entrance : IXposed() {
     companion object {
         private val scope by lazy { CoroutineScope(Dispatchers.Default + SupervisorJob()) }
     }

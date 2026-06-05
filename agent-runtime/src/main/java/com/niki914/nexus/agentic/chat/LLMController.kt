@@ -9,6 +9,7 @@ import com.niki914.nexus.agentic.chat.agentic.mcp.McpDiscoveryCacheStore
 import com.niki914.nexus.agentic.chat.agentic.stream.LlmStreamEventMapper
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.agentic.runtime.settings.model.LlmApiType
+import com.niki914.nexus.h.util.LockState
 import com.niki914.nexus.h.util.xlog
 import com.niki914.s3ss10n.Session
 import com.niki914.s3ss10n.SessionConfig
@@ -128,7 +129,7 @@ object LLMController {
     suspend fun snapshot(): LlmRuntimeSnapshot? = runtimeState?.snapshot
 
     fun stream(query: String): Flow<LlmStreamEvent> = channelFlow {
-        xlog("LLMController.stream start queryLength=${query.length}")
+        xlog("LLMController.stream start is_unlocked: ${LockState.isUnlocked()} queryLength=${query.length}")
         val state = try {
             refresh()
             runtimeState
