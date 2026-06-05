@@ -44,7 +44,7 @@ object LlmStreamEventMapper {
             )
 
             is SessionEvent.Error -> LlmStreamEvent.Error(
-                message = "[${event.stage}] ${event.message}",
+                message = event.message.trim().ifEmpty { "请求失败，请重试" },
                 throwable = event.cause,
             )
 

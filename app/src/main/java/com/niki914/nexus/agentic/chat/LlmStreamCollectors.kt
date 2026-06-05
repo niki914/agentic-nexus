@@ -73,6 +73,8 @@ private sealed interface RenderSegment {
         val name: String,
         val label: String,
     ) : RenderSegment
+
+    data class Error(val value: String) : RenderSegment
 }
 
 private class FullTextProjector(
@@ -114,7 +116,18 @@ private class FullTextProjector(
                 listOf(LlmTextFrame(renderSegments(), isFirst = false, isFinal = false))
             }
 
-            is LlmStreamEvent.Error -> emptyList()
+            is LlmStreamEvent.Error -> {
+                val isFirstFrame = segments.isEmpty()
+                appendError(event.message)
+                listOf(
+                    LlmTextFrame(
+                        text = renderSegments(),
+                        isFirst = isFirstFrame,
+                        isFinal = true,
+                    )
+                )
+            }
+
             is LlmStreamEvent.Completed -> {
                 appendMissingFinalText(event.fullText)
                 listOf(LlmTextFrame(renderSegments(), isFirst = false, isFinal = true))
@@ -135,6 +148,12 @@ private class FullTextProjector(
 
     private fun appendMissingFinalText(finalText: String) {
         appendText(finalText.removePrefix(assistantText.toString()))
+    }
+
+    private fun appendError(message: String) {
+        val normalized = message.trim()
+        if (normalized.isEmpty()) return
+        segments += RenderSegment.Error(normalized)
     }
 
     private fun upsertTool(call: ToolCallStatus, label: String) {
@@ -189,7 +208,18 @@ private class ChunkTextProjector(
                 listOf(LlmTextFrame(fullText.toString(), isFirst = false, isFinal = false))
             }
 
-            is LlmStreamEvent.Error -> emptyList()
+            is LlmStreamEvent.Error -> {
+                val isFirstFrame = fullText.isEmpty()
+                appendErrorLine(event.message)
+                listOf(
+                    LlmTextFrame(
+                        text = fullText.toString(),
+                        isFirst = isFirstFrame,
+                        isFinal = true,
+                    )
+                )
+            }
+
             is LlmStreamEvent.Completed -> {
                 appendMissingFinalText(event.fullText)
                 listOf(LlmTextFrame(fullText.toString(), isFirst = false, isFinal = true))
@@ -219,6 +249,16 @@ private class ChunkTextProjector(
         fullText.append('\n')
         lastWasToolLine = true
     }
+
+    private fun appendErrorLine(message: String) {
+        val normalized = message.trim()
+        if (normalized.isEmpty()) return
+        if (fullText.isNotEmpty() && fullText.last() != '\n') {
+            fullText.append('\n')
+        }
+        fullText.append(normalized)
+        lastWasToolLine = false
+    }
 }
 
 private fun MutableList<RenderSegment>.render(): String {
@@ -227,6 +267,7 @@ private fun MutableList<RenderSegment>.render(): String {
         when (segment) {
             is RenderSegment.Text -> builder.appendTextSegment(segment.value)
             is RenderSegment.Tool -> builder.appendToolSegment(segment)
+            is RenderSegment.Error -> builder.appendTextSegment("## Error\n```\n${segment.value}\n```")
         }
     }
     return builder.toString()

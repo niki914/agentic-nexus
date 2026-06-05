@@ -169,6 +169,53 @@ class LlmStreamCollectorsTest {
         assertEquals(true, frames.last().isFinal)
     }
 
+    @Test
+    fun collectAsFull_emitsErrorAsFinalVisibleFrame() = runTest {
+        val frames = mutableListOf<LlmTextFrame>()
+
+        flowOf(
+            LlmStreamEvent.Error("请先填写配置"),
+        ).collectAsFull(testLabels) { frame ->
+            frames += frame
+        }
+
+        assertEquals(1, frames.size)
+        assertEquals(
+            """
+            ## Error
+            ```
+            请先填写配置
+            ```
+            """.trimIndent(),
+            frames.single().text,
+        )
+        assertEquals(true, frames.single().isFirst)
+        assertEquals(true, frames.single().isFinal)
+    }
+
+    @Test
+    fun collectAsChunk_appendsErrorAsFinalVisibleFrame() = runTest {
+        val frames = mutableListOf<LlmTextFrame>()
+
+        flowOf(
+            LlmStreamEvent.RoundStarted,
+            LlmStreamEvent.TextDelta(delta = "处理中", fullText = "处理中"),
+            LlmStreamEvent.Error("请先填写配置"),
+        ).collectAsChunk(testLabels) { frame ->
+            frames += frame
+        }
+
+        assertEquals(
+            """
+            处理中
+            请先填写配置
+            """.trimIndent(),
+            frames.last().text,
+        )
+        assertEquals(false, frames.last().isFirst)
+        assertEquals(true, frames.last().isFinal)
+    }
+
     private val testLabels = ToolStatusLabels(
         called = "called",
         running = "running",

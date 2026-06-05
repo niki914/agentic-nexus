@@ -26,7 +26,7 @@ data class HomeToolStatus(
 sealed interface HomeChatBlock {
     data class Text(val text: String) : HomeChatBlock
     data class Tool(val status: HomeToolStatus) : HomeChatBlock
-    data class Error(val message: String) : HomeChatBlock // TODO P0 优化输出，居中
+    data class Error(val message: String) : HomeChatBlock
 }
 
 data class HomeChatTurn(

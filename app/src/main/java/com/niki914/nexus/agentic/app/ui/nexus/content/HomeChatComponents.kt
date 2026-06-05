@@ -49,6 +49,30 @@ import com.niki914.nexus.cb.BaseTheme
 
 private val ToolSucceededIndicatorColor = Color(0xFF4F8F6B)
 private val ToolFailedIndicatorColor = Color(0xFFB85C5C)
+internal data class AssistantErrorUi(
+    val title: String,
+    val body: String,
+)
+
+internal fun toAssistantErrorUi(message: String): AssistantErrorUi {
+    return when (message.trim()) {
+        "请先填写配置" -> AssistantErrorUi(
+            title = "配置还没填好",
+            body = "请先填写模型地址和模型名称。",
+        )
+
+        "" -> AssistantErrorUi(
+            title = "当前无法继续",
+            body = "请稍后重试。",
+        )
+
+        else -> AssistantErrorUi(
+            title = "当前无法继续",
+            body = message.trim(),
+        )
+    }
+}
+
 private const val AssistantMarkdownPreviewText = """
 # Nexus 对话排版
 
@@ -267,21 +291,34 @@ fun AssistantErrorBlock(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val shape = G2BubbleShape(18.dp)
+    val errorUi = toAssistantErrorUi(message)
 
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth(),
-        contentAlignment = Alignment.CenterStart,
+        contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = message,
+        Column(
             modifier = Modifier
-                .widthIn(max = maxWidth * 0.9f)
+                .widthIn(max = maxWidth * 0.82f)
                 .clip(shape)
                 .background(colorScheme.errorContainer.copy(alpha = 0.68f), shape)
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = colorScheme.onErrorContainer,
-        )
+                .padding(horizontal = 18.dp, vertical = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = errorUi.title,
+                style = MaterialTheme.typography.labelLarge,
+                color = colorScheme.onErrorContainer,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = errorUi.body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = colorScheme.onErrorContainer,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 

@@ -24,7 +24,7 @@ sealed interface LlmStreamEvent {
         val message: String,
     ) : LlmStreamEvent
 
-    data class Error( // TODO P0 卡片居中，文案优化更易读
+    data class Error(
         val message: String,
         val throwable: Throwable? = null,
     ) : LlmStreamEvent

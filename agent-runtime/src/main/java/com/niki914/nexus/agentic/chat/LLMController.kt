@@ -23,6 +23,9 @@ import kotlinx.coroutines.flow.flowOn
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 
 object LLMController {
+    internal const val CONFIG_REQUIRED_MESSAGE = "请先填写配置"
+    private const val DEFAULT_USER_ERROR_MESSAGE = "请求失败，请重试"
+
     private val promptComposer =
         PromptComposer()
     private val toolManager =
@@ -41,6 +44,7 @@ object LLMController {
         val previousSnapshot = runtimeState?.snapshot
         val gateway = RuntimeEnvironment.awaitSettingsGateway()
         val llmConfig = gateway.readLlmConfig()
+        validateLlmConfig(llmConfig)
         val apiType = LlmApiType.fromProvider(llmConfig.provider)
         val mcpServers = gateway.listMcpServers()
         val customTools = gateway.listCustomTools()
@@ -125,10 +129,28 @@ object LLMController {
 
     fun stream(query: String): Flow<LlmStreamEvent> = channelFlow {
         xlog("LLMController.stream start queryLength=${query.length}")
-        val state = refreshIfPossibleFromHookContext() ?: runtimeState
+        val state = try {
+            refresh()
+            runtimeState
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) {
+                throw throwable
+            }
+            runtimeState ?: run {
+                val message = throwable.toUserErrorMessage()
+                xlog("LLMController.stream refreshError type=${throwable::class.simpleName} message=$message")
+                send(
+                    LlmStreamEvent.Error(
+                        message = message,
+                        throwable = throwable,
+                    )
+                )
+                return@channelFlow
+            }
+        }
         if (state == null) {
             xlog("LLMController.stream runtimeNotReady")
-            send(LlmStreamEvent.Error("LLM runtime is not ready"))
+            send(LlmStreamEvent.Error(DEFAULT_USER_ERROR_MESSAGE))
             return@channelFlow
         }
 
@@ -157,7 +179,7 @@ object LLMController {
             xlog("LLMController.stream error type=${throwable::class.simpleName} message=${throwable.message}")
             send(
                 LlmStreamEvent.Error(
-                    message = throwable.message ?: "LLM stream failed",
+                    message = throwable.toUserErrorMessage(),
                     throwable = throwable
                 )
             )
@@ -170,18 +192,6 @@ object LLMController {
 
     suspend fun stopCurrentRound(keepCurrentTurn: Boolean = false) {
         session?.stop(keepCurrentTurn = keepCurrentTurn)
-    }
-
-    private suspend fun refreshIfPossibleFromHookContext(): RuntimeState? {
-        return try {
-            refresh()
-            runtimeState
-        } catch (throwable: Throwable) {
-            if (throwable is CancellationException) {
-                throw throwable
-            }
-            null
-        }
     }
 
     private suspend fun obtainSession(apiType: LlmApiType): Session {
@@ -228,6 +238,19 @@ object LLMController {
             return memories
         }
         return listOfNotNull(config.memoryPrompt.trim().takeIf { it.isNotBlank() })
+    }
+
+    internal fun validateLlmConfig(config: LlmConfig) {
+        if (config.endpoint.isBlank() || config.model.isBlank()) {
+            throw IllegalStateException(CONFIG_REQUIRED_MESSAGE)
+        }
+    }
+
+    private fun Throwable.toUserErrorMessage(): String {
+        return message
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?: DEFAULT_USER_ERROR_MESSAGE
     }
 
     private fun SessionConfig.Builder.applyRuntimeConfig(
