@@ -51,7 +51,7 @@ object BreenoConfigProvider : BaseConfigProvider() {
             get() = parseHookTarget("$P.target")
     }
 
-    object FloatScreenDetach { // TODO P2 不仅仅要重置对话，如果没有打开 Activity 则应该 cancel 当前对话，避免一直跑
+    object FloatScreenDetach {
         private const val P = "actions.float_screen_detach"
         val detachTarget: HookTarget?
             get() = parseHookTarget("$P.target")

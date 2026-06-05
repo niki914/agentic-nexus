@@ -74,6 +74,7 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
     protected open fun shouldTakeOver(query: String): Boolean = false
 
     protected open suspend fun onSessionReset() {
+        LLMController.resetConversation()
         ActiveTurnStore.clear()
     }
 
