@@ -13,6 +13,7 @@ import com.niki914.nexus.h.core.runtime.RuntimeBootstrap
 import com.niki914.nexus.h.util.ActivityHook
 import com.niki914.nexus.h.util.ContextHook
 import com.niki914.nexus.h.util.ContextProvider
+import com.niki914.nexus.h.util.FloatWindowHook
 import com.niki914.nexus.h.util.HookSideLoader
 import com.niki914.nexus.h.util.xlog
 import com.niki914.nexus.ipc.HostApp
@@ -23,7 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-class Entrance : IXposed() {
+class Entrance : IXposed() { // TODO P0 配置未配置时的 UI 报错
     companion object {
         private val scope by lazy { CoroutineScope(Dispatchers.Default + SupervisorJob()) }
     }
@@ -33,7 +34,8 @@ class Entrance : IXposed() {
 
     override fun onLoad(params: XC_LoadPackage.LoadPackageParam) {
         HookSideLoader.load(scope, ContextHook(), params)
-        HookSideLoader.load(scope, ActivityHook(), params)
+//        HookSideLoader.load(scope, ActivityHook(), params)
+//        HookSideLoader.load(scope, FloatWindowHook(), params)
         scope.launch(Dispatchers.IO) {
             val ctx = ContextProvider.await()
             XRepo.init(ctx)

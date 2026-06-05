@@ -13,6 +13,7 @@
 *.ipr
 *.iws
 .worktrees/
+nexus-res/
 .apk_decs/*
 !.apk_decs/README.txt
 .workspace/*

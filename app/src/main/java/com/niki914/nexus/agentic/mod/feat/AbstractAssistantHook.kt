@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
  * TODO 统一所有业务下的 subhooks、云 config、AbstractAssistantHook 方法命名
  */
 abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook {
-    protected open val floatResumeGraceWindowMs: Long = 700L
+    protected open val floatResumeGraceWindowMs: Long = 1500L
 
     protected fun installFloatScreenDetachHooks(
         lpparam: XC_LoadPackage.LoadPackageParam,
