@@ -128,6 +128,17 @@
     <string name="execution_rules_empty_action_hint">點擊右上角以新增第一條規則草稿。</string>
     <string name="execution_rules_loading">正在讀取執行規則…</string>
     <string name="execution_rules_editor_title_create">新增執行規則</string>
+    <string name="execution_rules_editor_description">設定 Shell 與工具的執行規則。現時此編輯頁只用來管理規則草稿，尚未連接到實際攔截流程。</string>
+    <string name="execution_rules_field_name">規則名稱</string>
+    <string name="execution_rules_field_name_hint">例如：高風險刪除指令</string>
+    <string name="execution_rules_field_enabled_mode">生效時機</string>
+    <string name="execution_rules_enabled_mode_enabled">任何時候</string>
+    <string name="execution_rules_enabled_mode_locked_only">鎖定畫面時</string>
+    <string name="execution_rules_enabled_mode_disabled">停用</string>
+    <string name="execution_rules_field_patterns">比對規則</string>
+    <string name="execution_rules_field_patterns_hint">例如：\brm\s+-rf\b</string>
+    <string name="execution_rules_field_patterns_description">每行輸入一個關鍵字或正則表達式，只要符合其中一項，便會攔截該指令。</string>
+    <string name="execution_rules_save_action">儲存規則</string>
 
     <!-- Builtin Tool Module -->
     <string name="builtin_tool_page_description">開啟或關閉預設內建工具。啟用後，工具會在下一次對話時更新。</string>

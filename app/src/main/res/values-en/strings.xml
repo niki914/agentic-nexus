@@ -128,6 +128,17 @@
     <string name="execution_rules_empty_action_hint">Tap the top right to add your first draft rule.</string>
     <string name="execution_rules_loading">Loading execution rules...</string>
     <string name="execution_rules_editor_title_create">New Execution Rule</string>
+    <string name="execution_rules_editor_description">Set up rules for Shell and tool execution. For now, this editor lets you manage rule drafts in the UI and is not yet wired into the actual interception flow.</string>
+    <string name="execution_rules_field_name">Rule Name</string>
+    <string name="execution_rules_field_name_hint">For example: Dangerous delete commands</string>
+    <string name="execution_rules_field_enabled_mode">Applies When</string>
+    <string name="execution_rules_enabled_mode_enabled">Always</string>
+    <string name="execution_rules_enabled_mode_locked_only">When screen is locked</string>
+    <string name="execution_rules_enabled_mode_disabled">Disabled</string>
+    <string name="execution_rules_field_patterns">Patterns</string>
+    <string name="execution_rules_field_patterns_hint">For example: \brm\s+-rf\b</string>
+    <string name="execution_rules_field_patterns_description">Enter one keyword or regular expression per line. The command is blocked as soon as any rule matches.</string>
+    <string name="execution_rules_save_action">Save Rule</string>
 
     <!-- Builtin Tool Module -->
     <string name="builtin_tool_page_description">Turn preset built-in tools on or off. Changes take effect in the next conversation.</string>
