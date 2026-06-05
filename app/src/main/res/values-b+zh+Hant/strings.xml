@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App / Module -->
+    <string name="app_name">Nexus</string>
+    <string name="xposed_desc">允許系統級語音助理改用自訂大型模型供應商\n\n現已支援：ColorOS 小布 | HyperOS 小愛同學</string>
+
+    <!-- Onboarding -->
+    <string name="ui_onboard_startup_headline">讓語音助理用上你自己的模型能力</string>
+    <string name="ui_onboard_startup_status_breeno">Nexus 現已支援小布助手</string>
+    <string name="ui_onboard_startup_status_xiaoai">Nexus 現已支援小愛同學</string>
+    <string name="ui_onboard_startup_status_chat_only">Nexus 暫未支援此裝置，但你仍可使用對話功能</string>
+    <string name="ui_onboard_startup_continue">開始連接</string>
+    <string name="ui_onboard_startup_continue_chat_only">繼續</string>
+    <string name="ui_onboard_web_beta_title">目前仍處於 Beta 測試階段</string>
+    <string name="ui_onboard_web_beta_body">此助理的適配仍在驗證中，部分場景可能不太穩定。你可以繼續設定，若遇到異常，再回到設定調整或回報問題。</string>
+    <string name="ui_onboard_web_fetch_failed_title">暫時無法取得設定</string>
+    <string name="ui_onboard_web_fetch_failed_body">未能連線至設定服務。你可以重試，或直接進入設定。</string>
+    <string name="ui_onboard_web_unsupported_title">目前未支援此宿主版本</string>
+    <string name="ui_onboard_web_unsupported_body">目前尚未有對應此宿主版本的專屬設定，已套用最近版本的設定。若遇到問題，請回報。</string>
+    <string name="ui_onboard_web_network_error_title">網絡請求錯誤</string>
+    <string name="ui_onboard_web_network_error_body">目前網絡異常。檢查網絡後重試，或直接進入設定。</string>
+    <string name="ui_onboard_web_confirm">確定</string>
+    <string name="ui_onboard_web_cancel">取消</string>
+    <string name="ui_onboard_web_enter_directly">直接進入設定</string>
+    <string name="ui_onboard_web_retry">重試</string>
+    <string name="ui_onboard_provider_pick_title">選擇供應商</string>
+    <string name="ui_onboard_provider_pick_description">從這裡開始連接你的模型能力。\n選擇一個供應商以繼續。</string>
+    <string name="ui_onboard_configure_title">設定模型連接資訊</string>
+    <string name="ui_onboard_configure_description">填寫模型設定，完成後即可開始使用。</string>
+    <string name="ui_onboard_configure_next">下一步</string>
+    <string name="ui_onboard_configure_endpoint_override_title">自訂端點</string>
+    <string name="ui_onboard_configure_endpoint_override_description_off">使用預設端點</string>
+    <string name="ui_onboard_configure_endpoint_override_description_on">將使用自訂端點</string>
+    <string name="ui_onboard_configure_endpoint_label">端點網址</string>
+    <string name="ui_onboard_configure_endpoint_placeholder">輸入端點網址</string>
+    <string name="ui_onboard_configure_model_label">模型 ID</string>
+    <string name="ui_onboard_configure_model_placeholder">輸入模型 ID</string>
+    <string name="ui_onboard_configure_model_example">例如：%1$s</string>
+    <string name="ui_onboard_configure_api_key_label">API Key</string>
+    <string name="ui_onboard_configure_api_key_placeholder">輸入 API Key</string>
+    <string name="ui_onboard_configure_api_key_show">顯示 API Key</string>
+    <string name="ui_onboard_configure_api_key_hide">隱藏 API Key</string>
+    <string name="ui_onboard_configure_error_load_failed">讀取設定失敗：%1$s</string>
+    <string name="ui_onboard_configure_error_save_failed">儲存設定失敗：%1$s</string>
+    <string name="ui_onboard_done_headline">設定完成。</string>
+    <string name="ui_onboard_done_description">設定已完成，你可以立即開始使用 Nexus，或稍後再到設定繼續調整。</string>
+    <string name="ui_onboard_done_enter_home">進入 Nexus</string>
+
+    <!-- Home -->
+    <string name="ui_home_title">Nexus</string>
+    <string name="ui_home_menu_clear">清空對話</string>
+    <string name="ui_home_input_placeholder">輸入訊息…</string>
+    <string name="ui_tool_status_running">執行中</string>
+    <string name="ui_tool_status_success">成功</string>
+    <string name="ui_tool_status_failed">失敗</string>
+    <string name="ui_home_send_content_description">傳送訊息</string>
+    <string name="ui_home_stop_content_description">停止生成</string>
+    <string name="ui_root_back_to_home_hint">再按一次返回主畫面</string>
+
+    <!-- Settings Shell -->
+    <string name="ui_settings_title">設定</string>
+    <string name="ui_settings_menu_entry">設定</string>
+
+    <!-- Settings Home Sections -->
+    <string name="ui_settings_section_model">模型</string>
+    <string name="ui_settings_section_capabilities">能力支援</string>
+    <string name="ui_settings_section_app">應用程式</string>
+
+    <!-- Settings Home Items -->
+    <string name="ui_settings_model_config">模型設定</string>
+    <string name="ui_settings_model_config_summary">調整 Nexus 的模型連接設定</string>
+    <string name="ui_settings_memory">記憶</string>
+    <string name="ui_settings_memory_summary">管理持久化的記憶與偏好設定</string>
+    <string name="ui_settings_builtin_tools">內建工具</string>
+    <string name="ui_settings_builtin_tools_summary">管理 Nexus 提供的內建工具</string>
+    <string name="ui_settings_custom_shell_tools">自訂 Shell 工具</string>
+    <string name="ui_settings_custom_shell_tools_summary">將常用命令封裝成 Agent 可用的工具</string>
+    <string name="ui_settings_mcp">MCP</string>
+    <string name="ui_settings_mcp_summary">連接外部 MCP 服務與工具</string>
+    <string name="ui_settings_execution_rules">執行規則</string>
+    <string name="ui_settings_execution_rules_summary">設定 Shell 的安全策略</string>
+    <string name="ui_settings_about">關於</string>
+    <string name="ui_settings_about_summary"></string>
+    <string name="ui_settings_about_description">讓語音助理用上你自己的模型能力</string>
+    <string name="ui_settings_about_author_homepage">作者主頁</string>
+    <string name="ui_settings_about_github">GitHub</string>
+    <string name="ui_settings_about_afdian">愛發電</string>
+    <string name="ui_settings_about_telegram">Telegram 群組</string>
+    <string name="ui_settings_about_feedback_feature">功能建議</string>
+    <string name="ui_settings_about_feedback_bug">Bug 回報</string>
+    <string name="ui_settings_about_version">版本</string>
+
+    <!-- Settings Detail Shared -->
+    <string name="ui_todo_page_title">功能開發中</string>
+    <string name="ui_todo_page_description">將於後續版本支援，敬請期待。</string>
+    <string name="unsaved_changes_dialog_title">有尚未儲存的變更</string>
+    <string name="unsaved_changes_dialog_text">確定要離開嗎？</string>
+    <string name="unsaved_changes_dialog_confirm_exit">離開</string>
+    <string name="unsaved_changes_dialog_cancel">取消</string>
+
+    <!-- Settings Configure Page -->
+    <string name="ui_settings_configure_description">調整模型連接、提示詞與代理設定。</string>
+    <string name="ui_settings_configure_save">儲存設定</string>
+    <string name="ui_settings_configure_prompt_label">提示詞</string>
+    <string name="ui_settings_configure_prompt_placeholder">你希望助理怎樣做？</string>
+    <string name="ui_settings_configure_proxy_label">代理</string>
+    <string name="ui_settings_configure_proxy_placeholder">例如：http://127.0.0.1:7890</string>
+    <string name="ui_settings_configure_error_required">必填欄位不能為空</string>
+    <string name="ui_settings_configure_error_proxy_invalid">代理位址不是有效的 URI</string>
+    <string name="ui_settings_mcp_config">MCP 設定</string>
+
+    <!-- Memory Module -->
+    <string name="memory_page_description">管理記憶。你可以左右滑動以刪除，點擊以編輯單條記憶。新增後，Agent 即使在新對話中也會記得這些內容。</string>
+    <string name="memory_page_empty_description">目前沒有已儲存的記憶。點擊右上角以新增第一條記憶。</string>
+    <string name="memory_loading">正在讀取記憶…</string>
+    <string name="memory_editor_title_create">新增記憶</string>
+    <string name="memory_editor_title_edit">編輯記憶</string>
+    <string name="memory_field_content">內容</string>
+    <string name="memory_field_content_hint">例如：使用者的生日是 X 月 Y 日</string>
+    <string name="memory_save_action">儲存記憶</string>
+    <string name="memory_cancel_action">取消</string>
+    <string name="memory_error_load_failed">讀取記憶失敗：%1$s</string>
+    <string name="memory_error_save_failed">儲存記憶失敗：%1$s</string>
+    <string name="memory_error_delete_failed">刪除記憶失敗：%1$s</string>
+
+    <!-- Execution Rules Module -->
+    <string name="execution_rules_page_description">設定 Shell 與工具的執行規則。目前此頁只提供規則介面，尚未接入實際攔截流程。</string>
+    <string name="execution_rules_empty_action_hint">點擊右上角以新增第一條規則草稿。</string>
+    <string name="execution_rules_loading">正在讀取執行規則…</string>
+    <string name="execution_rules_editor_title_create">新增執行規則</string>
+
+    <!-- Builtin Tool Module -->
+    <string name="builtin_tool_page_description">開啟或關閉預設內建工具。啟用後，工具會在下一次對話時更新。</string>
+    <string name="builtin_tool_loading">正在讀取內建工具狀態…</string>
+    <string name="builtin_tool_empty">目前沒有可用的內建工具。</string>
+    <string name="builtin_tool_load_failed">讀取失敗：%1$s</string>
+    <string name="builtin_tool_save_failed">儲存失敗：%1$s</string>
+
+    <!-- Custom Tool Module -->
+    <string name="custom_tool_page_description">管理你的自訂工具。</string>
+    <string name="custom_tool_page_empty_description">讓你的 Agent 幫到你，或點擊右上角建立新工具。</string>
+    <string name="custom_tool_loading">正在讀取已儲存的自訂工具…</string>
+    <string name="custom_tool_editor_title_create">新增自訂工具</string>
+    <string name="custom_tool_editor_description">設定你的自訂工具。儲存後，Agent 可在需要時呼叫此工具。執行命令有風險，請審慎使用此功能。</string>
+    <string name="custom_tool_field_name">工具名稱</string>
+    <string name="custom_tool_field_name_hint">例如：open_project</string>
+    <string name="custom_tool_field_description">工具說明</string>
+    <string name="custom_tool_field_description_hint">描述這個工具的用途，方便 Agent 理解並在適當時機使用。</string>
+    <string name="custom_tool_field_enabled">啟用工具</string>
+    <string name="custom_tool_field_command">固定命令</string>
+    <string name="custom_tool_field_command_hint">例如：bash /sdcard/my_script.sh</string>
+    <string name="custom_tool_save_action">儲存自訂工具</string>
+    <string name="custom_tool_error_name_required">請輸入工具名稱</string>
+    <string name="custom_tool_error_description_required">請輸入工具說明</string>
+    <string name="custom_tool_error_command_required">請輸入固定命令</string>
+    <string name="custom_tool_error_name_invalid">名稱須以字母或底線開頭，且只能包含字母、數字或底線</string>
+    <string name="custom_tool_error_name_duplicate">名稱已存在，請更換後重試</string>
+    <string name="custom_tool_error_name_reserved">此名稱已被內建工具使用</string>
+    <string name="custom_tool_error_command_unsafe">命令已被安全策略攔截，請調整後再試</string>
+    <string name="custom_tool_error_load_failed">讀取自訂工具失敗：%1$s</string>
+    <string name="custom_tool_error_save_failed">儲存自訂工具失敗：%1$s</string>
+    <string name="custom_tool_error_delete_failed">刪除自訂工具失敗：%1$s</string>
+    <string name="custom_tool_save_failed">儲存失敗：%1$s</string>
+
+    <!-- MCP Module -->
+    <string name="mcp_page_description">設定 MCP 服務的連線方式與驗證資訊。儲存後，Nexus 會在執行時自動發現可用工具。</string>
+    <string name="mcp_page_empty_description">點擊右上角以新增第一個伺服器。</string>
+    <string name="mcp_loading">正在讀取已儲存的 MCP 服務…</string>
+    <string name="mcp_editor_title_create">新增 MCP 服務</string>
+    <string name="mcp_field_name">名稱</string>
+    <string name="mcp_field_name_hint">例如：my-xxx-mcp-server</string>
+    <string name="mcp_field_url">URL</string>
+    <string name="mcp_field_url_hint">例如：https://a.b.c/mcp</string>
+    <string name="mcp_field_enabled">啟用服務</string>
+    <string name="mcp_field_headers">自訂請求標頭</string>
+    <string name="mcp_field_headers_hint">{\n  \"Authorization\": \"Bearer xxx\"\n}</string>
+    <string name="mcp_save_action">儲存 MCP 服務</string>
+    <string name="mcp_error_name_required">請輸入名稱</string>
+    <string name="mcp_error_name_duplicate">名稱已存在，請更換後重試</string>
+    <string name="mcp_error_url_required">請輸入 URL</string>
+    <string name="mcp_error_url_invalid">URL 只支援 http:// 或 https://</string>
+    <string name="mcp_error_headers_invalid_json">請求標頭不是有效的 JSON</string>
+    <string name="mcp_error_headers_not_object">請求標頭必須是 JSON 物件</string>
+    <string name="mcp_error_headers_empty_key">請求標頭名稱不能為空</string>
+    <string name="mcp_error_headers_non_string">請求標頭的值必須為字串</string>
+</resources>

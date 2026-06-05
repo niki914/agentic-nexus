@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App / Module -->
+    <string name="app_name">Nexus</string>
+    <string name="xposed_desc">Use your own model provider with your system voice assistant\n\nCurrently supported: ColorOS Breeno | HyperOS XiaoAi</string>
+
+    <!-- Onboarding -->
+    <string name="ui_onboard_startup_headline">Bring your own model to your voice assistant</string>
+    <string name="ui_onboard_startup_status_breeno">Nexus now supports Breeno Assistant</string>
+    <string name="ui_onboard_startup_status_xiaoai">Nexus now supports XiaoAi</string>
+    <string name="ui_onboard_startup_status_chat_only">This device is not supported yet, but chat is still available</string>
+    <string name="ui_onboard_startup_continue">Get Started</string>
+    <string name="ui_onboard_startup_continue_chat_only">Continue</string>
+    <string name="ui_onboard_web_beta_title">Support Is Still in Beta</string>
+    <string name="ui_onboard_web_beta_body">Support for this assistant is still being validated, so some scenarios may be unstable. You can continue setup and return to Settings later to adjust things or send feedback if anything goes wrong.</string>
+    <string name="ui_onboard_web_fetch_failed_title">Unable to Load Configuration</string>
+    <string name="ui_onboard_web_fetch_failed_body">Could not connect to the configuration service. Retry or go straight to setup.</string>
+    <string name="ui_onboard_web_unsupported_title">Host Version Not Supported</string>
+    <string name="ui_onboard_web_unsupported_body">A dedicated configuration is not available for this host version yet. The latest available configuration has been applied. Please send feedback if you run into issues.</string>
+    <string name="ui_onboard_web_network_error_title">Network Request Failed</string>
+    <string name="ui_onboard_web_network_error_body">There is a network problem. Check your connection and try again, or go straight to setup.</string>
+    <string name="ui_onboard_web_confirm">OK</string>
+    <string name="ui_onboard_web_cancel">Cancel</string>
+    <string name="ui_onboard_web_enter_directly">Go to Setup</string>
+    <string name="ui_onboard_web_retry">Retry</string>
+    <string name="ui_onboard_provider_pick_title">Choose a Provider</string>
+    <string name="ui_onboard_provider_pick_description">Start here to connect your model.\nSelect a provider to continue.</string>
+    <string name="ui_onboard_configure_title">Configure Model Access</string>
+    <string name="ui_onboard_configure_description">Enter your model settings to get started.</string>
+    <string name="ui_onboard_configure_next">Next</string>
+    <string name="ui_onboard_configure_endpoint_override_title">Custom Endpoint</string>
+    <string name="ui_onboard_configure_endpoint_override_description_off">Using default endpoint</string>
+    <string name="ui_onboard_configure_endpoint_override_description_on">Using custom endpoint</string>
+    <string name="ui_onboard_configure_endpoint_label">Endpoint URL</string>
+    <string name="ui_onboard_configure_endpoint_placeholder">Enter your endpoint URL</string>
+    <string name="ui_onboard_configure_model_label">Model ID</string>
+    <string name="ui_onboard_configure_model_placeholder">Enter your model ID</string>
+    <string name="ui_onboard_configure_model_example">Example: %1$s</string>
+    <string name="ui_onboard_configure_api_key_label">API Key</string>
+    <string name="ui_onboard_configure_api_key_placeholder">Enter your API Key</string>
+    <string name="ui_onboard_configure_api_key_show">Show API Key</string>
+    <string name="ui_onboard_configure_api_key_hide">Hide API Key</string>
+    <string name="ui_onboard_configure_error_load_failed">Failed to load configuration: %1$s</string>
+    <string name="ui_onboard_configure_error_save_failed">Failed to save configuration: %1$s</string>
+    <string name="ui_onboard_done_headline">All set.</string>
+    <string name="ui_onboard_done_description">Setup is complete. You can start using Nexus now or fine-tune it later in Settings.</string>
+    <string name="ui_onboard_done_enter_home">Open Nexus</string>
+
+    <!-- Home -->
+    <string name="ui_home_title">Nexus</string>
+    <string name="ui_home_menu_clear">Clear</string>
+    <string name="ui_home_input_placeholder">Type a message...</string>
+    <string name="ui_tool_status_running">Running</string>
+    <string name="ui_tool_status_success">Success</string>
+    <string name="ui_tool_status_failed">Failed</string>
+    <string name="ui_home_send_content_description">Send message</string>
+    <string name="ui_home_stop_content_description">Stop generating</string>
+    <string name="ui_root_back_to_home_hint">Press back again to go to the Home screen</string>
+
+    <!-- Settings Shell -->
+    <string name="ui_settings_title">Settings</string>
+    <string name="ui_settings_menu_entry">Settings</string>
+
+    <!-- Settings Home Sections -->
+    <string name="ui_settings_section_model">Model</string>
+    <string name="ui_settings_section_capabilities">Capabilities</string>
+    <string name="ui_settings_section_app">App</string>
+
+    <!-- Settings Home Items -->
+    <string name="ui_settings_model_config">Model Configuration</string>
+    <string name="ui_settings_model_config_summary">Adjust how Nexus connects to your model</string>
+    <string name="ui_settings_memory">Memory</string>
+    <string name="ui_settings_memory_summary">Manage saved memories and preferences</string>
+    <string name="ui_settings_builtin_tools">Built-in Tools</string>
+    <string name="ui_settings_builtin_tools_summary">Manage tools provided by Nexus</string>
+    <string name="ui_settings_custom_shell_tools">Custom Shell Tools</string>
+    <string name="ui_settings_custom_shell_tools_summary">Wrap common commands as tools your Agent can use</string>
+    <string name="ui_settings_mcp">MCP</string>
+    <string name="ui_settings_mcp_summary">Connect external MCP services and tools</string>
+    <string name="ui_settings_execution_rules">Execution Rules</string>
+    <string name="ui_settings_execution_rules_summary">Set safety rules for Shell execution</string>
+    <string name="ui_settings_about">About</string>
+    <string name="ui_settings_about_summary"></string>
+    <string name="ui_settings_about_description">Bring your own model to your voice assistant</string>
+    <string name="ui_settings_about_author_homepage">Author Website</string>
+    <string name="ui_settings_about_github">GitHub</string>
+    <string name="ui_settings_about_afdian">Afdian</string>
+    <string name="ui_settings_about_telegram">Telegram Group</string>
+    <string name="ui_settings_about_feedback_feature">Feature Requests</string>
+    <string name="ui_settings_about_feedback_bug">Bug Reports</string>
+    <string name="ui_settings_about_version">Version</string>
+
+    <!-- Settings Detail Shared -->
+    <string name="ui_todo_page_title">Coming Soon</string>
+    <string name="ui_todo_page_description">This will be available in a future release. Stay tuned.</string>
+    <string name="unsaved_changes_dialog_title">Unsaved Changes</string>
+    <string name="unsaved_changes_dialog_text">Exit without saving?</string>
+    <string name="unsaved_changes_dialog_confirm_exit">Exit</string>
+    <string name="unsaved_changes_dialog_cancel">Cancel</string>
+
+    <!-- Settings Configure Page -->
+    <string name="ui_settings_configure_description">Configure model access, prompts, and proxy settings.</string>
+    <string name="ui_settings_configure_save">Save Configuration</string>
+    <string name="ui_settings_configure_prompt_label">Prompt</string>
+    <string name="ui_settings_configure_prompt_placeholder">What should your assistant do?</string>
+    <string name="ui_settings_configure_proxy_label">Proxy</string>
+    <string name="ui_settings_configure_proxy_placeholder">For example: http://127.0.0.1:7890</string>
+    <string name="ui_settings_configure_error_required">This field cannot be empty</string>
+    <string name="ui_settings_configure_error_proxy_invalid">Proxy address is not a valid URI</string>
+    <string name="ui_settings_mcp_config">MCP Configuration</string>
+
+    <!-- Memory Module -->
+    <string name="memory_page_description">Manage saved memories. Swipe left or right to delete, or tap an item to edit it. Once added, the Agent will remember this information even in new conversations.</string>
+    <string name="memory_page_empty_description">No memories have been saved yet. Tap the top right to add your first memory.</string>
+    <string name="memory_loading">Loading memories...</string>
+    <string name="memory_editor_title_create">New Memory</string>
+    <string name="memory_editor_title_edit">Edit Memory</string>
+    <string name="memory_field_content">Content</string>
+    <string name="memory_field_content_hint">For example: The user\'s birthday is Month X Day Y</string>
+    <string name="memory_save_action">Save Memory</string>
+    <string name="memory_cancel_action">Cancel</string>
+    <string name="memory_error_load_failed">Failed to load memories: %1$s</string>
+    <string name="memory_error_save_failed">Failed to save memory: %1$s</string>
+    <string name="memory_error_delete_failed">Failed to delete memory: %1$s</string>
+
+    <!-- Execution Rules Module -->
+    <string name="execution_rules_page_description">Configure rules for Shell and tool execution. This page currently provides only the UI shell and is not yet wired into the actual interception flow.</string>
+    <string name="execution_rules_empty_action_hint">Tap the top right to add your first draft rule.</string>
+    <string name="execution_rules_loading">Loading execution rules...</string>
+    <string name="execution_rules_editor_title_create">New Execution Rule</string>
+
+    <!-- Builtin Tool Module -->
+    <string name="builtin_tool_page_description">Turn preset built-in tools on or off. Changes take effect in the next conversation.</string>
+    <string name="builtin_tool_loading">Loading built-in tool status...</string>
+    <string name="builtin_tool_empty">No built-in tools are available right now.</string>
+    <string name="builtin_tool_load_failed">Failed to load: %1$s</string>
+    <string name="builtin_tool_save_failed">Failed to save: %1$s</string>
+
+    <!-- Custom Tool Module -->
+    <string name="custom_tool_page_description">Manage your custom tools.</string>
+    <string name="custom_tool_page_empty_description">Let your Agent help you out, or tap the top right to create a new tool.</string>
+    <string name="custom_tool_loading">Loading saved custom tools...</string>
+    <string name="custom_tool_editor_title_create">New Custom Tool</string>
+    <string name="custom_tool_editor_description">Configure your custom tool. After saving, the Agent can call it when needed. Running commands carries risk, so use this feature with caution.</string>
+    <string name="custom_tool_field_name">Tool Name</string>
+    <string name="custom_tool_field_name_hint">For example: open_project</string>
+    <string name="custom_tool_field_description">Tool Description</string>
+    <string name="custom_tool_field_description_hint">Describe what this tool does so the Agent can understand it and use it at the right time.</string>
+    <string name="custom_tool_field_enabled">Enable Tool</string>
+    <string name="custom_tool_field_command">Command</string>
+    <string name="custom_tool_field_command_hint">For example: bash /sdcard/my_script.sh</string>
+    <string name="custom_tool_save_action">Save Custom Tool</string>
+    <string name="custom_tool_error_name_required">Please enter a tool name</string>
+    <string name="custom_tool_error_description_required">Please enter a tool description</string>
+    <string name="custom_tool_error_command_required">Please enter a command</string>
+    <string name="custom_tool_error_name_invalid">The name must start with a letter or underscore and contain only letters, numbers, or underscores</string>
+    <string name="custom_tool_error_name_duplicate">This name already exists. Please choose another one and try again</string>
+    <string name="custom_tool_error_name_reserved">This name is already used by a built-in tool</string>
+    <string name="custom_tool_error_command_unsafe">This command was blocked by the safety policy. Please adjust it and try again</string>
+    <string name="custom_tool_error_load_failed">Failed to load custom tools: %1$s</string>
+    <string name="custom_tool_error_save_failed">Failed to save custom tools: %1$s</string>
+    <string name="custom_tool_error_delete_failed">Failed to delete custom tools: %1$s</string>
+    <string name="custom_tool_save_failed">Failed to save: %1$s</string>
+
+    <!-- MCP Module -->
+    <string name="mcp_page_description">Configure connection and authentication for MCP services. After saving, Nexus will automatically discover available tools at runtime.</string>
+    <string name="mcp_page_empty_description">Tap the top right to add your first server.</string>
+    <string name="mcp_loading">Loading saved MCP services...</string>
+    <string name="mcp_editor_title_create">New MCP Service</string>
+    <string name="mcp_field_name">Name</string>
+    <string name="mcp_field_name_hint">For example: my-xxx-mcp-server</string>
+    <string name="mcp_field_url">URL</string>
+    <string name="mcp_field_url_hint">For example: https://a.b.c/mcp</string>
+    <string name="mcp_field_enabled">Enable Service</string>
+    <string name="mcp_field_headers">Custom Headers</string>
+    <string name="mcp_field_headers_hint">{\n  \"Authorization\": \"Bearer xxx\"\n}</string>
+    <string name="mcp_save_action">Save MCP Service</string>
+    <string name="mcp_error_name_required">Please enter a name</string>
+    <string name="mcp_error_name_duplicate">This name already exists. Please choose another one and try again</string>
+    <string name="mcp_error_url_required">Please enter a URL</string>
+    <string name="mcp_error_url_invalid">Only http:// or https:// URLs are supported</string>
+    <string name="mcp_error_headers_invalid_json">Headers are not valid JSON</string>
+    <string name="mcp_error_headers_not_object">Headers must be a JSON object</string>
+    <string name="mcp_error_headers_empty_key">Header names cannot be empty</string>
+    <string name="mcp_error_headers_non_string">Header values must be strings</string>
+</resources>
