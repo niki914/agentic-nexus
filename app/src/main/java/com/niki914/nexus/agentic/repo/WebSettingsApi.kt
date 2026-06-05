@@ -28,29 +28,45 @@ import okhttp3.Request
 class WebSettingsApi internal constructor(
     private val repo: XRepo,
 ) {
-    private val refreshMutex = Mutex()
+    @Volatile
+    private var cachedSuccess: WebSettingsResult.Success? = null
+    private val mutex = Mutex()
 
     suspend fun await(): WebSettingsResult {
-        val context = repo.context()
-        val target = resolveTarget(context)
-            ?: return WebSettingsResult.RequestFailed(WebSettingsFailureReason.UnsupportedVersion)
-        readCachedSettings(context, target)?.let { return it }
-        return refreshFromNetwork(
-            context = context,
-            target = target,
-            useCacheBeforeNetwork = true,
-        )
+        cachedSuccess?.let { return it }
+
+        return mutex.withLock {
+            cachedSuccess?.let { return@withLock it }
+
+            val context = repo.context()
+            val target = resolveTarget(context)
+                ?: return@withLock WebSettingsResult.RequestFailed(WebSettingsFailureReason.UnsupportedVersion)
+            
+            readCachedSettings(context, target)?.let { 
+                cachedSuccess = it
+                return@withLock it 
+            }
+            
+            val result = refreshFromNetwork(context, target)
+            if (result is WebSettingsResult.Success) {
+                cachedSuccess = result
+            }
+            result
+        }
     }
 
     suspend fun retry(): WebSettingsResult {
-        val context = repo.context()
-        val target = resolveTarget(context)
-            ?: return WebSettingsResult.RequestFailed(WebSettingsFailureReason.UnsupportedVersion)
-        return refreshFromNetwork(
-            context = context,
-            target = target,
-            useCacheBeforeNetwork = false,
-        )
+        return mutex.withLock {
+            val context = repo.context()
+            val target = resolveTarget(context)
+                ?: return@withLock WebSettingsResult.RequestFailed(WebSettingsFailureReason.UnsupportedVersion)
+            
+            val result = refreshFromNetwork(context, target)
+            if (result is WebSettingsResult.Success) {
+                cachedSuccess = result
+            }
+            result
+        }
     }
 
     private suspend fun readCachedSettings(
@@ -76,28 +92,22 @@ class WebSettingsApi internal constructor(
     private suspend fun refreshFromNetwork(
         context: Context,
         target: WebSettingsTarget,
-        useCacheBeforeNetwork: Boolean,
     ): WebSettingsResult {
-        return refreshMutex.withLock {
-            if (useCacheBeforeNetwork) {
-                readCachedSettings(context, target)?.let { return@withLock it }
-            }
-            val exactResult = fetchConfig(target.packageName, target.versionCode)
-            when (exactResult) {
-                is ConfigFetchResult.Success -> persistSuccess(
-                    context = context,
-                    json = exactResult.json,
-                    requestedVersionCode = target.versionCode,
-                    resolvedVersionCode = target.versionCode,
-                    isFallbackVersion = false,
-                )
+        val exactResult = fetchConfig(target.packageName, target.versionCode)
+        return when (exactResult) {
+            is ConfigFetchResult.Success -> persistSuccess(
+                context = context,
+                json = exactResult.json,
+                requestedVersionCode = target.versionCode,
+                resolvedVersionCode = target.versionCode,
+                isFallbackVersion = false,
+            )
 
-                ConfigFetchResult.NotFound -> fetchNearestConfig(context, target)
-                is ConfigFetchResult.Failed -> WebSettingsResult.RequestFailed(
-                    reason = exactResult.reason,
-                    cause = exactResult.cause,
-                )
-            }
+            ConfigFetchResult.NotFound -> fetchNearestConfig(context, target)
+            is ConfigFetchResult.Failed -> WebSettingsResult.RequestFailed(
+                reason = exactResult.reason,
+                cause = exactResult.cause,
+            )
         }
     }
 
