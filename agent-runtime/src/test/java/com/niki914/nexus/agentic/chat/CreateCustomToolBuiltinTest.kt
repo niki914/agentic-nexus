@@ -17,6 +17,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation as CustomToolValidation
 
 class CreateCustomToolBuiltinTest {
     @After
@@ -123,6 +124,34 @@ class CreateCustomToolBuiltinTest {
             ),
             store.customTools,
         )
+    }
+
+    @Test
+    fun invoke_mapsExecutionRuleValidationToRuleBlocked() = runTest {
+        val store = installRuntimeSettingsGatewayForTest()
+        store.nextSaveCustomToolValidation = CustomToolValidation(
+            field = "command",
+            message = "Command blocked by execution rule '危险删改' with pattern '\\brm\\s+-rf\\b'.",
+        )
+
+        val result = CreateCustomToolBuiltin().invoke(
+            BuiltinToolRequest(
+                name = "create_custom_tool",
+                argumentsJson = """
+                    {
+                      "name": "wipe_data",
+                      "description": "Dangerous command.",
+                      "command": "rm -rf /data/local/tmp/cache"
+                    }
+                """.trimIndent(),
+            )
+        )
+
+        assertFalse(result.ok)
+        assertEquals("RULE_BLOCKED", result.code)
+        assertTrue(result.message.contains("危险删改"))
+        assertEquals(result.message, result.hint)
+        assertEquals(result.message, result.fieldErrors["command"])
     }
 
 }

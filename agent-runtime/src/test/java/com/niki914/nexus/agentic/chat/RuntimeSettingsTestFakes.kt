@@ -7,6 +7,7 @@ import com.niki914.nexus.agentic.runtime.settings.RuntimeSettingsGateway
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeBuiltinToolSetting
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRule
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool
@@ -27,6 +28,7 @@ internal class FakeRuntimeSettingsGateway(
     customTools: List<RuntimeCustomTool> = emptyList(),
     builtinTools: List<RuntimeBuiltinToolSetting> = defaultBuiltinToolSettings(),
     memories: List<String> = emptyList(),
+    executionRules: List<RuntimeExecutionRule> = emptyList(),
     private val mcpServers: List<RuntimeMcpServer> = emptyList(),
 ) : RuntimeSettingsGateway {
     var customTools: MutableList<RuntimeCustomTool> = customTools.toMutableList()
@@ -35,9 +37,12 @@ internal class FakeRuntimeSettingsGateway(
         private set
     var memories: MutableList<String> = memories.toMutableList()
         private set
+    var executionRules: MutableList<RuntimeExecutionRule> = executionRules.toMutableList()
+        private set
     var writeCount: Int = 0
         private set
     var failOnWriteNumber: Int? = null
+    var nextSaveCustomToolValidation: RuntimeCustomToolValidation? = null
     val discoveredToolWrites: MutableList<RuntimeMcpCacheWrite> = mutableListOf()
 
     override suspend fun readLlmConfig(): RuntimeLlmConfig = RuntimeLlmConfig()
@@ -79,6 +84,10 @@ internal class FakeRuntimeSettingsGateway(
         tool: RuntimeCustomTool,
         overwrite: Boolean,
     ): RuntimeCustomToolValidation? {
+        nextSaveCustomToolValidation?.let { validation ->
+            nextSaveCustomToolValidation = null
+            return validation
+        }
         val index = customTools.indexOfFirst { it.name == tool.name }
         if (index >= 0 && !overwrite) {
             return RuntimeCustomToolValidation("name", "Already exists in custom_tools.")
@@ -127,6 +136,10 @@ internal class FakeRuntimeSettingsGateway(
         recordWrite()
         builtinTools[index] = builtinTools[index].copy(enabled = enabled)
         return null
+    }
+
+    override suspend fun listExecutionRules(): List<RuntimeExecutionRule> {
+        return executionRules.toList()
     }
 
     private fun recordWrite() {

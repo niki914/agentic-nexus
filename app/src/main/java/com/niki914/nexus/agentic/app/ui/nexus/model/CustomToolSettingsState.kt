@@ -29,6 +29,7 @@ data class CustomToolFormState(
     @param:StringRes val nameErrorResId: Int? = null,
     @param:StringRes val descriptionErrorResId: Int? = null,
     @param:StringRes val commandErrorResId: Int? = null,
+    val commandErrorMessage: String? = null,
 )
 
 data class CustomToolFormSnapshot(
@@ -127,6 +128,7 @@ class CustomToolSettingsViewModel :
                     formState = formState.copy(
                         command = intent.value,
                         commandErrorResId = null,
+                        commandErrorMessage = null,
                     ),
                     inlineError = null,
                 )
@@ -262,6 +264,7 @@ class CustomToolSettingsViewModel :
                     nameErrorResId = null,
                     descriptionErrorResId = null,
                     commandErrorResId = null,
+                    commandErrorMessage = null,
                 ),
                 isSaving = true,
                 inlineError = null,
@@ -294,6 +297,7 @@ class CustomToolSettingsViewModel :
                         nameErrorResId = null,
                         descriptionErrorResId = null,
                         commandErrorResId = null,
+                        commandErrorMessage = null,
                     ).withCurrentSnapshotAsInitial(),
                     isSaving = false,
                     inlineError = null,
@@ -377,6 +381,7 @@ class CustomToolSettingsViewModel :
                     nameErrorResId = errors.nameErrorResId,
                     descriptionErrorResId = errors.descriptionErrorResId,
                     commandErrorResId = errors.commandErrorResId,
+                    commandErrorMessage = errors.commandErrorMessage,
                 ),
                 isSaving = false,
                 inlineError = null,
@@ -410,11 +415,13 @@ private data class CustomToolFieldErrors(
     @param:StringRes val nameErrorResId: Int? = null,
     @param:StringRes val descriptionErrorResId: Int? = null,
     @param:StringRes val commandErrorResId: Int? = null,
+    val commandErrorMessage: String? = null,
 ) {
     val hasErrors: Boolean
         get() = nameErrorResId != null ||
                 descriptionErrorResId != null ||
-                commandErrorResId != null
+                commandErrorResId != null ||
+                commandErrorMessage != null
 }
 
 private fun CustomToolFormState.toSnapshot(): CustomToolFormSnapshot {
@@ -462,6 +469,7 @@ private fun validationToFieldErrors(validation: CustomToolValidation): CustomToo
 
         "command" -> CustomToolFieldErrors(
             commandErrorResId = validation.commandErrorResId(),
+            commandErrorMessage = validation.commandErrorMessage(),
         )
 
         else -> CustomToolFieldErrors()
@@ -474,7 +482,7 @@ private fun firstInvalidFieldEffect(
     return when {
         errors.nameErrorResId != null -> CustomToolSettingsEffect.FocusName
         errors.descriptionErrorResId != null -> CustomToolSettingsEffect.FocusDescription
-        errors.commandErrorResId != null -> CustomToolSettingsEffect.FocusCommand
+        errors.commandErrorResId != null || errors.commandErrorMessage != null -> CustomToolSettingsEffect.FocusCommand
         else -> null
     }
 }
@@ -499,8 +507,11 @@ private fun CustomToolValidation.nameErrorResId(): Int {
 }
 
 @StringRes
-private fun CustomToolValidation.commandErrorResId(): Int {
+private fun CustomToolValidation.commandErrorResId(): Int? {
     return when {
+        message.contains("execution rule", ignoreCase = true) ->
+            null
+
         message.contains("Unsafe command pattern was rejected", ignoreCase = true) ->
             R.string.custom_tool_error_command_unsafe
 
@@ -509,6 +520,10 @@ private fun CustomToolValidation.commandErrorResId(): Int {
 
         else -> R.string.custom_tool_error_command_unsafe
     }
+}
+
+private fun CustomToolValidation.commandErrorMessage(): String? {
+    return message.takeIf { it.contains("execution rule", ignoreCase = true) }
 }
 
 private fun CustomTool.toItem(): CustomToolItem {

@@ -22,6 +22,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRule as ExecutionRule
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRuleEnabledMode as ExecutionRuleEnabledMode
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CustomToolSettingsViewModelTest {
@@ -164,7 +166,19 @@ class CustomToolSettingsViewModelTest {
 
     @Test
     fun save_mapsUnsafeCommandToCommandError() = runTest {
-        installStore(LocalSettings())
+        installStore(
+            LocalSettingsCodec.withExecutionRules(
+                LocalSettings(),
+                listOf(
+                    ExecutionRule(
+                        id = "dangerous-delete",
+                        name = "危险删改",
+                        enabledMode = ExecutionRuleEnabledMode.ALWAYS,
+                        patterns = listOf("\\brm\\s+-rf\\b"),
+                    )
+                ),
+            )
+        )
         val viewModel = CustomToolSettingsViewModel()
         val effects = collectEffects(viewModel, count = 1)
 
@@ -176,7 +190,8 @@ class CustomToolSettingsViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiStateFlow.value
-        assertEquals(R.string.custom_tool_error_command_unsafe, state.formState.commandErrorResId)
+        assertEquals(null, state.formState.commandErrorResId)
+        assertTrue(state.formState.commandErrorMessage.orEmpty().contains("危险删改"))
         assertEquals(listOf(CustomToolSettingsEffect.FocusCommand), effects)
         assertTrue(XRepo.customTools.list().isEmpty())
         assertFalse(state.isSaving)

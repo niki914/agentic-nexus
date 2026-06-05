@@ -4,6 +4,7 @@ import com.niki914.nexus.agentic.runtime.settings.RuntimeSettingsGateway
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeBuiltinToolSetting
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRule
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool
@@ -69,5 +70,9 @@ class XRepoRuntimeGateway(
         enabled: Boolean,
     ): RuntimeCustomToolValidation? {
         return repo.builtinTools.setEnabled(name, enabled)
+    }
+
+    override suspend fun listExecutionRules(): List<RuntimeExecutionRule> {
+        return repo.executionRules.list()
     }
 }

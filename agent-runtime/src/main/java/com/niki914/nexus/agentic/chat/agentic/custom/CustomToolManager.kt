@@ -130,7 +130,7 @@ class CustomToolManager(
         }
     }
 
-    fun validate(
+    suspend fun validate(
         request: CustomToolCreateRequest,
         existingNames: Set<String>,
         reservedNames: Set<String>,
@@ -182,18 +182,19 @@ class CustomToolManager(
         }
         val decision = safetyPolicy.evaluate(normalized.command)
         if (!decision.allowed) {
+            val ruleName = decision.matchedRuleName ?: "unknown"
             return BuiltinToolResult.failure(
                 code = decision.code,
-                message = "Custom tool '${normalized.name}' uses a command blocked by the basic safety policy.",
-                hint = "Remove high-risk operations such as rm -rf, reboot, su, setprop, pm uninstall, or dd.",
-                fieldErrors = mapOf("command" to "Unsafe command pattern was rejected."),
+                message = "Custom tool '${normalized.name}' is blocked by execution rule '$ruleName'.",
+                hint = decision.reason,
+                fieldErrors = mapOf("command" to decision.reason),
             )
         }
 
         return null
     }
 
-    private fun validateAll(
+    private suspend fun validateAll(
         items: List<CustomToolConfig>,
         reservedNames: Set<String>,
     ): BuiltinToolResult? {
@@ -311,10 +312,10 @@ class CustomToolManager(
 
     private fun CustomToolValidation.toFailure(): BuiltinToolResult {
         return BuiltinToolResult.failure(
-            code = when (message) {
-                "Reserved builtin tool name." -> "RESERVED_NAME"
-                "Already exists in custom_tools." -> "NAME_CONFLICT"
-                "Unsafe command pattern was rejected." -> "UNSAFE_COMMAND"
+            code = when {
+                message == "Reserved builtin tool name." -> "RESERVED_NAME"
+                message == "Already exists in custom_tools." -> "NAME_CONFLICT"
+                field == "command" && message.contains("execution rule", ignoreCase = true) -> "RULE_BLOCKED"
                 else -> "INVALID_CUSTOM_TOOL"
             },
             message = "Custom tool validation failed.",

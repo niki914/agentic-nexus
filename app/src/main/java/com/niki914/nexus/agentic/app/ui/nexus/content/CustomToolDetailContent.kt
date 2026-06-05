@@ -279,7 +279,8 @@ private fun CustomToolCommandSettingsBlock(
             value = uiState.formState.command,
             onValueChange = onCommandChange,
             placeholder = stringResource(R.string.custom_tool_field_command_hint),
-            description = customToolFieldErrorText(uiState.formState.commandErrorResId),
+            description = uiState.formState.commandErrorMessage
+                ?: customToolFieldErrorText(uiState.formState.commandErrorResId),
             enabled = !uiState.isSaving,
             minLines = 3,
             maxLines = 10,

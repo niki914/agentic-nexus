@@ -10,17 +10,26 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolExecutor
 import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRunner
+import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRule as ExecutionRule
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRuleEnabledMode as ExecutionRuleEnabledMode
 
 class ToolCallDispatcherTest {
     private val context: Context = ContextWrapper(null)
+
+    @After
+    fun tearDown() {
+        RuntimeEnvironment.clearForTest()
+    }
 
     @Test
     fun executeLocalTool_dispatchesEnabledBuiltinBeforeCustomToolFallback() = runTest {
@@ -107,6 +116,7 @@ class ToolCallDispatcherTest {
 
     @Test
     fun executeLocalTool_fallsBackToCustomToolWhenBuiltinIsNotEnabled() = runTest {
+        installRuntimeSettingsGatewayForTest()
         val dispatcher = ToolCallDispatcher(
             builtinToolExecutor = BuiltinToolExecutor(BuiltinToolRegistry(emptyList())),
             customToolExecutor = CustomToolExecutor(
@@ -138,6 +148,9 @@ class ToolCallDispatcherTest {
 
     @Test
     fun executeLocalTool_returnsStructuredErrorForBlockedCustomCommand() = runTest {
+        installRuntimeSettingsGatewayForTest(
+            FakeRuntimeSettingsGateway(executionRules = dangerousRules())
+        )
         val dispatcher = ToolCallDispatcher(
             builtinToolExecutor = BuiltinToolExecutor(BuiltinToolRegistry(emptyList())),
             customToolExecutor = CustomToolExecutor(),
@@ -163,6 +176,21 @@ class ToolCallDispatcherTest {
         val json = Json.parseToJsonElement(resultJson).jsonObject
         assertFalse(json["ok"]!!.jsonPrimitive.content.toBoolean())
         assertEquals("rm -rf /data/local/tmp/cache", json["command"]!!.jsonPrimitive.content)
+        assertEquals(
+            "Command blocked by execution rule '危险命令' with pattern '\\brm\\s+-rf\\b'.",
+            json["message"]!!.jsonPrimitive.content
+        )
+    }
+
+    private fun dangerousRules(): List<ExecutionRule> {
+        return listOf(
+            ExecutionRule(
+                id = "dangerous-command",
+                name = "危险命令",
+                enabledMode = ExecutionRuleEnabledMode.ALWAYS,
+                patterns = listOf("\\brm\\s+-rf\\b"),
+            )
+        )
     }
 
     private class RecordingBuiltinTool(

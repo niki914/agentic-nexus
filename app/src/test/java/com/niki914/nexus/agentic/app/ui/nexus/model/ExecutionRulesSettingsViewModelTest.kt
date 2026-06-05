@@ -1,0 +1,159 @@
+package com.niki914.nexus.agentic.app.ui.nexus.model
+
+import android.content.Context
+import android.content.ContextWrapper
+import com.niki914.nexus.agentic.mod.LocalSettings
+import com.niki914.nexus.agentic.repo.LocalSettingsCodec
+import com.niki914.nexus.agentic.repo.LocalSettingsStore
+import com.niki914.nexus.agentic.repo.XRepo
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRule as ExecutionRule
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRuleEnabledMode as ExecutionRuleEnabledMode
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class ExecutionRulesSettingsViewModelTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
+    private val context: Context = object : ContextWrapper(null) {
+        override fun getApplicationContext(): Context = this
+    }
+
+    @After
+    fun tearDown() {
+        XRepo.resetForTest()
+    }
+
+    @Test
+    fun load_readsRealRules() = runTest {
+        installStore(settingsWith(sampleRule()))
+        val viewModel = ExecutionRulesSettingsViewModel()
+
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.Load)
+        advanceUntilIdle()
+
+        val state = viewModel.uiStateFlow.value
+        assertFalse(state.isLoading)
+        assertEquals("危险删改", state.items.single().name)
+        assertEquals(ExecutionRuleEnabledMode.LOCKED_ONLY, state.items.single().enabledMode)
+    }
+
+    @Test
+    fun itemEnabledChanged_updatesEnabledMode() = runTest {
+        installStore(settingsWith(sampleRule()))
+        val viewModel = ExecutionRulesSettingsViewModel()
+
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.Load)
+        advanceUntilIdle()
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.ItemEnabledChanged(0, false))
+        advanceUntilIdle()
+
+        assertEquals(ExecutionRuleEnabledMode.DISABLED, XRepo.executionRules.list().single().enabledMode)
+        assertEquals(ExecutionRuleEnabledMode.DISABLED, viewModel.uiStateFlow.value.items.single().enabledMode)
+    }
+
+    @Test
+    fun save_createsRuleAndExits() = runTest {
+        installStore(LocalSettings())
+        val viewModel = ExecutionRulesSettingsViewModel()
+        val effects = collectEffects(viewModel, count = 1)
+
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.Load)
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.StartCreate)
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.NameChanged(" 新规则 "))
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.PatternsChanged("\n echo danger \n\n"))
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.Save)
+        advanceUntilIdle()
+
+        val rule = XRepo.executionRules.list().single()
+        assertEquals("新规则", rule.name)
+        assertEquals(listOf("echo danger"), rule.patterns)
+        assertEquals(listOf(ExecutionRulesSettingsEffect.ExitDetail), effects)
+        assertFalse(viewModel.uiStateFlow.value.isSaving)
+    }
+
+    @Test
+    fun save_editsExistingRuleAndDeleteCurrentRemovesIt() = runTest {
+        installStore(settingsWith(sampleRule()))
+        val viewModel = ExecutionRulesSettingsViewModel()
+        val effects = collectEffects(viewModel, count = 2)
+
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.Load)
+        advanceUntilIdle()
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.StartEdit(0))
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.NameChanged("更新规则"))
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.EnabledModeChanged(ExecutionRuleEnabledMode.ALWAYS))
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.PatternsChanged("pm uninstall"))
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.Save)
+        advanceUntilIdle()
+
+        val updated = XRepo.executionRules.list().single()
+        assertEquals("builtin-dangerous-delete", updated.id)
+        assertEquals("更新规则", updated.name)
+        assertEquals(ExecutionRuleEnabledMode.ALWAYS, updated.enabledMode)
+        assertEquals(listOf("pm uninstall"), updated.patterns)
+
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.DeleteCurrent)
+        advanceUntilIdle()
+
+        assertTrue(XRepo.executionRules.list().isEmpty())
+        assertEquals(
+            listOf(
+                ExecutionRulesSettingsEffect.ExitDetail,
+                ExecutionRulesSettingsEffect.ExitDetail,
+            ),
+            effects,
+        )
+    }
+
+    private fun installStore(initialSettings: LocalSettings) {
+        XRepo.installStoreForTest(FakeLocalSettingsStore(initialSettings))
+        XRepo.init(context)
+    }
+
+    private fun settingsWith(vararg rules: ExecutionRule): LocalSettings {
+        return LocalSettingsCodec.withExecutionRules(LocalSettings(), rules.toList())
+    }
+
+    private fun sampleRule(): ExecutionRule {
+        return ExecutionRule(
+            id = "builtin-dangerous-delete",
+            name = "危险删改",
+            enabledMode = ExecutionRuleEnabledMode.LOCKED_ONLY,
+            patterns = listOf("\\brm\\s+-rf\\b"),
+        )
+    }
+
+    private fun kotlinx.coroutines.test.TestScope.collectEffects(
+        viewModel: ExecutionRulesSettingsViewModel,
+        count: Int,
+    ): MutableList<ExecutionRulesSettingsEffect> {
+        val effects = mutableListOf<ExecutionRulesSettingsEffect>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiEffect.take(count).toList(effects)
+        }
+        return effects
+    }
+
+    private class FakeLocalSettingsStore(
+        private var settings: LocalSettings,
+    ) : LocalSettingsStore {
+        override suspend fun read(context: Context): LocalSettings = settings
+
+        override suspend fun write(context: Context, settings: LocalSettings) {
+            this.settings = settings
+        }
+    }
+}

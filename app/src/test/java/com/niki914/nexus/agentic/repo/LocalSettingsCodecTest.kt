@@ -11,6 +11,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRule as ExecutionRule
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRuleEnabledMode as ExecutionRuleEnabledMode
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 
@@ -119,6 +121,69 @@ class LocalSettingsCodecTest {
         assertEquals(
             listOf(CustomTool("battery_status", "Battery", "dumpsys battery", true)),
             LocalSettingsCodec.parseCustomTools(settings),
+        )
+    }
+
+    @Test
+    fun parseExecutionRules_returnsEmptyListWhenMissing() {
+        assertEquals(emptyList<ExecutionRule>(), LocalSettingsCodec.parseExecutionRules(LocalSettings()))
+    }
+
+    @Test
+    fun executionRules_roundTripWritesTopLevelArray() {
+        val rule = ExecutionRule(
+            id = "rule-1",
+            name = "Rule One",
+            enabledMode = ExecutionRuleEnabledMode.LOCKED_ONLY,
+            patterns = listOf(" rm -rf ", " ", "mkfs"),
+        )
+
+        val updated = LocalSettingsCodec.withExecutionRules(
+            settings = localSettings("""{"provider":"openai"}"""),
+            rules = listOf(rule),
+        )
+
+        assertEquals("openai", updated.provider)
+        assertEquals(
+            listOf(rule.copy(patterns = listOf("rm -rf", "mkfs"))),
+            LocalSettingsCodec.parseExecutionRules(updated),
+        )
+        val storedRule = updated.shellSafetyPolicies!!.single().jsonObject
+        assertEquals("rule-1", storedRule["id"]!!.jsonPrimitive.content)
+        assertEquals("LOCKED_ONLY", storedRule["enabled_mode"]!!.jsonPrimitive.content)
+        assertEquals(
+            listOf("rm -rf", "mkfs"),
+            storedRule["patterns"]!!.jsonArray.map { it.jsonPrimitive.content },
+        )
+    }
+
+    @Test
+    fun parseExecutionRules_fallsBackInvalidModeToDisabled() {
+        val settings = localSettings(
+            """
+            {
+              "shell_safety_policies": [
+                {
+                  "id": "rule-1",
+                  "name": "Rule One",
+                  "enabled_mode": "BROKEN",
+                  "patterns": [" rm -rf ", " "]
+                }
+              ]
+            }
+            """.trimIndent()
+        )
+
+        assertEquals(
+            listOf(
+                ExecutionRule(
+                    id = "rule-1",
+                    name = "Rule One",
+                    enabledMode = ExecutionRuleEnabledMode.DISABLED,
+                    patterns = listOf("rm -rf"),
+                )
+            ),
+            LocalSettingsCodec.parseExecutionRules(settings),
         )
     }
 

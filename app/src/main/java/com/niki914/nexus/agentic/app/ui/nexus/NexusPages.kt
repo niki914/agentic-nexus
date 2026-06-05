@@ -73,6 +73,7 @@ fun NexusPageContent(
 
         is ExecutionRuleDetailPage -> ExecutionRuleDetailRoute(
             page = page,
+            onBack = onPop,
         )
 
         is CustomToolDetailPage -> CustomToolDetailRoute(

@@ -14,6 +14,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRule as ExecutionRule
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRuleEnabledMode as ExecutionRuleEnabledMode
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
@@ -56,6 +58,24 @@ class XRepoTest {
             ),
             LocalSettingsCodec.parseCustomTools(store.settings),
         )
+        val executionRules = LocalSettingsCodec.parseExecutionRules(store.settings)
+        assertEquals(3, executionRules.size)
+        assertEquals(
+            ExecutionRule(
+                id = "builtin-dangerous-delete",
+                name = "危险删改",
+                enabledMode = ExecutionRuleEnabledMode.LOCKED_ONLY,
+                patterns = listOf(
+                    "\\brm\\s+-rf\\b",
+                    "\\brm\\s+-(?=[^\\s]*r)(?=[^\\s]*f)[^\\s]*\\b",
+                    "\\brm\\s+-r\\s+-f\\b",
+                    "\\brm\\s+(?=[^\\n]*--recursive\\b)(?=[^\\n]*--force\\b)[^\\n]*",
+                    "\\brm\\s+(?=[^\\n]*-(?:[^\\s-]*r[^\\s-]*|-[^-\\s]*recursive)\\b)(?=[^\\n]*-(?:[^\\s-]*f[^\\s-]*|-[^-\\s]*force)\\b)[^\\n]*",
+                    "\\bmkfs\\b",
+                ),
+            ),
+            executionRules[0],
+        )
     }
 
     @Test
@@ -72,6 +92,31 @@ class XRepoTest {
         assertEquals(0, store.writeCount)
         assertEquals("", store.settings.prompt)
         assertNull(store.settings.customTools)
+    }
+
+    @Test
+    fun executionRulesList_fallsBackToDefaultsWhenFieldIsMissing() = runTest {
+        val store = FakeLocalSettingsStore(
+            LocalSettingsCodec.withBoolean(LocalSettings(), "onboarding_completed", true)
+        )
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        val rules = XRepo.executionRules.list()
+
+        assertEquals(LocalSettingsDefaults.defaultExecutionRules, rules)
+        assertEquals(0, store.writeCount)
+    }
+
+    @Test
+    fun executionRulesList_respectsExplicitEmptyList() = runTest {
+        val store = FakeLocalSettingsStore(
+            LocalSettingsCodec.withExecutionRules(LocalSettings(), emptyList())
+        )
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        assertTrue(XRepo.executionRules.list().isEmpty())
     }
 
     @Test
@@ -195,8 +240,57 @@ class XRepoTest {
     }
 
     @Test
+    fun executionRulesApi_savesReplacesDeletesAndUpdatesEnabledMode() = runTest {
+        val initialRule = ExecutionRule(
+            id = "rule-1",
+            name = "Rule One",
+            enabledMode = ExecutionRuleEnabledMode.ALWAYS,
+            patterns = listOf("rm -rf"),
+        )
+        val store = FakeLocalSettingsStore(
+            LocalSettingsCodec.withExecutionRules(LocalSettings(), listOf(initialRule))
+        )
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        XRepo.executionRules.save(
+            ExecutionRule(
+                id = "rule-2",
+                name = "Rule Two",
+                enabledMode = ExecutionRuleEnabledMode.DISABLED,
+                patterns = listOf("mkfs"),
+            )
+        )
+        XRepo.executionRules.replace(
+            previousId = "rule-1",
+            rule = ExecutionRule(
+                id = "rule-3",
+                name = "Rule Three",
+                enabledMode = ExecutionRuleEnabledMode.ALWAYS,
+                patterns = listOf("su"),
+            )
+        )
+        XRepo.executionRules.setEnabledMode("rule-2", ExecutionRuleEnabledMode.LOCKED_ONLY)
+        XRepo.executionRules.delete("missing")
+        XRepo.executionRules.delete("rule-3")
+
+        assertEquals(
+            listOf(
+                ExecutionRule(
+                    id = "rule-2",
+                    name = "Rule Two",
+                    enabledMode = ExecutionRuleEnabledMode.LOCKED_ONLY,
+                    patterns = listOf("mkfs"),
+                )
+            ),
+            XRepo.executionRules.list(),
+        )
+        assertEquals(5, store.writeCount)
+    }
+
+    @Test
     fun customToolSave_rejectsUnsafeCommand() = runTest {
-        val store = FakeLocalSettingsStore(LocalSettings())
+        val store = FakeLocalSettingsStore(settingsWithUnsafeRule())
         XRepo.installStoreForTest(store)
         XRepo.init(context)
 
@@ -273,7 +367,7 @@ class XRepoTest {
             CustomTool("old_name", "Old description", "dumpsys battery"),
         )
         val store = FakeLocalSettingsStore(
-            LocalSettingsCodec.withCustomTools(LocalSettings(), initialTools)
+            LocalSettingsCodec.withCustomTools(settingsWithUnsafeRule(), initialTools)
         )
         XRepo.installStoreForTest(store)
         XRepo.init(context)
@@ -326,6 +420,23 @@ class XRepoTest {
 
     private fun localSettings(json: String): LocalSettings {
         return LocalSettings(Json.parseToJsonElement(json).jsonObject)
+    }
+
+    private fun settingsWithUnsafeRule(): LocalSettings {
+        return LocalSettingsCodec.withExecutionRules(
+            LocalSettings(),
+            listOf(
+                ExecutionRule(
+                    id = "dangerous-delete",
+                    name = "危险删改",
+                    enabledMode = ExecutionRuleEnabledMode.ALWAYS,
+                    patterns = listOf(
+                        "\\brm\\s+-rf\\b",
+                        "\\brm\\s+(?=[^\\n]*--recursive\\b)(?=[^\\n]*--force\\b)[^\\n]*",
+                    ),
+                )
+            ),
+        )
     }
 
     private class FakeLocalSettingsStore(

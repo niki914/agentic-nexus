@@ -10,6 +10,8 @@ import kotlinx.coroutines.sync.withLock
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeBuiltinToolSetting as BuiltinToolSetting
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation as CustomToolValidation
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRule as ExecutionRule
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRuleEnabledMode as ExecutionRuleEnabledMode
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
@@ -20,6 +22,7 @@ object XRepo {
     val builtinTools: BuiltinToolApi = BuiltinToolApi(this)
     val memory: MemoryApi = MemoryApi(this)
     val web: WebSettingsApi = WebSettingsApi(this)
+    val executionRules: ExecutionRulesApi = ExecutionRulesApi(this)
 
     private val writeMutex = Mutex()
     private var appContext: Context? = null
@@ -183,6 +186,74 @@ class MemoryApi internal constructor(
     }
 }
 
+class ExecutionRulesApi internal constructor(
+    private val repo: XRepo,
+) {
+    suspend fun list(): List<ExecutionRule> {
+        return listFromSettings(repo.readLocal())
+    }
+
+    suspend fun get(id: String): ExecutionRule? {
+        return list().firstOrNull { it.id == id }
+    }
+
+    suspend fun save(rule: ExecutionRule) {
+        repo.updateLocal { settings ->
+            val rules = LocalSettingsCodec.parseExecutionRules(settings)
+            val updated = if (rules.any { it.id == rule.id }) {
+                rules.map { if (it.id == rule.id) rule else it }
+            } else {
+                rules + rule
+            }
+            LocalSettingsCodec.withExecutionRules(settings, updated)
+        }
+    }
+
+    suspend fun replace(previousId: String?, rule: ExecutionRule) {
+        repo.updateLocal { settings ->
+            val rules = LocalSettingsCodec.parseExecutionRules(settings)
+            val withoutPrevious = if (previousId != null && previousId != rule.id) {
+                rules.filterNot { it.id == previousId }
+            } else {
+                rules
+            }
+            val updated = if (withoutPrevious.any { it.id == rule.id }) {
+                withoutPrevious.map { if (it.id == rule.id) rule else it }
+            } else {
+                withoutPrevious + rule
+            }
+            LocalSettingsCodec.withExecutionRules(settings, updated)
+        }
+    }
+
+    suspend fun delete(id: String) {
+        repo.updateLocal { settings ->
+            LocalSettingsCodec.withExecutionRules(
+                settings = settings,
+                rules = LocalSettingsCodec.parseExecutionRules(settings).filterNot { it.id == id },
+            )
+        }
+    }
+
+    suspend fun setEnabledMode(id: String, enabledMode: ExecutionRuleEnabledMode) {
+        repo.updateLocal { settings ->
+            LocalSettingsCodec.withExecutionRules(
+                settings = settings,
+                rules = LocalSettingsCodec.parseExecutionRules(settings).map { rule ->
+                    if (rule.id == id) rule.copy(enabledMode = enabledMode) else rule
+                },
+            )
+        }
+    }
+
+    private fun listFromSettings(settings: LocalSettings): List<ExecutionRule> {
+        if (settings.shellSafetyPolicies == null) {
+            return LocalSettingsDefaults.defaultExecutionRules
+        }
+        return LocalSettingsCodec.parseExecutionRules(settings)
+    }
+}
+
 class McpApi internal constructor(
     private val repo: XRepo,
 ) {
@@ -294,7 +365,9 @@ class McpApi internal constructor(
 
 class CustomToolApi internal constructor(
     private val repo: XRepo,
-    private val safetyPolicy: ShellCommandSafetyPolicy = ShellCommandSafetyPolicy(),
+    private val safetyPolicy: ShellCommandSafetyPolicy = ShellCommandSafetyPolicy(
+        listExecutionRules = { repo.executionRules.list() },
+    ),
     private val builtinToolRegistry: BuiltinToolRegistry = BuiltinToolRegistry.default(),
 ) {
     suspend fun list(): List<CustomTool> {
@@ -403,8 +476,9 @@ class CustomToolApi internal constructor(
         if (normalized.name in builtinToolRegistry.all().map { it.name }.toSet()) {
             return CustomToolValidation("name", "Reserved builtin tool name.")
         }
-        if (!safetyPolicy.evaluate(normalized.command).allowed) {
-            return CustomToolValidation("command", "Unsafe command pattern was rejected.")
+        val decision = safetyPolicy.evaluate(normalized.command)
+        if (!decision.allowed) {
+            return CustomToolValidation("command", decision.reason)
         }
         if (!overwrite && list().any { it.name == normalized.name }) {
             return CustomToolValidation("name", "Already exists in custom_tools.")

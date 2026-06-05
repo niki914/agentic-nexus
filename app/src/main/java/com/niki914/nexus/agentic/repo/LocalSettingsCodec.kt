@@ -9,9 +9,12 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRule as ExecutionRule
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRuleEnabledMode as ExecutionRuleEnabledMode
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
@@ -207,6 +210,48 @@ internal object LocalSettingsCodec {
         )
     }
 
+    fun parseExecutionRules(settings: LocalSettings): List<ExecutionRule> {
+        return settings.shellSafetyPolicies
+            .orEmptyObjects()
+            .mapNotNull { obj ->
+                val id = obj.string(ID_KEY).trim().takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val name = obj.string(NAME_KEY).trim().takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                ExecutionRule(
+                    id = id,
+                    name = name,
+                    enabledMode = obj.enabledMode(),
+                    patterns = obj.array(PATTERNS_KEY)
+                        ?.jsonArray
+                        ?.mapNotNull { element -> element.jsonPrimitive.contentOrNull?.trim() }
+                        ?.filter { it.isNotBlank() }
+                        ?: emptyList(),
+                )
+            }
+    }
+
+    fun withExecutionRules(settings: LocalSettings, rules: List<ExecutionRule>): LocalSettings {
+        return settings.withTopLevel(
+            SHELL_SAFETY_POLICIES_KEY,
+            JsonArray(
+                rules.map { rule ->
+                    JsonObject(
+                        mapOf(
+                            ID_KEY to JsonPrimitive(rule.id),
+                            NAME_KEY to JsonPrimitive(rule.name),
+                            ENABLED_MODE_KEY to JsonPrimitive(rule.enabledMode.name),
+                            PATTERNS_KEY to JsonArray(
+                                rule.patterns
+                                    .map(String::trim)
+                                    .filter(String::isNotBlank)
+                                    .map(::JsonPrimitive)
+                            ),
+                        )
+                    )
+                }
+            ),
+        )
+    }
+
     fun parseBuiltinFlags(settings: LocalSettings): Map<String, Boolean> {
         return settings.builtinToolFlags
             ?.mapNotNull { (name, value) ->
@@ -262,6 +307,12 @@ internal object LocalSettingsCodec {
         return (this[key] as? JsonPrimitive)?.booleanOrNull ?: default
     }
 
+    private fun JsonObject.enabledMode(): ExecutionRuleEnabledMode {
+        val value = string(ENABLED_MODE_KEY)
+        return ExecutionRuleEnabledMode.entries.firstOrNull { it.name == value }
+            ?: ExecutionRuleEnabledMode.DISABLED
+    }
+
     private fun JsonObject.array(key: String): JsonArray? {
         return this[key] as? JsonArray
     }
@@ -302,7 +353,9 @@ internal object LocalSettingsCodec {
     private const val MCP_SERVERS_KEY = "mcp_servers"
     private const val MCP_CACHE_KEY = "mcp_discovered_tools_cache"
     private const val CUSTOM_TOOLS_KEY = "custom_tools"
+    private const val SHELL_SAFETY_POLICIES_KEY = "shell_safety_policies"
     private const val BUILTIN_TOOL_FLAGS_KEY = "builtin_tool_flags"
+    private const val ID_KEY = "id"
     private const val NAME_KEY = "name"
     private const val URL_KEY = "url"
     private const val TRANSPORT_KEY = "transport"
@@ -312,4 +365,6 @@ internal object LocalSettingsCodec {
     private const val INPUT_SCHEMA_KEY = "inputSchema"
     private const val DESCRIPTION_KEY = "description"
     private const val COMMAND_KEY = "command"
+    private const val ENABLED_MODE_KEY = "enabled_mode"
+    private const val PATTERNS_KEY = "patterns"
 }

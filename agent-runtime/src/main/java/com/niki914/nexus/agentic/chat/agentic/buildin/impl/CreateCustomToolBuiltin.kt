@@ -149,16 +149,16 @@ class CreateCustomToolBuiltin : BuiltinTool() {
 
     private fun CustomToolValidation.toFailure(toolName: String): BuiltinToolResult {
         return BuiltinToolResult.failure(
-            code = when (message) {
-                "Reserved builtin tool name." -> "RESERVED_NAME"
-                "Already exists in custom_tools." -> "NAME_CONFLICT"
-                "Unsafe command pattern was rejected." -> "UNSAFE_COMMAND"
+            code = when {
+                message == "Reserved builtin tool name." -> "RESERVED_NAME"
+                message == "Already exists in custom_tools." -> "NAME_CONFLICT"
+                field == "command" && message.contains("execution rule", ignoreCase = true) -> "RULE_BLOCKED"
                 else -> "INVALID_CUSTOM_TOOL"
             },
-            message = when (message) {
-                "Reserved builtin tool name." -> "Custom tool name '$toolName' is reserved by a builtin tool."
-                "Already exists in custom_tools." -> "Custom tool name '$toolName' already exists."
-                "Unsafe command pattern was rejected." -> "Custom tool '$toolName' uses a command blocked by the basic safety policy."
+            message = when {
+                message == "Reserved builtin tool name." -> "Custom tool name '$toolName' is reserved by a builtin tool."
+                message == "Already exists in custom_tools." -> "Custom tool name '$toolName' already exists."
+                field == "command" && message.contains("execution rule", ignoreCase = true) -> message
                 else -> "Custom tool validation failed."
             },
             hint = message,

@@ -38,6 +38,19 @@ data class RuntimeBuiltinToolSetting(
     val enabled: Boolean,
 )
 
+enum class RuntimeExecutionRuleEnabledMode {
+    ALWAYS,
+    LOCKED_ONLY,
+    DISABLED,
+}
+
+data class RuntimeExecutionRule(
+    val id: String,
+    val name: String,
+    val enabledMode: RuntimeExecutionRuleEnabledMode,
+    val patterns: List<String>,
+)
+
 data class RuntimeCustomToolValidation(
     val field: String,
     val message: String,

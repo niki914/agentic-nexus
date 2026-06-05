@@ -12,6 +12,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRule as ExecutionRule
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRuleEnabledMode as ExecutionRuleEnabledMode
 
 class CustomToolManagerTest {
     private val manager = CustomToolManager(reservedToolNames = { emptySet() })
@@ -22,7 +24,7 @@ class CustomToolManagerTest {
     }
 
     @Test
-    fun validate_rejectsDangerousCommandsWithExecutablePathsOrAliases() {
+    fun validate_rejectsDangerousCommandsWithExecutablePathsOrAliases() = runTest {
         listOf(
             "/system/bin/reboot",
             "toybox reboot",
@@ -35,18 +37,19 @@ class CustomToolManagerTest {
     }
 
     @Test
-    fun validate_rejectsDangerousRmFlagVariants() {
+    fun validate_rejectsDangerousRmFlagVariants() = runTest {
         listOf(
             "rm -fr /data/local/tmp/cache",
             "rm -r -f /data/local/tmp/cache",
             "rm --recursive --force /data/local/tmp/cache",
+            "rm --force --recursive /data/local/tmp/cache",
         ).forEach { command ->
             assertUnsafe(command)
         }
     }
 
     @Test
-    fun validate_rejectsDangerousCommandsSplitByShellEscapesOrQuotes() {
+    fun validate_rejectsDangerousCommandsSplitByShellEscapesOrQuotes() = runTest {
         listOf(
             "r\\m -rf /data/local/tmp/cache",
             "\"r\"m -rf /data/local/tmp/cache",
@@ -57,12 +60,12 @@ class CustomToolManagerTest {
     }
 
     @Test
-    fun validate_rejectsCmdPackageUninstallAlias() {
+    fun validate_rejectsCmdPackageUninstallAlias() = runTest {
         assertUnsafe("cmd package uninstall com.example.app")
     }
 
     @Test
-    fun validate_rejectsShellWrappedDangerousPayloadsRecursively() {
+    fun validate_rejectsShellWrappedDangerousPayloadsRecursively() = runTest {
         listOf(
             "sh -c 'rm -rf /data/local/tmp/cache'",
             "/system/bin/sh -c \"pm uninstall com.example.app\"",
@@ -74,7 +77,11 @@ class CustomToolManagerTest {
     }
 
     @Test
-    fun validate_allowsBenignCommand() {
+    fun validate_allowsBenignCommand() = runTest {
+        installRuntimeSettingsGatewayForTest(
+            FakeRuntimeSettingsGateway(executionRules = dangerousRules())
+        )
+
         val result = manager.validate(
             request = request(command = "getprop ro.product.model"),
             existingNames = emptySet(),
@@ -85,7 +92,11 @@ class CustomToolManagerTest {
     }
 
     @Test
-    fun validate_allowsShellWrappedBenignPayload() {
+    fun validate_allowsShellWrappedBenignPayload() = runTest {
+        installRuntimeSettingsGatewayForTest(
+            FakeRuntimeSettingsGateway(executionRules = dangerousRules())
+        )
+
         val result = manager.validate(
             request = request(command = "sh -c 'getprop ro.product.model'"),
             existingNames = emptySet(),
@@ -139,14 +150,19 @@ class CustomToolManagerTest {
 
     @Test
     fun createOrUpdate_rejectsUnsafeCommandWithoutWriting() = runTest {
-        val store = installRuntimeSettingsGatewayForTest()
+        val store = installRuntimeSettingsGatewayForTest(
+            FakeRuntimeSettingsGateway(executionRules = dangerousRules())
+        )
 
         val result = manager.createOrUpdate(
             request = request(command = "rm -rf /data/local/tmp/cache"),
         )
 
         assertFalse(result.ok)
-        assertEquals("UNSAFE_COMMAND", result.code)
+        assertEquals("RULE_BLOCKED", result.code)
+        assertTrue(result.message.contains("危险命令"))
+        assertTrue(result.hint.contains("execution rule"))
+        assertTrue(result.fieldErrors["command"]!!.contains("危险命令"))
         assertEquals(0, store.writeCount)
         assertEquals(emptyList<CustomTool>(), store.customTools)
     }
@@ -213,14 +229,19 @@ class CustomToolManagerTest {
         assertEquals(listOf(existing), store.customTools)
     }
 
-    private fun assertUnsafe(command: String) {
+    private suspend fun assertUnsafe(command: String) {
+        installRuntimeSettingsGatewayForTest(
+            FakeRuntimeSettingsGateway(executionRules = dangerousRules())
+        )
         val result = manager.validate(
             request = request(command = command),
             existingNames = emptySet(),
             reservedNames = emptySet(),
         )
 
-        assertEquals("UNSAFE_COMMAND", result?.code)
+        assertEquals("RULE_BLOCKED", result?.code)
+        assertTrue(result?.message.orEmpty().contains("危险命令"))
+        assertTrue(result?.hint.orEmpty().contains("execution rule"))
     }
 
     private fun request(command: String): CustomToolCreateRequest {
@@ -228,6 +249,27 @@ class CustomToolManagerTest {
             name = "sample_tool",
             description = "Sample custom tool.",
             command = command,
+        )
+    }
+
+    private fun dangerousRules(): List<ExecutionRule> {
+        return listOf(
+            ExecutionRule(
+                id = "dangerous-command",
+                name = "危险命令",
+                enabledMode = ExecutionRuleEnabledMode.ALWAYS,
+                patterns = listOf(
+                    "\\brm\\s+-(?=[^\\s]*r)(?=[^\\s]*f)[^\\s]*\\b",
+                    "\\brm\\s+-r\\s+-f\\b",
+                    "\\brm\\s+(?=[^\\n]*--recursive\\b)(?=[^\\n]*--force\\b)[^\\n]*",
+                    "\\breboot\\b",
+                    "\\bsu\\b",
+                    "\\bsetprop\\b",
+                    "\\bdd\\b",
+                    "\\bpm\\s+uninstall\\b",
+                    "\\bcmd\\s+package\\s+uninstall\\b",
+                ),
+            )
         )
     }
 

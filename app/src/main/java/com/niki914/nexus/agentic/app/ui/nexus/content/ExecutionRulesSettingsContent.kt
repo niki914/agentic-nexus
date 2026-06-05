@@ -15,17 +15,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleListItemCard
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListItem
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
 import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
+import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRuleItem
 import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRulesSettingsIntent
+import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRulesSettingsUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRulesSettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRuleEnabledMode
 
 @Composable
 fun ExecutionRulesSettingsContent(
@@ -52,6 +57,18 @@ fun ExecutionRulesSettingsContent(
         viewModel.sendIntent(ExecutionRulesSettingsIntent.Load)
     }
 
+    ExecutionRulesSettingsContentBody(
+        uiState = uiState,
+        onOpenRuleDetail = onOpenRuleDetail,
+    )
+}
+
+@Composable
+private fun ExecutionRulesSettingsContentBody(
+    uiState: ExecutionRulesSettingsUiState,
+    onOpenRuleDetail: (ruleName: String, ruleIndex: Int, isCreating: Boolean) -> Unit,
+) {
+
     val pageDescription = when {
         uiState.isLoading || uiState.items.isNotEmpty() -> {
             stringResource(R.string.execution_rules_page_description)
@@ -72,22 +89,16 @@ fun ExecutionRulesSettingsContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 uiState.items.forEachIndexed { index, item ->
-                    SettingsToggleListItemCard(
-                        title = item.name,
-                        checked = item.enabled,
-                        enabled = !uiState.isSaving,
-                        onCheckedChange = { checked ->
-                            viewModel.sendIntent(
-                                ExecutionRulesSettingsIntent.ItemEnabledChanged(
-                                    index,
-                                    checked,
-                                )
-                            )
-                        },
-                        onClick = {
-                            onOpenRuleDetail(item.name, index, false)
-                        },
-                    )
+                    SettingsGroupCard {
+                        SettingsListItem(
+                            title = item.name,
+                            enabled = !uiState.isSaving,
+                            showChevron = true,
+                            onClick = {
+                                onOpenRuleDetail(item.name, index, false)
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -102,4 +113,40 @@ private fun ExecutionRulesListMessage(text: String) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
     )
+}
+
+@Preview(showBackground = true, widthDp = 420, heightDp = 900)
+@Composable
+private fun ExecutionRulesSettingsContentPreview() {
+    MaterialTheme {
+        ProvideLiquidScreenContentForPreview(topPadding = 0.dp) {
+            ExecutionRulesSettingsContentBody(
+                uiState = ExecutionRulesSettingsUiState(
+                    items = listOf(
+                        ExecutionRuleItem(
+                            id = "builtin-dangerous-delete",
+                            name = "危险删改",
+                            enabledMode = RuntimeExecutionRuleEnabledMode.LOCKED_ONLY,
+                            patterns = listOf("\\brm\\s+-rf\\b"),
+                        ),
+                        ExecutionRuleItem(
+                            id = "builtin-uninstall",
+                            name = "卸载相关",
+                            enabledMode = RuntimeExecutionRuleEnabledMode.ALWAYS,
+                            patterns = listOf("\\bpm\\s+uninstall\\b"),
+                        ),
+                        ExecutionRuleItem(
+                            id = "builtin-privileged",
+                            name = "高危提权",
+                            enabledMode = RuntimeExecutionRuleEnabledMode.DISABLED,
+                            patterns = listOf("\\bsu\\b"),
+                        ),
+                    ),
+                    isLoading = false,
+                    isSaving = false,
+                ),
+                onOpenRuleDetail = { _, _, _ -> },
+            )
+        }
+    }
 }

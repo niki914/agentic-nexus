@@ -7,8 +7,10 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.ExecutionRuleDetailPage
 @Composable
 internal fun ExecutionRuleDetailRoute(
     page: ExecutionRuleDetailPage,
+    onBack: () -> Unit,
 ) {
     ExecutionRuleDetailContent(
         page = page,
+        onBack = onBack,
     )
 }

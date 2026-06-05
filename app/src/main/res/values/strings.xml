@@ -124,10 +124,21 @@
     <string name="memory_error_delete_failed">删除记忆失败：%1$s</string>
 
     <!-- Execution Rules Module -->
-    <string name="execution_rules_page_description">配置 Shell 与工具执行规则。本页当前仅提供规则 UI 壳，暂不接入实际拦截链路。</string>
-    <string name="execution_rules_empty_action_hint">点击右上方，添加第一条规则草稿。</string>
+    <string name="execution_rules_page_description">添加执行规则，以提高命令执行的安全性。除了脚本以外，应用所有的命令执行都会受策略管控。</string>
+    <string name="execution_rules_empty_action_hint">点击右上方，添加第一条执行规则。</string>
     <string name="execution_rules_loading">正在读取执行规则…</string>
     <string name="execution_rules_editor_title_create">新增执行规则</string>
+    <string name="execution_rules_editor_description">添加执行规则，以提高命令执行的安全性。除了脚本以外，应用所有的命令执行都会受策略管控。</string>
+    <string name="execution_rules_field_name">策略名称</string>
+    <string name="execution_rules_field_name_hint">例如：危险删改</string>
+    <string name="execution_rules_field_enabled_mode">生效时机</string>
+    <string name="execution_rules_enabled_mode_enabled">总是</string>
+    <string name="execution_rules_enabled_mode_locked_only">锁屏时</string>
+    <string name="execution_rules_enabled_mode_disabled">不生效</string>
+    <string name="execution_rules_field_patterns">规则</string>
+    <string name="execution_rules_field_patterns_hint">例如：\brm\s+-rf\b</string>
+    <string name="execution_rules_field_patterns_description">每行输入一个关键字或正则表达式，命中任意一条时，拦截该命令。</string>
+    <string name="execution_rules_save_action">保存策略</string>
 
     <!-- Builtin Tool Module -->
     <string name="builtin_tool_page_description">开启或关闭预设的内置工具。开启后，工具将在下次对话更新。</string>

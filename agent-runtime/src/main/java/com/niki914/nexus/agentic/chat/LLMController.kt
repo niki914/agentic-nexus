@@ -224,7 +224,7 @@ object LLMController {
                     is ToolCallKind.Mcp -> delegate()
                 }
             }
-            llmIdleTimeoutSeconds = 25
+            llmIdleTimeoutSeconds = 50
         }
         return when (apiType) {
             LlmApiType.Anthropic -> Session.open<SessionProtocols.Anthropic>(configBlock)

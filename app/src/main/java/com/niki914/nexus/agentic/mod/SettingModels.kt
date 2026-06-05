@@ -101,6 +101,9 @@ class LocalSettings(props: JsonObject = JsonObject(emptyMap())) : XSettings(prop
     val customTools: JsonArray?
         get() = getArray("custom_tools")
 
+    val shellSafetyPolicies: JsonArray?
+        get() = getArray("shell_safety_policies")
+
     val mcpServers: JsonArray?
         get() = getArray("mcp_servers")
 

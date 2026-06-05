@@ -3,6 +3,7 @@ package com.niki914.nexus.agentic.runtime.settings
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeBuiltinToolSetting
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRule
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool
@@ -108,4 +109,6 @@ private class FakeRuntimeSettingsGateway : RuntimeSettingsGateway {
         name: String,
         enabled: Boolean,
     ): RuntimeCustomToolValidation? = null
+
+    override suspend fun listExecutionRules(): List<RuntimeExecutionRule> = emptyList()
 }
