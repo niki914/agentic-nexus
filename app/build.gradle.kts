@@ -70,7 +70,7 @@ dependencies {
     implementation(project(":ipc"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-    implementation("com.github.niki914:s3ss10n:2.1.1")
+    implementation("com.github.niki914:s3ss10n:2.1.2")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // Android root
@@ -118,6 +118,14 @@ val adbReverse = tasks.register("adbReverse") {
             }
             project.exec {
                 commandLine(adbPath, "reverse", "tcp:1234", "tcp:1234")
+                isIgnoreExitValue = true
+            }
+            project.exec {
+                commandLine(adbPath, "reverse", "tcp:4004", "tcp:4004")
+                isIgnoreExitValue = true
+            }
+            project.exec {
+                commandLine(adbPath, "reverse", "tcp:51337", "tcp:51337")
                 isIgnoreExitValue = true
             }
             project.exec {

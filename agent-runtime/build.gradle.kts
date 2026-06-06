@@ -24,7 +24,7 @@ android {
 
 dependencies {
     implementation(project(":h"))
-    implementation("com.github.niki914:s3ss10n:2.1.1")
+    implementation("com.github.niki914:s3ss10n:2.1.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
