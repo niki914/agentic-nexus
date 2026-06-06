@@ -80,6 +80,7 @@ private fun <T> hookExtensionTry(
     block: () -> T
 ): T? = runCatching(block).onFailure {
     XEvent.hookFailed(name, it)
+    xlog("$name\n${it.stackTraceToString()}")
     val className = name.substringBefore('#').substringAfter(':')
     if (className.isNotBlank()) lpparam?.inspectClass(className)
     onError?.invoke(it)
