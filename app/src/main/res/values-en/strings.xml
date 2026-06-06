@@ -55,6 +55,10 @@
     <string name="ui_tool_status_failed">Failed</string>
     <string name="ui_home_send_content_description">Send message</string>
     <string name="ui_home_stop_content_description">Stop generating</string>
+    <string name="ui_home_error_generic_title">Cannot continue right now</string>
+    <string name="ui_home_error_retry_body">Please try again later.</string>
+    <string name="ui_home_error_config_required_title">Configuration is incomplete</string>
+    <string name="ui_home_error_config_required_body">Please fill in the model endpoint and model name first.</string>
     <string name="ui_root_back_to_home_hint">Press back again to go to the Home screen</string>
 
     <!-- Settings Shell -->

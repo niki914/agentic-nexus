@@ -150,6 +150,7 @@ object LLMController {
                     LlmStreamEvent.Error(
                         message = message,
                         throwable = throwable,
+                        code = throwable.toUserErrorCode(),
                     )
                 )
                 return@channelFlow
@@ -210,7 +211,8 @@ object LLMController {
             send(
                 LlmStreamEvent.Error(
                     message = throwable.toUserErrorMessage(),
-                    throwable = throwable
+                    throwable = throwable,
+                    code = throwable.toUserErrorCode(),
                 )
             )
         }
@@ -272,7 +274,7 @@ object LLMController {
 
     internal fun validateLlmConfig(config: LlmConfig) {
         if (config.endpoint.isBlank() || config.model.isBlank()) {
-            throw IllegalStateException(CONFIG_REQUIRED_MESSAGE)
+            throw LlmConfigRequiredException()
         }
     }
 
@@ -281,6 +283,13 @@ object LLMController {
             ?.trim()
             ?.takeIf { it.isNotEmpty() }
             ?: DEFAULT_USER_ERROR_MESSAGE
+    }
+
+    private fun Throwable.toUserErrorCode(): LlmErrorCode? {
+        return when (this) {
+            is LlmConfigRequiredException -> LlmErrorCode.ConfigRequired
+            else -> null
+        }
     }
 
     private fun Throwable.eventTypeName(): String = this::class.simpleName ?: "Throwable"
@@ -299,4 +308,6 @@ object LLMController {
     }
 
     private data class RuntimeState(val snapshot: LlmRuntimeSnapshot, val session: Session)
+
+    private class LlmConfigRequiredException : IllegalStateException(CONFIG_REQUIRED_MESSAGE)
 }

@@ -287,6 +287,7 @@ private fun HomeChatTurnItem(
                 is HomeChatBlock.Error -> {
                     AssistantErrorBlock(
                         message = block.message,
+                        code = block.code,
                         modifier = Modifier.padding(top = 12.dp),
                     )
                 }

@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
@@ -224,7 +225,12 @@ private fun ExecutionRuleEnabledModeSection(
                         count = options.size,
                     ),
                     label = {
-                        Text(text = stringResource(option.labelRes()))
+                        Text(
+                            text = stringResource(option.labelRes()),
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     },
                 )
             }

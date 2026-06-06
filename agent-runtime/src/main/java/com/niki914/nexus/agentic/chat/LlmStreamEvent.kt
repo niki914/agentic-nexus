@@ -27,11 +27,16 @@ sealed interface LlmStreamEvent {
     data class Error(
         val message: String,
         val throwable: Throwable? = null,
+        val code: LlmErrorCode? = null,
     ) : LlmStreamEvent
 
     data class Completed(
         val fullText: String,
     ) : LlmStreamEvent
+}
+
+enum class LlmErrorCode {
+    ConfigRequired,
 }
 
 data class ToolCallStatus(

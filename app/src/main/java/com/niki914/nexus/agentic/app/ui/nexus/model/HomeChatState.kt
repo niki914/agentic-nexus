@@ -2,6 +2,7 @@ package com.niki914.nexus.agentic.app.ui.nexus.model
 
 import androidx.lifecycle.viewModelScope
 import com.niki914.nexus.agentic.chat.LLMController
+import com.niki914.nexus.agentic.chat.LlmErrorCode
 import com.niki914.nexus.agentic.chat.LlmStreamEvent
 import com.niki914.nexus.cb.ComposeMVIViewModel
 import com.niki914.nexus.h.util.xlog
@@ -26,7 +27,7 @@ data class HomeToolStatus(
 sealed interface HomeChatBlock {
     data class Text(val text: String) : HomeChatBlock
     data class Tool(val status: HomeToolStatus) : HomeChatBlock
-    data class Error(val message: String) : HomeChatBlock
+    data class Error(val message: String, val code: LlmErrorCode? = null) : HomeChatBlock
 }
 
 data class HomeChatTurn(
@@ -116,7 +117,7 @@ class HomeChatViewModel internal constructor(
                     "HomeChatViewModel.StreamJob error turnId=$turnId type=${throwable::class.simpleName} message=${throwable.message}"
                 )
                 throwable.message?.let { message ->
-                    applyError(turnId = turnId, message = message)
+                    applyError(turnId = turnId, message = message, code = null)
                 }
             } finally {
                 xlog("HomeChatViewModel.StreamJob finish turnId=$turnId")
@@ -191,7 +192,7 @@ class HomeChatViewModel internal constructor(
             }
 
             is LlmStreamEvent.Error -> {
-                applyError(turnId = turnId, message = event.message)
+                applyError(turnId = turnId, message = event.message, code = event.code)
             }
 
             is LlmStreamEvent.Completed -> {
@@ -203,10 +204,10 @@ class HomeChatViewModel internal constructor(
         }
     }
 
-    private fun applyError(turnId: Long, message: String) {
+    private fun applyError(turnId: Long, message: String, code: LlmErrorCode?) {
         xlog("HomeChatViewModel.Error turnId=$turnId messageLength=${message.length}")
         updateTurn(turnId) {
-            it.appendError(message)
+            it.appendError(message, code)
         }
         updateState { copy(isGenerating = false) }
     }
@@ -241,9 +242,9 @@ class HomeChatViewModel internal constructor(
         return appendText(delta)
     }
 
-    private fun HomeChatTurn.appendError(message: String): HomeChatTurn {
+    private fun HomeChatTurn.appendError(message: String, code: LlmErrorCode?): HomeChatTurn {
         if (message.isBlank()) return this
-        return copy(blocks = blocks + HomeChatBlock.Error(message))
+        return copy(blocks = blocks + HomeChatBlock.Error(message = message, code = code))
     }
 
     private fun HomeChatTurn.appendTool(

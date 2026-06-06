@@ -40,6 +40,7 @@ import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownTypography
 import com.mikepenz.markdown.model.rememberMarkdownState
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.chat.LlmErrorCode
 import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
 import com.niki914.nexus.agentic.app.ui.infra.shape.G2BubbleShape
 import com.niki914.nexus.agentic.app.ui.infra.shape.G2CapsuleShape
@@ -50,27 +51,37 @@ import com.niki914.nexus.cb.BaseTheme
 private val ToolSucceededIndicatorColor = Color(0xFF4F8F6B)
 private val ToolFailedIndicatorColor = Color(0xFFB85C5C)
 internal data class AssistantErrorUi(
-    val title: String,
-    val body: String,
+    val titleRes: Int,
+    val bodyRes: Int? = null,
+    val body: String? = null,
 )
 
-internal fun toAssistantErrorUi(message: String): AssistantErrorUi {
-    return when (message.trim()) {
-        "请先填写配置" -> AssistantErrorUi(
-            title = "配置还没填好",
-            body = "请先填写模型地址和模型名称。",
+internal fun toAssistantErrorUi(message: String, code: LlmErrorCode?): AssistantErrorUi {
+    return when (code) {
+        LlmErrorCode.ConfigRequired -> AssistantErrorUi(
+            titleRes = R.string.ui_home_error_config_required_title,
+            bodyRes = R.string.ui_home_error_config_required_body,
         )
 
-        "" -> AssistantErrorUi(
-            title = "当前无法继续",
-            body = "请稍后重试。",
-        )
-
-        else -> AssistantErrorUi(
-            title = "当前无法继续",
-            body = message.trim(),
-        )
+        null -> {
+            val normalized = message.trim()
+            if (normalized.isEmpty()) {
+                AssistantErrorUi(
+                    titleRes = R.string.ui_home_error_generic_title,
+                    bodyRes = R.string.ui_home_error_retry_body,
+                )
+            } else {
+                AssistantErrorUi(
+                    titleRes = R.string.ui_home_error_generic_title,
+                    body = normalized,
+                )
+            }
+        }
     }
+}
+
+internal fun toAssistantErrorUi(message: String): AssistantErrorUi {
+    return toAssistantErrorUi(message = message, code = null)
 }
 
 private const val AssistantMarkdownPreviewText = """
@@ -287,11 +298,13 @@ fun ToolStatusPill(
 @Composable
 fun AssistantErrorBlock(
     message: String,
+    code: LlmErrorCode? = null,
     modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val shape = G2BubbleShape(18.dp)
-    val errorUi = toAssistantErrorUi(message)
+    val errorUi = toAssistantErrorUi(message = message, code = code)
+    val body = errorUi.bodyRes?.let { stringResource(it) } ?: errorUi.body.orEmpty()
 
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth(),
@@ -307,13 +320,13 @@ fun AssistantErrorBlock(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
-                text = errorUi.title,
+                text = stringResource(errorUi.titleRes),
                 style = MaterialTheme.typography.labelLarge,
                 color = colorScheme.onErrorContainer,
                 textAlign = TextAlign.Center,
             )
             Text(
-                text = errorUi.body,
+                text = body,
                 style = MaterialTheme.typography.bodyMedium,
                 color = colorScheme.onErrorContainer,
                 textAlign = TextAlign.Center,
