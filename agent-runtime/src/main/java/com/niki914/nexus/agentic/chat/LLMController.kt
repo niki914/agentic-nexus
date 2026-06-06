@@ -10,7 +10,6 @@ import com.niki914.nexus.agentic.chat.agentic.stream.LlmStreamEventMapper
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.agentic.runtime.settings.model.LlmApiType
 import com.niki914.nexus.h.util.LockState
-import com.niki914.nexus.h.util.xlog
 import com.niki914.nexus.h.xevent.XEvent
 import com.niki914.s3ss10n.Session
 import com.niki914.s3ss10n.SessionConfig
@@ -84,14 +83,10 @@ object LLMController {
             try {
                 val refreshResult = activeSession.refreshMcpTools()
                 refreshSucceeded = refreshResult.failedServers.isEmpty()
-                xlog(
-                    "LLMController.refreshMcpTools refreshed=${refreshResult.refreshedServers} failed=${refreshResult.failedServers} count=${refreshResult.discoveredToolCount}"
-                )
             } catch (throwable: Throwable) {
                 if (throwable is CancellationException) {
                     throw throwable
                 }
-                xlog("LLMController.refreshMcpTools failed: ${throwable.message}")
             }
             lastMcpServersFingerprint = if (refreshSucceeded) {
                 currentMcpServersFingerprint
@@ -157,7 +152,6 @@ object LLMController {
             }
         }
         if (state == null) {
-            xlog("LLMController.stream runtimeNotReady")
             send(LlmStreamEvent.Error(DEFAULT_USER_ERROR_MESSAGE))
             return@channelFlow
         }

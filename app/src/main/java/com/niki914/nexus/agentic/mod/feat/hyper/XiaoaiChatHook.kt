@@ -10,7 +10,6 @@ import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeTtsPlaybackH
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.CaptureInputHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.CaptureResponseTargetHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.RenderTextStreamCardHook
-import com.niki914.nexus.h.util.xlog
 import com.niki914.nexus.h.xevent.XEvent
 import com.niki914.nexus.h.xevent.XEventContext
 import de.robv.android.xposed.callbacks.XC_LoadPackage
@@ -105,10 +104,6 @@ class XiaoaiChatHook( // TODO P2(由于标记 Beta 所以放缓) NewRoom / 卡�
         isFinal: Boolean
     ) {
         if (!ActiveTurnStore.isActiveInjection(turnId)) {
-            val activeTurn = ActiveTurnStore.getCurrent()
-            xlog(
-                "[$name] 丢弃非当前注入轮次的文字流渲染: dialogId=$roomId, turnId=$turnId, activeTurn=${activeTurn?.turnId}, mode=${activeTurn?.mode}"
-            )
             return
         }
 

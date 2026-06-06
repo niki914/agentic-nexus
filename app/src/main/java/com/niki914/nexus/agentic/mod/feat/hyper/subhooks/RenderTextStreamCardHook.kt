@@ -5,7 +5,6 @@ import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiConfigProvider
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiRenderSession
 import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.setTag
-import com.niki914.nexus.h.util.xlog
 import com.niki914.nexus.h.xevent.XEvent
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -43,7 +42,6 @@ class RenderTextStreamCardHook : SubHook() {
         }
 
         if (target == null) {
-            xlog("[$name] 未捕获到可用响应目标，暂不注入: dialogId=$dialogId")
             XEvent.renderTargetMissing(
                 fields = mapOf(
                     "host" to "xiaoai",
@@ -67,8 +65,6 @@ class RenderTextStreamCardHook : SubHook() {
                     )
                 )
             }
-        } else if (isFirst && !isFinal) {
-            xlog("[$name] 首帧为空，等待后续增量: dialogId=$dialogId")
         }
 
         if (isFinal) {

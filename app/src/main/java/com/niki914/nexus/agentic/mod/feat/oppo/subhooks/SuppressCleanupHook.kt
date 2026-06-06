@@ -5,7 +5,6 @@ import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.agentic.mod.feat.HookTarget
 import com.niki914.nexus.agentic.mod.feat.SubHook
 import com.niki914.nexus.agentic.mod.feat.oppo.BreenoConfigProvider
-import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.XC_MethodHook
 
 class SuppressCleanupHook : SubHook() {
@@ -17,7 +16,6 @@ class SuppressCleanupHook : SubHook() {
         val turnState = ActiveTurnStore.getCurrent() ?: return
         when (turnState.mode) {
             TurnMode.NativeTakeover -> {
-                xlog("[$name] takeover mode, letting native Operation through")
                 return
             }
 
@@ -40,7 +38,6 @@ class SuppressCleanupHook : SubHook() {
         val replacement = Class.forName(doNothingOperationClass, false, classLoader)
             .getDeclaredConstructor()
             .newInstance()
-        xlog("[$name] InjectedLLM mode, CleanOperation -> DoNothingOperation")
         param.result = replacement
     }
 }

@@ -4,7 +4,6 @@ import com.niki914.nexus.agentic.chat.LocalTool
 import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRequest
 import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRunner
 import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
-import com.niki914.nexus.h.util.xlog
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -36,7 +35,6 @@ class CustomToolExecutor(
             )
         )
         result.executionErrorMessage?.let { message ->
-            xlog("CustomToolExecutor.execute failed: $message")
             return buildFailureJson(command = command, message = message)
         }
         if (result.timedOut) {

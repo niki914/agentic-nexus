@@ -2,7 +2,6 @@ package com.niki914.nexus.agentic.mod.feat
 
 import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.h.util.xTry
-import com.niki914.nexus.h.util.xlog
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -21,9 +20,6 @@ abstract class BaseConfigProvider {
         var current: JsonElement? = config?.get(path.substringBefore("."))
         path.substringAfter(".", "").takeIf { it.isNotEmpty() }?.split(".")?.forEach { key ->
             current = (current as? JsonObject)?.get(key)
-        }
-        if (current == null) {
-            xlog("[BaseConfigProvider] Config missing or null for path: $path")
         }
         current
     }

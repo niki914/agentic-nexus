@@ -19,7 +19,6 @@ object OsUtils {
             else -> OsFamily.Unknown
         }
 
-        xlog("OsUtils.getCurr result=$result")
         return result
     }
 }

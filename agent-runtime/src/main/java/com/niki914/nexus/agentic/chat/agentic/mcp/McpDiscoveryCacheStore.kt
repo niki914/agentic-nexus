@@ -1,7 +1,6 @@
 package com.niki914.nexus.agentic.chat.agentic.mcp
 
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
-import com.niki914.nexus.h.util.xlog
 import com.niki914.s3ss10n.McpDiscoveredTool
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonArray
@@ -22,7 +21,6 @@ class McpDiscoveryCacheStore {
             if (throwable is CancellationException) {
                 throw throwable
             }
-            xlog("McpDiscoveryCacheStore.onToolsDiscovered:persist failed for $serverName: ${throwable.message}")
         }
     }
 
@@ -31,11 +29,7 @@ class McpDiscoveryCacheStore {
         tools: List<McpDiscoveredTool>,
     ) {
         val gateway = RuntimeEnvironment.awaitSettingsGateway()
-        val server = gateway.listMcpServers().firstOrNull { it.name == serverName }
-        if (server == null) {
-            xlog("McpDiscoveryCacheStore.onToolsDiscovered server missing: $serverName")
-            return
-        }
+        val server = gateway.listMcpServers().firstOrNull { it.name == serverName } ?: return
         gateway.saveDiscoveredTools(
             url = server.url,
             headers = server.headers,

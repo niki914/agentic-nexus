@@ -19,7 +19,6 @@ private fun <T> xTryInternal(
     onError: ((Throwable?) -> Unit)? = null,
     block: () -> T
 ): T? = runCatching(block).onFailure {
-    xlogHookFailed(name, it)
     val className = name.substringBefore('#').substringAfter(':')
     if (className.isNotBlank()) lpparam?.inspectClass(className)
     onError?.invoke(it)

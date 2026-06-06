@@ -7,7 +7,6 @@ import com.niki914.nexus.agentic.mod.WebSettings
 import com.niki914.nexus.agentic.mod.parseJsonObject
 import com.niki914.nexus.h.util.OsFamily
 import com.niki914.nexus.h.util.OsUtils
-import com.niki914.nexus.h.util.xlog
 import com.niki914.nexus.ipc.HostApp
 import com.niki914.nexus.ipc.XIpcBridge
 import com.niki914.nexus.ipc.XValues
@@ -162,9 +161,6 @@ class WebSettingsApi internal constructor(
             return WebSettingsResult.RequestFailed(WebSettingsFailureReason.InvalidConfig)
         }
         XIpcBridge.writeWebSettingsJson(context, settings.props.toString())
-        xlog(
-            "WebSettings refreshed requested=$requestedVersionCode resolved=$resolvedVersionCode fallback=$isFallbackVersion"
-        )
         return WebSettingsResult.Success(
             settings = settings,
             requestedVersionCode = requestedVersionCode,

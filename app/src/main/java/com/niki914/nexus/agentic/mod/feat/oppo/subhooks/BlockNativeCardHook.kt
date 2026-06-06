@@ -6,7 +6,6 @@ import com.niki914.nexus.agentic.mod.feat.HookTarget
 import com.niki914.nexus.agentic.mod.feat.SubHook
 import com.niki914.nexus.agentic.mod.feat.oppo.BreenoConfigProvider
 import com.niki914.nexus.h.util.call
-import com.niki914.nexus.h.util.xlog
 import com.niki914.nexus.h.xevent.XEvent
 import de.robv.android.xposed.XC_MethodHook
 import kotlinx.coroutines.CoroutineScope
@@ -46,19 +45,11 @@ class BlockNativeCardHook(
             BreenoConfigProvider.CaptureResponseTarget.beanGetClientLocalDataMethod,
             selfInjectedFlagKey
         ) != null
-        if (isSelfInjected) {
-            xlog("[$name] 放行自定义注入卡片")
-            return
-        }
+        if (isSelfInjected) return
 
         val activeTurn = ActiveTurnStore.getCurrent()
         when (activeTurn?.mode) {
-            TurnMode.NativeTakeover -> {
-                xlog("[$name] takeover 模式，放行原生回答卡片")
-            }
-
             TurnMode.InjectedLLM -> {
-                xlog("[$name] 注入模式，拦截原生回答卡片")
                 param.result = null
                 val eventContext = XEvent.snapshotContext()
                 scope.launch {
@@ -74,9 +65,7 @@ class BlockNativeCardHook(
                 }
             }
 
-            null -> {
-                xlog("[$name] 无 active turn，保守放行原生回答卡片")
-            }
+            TurnMode.NativeTakeover, null -> Unit
         }
     }
 }

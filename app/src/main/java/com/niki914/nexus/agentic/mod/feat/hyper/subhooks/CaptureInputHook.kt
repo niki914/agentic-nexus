@@ -3,7 +3,6 @@ package com.niki914.nexus.agentic.mod.feat.hyper.subhooks
 import com.niki914.nexus.agentic.mod.feat.HookTarget
 import com.niki914.nexus.agentic.mod.feat.SubHook
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiConfigProvider
-import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.XC_MethodHook
 
 /** 从宿主输入链路捕获用户 query 与 dialogId，含去重逻辑，回调至 handleCapturedQuery。 */
@@ -29,17 +28,8 @@ class CaptureInputHook(
         val dialogId = param.args.getOrNull(dialogIdArgIndex) as? String
         val query = param.args.getOrNull(queryArgIndex) as? String
 
-        if (dialogId.isNullOrBlank() || query.isNullOrBlank()) {
-            xlog("[$name] 忽略无效输入: dialogId=$dialogId, query=$query")
-            return
-        }
+        if (dialogId.isNullOrBlank() || query.isNullOrBlank() || shouldSuppress(dialogId, query)) return
 
-        if (shouldSuppress(dialogId, query)) {
-            xlog("[$name] 忽略重复输入: dialogId=$dialogId, query=$query")
-            return
-        }
-
-        xlog("[$name] 捕获用户输入: $query (dialogId=$dialogId)")
         onInput(dialogId, query)
     }
 

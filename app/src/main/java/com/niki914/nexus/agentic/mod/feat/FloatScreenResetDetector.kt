@@ -5,7 +5,6 @@ import android.os.Looper
 import android.os.SystemClock
 import com.niki914.nexus.h.util.hookMethod
 import com.niki914.nexus.h.util.resolveParamTypes
-import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
 class FloatScreenResetDetector(
@@ -38,10 +37,8 @@ class FloatScreenResetDetector(
     private fun onFloatScreenDetachObserved(target: HookTarget, thisObject: Any?) {
         val detachObservedElapsed = SystemClock.elapsedRealtime()
         val instanceInfo = thisObject?.let { "${it.javaClass.simpleName}@${Integer.toHexString(it.hashCode())}" } ?: "null"
-        xlog("onFloatScreenDetachObserved called by [${target.ownerClass}#${target.methodName}] on instance [$instanceInfo], detach elapsed: $detachObservedElapsed")
         
         pendingFloatResetCheck?.let { 
-            xlog("onFloatScreenDetachObserved: canceling previous pending reset check")
             floatResetHandler.removeCallbacks(it) 
         }
 
@@ -50,19 +47,9 @@ class FloatScreenResetDetector(
             val timeDiff = resumeObservedElapsed - detachObservedElapsed
             val absTimeDiff = kotlin.math.abs(timeDiff)
             val isResumedAroundDetach = absTimeDiff <= graceWindowMs
-            
-            xlog("FloatScreen reset check running: resumeElapsed=$resumeObservedElapsed, detachElapsed=$detachObservedElapsed, timeDiff=$timeDiff, graceWindow=$graceWindowMs")
-            
+
             if (!isResumedAroundDetach) {
-                val reason = if (timeDiff < 0) {
-                    "Resume happened before detach but exceeded grace window (${absTimeDiff}ms > ${graceWindowMs}ms)"
-                } else {
-                    "Resume happened after detach but exceeded grace window (${absTimeDiff}ms > ${graceWindowMs}ms)"
-                }
-                xlog("FloatScreen reset TRIGGERED. Reason: $reason")
                 onReset()
-            } else {
-                xlog("FloatScreen reset ABORTED. Resumed around detach within grace window (timeDiff: ${timeDiff}ms).")
             }
         }
         pendingFloatResetCheck = check
@@ -72,7 +59,6 @@ class FloatScreenResetDetector(
     private fun onFloatResumeObserved(target: HookTarget, thisObject: Any?) {
         lastFloatResumeObservedElapsed = SystemClock.elapsedRealtime()
         val instanceInfo = thisObject?.let { "${it.javaClass.simpleName}@${Integer.toHexString(it.hashCode())}" } ?: "null"
-        xlog("onFloatResumeObserved called by [${target.ownerClass}#${target.methodName}] on instance [$instanceInfo], resume elapsed updated to: $lastFloatResumeObservedElapsed")
     }
 
     private fun installHookTargetObserver(

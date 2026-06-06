@@ -26,7 +26,6 @@ object RootUtils {
             process.waitFor()
             return output.toString().trim()
         } catch (e: Exception) {
-            xlog("RootUtils: Error running command '$command': ${e.message}")
             return null
         } finally {
             try {

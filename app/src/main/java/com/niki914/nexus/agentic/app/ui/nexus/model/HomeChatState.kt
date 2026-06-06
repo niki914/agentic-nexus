@@ -5,7 +5,6 @@ import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.LlmErrorCode
 import com.niki914.nexus.agentic.chat.LlmStreamEvent
 import com.niki914.nexus.cb.ComposeMVIViewModel
-import com.niki914.nexus.h.util.xlog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
@@ -86,17 +85,9 @@ class HomeChatViewModel internal constructor(
 
     private fun sendCurrentInput() {
         val query = currentState.input.trim()
-        if (query.isBlank()) {
-            xlog("HomeChatViewModel.Send ignored=blank")
-            return
-        }
-        if (currentState.isGenerating) {
-            xlog("HomeChatViewModel.Send ignored=generating")
-            return
-        }
+        if (query.isBlank() || currentState.isGenerating) return
 
         val turnId = nextTurnId++
-        xlog("HomeChatViewModel.Send accepted turnId=$turnId queryLength=${query.length}")
         updateState {
             copy(
                 input = "",
@@ -108,19 +99,14 @@ class HomeChatViewModel internal constructor(
         }
 
         streamJob = viewModelScope.launch {
-            xlog("HomeChatViewModel.StreamJob start turnId=$turnId")
             try {
                 collectLlmStream(turnId = turnId, query = query)
             } catch (throwable: Throwable) {
                 if (throwable is CancellationException) throw throwable
-                xlog(
-                    "HomeChatViewModel.StreamJob error turnId=$turnId type=${throwable::class.simpleName} message=${throwable.message}"
-                )
                 throwable.message?.let { message ->
                     applyError(turnId = turnId, message = message, code = null)
                 }
             } finally {
-                xlog("HomeChatViewModel.StreamJob finish turnId=$turnId")
                 if (streamJob == currentCoroutineContext()[Job]) {
                     streamJob = null
                     updateState { copy(isGenerating = false) }
@@ -130,30 +116,21 @@ class HomeChatViewModel internal constructor(
     }
 
     private fun stopGenerating() {
-        if (!currentState.isGenerating) {
-            xlog("HomeChatViewModel.Stop ignored=notGenerating")
-            return
-        }
-        xlog("HomeChatViewModel.Stop")
+        if (!currentState.isGenerating) return
         streamJob?.cancel()
         streamJob = null
         updateState { copy(isGenerating = false) }
     }
 
     private fun clearConversation() {
-        xlog("HomeChatViewModel.ClearConversation start")
         streamJob?.cancel()
         streamJob = null
         updateState { HomeChatUiState() }
         viewModelScope.launch {
             try {
                 runtime.resetConversation()
-                xlog("HomeChatViewModel.ClearConversation resetDone")
             } catch (throwable: Throwable) {
                 if (throwable is CancellationException) throw throwable
-                xlog(
-                    "HomeChatViewModel.ClearConversation resetError type=${throwable::class.simpleName} message=${throwable.message}"
-                )
             }
         }
     }
@@ -205,7 +182,6 @@ class HomeChatViewModel internal constructor(
     }
 
     private fun applyError(turnId: Long, message: String, code: LlmErrorCode?) {
-        xlog("HomeChatViewModel.Error turnId=$turnId messageLength=${message.length}")
         updateTurn(turnId) {
             it.appendError(message, code)
         }
@@ -216,7 +192,6 @@ class HomeChatViewModel internal constructor(
         val currentTurns = currentState.turns
         val index = currentTurns.indexOfFirst { it.id == turnId }
         if (index == -1) {
-            xlog("HomeChatViewModel.UpdateTurn skipped turnId=$turnId")
             return
         }
         val updatedTurn = transform(currentTurns[index])
@@ -294,7 +269,6 @@ class HomeChatViewModel internal constructor(
     }
 
     override fun onCleared() {
-        xlog("HomeChatViewModel.onCleared")
         streamJob?.cancel()
         streamJob = null
         super.onCleared()

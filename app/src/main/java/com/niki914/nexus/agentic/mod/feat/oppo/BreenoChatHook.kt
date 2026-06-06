@@ -13,7 +13,6 @@ import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.ResetConversationSignalH
 import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.SuppressCleanupHook
 import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.findClass
-import com.niki914.nexus.h.util.xlog
 import com.niki914.nexus.h.xevent.XEvent
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
@@ -38,7 +37,6 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     )
 
     override fun onBeforeInstallHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
-        xlog("[$name] installing...")
         viewBeanClass = lpparam.findClass(BreenoConfigProvider.RenderCard.viewBeanClass)
     }
 
@@ -92,7 +90,6 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
             onDataCenterInstanceResolved = { instance ->
                 if (dataCenterInstance == null) {
                     dataCenterInstance = instance
-                    xlog("[$name] DataCenter 实例已缓存")
                 }
             },
             onInput = onInput
@@ -119,9 +116,6 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
             if (isFinal) {
                 clearRenderSession(turnId)
             }
-            xlog(
-                "[$name] 丢弃非当前注入轮次的渲染片段: roomId=$roomId, turnId=$turnId, activeTurn=${ActiveTurnStore.getCurrent()?.turnId}, mode=${ActiveTurnStore.getCurrent()?.mode}"
-            )
             return
         }
 
@@ -156,7 +150,6 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
                 bean.call<Unit>(methodName, value)
             }
             mockBeanLocalDataUnit.forEach { (key, value) ->
-                xlog("[$name] 正在注入 mockBeanLocalDataUnit: key=$key, value=$value")
                 bean.call<Unit>(addClientLocalDataMethod, key, value)
             }
             BreenoFeedbackAssembler.attachIfNeeded(bean)

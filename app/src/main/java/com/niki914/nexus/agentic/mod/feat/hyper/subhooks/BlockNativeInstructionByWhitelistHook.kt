@@ -7,7 +7,6 @@ import com.niki914.nexus.agentic.mod.feat.SubHook
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiConfigProvider
 import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.getTag
-import com.niki914.nexus.h.util.xlog
 import com.niki914.nexus.h.xevent.XEvent
 import de.robv.android.xposed.XC_MethodHook
 import kotlinx.coroutines.CoroutineScope
@@ -30,23 +29,14 @@ class BlockNativeInstructionByWhitelistHook(
         val activeTurn = ActiveTurnStore.getCurrent()
         when (activeTurn?.mode) {
             TurnMode.InjectedLLM -> Unit
-            TurnMode.NativeTakeover -> {
-                xlog("[$name] takeover 模式，放行原生 Instruction")
-                return
-            }
-
-            null -> return
+            TurnMode.NativeTakeover, null -> return
         }
 
         val config = XiaoaiConfigProvider.BlockNativeInstructionWhitelist
         val fullName = instruction.call<String>(config.instructionFullNameGetter)
         val allowedFullNames = config.allowedInstructionFullNames
-        if (fullName != null && fullName in allowedFullNames) {
-            xlog("[$name] 注入模式，白名单放行原生 Instruction: fullName=$fullName")
-            return
-        }
+        if (fullName != null && fullName in allowedFullNames) return
 
-        xlog("[$name] 注入模式，拦截非白名单原生 Instruction: fullName=$fullName")
         param.result = null
         val eventContext = XEvent.snapshotContext()
         scope.launch {

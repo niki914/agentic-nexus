@@ -2,7 +2,6 @@ package com.niki914.nexus.ipc
 
 import android.content.Context
 import android.os.Bundle
-import com.niki914.nexus.h.util.xlog
 import com.niki914.nexus.ipc.store.XIpcStoreRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -184,13 +183,11 @@ object XIpcBridge {
                 ?.use { it.readText() }
 
             if (json.isNullOrBlank()) {
-                xlog("XIpcBridge read store=${store.name} channel=file fallback=empty")
                 EMPTY_JSON
             } else {
                 json
             }
         } catch (t: Throwable) {
-            xlog("XIpcBridge read store=${store.name} channel=file fallback=${t.message}")
             EMPTY_JSON
         }
     }

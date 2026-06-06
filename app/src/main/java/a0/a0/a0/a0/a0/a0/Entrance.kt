@@ -10,12 +10,9 @@ import com.niki914.nexus.h.IXposed
 import com.niki914.nexus.h.core.runtime.Hook
 import com.niki914.nexus.h.core.runtime.Runtime
 import com.niki914.nexus.h.core.runtime.RuntimeBootstrap
-import com.niki914.nexus.h.util.ActivityHook
 import com.niki914.nexus.h.util.ContextHook
 import com.niki914.nexus.h.util.ContextProvider
-import com.niki914.nexus.h.util.FloatWindowHook
 import com.niki914.nexus.h.util.HookSideLoader
-import com.niki914.nexus.h.util.xlog
 import com.niki914.nexus.ipc.HostApp
 import com.niki914.nexus.ipc.XValues
 import de.robv.android.xposed.callbacks.XC_LoadPackage
@@ -41,7 +38,6 @@ class Entrance : IXposed() {
             val ctx = ContextProvider.await()
             XRepo.init(ctx)
             RuntimeEnvironment.install(createAppRuntimeBridge())
-            xlog("Entrance: context initialized: $ctx")
 
             HookLocalSettings.update(ctx)
             val webSettingsResult = XRepo.web.await()
@@ -50,8 +46,6 @@ class Entrance : IXposed() {
 
             if (configObj != null) {
                 onSettingsFetched(params, targetPkg)
-            } else {
-                xlog("No mock config found for package: ${params.packageName}")
             }
         }
     }
@@ -66,10 +60,7 @@ class Entrance : IXposed() {
             else -> null
         }
 
-        if (hookInstance == null) {
-            xlog("No Hook implementation found for package: $targetPkg")
-            return
-        }
+        hookInstance ?: return
 
         RuntimeBootstrap.installIfNeeded(
             params,

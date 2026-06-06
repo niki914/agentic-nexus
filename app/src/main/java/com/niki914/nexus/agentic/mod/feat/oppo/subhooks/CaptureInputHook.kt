@@ -4,7 +4,6 @@ import com.niki914.nexus.agentic.mod.feat.HookTarget
 import com.niki914.nexus.agentic.mod.feat.SubHook
 import com.niki914.nexus.agentic.mod.feat.oppo.BreenoConfigProvider
 import com.niki914.nexus.h.util.call
-import com.niki914.nexus.h.util.xlog
 import de.robv.android.xposed.XC_MethodHook
 
 /** 从宿主输入链路捕获用户 query 与 roomId，含去重逻辑，回调至 handleCapturedQuery。 */
@@ -42,17 +41,8 @@ class CaptureInputHook(
             return
         }
 
-        if (query.isNullOrBlank()) {
-            xlog("[$name] 忽略无效输入: roomId=$roomId, query=$query")
-            return
-        }
+        if (query.isNullOrBlank() || shouldSuppress(roomId, query)) return
 
-        if (shouldSuppress(roomId, query)) {
-            xlog("[$name] 忽略重复输入: roomId=$roomId, query=$query")
-            return
-        }
-
-        xlog("[$name] 捕获用户输入: $query (roomId=$roomId)")
         onInput(roomId, query)
     }
 
