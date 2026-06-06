@@ -10,7 +10,6 @@ import com.niki914.nexus.h.util.OsUtils
 import com.niki914.nexus.ipc.HostApp
 import com.niki914.nexus.ipc.XIpcBridge
 import com.niki914.nexus.ipc.XValues
-import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -23,6 +22,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.IOException
 
 class WebSettingsApi internal constructor(
     private val repo: XRepo,

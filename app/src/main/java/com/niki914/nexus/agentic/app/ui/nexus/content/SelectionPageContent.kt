@@ -19,9 +19,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.component.TintLiquidButton
 import com.niki914.nexus.agentic.app.ui.infra.liquidScreenHazeSource
 import com.niki914.nexus.agentic.app.ui.infra.liquidScreenTopPadding
-import com.niki914.nexus.agentic.app.ui.infra.component.TintLiquidButton
 
 data class SelectionOption(
     val id: String,

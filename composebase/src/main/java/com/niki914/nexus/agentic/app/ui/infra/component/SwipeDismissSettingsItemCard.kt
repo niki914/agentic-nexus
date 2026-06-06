@@ -39,10 +39,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.ui.infra.shape.G2CardShape
+import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
 import kotlin.math.exp
 import kotlin.math.roundToInt
-import kotlinx.coroutines.delay
 
 @Composable
 fun SwipeDismissSettingsItemCard(

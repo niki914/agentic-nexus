@@ -20,8 +20,8 @@ import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListItem
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
 import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome

@@ -27,7 +27,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
-import kotlinx.coroutines.delay
 import com.niki914.nexus.agentic.app.ui.infra.LiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
@@ -45,6 +44,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.MemorySettingsIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.MemorySettingsUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.MemorySettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
+import kotlinx.coroutines.delay
 
 @Composable
 fun MemorySettingsContent() {

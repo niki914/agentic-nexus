@@ -1,8 +1,5 @@
 package com.niki914.nexus.agentic.mod.feat.hyper
 
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -15,6 +12,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 
 class XiaoaiConfigJsonStructureTest {
     private val configFile: Path = Paths.get(

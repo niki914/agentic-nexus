@@ -21,8 +21,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.agentic.app.ui.infra.liquidScreenTopPadding
 import com.niki914.nexus.agentic.app.ui.infra.component.TintLiquidButton
+import com.niki914.nexus.agentic.app.ui.infra.liquidScreenTopPadding
 import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
 
 @Composable
