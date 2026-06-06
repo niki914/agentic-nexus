@@ -67,12 +67,10 @@ class HomeChatViewModel internal constructor(
     private var streamJob: Job? = null
 
     override fun initUiState(): HomeChatUiState {
-        xlog("HomeChatViewModel.Init")
         return HomeChatUiState()
     }
 
     override suspend fun handleIntent(intent: HomeChatIntent) {
-        xlog("HomeChatViewModel.Intent type=${intent::class.simpleName}")
         when (intent) {
             is HomeChatIntent.InputChanged -> onInputChanged(intent.value)
             HomeChatIntent.Send -> sendCurrentInput()
@@ -82,7 +80,6 @@ class HomeChatViewModel internal constructor(
     }
 
     private fun onInputChanged(value: String) {
-        xlog("HomeChatViewModel.InputChanged length=${value.length}")
         updateState { copy(input = value) }
     }
 
@@ -164,7 +161,6 @@ class HomeChatViewModel internal constructor(
         runtime.stream(query).collect { event ->
             val eventName = eventName(event)
             val eventCount = currentState.streamEventCount + 1
-            xlog("HomeChatViewModel.StreamEvent turnId=$turnId type=$eventName count=$eventCount")
             updateState {
                 copy(
                     lastEventName = eventName,
@@ -223,9 +219,6 @@ class HomeChatViewModel internal constructor(
             return
         }
         val updatedTurn = transform(currentTurns[index])
-        xlog(
-            "HomeChatViewModel.UpdateTurn turnId=$turnId blockCount=${updatedTurn.blocks.size} hasError=${updatedTurn.blocks.any { it is HomeChatBlock.Error }}"
-        )
         updateState {
             copy(turns = currentTurns.toMutableList().also { it[index] = updatedTurn })
         }

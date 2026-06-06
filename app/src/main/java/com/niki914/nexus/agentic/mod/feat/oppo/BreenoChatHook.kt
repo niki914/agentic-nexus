@@ -14,6 +14,7 @@ import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.SuppressCleanupHook
 import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.findClass
 import com.niki914.nexus.h.util.xlog
+import com.niki914.nexus.h.xevent.XEvent
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -76,6 +77,7 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
 
     override fun installResponseHooks(lpparam: XC_LoadPackage.LoadPackageParam) {
         BlockNativeCardHook(
+            scope = scope,
             selfInjectedFlagKey = BreenoConfigProvider.CaptureResponseTarget.selfInjectedFlagKey
         ).onHook(lpparam)
 
@@ -98,8 +100,11 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
     }
 
     override suspend fun dispatchQueryToLLM(turnId: Long, roomId: String, query: String) {
-        LLMController.stream(query).collectAsFull { frame ->
-            renderStreamCard(turnId, roomId, frame.text, frame.isFirst, frame.isFinal)
+        val eventContext = XEvent.snapshotContext()
+        XEvent.withContext(eventContext) {
+            LLMController.stream(query).collectAsFull { frame ->
+                renderStreamCard(turnId, roomId, frame.text, frame.isFirst, frame.isFinal)
+            }
         }
     }
 

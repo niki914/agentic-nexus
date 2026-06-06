@@ -187,7 +187,6 @@ object XIpcBridge {
                 xlog("XIpcBridge read store=${store.name} channel=file fallback=empty")
                 EMPTY_JSON
             } else {
-                xlog("XIpcBridge read store=${store.name} channel=file chars=${json.length}")
                 json
             }
         } catch (t: Throwable) {
@@ -206,7 +205,6 @@ object XIpcBridge {
             method = store.writeMethod,
             extras = ipcBundleOf(store.payloadField to json)
         )?.readBoolean(IpcContract.Field.SUCCESS) == true
-        xlog("XIpcBridge write store=${store.name} chars=${json.length} success=$success")
         return success
     }
 
@@ -216,16 +214,13 @@ object XIpcBridge {
         key: String,
         valueJson: String
     ): String {
-        val success = callProvider(
+        callProvider(
             context = context,
             method = store.mutateMethod,
             extras = ipcBundleOf(
                 IpcContract.Field.PATH to key,
                 IpcContract.Field.VALUE_JSON to valueJson
             )
-        )?.readBoolean(IpcContract.Field.SUCCESS) == true
-        xlog(
-            "XIpcBridge mutate store=${store.name} key=$key valueChars=${valueJson.length} success=$success"
         )
         return readJsonViaProviderFile(context, store)
     }

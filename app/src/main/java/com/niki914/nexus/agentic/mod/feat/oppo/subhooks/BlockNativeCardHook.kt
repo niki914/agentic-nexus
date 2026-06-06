@@ -7,7 +7,10 @@ import com.niki914.nexus.agentic.mod.feat.SubHook
 import com.niki914.nexus.agentic.mod.feat.oppo.BreenoConfigProvider
 import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.xlog
+import com.niki914.nexus.h.xevent.XEvent
 import de.robv.android.xposed.XC_MethodHook
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 /**
  * 在 InjectedLLM 模式下拦截原生回答卡片，避免 Breeno 侧基于回答卡片的全量刷新注入被原生回答覆盖。
@@ -21,6 +24,7 @@ import de.robv.android.xposed.XC_MethodHook
  *   - 无状态 → 保守放行
  */
 class BlockNativeCardHook(
+    private val scope: CoroutineScope,
     private val selfInjectedFlagKey: String
 ) : SubHook() {
 
@@ -47,7 +51,8 @@ class BlockNativeCardHook(
             return
         }
 
-        when (ActiveTurnStore.getCurrent()?.mode) {
+        val activeTurn = ActiveTurnStore.getCurrent()
+        when (activeTurn?.mode) {
             TurnMode.NativeTakeover -> {
                 xlog("[$name] takeover 模式，放行原生回答卡片")
             }
@@ -55,6 +60,18 @@ class BlockNativeCardHook(
             TurnMode.InjectedLLM -> {
                 xlog("[$name] 注入模式，拦截原生回答卡片")
                 param.result = null
+                val eventContext = XEvent.snapshotContext()
+                scope.launch {
+                    XEvent.withContext(eventContext) {
+                        XEvent.nativeResponseBlocked(
+                            fields = mapOf(
+                                "host" to "breeno",
+                                "source" to name,
+                                "reason" to "answer_card_blocked"
+                            )
+                        )
+                    }
+                }
             }
 
             null -> {

@@ -1,12 +1,13 @@
 package com.niki914.nexus.h.util
 
+import com.niki914.nexus.h.xevent.XEvent
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
 
 fun XC_LoadPackage.LoadPackageParam.findClass(name: String): Class<*>? =
-    xTry(name) { XposedHelpers.findClass(name, this.classLoader) }
+    hookExtensionTry(this, name) { XposedHelpers.findClass(name, this.classLoader) }
 
 fun XC_LoadPackage.LoadPackageParam.hookMethod(
     className: String,
@@ -17,15 +18,15 @@ fun XC_LoadPackage.LoadPackageParam.hookMethod(
     onError: ((Throwable?) -> Unit)? = null
 ) {
     val hookName = "$className#$methodName"
-    xTry(hookName, onError) {
-        val clazz = findClass(className) ?: return@xTry
+    hookExtensionTry(this, hookName, onError) {
+        val clazz = findClass(className) ?: return@hookExtensionTry
         val hookParams = arrayOf(*params, object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam) {
-                xTry(hookName, onError) { before(param) }
+                hookExtensionTry(this@hookMethod, hookName, onError) { before(param) }
             }
 
             override fun afterHookedMethod(param: MethodHookParam) {
-                xTry(hookName, onError) { after(param) }
+                hookExtensionTry(this@hookMethod, hookName, onError) { after(param) }
             }
         })
         XposedHelpers.findAndHookMethod(clazz, methodName, *hookParams)
@@ -40,15 +41,15 @@ fun XC_LoadPackage.LoadPackageParam.hookConstructor(
     onError: ((Throwable?) -> Unit)? = null
 ) {
     val hookName = "$className#CONSTRUCTOR"
-    xTry(hookName, onError) {
-        val clazz = findClass(className) ?: return@xTry
+    hookExtensionTry(this, hookName, onError) {
+        val clazz = findClass(className) ?: return@hookExtensionTry
         val hookParams = arrayOf(*params, object : XC_MethodHook() {
             override fun beforeHookedMethod(param: MethodHookParam) {
-                xTry(hookName, onError) { before(param) }
+                hookExtensionTry(this@hookConstructor, hookName, onError) { before(param) }
             }
 
             override fun afterHookedMethod(param: MethodHookParam) {
-                xTry(hookName, onError) { after(param) }
+                hookExtensionTry(this@hookConstructor, hookName, onError) { after(param) }
             }
         })
         XposedHelpers.findAndHookConstructor(clazz, *hookParams)
@@ -60,7 +61,7 @@ fun hookKey(
     className: String,
     methodName: String,
     paramTypes: List<Class<*>>
-): String = xTry("hookKey:$className#$methodName") {
+): String = hookExtensionTry(null, "hookKey:$className#$methodName") {
     "$stage:$className#$methodName(${paramTypes.joinToString(",") { it.name }})"
 } ?: ""
 
@@ -68,6 +69,18 @@ fun constructorHookKey(
     stage: String,
     className: String,
     paramTypes: List<Class<*>>
-): String = xTry("constructorHookKey:$className") {
+): String = hookExtensionTry(null, "constructorHookKey:$className") {
     "$stage:$className#CONSTRUCTOR(${paramTypes.joinToString(",") { it.name }})"
 } ?: ""
+
+private fun <T> hookExtensionTry(
+    lpparam: XC_LoadPackage.LoadPackageParam?,
+    name: String,
+    onError: ((Throwable?) -> Unit)? = null,
+    block: () -> T
+): T? = runCatching(block).onFailure {
+    XEvent.hookFailed(name, it)
+    val className = name.substringBefore('#').substringAfter(':')
+    if (className.isNotBlank()) lpparam?.inspectClass(className)
+    onError?.invoke(it)
+}.getOrNull()

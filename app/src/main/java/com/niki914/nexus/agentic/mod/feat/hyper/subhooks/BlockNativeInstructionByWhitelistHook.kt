@@ -8,10 +8,15 @@ import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiConfigProvider
 import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.getTag
 import com.niki914.nexus.h.util.xlog
+import com.niki914.nexus.h.xevent.XEvent
 import de.robv.android.xposed.XC_MethodHook
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 /** 在 InjectedLLM 模式下按白名单放行必要原生 Instruction，其余原生样式默认拦截。 */
-class BlockNativeInstructionByWhitelistHook : SubHook() {
+class BlockNativeInstructionByWhitelistHook(
+    private val scope: CoroutineScope
+) : SubHook() {
 
     override val hookTarget: HookTarget?
         get() = XiaoaiConfigProvider.BlockNativeInstructionWhitelist.hookTarget
@@ -22,7 +27,8 @@ class BlockNativeInstructionByWhitelistHook : SubHook() {
             return
         }
 
-        when (ActiveTurnStore.getCurrent()?.mode) {
+        val activeTurn = ActiveTurnStore.getCurrent()
+        when (activeTurn?.mode) {
             TurnMode.InjectedLLM -> Unit
             TurnMode.NativeTakeover -> {
                 xlog("[$name] takeover 模式，放行原生 Instruction")
@@ -42,5 +48,18 @@ class BlockNativeInstructionByWhitelistHook : SubHook() {
 
         xlog("[$name] 注入模式，拦截非白名单原生 Instruction: fullName=$fullName")
         param.result = null
+        val eventContext = XEvent.snapshotContext()
+        scope.launch {
+            XEvent.withContext(eventContext) {
+                XEvent.nativeResponseBlocked(
+                    fields = mapOf(
+                        "host" to "xiaoai",
+                        "source" to name,
+                        "kind" to "instruction",
+                        "reason" to "instruction_blocked"
+                    )
+                )
+            }
+        }
     }
 }

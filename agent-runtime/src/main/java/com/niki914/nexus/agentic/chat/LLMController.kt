@@ -11,6 +11,7 @@ import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.agentic.runtime.settings.model.LlmApiType
 import com.niki914.nexus.h.util.LockState
 import com.niki914.nexus.h.util.xlog
+import com.niki914.nexus.h.xevent.XEvent
 import com.niki914.s3ss10n.Session
 import com.niki914.s3ss10n.SessionConfig
 import com.niki914.s3ss10n.SessionProtocols
@@ -129,7 +130,6 @@ object LLMController {
     suspend fun snapshot(): LlmRuntimeSnapshot? = runtimeState?.snapshot
 
     fun stream(query: String): Flow<LlmStreamEvent> = channelFlow {
-        xlog("LLMController.stream start is_unlocked: ${LockState.isUnlocked()} queryLength=${query.length}")
         val state = try {
             refresh()
             runtimeState
@@ -139,7 +139,13 @@ object LLMController {
             }
             runtimeState ?: run {
                 val message = throwable.toUserErrorMessage()
-                xlog("LLMController.stream refreshError type=${throwable::class.simpleName} message=$message")
+                XEvent.llmError(
+                    fields = mapOf(
+                        "stage" to "refresh",
+                        "errorType" to throwable.eventTypeName(),
+                        "message" to message
+                    )
+                )
                 send(
                     LlmStreamEvent.Error(
                         message = message,
@@ -155,29 +161,52 @@ object LLMController {
             return@channelFlow
         }
 
-        xlog("LLMController.stream runtimeReady")
         val accumulator = StringBuilder()
         val startedAtMs = System.currentTimeMillis()
+        var streamErrorReported = false
         val sink: SendChannel<LlmStreamEvent> = this
         try {
-            xlog("LLMController.stream sessionSend begin")
+            XEvent.llmRoundStarted(
+                fields = mapOf(
+                    "queryLength" to query.length,
+                    "isUnlocked" to LockState.isUnlocked()
+                )
+            )
             state.session.send(query).collect { event ->
                 val mapped = LlmStreamEventMapper.map(event, accumulator, startedAtMs)
-                xlog(
-                    "LLMController.stream sessionEvent type=${event::class.simpleName} mapped=${
-                        mapped?.let(
-                            ::eventName
+                mapped?.let {
+                    if (it is LlmStreamEvent.Error && !streamErrorReported) {
+                        streamErrorReported = true
+                        XEvent.llmError(
+                            fields = mapOf(
+                                "stage" to "session_event",
+                                "errorType" to (it.throwable?.eventTypeName() ?: "SessionEvent"),
+                                "message" to it.message
+                            )
                         )
-                    }"
-                )
-                mapped?.let { sink.send(it) }
+                    }
+                    sink.send(it)
+                }
             }
-            xlog("LLMController.stream sessionSend done")
+            if (!streamErrorReported) {
+                XEvent.llmRoundCompleted(
+                    fields = mapOf(
+                        "textLength" to accumulator.length,
+                        "elapsedMs" to (System.currentTimeMillis() - startedAtMs)
+                    )
+                )
+            }
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) {
                 throw throwable
             }
-            xlog("LLMController.stream error type=${throwable::class.simpleName} message=${throwable.message}")
+            XEvent.llmError(
+                fields = mapOf(
+                    "stage" to "send",
+                    "errorType" to throwable.eventTypeName(),
+                    "message" to throwable.toUserErrorMessage()
+                )
+            )
             send(
                 LlmStreamEvent.Error(
                     message = throwable.toUserErrorMessage(),
@@ -254,6 +283,8 @@ object LLMController {
             ?: DEFAULT_USER_ERROR_MESSAGE
     }
 
+    private fun Throwable.eventTypeName(): String = this::class.simpleName ?: "Throwable"
+
     private fun SessionConfig.Builder.applyRuntimeConfig(
         config: ResolvedLlmConfig,
         tools: ResolvedTools,
@@ -268,14 +299,4 @@ object LLMController {
     }
 
     private data class RuntimeState(val snapshot: LlmRuntimeSnapshot, val session: Session)
-
-    private fun eventName(event: LlmStreamEvent): String = when (event) {
-        LlmStreamEvent.RoundStarted -> "RoundStarted"
-        is LlmStreamEvent.TextDelta -> "TextDelta"
-        is LlmStreamEvent.ToolRunning -> "ToolRunning"
-        is LlmStreamEvent.ToolSucceeded -> "ToolSucceeded"
-        is LlmStreamEvent.ToolFailed -> "ToolFailed"
-        is LlmStreamEvent.Error -> "Error"
-        is LlmStreamEvent.Completed -> "Completed"
-    }
 }

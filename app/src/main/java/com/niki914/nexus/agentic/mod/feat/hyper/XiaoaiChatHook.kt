@@ -11,14 +11,17 @@ import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.CaptureInputHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.CaptureResponseTargetHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.RenderTextStreamCardHook
 import com.niki914.nexus.h.util.xlog
+import com.niki914.nexus.h.xevent.XEvent
+import com.niki914.nexus.h.xevent.XEventContext
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.shareIn
 
 /** XiaoAi 宿主主 Hook，编排全部子 Hook 安装、会话生命周期、关键词接管判定及 LLM 流式分片注入管线。 */
-// TODO P0 提示小爱为 Beta，先发版 <---- ！在 config 里面加上 is_beta 然后设计怎么提示 beta
 class XiaoaiChatHook( // TODO P2(由于标记 Beta 所以放缓) NewRoom / 卡片采用白名单模式避免放行不正确的卡片
     scope: CoroutineScope
 ) : AbstractAssistantHook(scope) {
@@ -55,9 +58,9 @@ class XiaoaiChatHook( // TODO P2(由于标记 Beta 所以放缓) NewRoom / 卡�
             }
         ).onHook(lpparam)
 
-        BlockNativeInstructionByWhitelistHook().onHook(lpparam)
+        BlockNativeInstructionByWhitelistHook(scope).onHook(lpparam)
 
-        BlockNativeTtsPlaybackHook().onHook(lpparam)
+        BlockNativeTtsPlaybackHook(scope).onHook(lpparam)
 
         renderTextStreamCardHook = RenderTextStreamCardHook()
             .also { it.onHook(lpparam) }
@@ -80,13 +83,17 @@ class XiaoaiChatHook( // TODO P2(由于标记 Beta 所以放缓) NewRoom / 卡�
         targetReady.cancel()
         targetReady = CompletableDeferred()
 
+        val eventContext = XEvent.snapshotContext()
         val sharedFlow = LLMController.stream(query)
+            .withXEventContext(eventContext)
             .shareIn(scope, SharingStarted.Eagerly, replay = Int.MAX_VALUE)
 
         targetReady.await() // TODO P1 死等风险
 
-        sharedFlow.collectAsChunk { frame ->
-            renderStreamCard(turnId, roomId, frame.text, frame.isFirst, frame.isFinal)
+        XEvent.withContext(eventContext) {
+            sharedFlow.collectAsChunk { frame ->
+                renderStreamCard(turnId, roomId, frame.text, frame.isFirst, frame.isFinal)
+            }
         }
     }
 
@@ -114,4 +121,7 @@ class XiaoaiChatHook( // TODO P2(由于标记 Beta 所以放缓) NewRoom / 卡�
             isFinal = isFinal
         )
     }
+
+    private fun <T> Flow<T>.withXEventContext(context: XEventContext?): Flow<T> =
+        flowOn(XEvent.asCoroutineContext(context))
 }

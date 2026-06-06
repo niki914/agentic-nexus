@@ -5,89 +5,168 @@ import android.os.Build
 import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.nexus.h.util.xTry
 import com.niki914.nexus.h.util.xtlog
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext as coroutineWithContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.coroutines.CoroutineContext
 
 object XEvent {
 
-    suspend fun inputCaptured(
-        roomId: String? = null,
-        turnId: Long? = null,
-        vararg fields: Pair<String, Any?>
-    ) = emit(XEventType.INPUT_CAPTURED, roomId, turnId, mapOf(*fields))
+    private class ContextElement(
+        val eventContext: XEventContext?
+    ) : CoroutineContext.Element {
+        override val key: CoroutineContext.Key<*> = Key
 
-    suspend fun inputCaptured(
-        roomId: String? = null,
-        turnId: Long? = null,
-        fields: Map<String, Any?>
-    ) = emit(XEventType.INPUT_CAPTURED, roomId, turnId, fields)
+        companion object Key : CoroutineContext.Key<ContextElement>
+    }
 
-    suspend fun turnDecided(
-        roomId: String? = null,
-        turnId: Long? = null,
-        vararg fields: Pair<String, Any?>
-    ) = emit(XEventType.TURN_DECIDED, roomId, turnId, mapOf(*fields))
+    private val currentContext = AtomicReference<XEventContext?>(null)
+    private val eventScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, _ -> }
+    )
 
-    suspend fun turnDecided(
-        roomId: String? = null,
-        turnId: Long? = null,
-        fields: Map<String, Any?>
-    ) = emit(XEventType.TURN_DECIDED, roomId, turnId, fields)
+    fun setContext(context: XEventContext?) {
+        currentContext.set(context)
+    }
 
-    suspend fun llmRoundStarted(
-        roomId: String? = null,
-        turnId: Long? = null,
-        vararg fields: Pair<String, Any?>
-    ) = emit(XEventType.LLM_ROUND_STARTED, roomId, turnId, mapOf(*fields))
-
-    suspend fun llmRoundStarted(
-        roomId: String? = null,
-        turnId: Long? = null,
-        fields: Map<String, Any?>
-    ) = emit(XEventType.LLM_ROUND_STARTED, roomId, turnId, fields)
-
-    suspend fun llmTextDelta(
-        roomId: String? = null,
-        turnId: Long? = null,
-        vararg fields: Pair<String, Any?>
-    ) = emit(XEventType.LLM_TEXT_DELTA, roomId, turnId, mapOf(*fields))
-
-    suspend fun llmTextDelta(
-        roomId: String? = null,
-        turnId: Long? = null,
-        fields: Map<String, Any?>
-    ) = emit(XEventType.LLM_TEXT_DELTA, roomId, turnId, fields)
-
-    suspend fun llmRoundCompleted(
-        roomId: String? = null,
-        turnId: Long? = null,
-        vararg fields: Pair<String, Any?>
-    ) = emit(XEventType.LLM_ROUND_COMPLETED, roomId, turnId, mapOf(*fields))
-
-    suspend fun llmRoundCompleted(
-        roomId: String? = null,
-        turnId: Long? = null,
-        fields: Map<String, Any?>
-    ) = emit(XEventType.LLM_ROUND_COMPLETED, roomId, turnId, fields)
-
-    suspend fun llmError(
-        roomId: String? = null,
-        turnId: Long? = null,
-        vararg fields: Pair<String, Any?>
-    ) = emit(XEventType.LLM_ERROR, roomId, turnId, mapOf(*fields))
-
-    suspend fun llmError(
-        roomId: String? = null,
-        turnId: Long? = null,
-        fields: Map<String, Any?>
-    ) = emit(XEventType.LLM_ERROR, roomId, turnId, fields)
-
-    suspend fun emit(
-        type: XEventType,
+    fun updateContext(
         roomId: String? = null,
         turnId: Long? = null,
         fields: Map<String, Any?> = emptyMap()
     ) {
+        val previous = currentContext.get()
+        currentContext.set(
+            XEventContext(
+                roomId = roomId ?: previous?.roomId,
+                turnId = turnId ?: previous?.turnId,
+                fields = previous?.fields.orEmpty() + fields
+            )
+        )
+    }
+
+    fun snapshotContext(): XEventContext? = currentContext.get()
+
+    fun asCoroutineContext(context: XEventContext?): CoroutineContext = ContextElement(context)
+
+    suspend fun <T> withContext(context: XEventContext?, block: suspend () -> T): T {
+        return coroutineWithContext(asCoroutineContext(context)) {
+            block()
+        }
+    }
+
+    fun clearContext() {
+        setContext(null)
+    }
+
+    suspend fun inputCaptured(
+        vararg fields: Pair<String, Any?>
+    ) = emit(XEventType.INPUT_CAPTURED, mapOf(*fields))
+
+    suspend fun inputCaptured(
+        fields: Map<String, Any?>
+    ) = emit(XEventType.INPUT_CAPTURED, fields)
+
+    suspend fun turnDecided(
+        vararg fields: Pair<String, Any?>
+    ) = emit(XEventType.TURN_DECIDED, mapOf(*fields))
+
+    suspend fun turnDecided(
+        fields: Map<String, Any?>
+    ) = emit(XEventType.TURN_DECIDED, fields)
+
+    suspend fun llmRoundStarted(
+        vararg fields: Pair<String, Any?>
+    ) = emit(XEventType.LLM_ROUND_STARTED, mapOf(*fields))
+
+    suspend fun llmRoundStarted(
+        fields: Map<String, Any?>
+    ) = emit(XEventType.LLM_ROUND_STARTED, fields)
+
+    suspend fun llmTextDelta(
+        vararg fields: Pair<String, Any?>
+    ) = emit(XEventType.LLM_TEXT_DELTA, mapOf(*fields))
+
+    suspend fun llmTextDelta(
+        fields: Map<String, Any?>
+    ) = emit(XEventType.LLM_TEXT_DELTA, fields)
+
+    suspend fun llmRoundCompleted(
+        vararg fields: Pair<String, Any?>
+    ) = emit(XEventType.LLM_ROUND_COMPLETED, mapOf(*fields))
+
+    suspend fun llmRoundCompleted(
+        fields: Map<String, Any?>
+    ) = emit(XEventType.LLM_ROUND_COMPLETED, fields)
+
+    suspend fun llmError(
+        vararg fields: Pair<String, Any?>
+    ) = emit(XEventType.LLM_ERROR, mapOf(*fields))
+
+    suspend fun llmError(
+        fields: Map<String, Any?>
+    ) = emit(XEventType.LLM_ERROR, fields)
+
+    fun hookFailed(
+        name: String,
+        throwable: Throwable?
+    ) {
+        eventScope.launch {
+            emit(
+                XEventType.HOOK_FAILED,
+                fields = mapOf(
+                    "name" to name,
+                    "errorType" to throwable?.javaClass?.name,
+                    "message" to throwable?.message
+                )
+            )
+        }
+    }
+
+    suspend fun nativeResponseBlocked(
+        vararg fields: Pair<String, Any?>
+    ) = emit(XEventType.NATIVE_RESPONSE_BLOCKED, mapOf(*fields))
+
+    suspend fun nativeResponseBlocked(
+        fields: Map<String, Any?>
+    ) = emit(XEventType.NATIVE_RESPONSE_BLOCKED, fields)
+
+    suspend fun renderTargetMissing(
+        vararg fields: Pair<String, Any?>
+    ) = emit(XEventType.RENDER_TARGET_MISSING, mapOf(*fields))
+
+    suspend fun renderTargetMissing(
+        fields: Map<String, Any?>
+    ) = emit(XEventType.RENDER_TARGET_MISSING, fields)
+
+    suspend fun renderFirstChunkInjected(
+        vararg fields: Pair<String, Any?>
+    ) = emit(XEventType.RENDER_FIRST_CHUNK_INJECTED, mapOf(*fields))
+
+    suspend fun renderFirstChunkInjected(
+        fields: Map<String, Any?>
+    ) = emit(XEventType.RENDER_FIRST_CHUNK_INJECTED, fields)
+
+    suspend fun renderFinalized(
+        vararg fields: Pair<String, Any?>
+    ) = emit(XEventType.RENDER_FINALIZED, mapOf(*fields))
+
+    suspend fun renderFinalized(
+        fields: Map<String, Any?>
+    ) = emit(XEventType.RENDER_FINALIZED, fields)
+
+    suspend fun emit(
+        type: XEventType,
+        fields: Map<String, Any?> = emptyMap()
+    ) {
+        val eventContext = currentCoroutineContext()[ContextElement]?.eventContext ?: snapshotContext()
+        val mergedFields = eventContext?.fields.orEmpty() + fields
         val context = ContextProvider.await()
         val packageName = context.packageName
         val processName = xTry("XEvent#resolveProcessName") {
@@ -106,9 +185,9 @@ object XEvent {
             type = type,
             packageName = packageName,
             processName = processName,
-            roomId = roomId,
-            turnId = turnId,
-            fields = fields.toJsonObject()
+            roomId = eventContext?.roomId,
+            turnId = eventContext?.turnId,
+            fields = mergedFields.toJsonObject()
         )
 
         val jsonString = Json.encodeToString(envelope)

@@ -6,6 +6,7 @@ import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiRenderSession
 import com.niki914.nexus.h.util.call
 import com.niki914.nexus.h.util.setTag
 import com.niki914.nexus.h.util.xlog
+import com.niki914.nexus.h.xevent.XEvent
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicLong
@@ -43,6 +44,12 @@ class RenderTextStreamCardHook : SubHook() {
 
         if (target == null) {
             xlog("[$name] 未捕获到可用响应目标，暂不注入: dialogId=$dialogId")
+            XEvent.renderTargetMissing(
+                fields = mapOf(
+                    "host" to "xiaoai",
+                    "source" to name
+                )
+            )
             if (isFinal) {
                 clearSession(turnId)
             }
@@ -51,6 +58,15 @@ class RenderTextStreamCardHook : SubHook() {
 
         if (delta.isNotEmpty()) {
             injectChunk(target, methodName, dialogId, delta)
+            if (markFirstChunkReported(turnId, dialogId)) {
+                XEvent.renderFirstChunkInjected(
+                    fields = mapOf(
+                        "host" to "xiaoai",
+                        "source" to name,
+                        "textLength" to delta.length
+                    )
+                )
+            }
         } else if (isFirst && !isFinal) {
             xlog("[$name] 首帧为空，等待后续增量: dialogId=$dialogId")
         }
@@ -62,6 +78,14 @@ class RenderTextStreamCardHook : SubHook() {
                 dialogId = dialogId,
                 text = XiaoaiConfigProvider.RenderTextStreamCard.finalChunkText
             )
+            if (markFinalizedReported(turnId, dialogId)) {
+                XEvent.renderFinalized(
+                    fields = mapOf(
+                        "host" to "xiaoai",
+                        "source" to name
+                    )
+                )
+            }
             clearSession(turnId)
         }
     }
@@ -111,7 +135,6 @@ class RenderTextStreamCardHook : SubHook() {
         )
         instruction.setTag(injectedFlagKey(), true)
         target.call<Unit>(methodName, instruction)
-        xlog("[$name] 已注入文字流分片: dialogId=$dialogId, text=$text")
     }
 
     private fun newInstance(
@@ -154,6 +177,30 @@ class RenderTextStreamCardHook : SubHook() {
             }
         }
     }
+
+    private suspend fun markFirstChunkReported(turnId: Long, dialogId: String): Boolean =
+        sessionLock.withLock {
+            val session = currentSession?.takeIf { it.turnId == turnId && it.dialogId == dialogId }
+                ?: return@withLock false
+            if (session.firstChunkReported) {
+                false
+            } else {
+                session.firstChunkReported = true
+                true
+            }
+        }
+
+    private suspend fun markFinalizedReported(turnId: Long, dialogId: String): Boolean =
+        sessionLock.withLock {
+            val session = currentSession?.takeIf { it.turnId == turnId && it.dialogId == dialogId }
+                ?: return@withLock false
+            if (session.finalizedReported) {
+                false
+            } else {
+                session.finalizedReported = true
+                true
+            }
+        }
 
     companion object {
         private val runtimePrimitiveTypes = mapOf(

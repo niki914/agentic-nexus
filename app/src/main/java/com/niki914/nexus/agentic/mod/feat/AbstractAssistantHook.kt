@@ -5,6 +5,8 @@ import com.niki914.nexus.agentic.chat.ConversationTurnState
 import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.h.core.runtime.Hook
+import com.niki914.nexus.h.xevent.XEvent
+import com.niki914.nexus.h.xevent.XEventContext
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -55,27 +57,49 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
             }
         )
         ActiveTurnStore.setCurrent(nextTurnState)
-        onTurnStateChanged(nextTurnState)
-
-        if (nextTurnState.mode == TurnMode.NativeTakeover) {
-            LLMController.stopCurrentRound(keepCurrentTurn = false)
-            return
-        }
-
-        dispatchQueryToLLM(
-            turnId = nextTurnState.turnId,
+        val eventContext = XEventContext(
             roomId = roomId,
-            query = query
+            turnId = nextTurnState.turnId,
+            fields = mapOf("mode" to nextTurnState.mode.eventName())
         )
+        XEvent.setContext(eventContext)
+        XEvent.withContext(eventContext) {
+            onTurnStateChanged(nextTurnState)
+            XEvent.inputCaptured(
+                fields = mapOf("queryLength" to query.length)
+            )
+            XEvent.turnDecided(
+                fields = mapOf(
+                    "queryLength" to query.length
+                )
+            )
+
+            if (nextTurnState.mode == TurnMode.NativeTakeover) {
+                LLMController.stopCurrentRound(keepCurrentTurn = false)
+                return@withContext
+            }
+
+            dispatchQueryToLLM(
+                turnId = nextTurnState.turnId,
+                roomId = roomId,
+                query = query
+            )
+        }
     }
 
     protected open suspend fun onTurnStateChanged(state: ConversationTurnState) = Unit
 
     protected open fun shouldTakeOver(query: String): Boolean = false
 
+    private fun TurnMode.eventName(): String = when (this) {
+        TurnMode.InjectedLLM -> "InjectedLLM"
+        TurnMode.NativeTakeover -> "NativeTakeover"
+    }
+
     protected open suspend fun onSessionReset() {
         LLMController.resetConversation()
         ActiveTurnStore.clear()
+        XEvent.clearContext()
     }
 
     protected abstract fun installSessionHooks(lpparam: XC_LoadPackage.LoadPackageParam)

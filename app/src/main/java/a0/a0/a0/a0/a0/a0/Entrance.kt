@@ -24,8 +24,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-// TODO P0 日志清理
-// TODO P025 -> 1min
 // 仅在锁屏时生效
 class Entrance : IXposed() {
     companion object {
