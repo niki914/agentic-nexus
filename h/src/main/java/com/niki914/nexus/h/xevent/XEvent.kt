@@ -3,6 +3,7 @@ package com.niki914.nexus.h.xevent
 import android.app.Application
 import android.os.Build
 import com.niki914.nexus.h.util.ContextProvider
+import com.niki914.nexus.h.util.xTry
 import com.niki914.nexus.h.util.xtlog
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -10,11 +11,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext as coroutineWithContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.CoroutineContext
-import kotlinx.coroutines.withContext as coroutineWithContext
 
 object XEvent {
 
@@ -168,7 +169,7 @@ object XEvent {
         val mergedFields = eventContext?.fields.orEmpty() + fields
         val context = ContextProvider.await()
         val packageName = context.packageName
-        val processName = runCatching {
+        val processName = xTry("XEvent#resolveProcessName") {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 Application.getProcessName()
             } else {
@@ -177,7 +178,7 @@ object XEvent {
                     activityThreadClass.getDeclaredMethod("currentProcessName")
                 currentProcessNameMethod.invoke(null) as String
             }
-        }.getOrNull() ?: packageName
+        } ?: packageName
 
         val envelope = XEventEnvelope(
             ts = System.currentTimeMillis(),

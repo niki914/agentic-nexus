@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
@@ -172,27 +173,29 @@ fun AssistantOutputText(
         immediate = true,
     )
 
-    Markdown(
-        markdownState = markdownState,
-        modifier = modifier.fillMaxWidth(),
-        typography = markdownTypography(
-            h1 = h1Style,
-            h2 = h2Style,
-            h3 = h3Style,
-            h4 = h4Style,
-            h5 = h5Style,
-            h6 = h6Style,
-            text = bodyStyle,
-            code = codeStyle,
-            inlineCode = codeStyle,
-            quote = quoteStyle,
-            paragraph = bodyStyle,
-            ordered = bodyStyle,
-            bullet = bodyStyle,
-            list = bodyStyle,
-            table = tableStyle,
-        ),
-    )
+    SelectionContainer(modifier = modifier.fillMaxWidth()) {
+        Markdown(
+            markdownState = markdownState,
+            modifier = Modifier.fillMaxWidth(),
+            typography = markdownTypography(
+                h1 = h1Style,
+                h2 = h2Style,
+                h3 = h3Style,
+                h4 = h4Style,
+                h5 = h5Style,
+                h6 = h6Style,
+                text = bodyStyle,
+                code = codeStyle,
+                inlineCode = codeStyle,
+                quote = quoteStyle,
+                paragraph = bodyStyle,
+                ordered = bodyStyle,
+                bullet = bodyStyle,
+                list = bodyStyle,
+                table = tableStyle,
+            ),
+        )
+    }
 }
 
 @Preview(
@@ -230,12 +233,14 @@ fun UserMessageBubble(
                 .padding(horizontal = 18.dp, vertical = 12.dp),
             contentAlignment = Alignment.CenterEnd,
         ) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyLarge,
-                color = colorScheme.onSurface,
-                textAlign = TextAlign.Start,
-            )
+            SelectionContainer {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = colorScheme.onSurface,
+                    textAlign = TextAlign.Start,
+                )
+            }
         }
     }
 }
