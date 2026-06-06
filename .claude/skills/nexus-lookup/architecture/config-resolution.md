@@ -70,12 +70,15 @@
 
 ## 关键源码
 
-### `app/src/main/java/com/niki914/nexus/agentic/`
+### `app/src/main/java/com/niki914/nexus/agentic/app/`
 
-- `app/MainActivity.kt`
-- `app/EXT.kt`
-- `mod/XService.kt`
-- `mod/HookLocalSettings.kt`
+- `MainActivity.kt`
+- `EXT.kt`
+
+### `app/src/main/java/com/niki914/nexus/agentic/mod/`
+
+- `XService.kt`
+- `HookLocalSettings.kt`
 
 ### `ipc/src/main/java/com/niki914/nexus/ipc/`
 

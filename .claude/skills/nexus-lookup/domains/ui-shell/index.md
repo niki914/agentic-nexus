@@ -19,8 +19,14 @@ UI Shell 当前明确拆成两层：
 ### `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/`
 
 - `NexusApp.kt`：持有导航栈与 page chrome。
-- `NexusPages.kt`：页面分发；`StartupPage` 点击继续后，`Breeno` / `XiaoAi` 进入 `ProviderPickPage`，`ChatOnly` 进入 `HomePage`。
+- `NexusPages.kt`：按 `NexusPage` 分发到 route 层；`StartupPage` 点击继续后，`Breeno` / `XiaoAi` 进入 `ProviderPickPage`，`ChatOnly` 进入 `HomePage`。
 - `PageChrome.kt`：页面 chrome 注入点。
+
+### `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/route/`
+
+- `StartupPageRoute.kt`、`ProviderPickPageRoute.kt`、`ConfigurePageRoute.kt`、`DonePageRoute.kt`、`HomePageRoute.kt`：主页面路由装配。
+- `SettingsHomePageRoute.kt`、`SettingsDetailPageRoute.kt`：设置页路由装配。
+- `McpServerDetailRoute.kt`、`CustomToolDetailRoute.kt`、`ExecutionRuleDetailRoute.kt`：详情页路由装配。
 
 ### `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/nav/`
 
@@ -43,6 +49,7 @@ UI Shell 当前明确拆成两层：
 - `DonePageContent.kt`：当前是独立完成页实现，不再复用配置页内容。
 - `SettingsHomePageContent.kt`
 - `SettingsDetailPageContent.kt`：`ModelConfig`、`BuiltinTools`、`CustomShellTools`、`Mcp`、`About`、`Memory`、`ExecutionRules` 均有独立分发；未知分组才落到 `TODOPageContent`。
+- `ModelConfigSettingsContent.kt`：复用配置页表单作为 settings 内的 ModelConfig 编辑入口，并处理未保存退出确认。
 - `MemorySettingsContent.kt`：Memory 列表与编辑弹窗。
 - `ExecutionRulesSettingsContent.kt`：ExecutionRules 列表壳、启用开关与详情入口。
 - `ExecutionRuleDetailContent.kt`：ExecutionRules 详情页壳；当前仍未接入真实编辑表单。
@@ -57,7 +64,10 @@ UI Shell 当前明确拆成两层：
 
 ### `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/`
 
+- `ConfirmationLiquidDialog.kt`
+- `LiquidDialog.kt`
 - `LiquidScreen.kt`
+- `LiquidScreenContentContext.kt`
 - `LiquidScreenState.kt`
 - `LiquidScreenSwipeContent.kt`
 - `LiquidViewportAvoidance.kt`
@@ -76,6 +86,9 @@ UI Shell 当前明确拆成两层：
 - `SettingExpandableTextItem.kt`
 - `SettingExpandableTextCard.kt`
 - `SettingToggleItem.kt`
+- `SettingsItemSurface.kt`
+- `SettingsListItem.kt`
+- `SwipeDismissSettingsItemCard.kt`
 - `SettingsToggleListItemCard.kt`
 - `SettingsDetailFormScaffold.kt`
 - `SettingsListPageContent.kt`

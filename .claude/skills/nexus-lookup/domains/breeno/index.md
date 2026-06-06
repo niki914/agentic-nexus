@@ -29,7 +29,9 @@ Breeno 侧当前走**回答卡片层注入**：先插入一张回答卡片，再
 
 ## 调试入口
 
-- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoConfigProvider.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoFeedbackAssembler.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/subhooks/`
+### `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/`
+
+- `BreenoChatHook.kt`
+- `BreenoConfigProvider.kt`
+- `BreenoFeedbackAssembler.kt`
+- `subhooks/`

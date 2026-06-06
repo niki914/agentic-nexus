@@ -132,7 +132,17 @@
 
 ## app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/route/
 
+- `ConfigurePageRoute.kt`: 配置页路由装配
+- `CustomToolDetailRoute.kt`: custom tool 详情页路由装配
+- `DonePageRoute.kt`: 完成页路由装配
 - `ExecutionRuleDetailRoute.kt`: 执行规则详情页路由装配
+- `HomePageRoute.kt`: 首页路由装配
+- `McpServerDetailRoute.kt`: MCP server 详情页路由装配
+- `ProviderPickPageRoute.kt`: provider 选择页路由装配
+- `ProviderRouteColors.kt`: provider 路由配色
+- `SettingsDetailPageRoute.kt`: 设置详情页路由装配
+- `SettingsHomePageRoute.kt`: 设置首页路由装配
+- `StartupPageRoute.kt`: 启动页路由装配
 
 ## app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/
 
@@ -149,6 +159,7 @@
 - `HomeChatComponents.kt`: 首页对话组件
 - `HomePageContent.kt`: 首页内容
 - `MemorySettingsContent.kt`: Memory 设置页
+- `ModelConfigSettingsContent.kt`: Model Config 设置页
 - `ProviderAccessSettingsBlock.kt`: provider 接入设置块
 - `ProviderAdvancedSettingsBlock.kt`: provider 高级设置块
 - `SelectionPageContent.kt`: Provider 选择页内容
@@ -156,6 +167,7 @@
 - `SettingsHomePageContent.kt`: 设置首页内容
 - `StartupPageContent.kt`: 启动页内容
 - `StartupPosterBackground.kt`: 启动页背景
+- `TODOPageContent.kt`: 未知设置分组兜底页
 
 ## app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/mcp/
 
@@ -182,7 +194,10 @@
 ## composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/
 
 - `ActionBarButton.kt`: 顶栏按钮基建
+- `ConfirmationLiquidDialog.kt`: 确认弹窗封装
+- `LiquidDialog.kt`: Liquid 弹窗容器
 - `LiquidScreen.kt`: 顶层 Liquid Shell
+- `LiquidScreenContentContext.kt`: Liquid Shell 内容上下文
 - `LiquidScreenState.kt`: 标题、按钮、blur layer 状态
 - `LiquidScreenSwipeContent.kt`: 页面转场容器
 - `LiquidViewportAvoidance.kt`: 视口避让与窗口 inset 处理
@@ -210,7 +225,10 @@
 - `SettingsDetailFormScaffold.kt`: 设置详情表单脚手架
 - `SettingsDetailPageDefaults.kt`: 设置详情页默认配置
 - `SettingsGroupCard.kt`: 设置分组卡片
+- `SettingsItemSurface.kt`: 设置项通用表面
+- `SettingsListItem.kt`: 设置列表项
 - `SettingsListPageContent.kt`: 设置列表页容器
+- `SwipeDismissSettingsItemCard.kt`: 可滑动删除设置项卡片
 - `SettingsToggleListItemCard.kt`: 设置开关列表卡片
 - `SettingToggleItem.kt`: 设置开关项
 - `TintLiquidButton.kt`: 可着色 Liquid 按钮

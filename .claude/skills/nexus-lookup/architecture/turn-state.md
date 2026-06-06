@@ -58,9 +58,14 @@
 
 ## 关键源码
 
-- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/ConversationTurnState.kt`
-- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/ActiveTurnStore.kt`
-- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/TurnMode.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/AbstractAssistantHook.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt`
-- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`
+### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/`
+
+- `ConversationTurnState.kt`
+- `ActiveTurnStore.kt`
+- `TurnMode.kt`
+
+### `app/src/main/java/com/niki914/nexus/agentic/mod/feat/`
+
+- `AbstractAssistantHook.kt`
+- `oppo/BreenoChatHook.kt`
+- `hyper/XiaoaiChatHook.kt`
