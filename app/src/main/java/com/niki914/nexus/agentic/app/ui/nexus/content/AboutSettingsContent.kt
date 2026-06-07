@@ -179,7 +179,7 @@ private fun previewAboutSettingsUiState(): AboutSettingsUiState {
             AboutSettingsItemUiState(
                 id = AboutSettingsItemId.Github,
                 titleRes = R.string.ui_settings_about_github,
-                uri = "https://github.com/niki914/nexus",
+                uri = "https://github.com/niki914/agentic-nexus",
             ),
             AboutSettingsItemUiState(
                 id = AboutSettingsItemId.Afdian,

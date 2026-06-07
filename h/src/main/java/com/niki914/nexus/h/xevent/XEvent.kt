@@ -165,6 +165,7 @@ object XEvent {
         type: XEventType,
         fields: Map<String, Any?> = emptyMap()
     ) {
+        return // TODO
         val eventContext = currentCoroutineContext()[ContextElement]?.eventContext ?: snapshotContext()
         val mergedFields = eventContext?.fields.orEmpty() + fields
         val context = ContextProvider.await()
