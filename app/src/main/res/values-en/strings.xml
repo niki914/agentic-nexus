@@ -2,7 +2,7 @@
 <resources>
     <!-- App / Module -->
     <string name="app_name">Nexus</string>
-    <string name="xposed_desc">Use your own model provider with your system voice assistant\n\nCurrently supported: ColorOS Breeno | HyperOS XiaoAi</string>
+    <string name="xposed_desc">Empower your voice assistant with your own models\n\nCurrently supported:\n\n- ColorOS Breeno\n- HyperOS XiaoAi</string>
 
     <!-- Onboarding -->
     <string name="ui_onboard_startup_headline">Bring your own model to your voice assistant</string>

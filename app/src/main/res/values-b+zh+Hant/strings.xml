@@ -2,7 +2,7 @@
 <resources>
     <!-- App / Module -->
     <string name="app_name">Nexus</string>
-    <string name="xposed_desc">允許系統級語音助理改用自訂大型模型供應商\n\n現已支援：ColorOS 小布 | HyperOS 小愛同學</string>
+    <string name="xposed_desc">讓語音助理接入你自己的模型能力\n\n現已支援：\n\n- ColorOS 小布助手\n- HyperOS 小愛同學</string>
 
     <!-- Onboarding -->
     <string name="ui_onboard_startup_headline">讓語音助理用上你自己的模型能力</string>
