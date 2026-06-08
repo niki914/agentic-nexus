@@ -5,9 +5,12 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.CreateCustomToolBuiltin
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.LaunchAppBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.MemorizeBuiltin
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.OpenUriBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.ReadCustomToolBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.RunCommandBuildin_WIP_SAFE
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.SearchAppsBuiltin
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -63,19 +66,37 @@ class BuiltinToolTest {
         val registry = BuiltinToolRegistry.default()
 
         assertEquals(
-            listOf("create_custom_tool", "memorize", "notify", "read_custom_tool", "run_command"),
+            listOf(
+                "create_custom_tool",
+                "launch_app",
+                "memorize",
+                "notify",
+                "open_uri",
+                "read_custom_tool",
+                "run_command",
+                "search_apps",
+            ),
             registry.all().map { it.name }.sorted()
         )
         assertEquals("create_custom_tool", registry.find("create_custom_tool")?.name)
+        assertEquals("launch_app", registry.find("launch_app")?.name)
         assertEquals("memorize", registry.find("memorize")?.name)
         assertEquals("notify", registry.find("notify")?.name)
+        assertEquals("open_uri", registry.find("open_uri")?.name)
         assertEquals("read_custom_tool", registry.find("read_custom_tool")?.name)
         assertEquals("run_command", registry.find("run_command")?.name)
+        assertEquals("search_apps", registry.find("search_apps")?.name)
     }
 
     @Test
     fun memorizeAndReadCustomToolDescription_matchesConfigureDescription() {
-        listOf(MemorizeBuiltin(), ReadCustomToolBuiltin()).forEach { tool ->
+        listOf(
+            LaunchAppBuiltin(),
+            MemorizeBuiltin(),
+            OpenUriBuiltin(),
+            ReadCustomToolBuiltin(),
+            SearchAppsBuiltin(),
+        ).forEach { tool ->
             val config = LocalToolConfig()
 
             tool.configure(config)

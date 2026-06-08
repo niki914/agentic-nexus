@@ -1,10 +1,13 @@
 package com.niki914.nexus.agentic.chat.agentic.buildin
 
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.CreateCustomToolBuiltin
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.LaunchAppBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.MemorizeBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.NotifyBuiltin
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.OpenUriBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.ReadCustomToolBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.RunCommandBuildin_WIP_SAFE
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.SearchAppsBuiltin
 
 class BuiltinToolRegistry(
     private val tools: List<BuiltinTool>,
@@ -19,10 +22,13 @@ class BuiltinToolRegistry(
         fun default(): BuiltinToolRegistry = BuiltinToolRegistry(
             listOf(
                 CreateCustomToolBuiltin(),
+                LaunchAppBuiltin(),
                 MemorizeBuiltin(),
                 NotifyBuiltin(),
+                OpenUriBuiltin(),
                 ReadCustomToolBuiltin(),
                 RunCommandBuildin_WIP_SAFE(),
+                SearchAppsBuiltin(),
             )
         )
     }
