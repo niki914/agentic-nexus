@@ -74,10 +74,18 @@
 ## agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/
 
 - `CreateCustomToolBuiltin.kt`: 内建创建 custom tool
+- `LaunchAppBuiltin.kt`: 启动已安装应用
 - `MemorizeBuiltin.kt`: 内建记忆写入工具
 - `NotifyBuiltin.kt`: 内建通知工具
+- `OpenUriBuiltin.kt`: 打开 URI
 - `ReadCustomToolBuiltin.kt`: 内建读取 custom tool 定义工具
 - `RunCommandBuildin_WIP_SAFE.kt`: 内建命令执行工具
+- `SearchAppsBuiltin.kt`: 搜索已安装应用
+
+## agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/device/
+
+- `AppInfoProvider.kt`: 已安装应用信息提供者
+- `AppInfoCache.kt`: 应用信息缓存
 
 ## agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/
 
@@ -124,6 +132,7 @@
 - `ProviderSpec.kt`: provider 规格定义
 - `SettingsState.kt`: 设置页状态
 - `StartupAssistantUi.kt`: 启动宿主 UI 类型
+- `TakeoverSettingsState.kt`: takeover 规则设置页状态
 
 ## app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/nav/
 
@@ -143,6 +152,7 @@
 - `SettingsDetailPageRoute.kt`: 设置详情页路由装配
 - `SettingsHomePageRoute.kt`: 设置首页路由装配
 - `StartupPageRoute.kt`: 启动页路由装配
+- `TakeoverRuleDetailRoute.kt`: takeover 规则详情页路由装配
 
 ## app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/
 
@@ -154,8 +164,8 @@
 - `CustomToolDetailContent.kt`: 自定义工具详情页
 - `CustomToolsSettingsContent.kt`: 自定义工具设置页
 - `DonePageContent.kt`: 完成页内容
-- `ExecutionRuleDetailContent.kt`: 执行规则详情页壳
-- `ExecutionRulesSettingsContent.kt`: 执行规则设置页列表壳
+- `ExecutionRuleDetailContent.kt`: 执行规则详情编辑页
+- `ExecutionRulesSettingsContent.kt`: 执行规则设置页列表
 - `HomeChatComponents.kt`: 首页对话组件
 - `HomePageContent.kt`: 首页内容
 - `MemorySettingsContent.kt`: Memory 设置页
@@ -167,6 +177,8 @@
 - `SettingsHomePageContent.kt`: 设置首页内容
 - `StartupPageContent.kt`: 启动页内容
 - `StartupPosterBackground.kt`: 启动页背景
+- `TakeoverRuleDetailContent.kt`: takeover 规则详情编辑页
+- `TakeoverSettingsContent.kt`: takeover 设置页列表
 - `TODOPageContent.kt`: 未知设置分组兜底页
 
 ## app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/mcp/
@@ -211,27 +223,11 @@
 
 ## composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/component/
 
-- `LiquidButton.kt`: 基础 Liquid 按钮
-- `LiquidSecretTextField.kt`: 密码输入
-- `LiquidTextField.kt`: 基础文本输入
-- `LiquidTextFieldContainer.kt`: 文本输入容器
-- `LiquidToggle.kt`: 自定义 Toggle
-- `LiquidToggleStateMachine.kt`: Toggle 状态机
-- `MaterialTintLiquidButton.kt`: Material 风格着色按钮
-- `PageDescriptionText.kt`: 页面描述文本
-- `SettingExpandableTextCard.kt`: 可展开设置文本卡片
-- `SettingExpandableTextItem.kt`: 可展开设置项
-- `SettingNavigationItem.kt`: 设置导航项
-- `SettingsDetailFormScaffold.kt`: 设置详情表单脚手架
-- `SettingsDetailPageDefaults.kt`: 设置详情页默认配置
-- `SettingsGroupCard.kt`: 设置分组卡片
-- `SettingsItemSurface.kt`: 设置项通用表面
-- `SettingsListItem.kt`: 设置列表项
-- `SettingsListPageContent.kt`: 设置列表页容器
-- `SwipeDismissSettingsItemCard.kt`: 可滑动删除设置项卡片
-- `SettingsToggleListItemCard.kt`: 设置开关列表卡片
-- `SettingToggleItem.kt`: 设置开关项
-- `TintLiquidButton.kt`: 可着色 Liquid 按钮
+- `LiquidButton.kt`、`LiquidTextField.kt`、`LiquidSecretTextField.kt`、`LiquidToggle.kt`: 基础输入与开关组件
+- `SettingsGroupCard.kt`、`SettingsListItem.kt`、`SettingNavigationItem.kt`、`SettingToggleItem.kt`: 设置页列表与分组组件
+- `SettingExpandableTextItem.kt`、`SettingsDetailFormScaffold.kt`、`SettingsSegmentedSelector.kt`: 设置详情编辑组件
+- `SwipeDismissSettingsItemCard.kt`、`SettingsToggleListItemCard.kt`: 设置项滑动删除与开关卡片
+- `SettingsListPageContent.kt`、`SettingsDetailPageDefaults.kt`: 设置页容器与默认配置
 
 ## composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/interaction/
 
@@ -261,19 +257,11 @@
 
 ## h/src/main/java/com/niki914/nexus/h/util/
 
-- `ActivityHook.kt`: Activity Hook 辅助
-- `ContextHook.kt`: Context Hook 辅助
-- `ContextProvider.kt`: Context 提供器
-- `HookExtensions.kt`: Hook 扩展函数
-- `HookSideLoader.kt`: Hook 侧动态装载
-- `InspectExtensions.kt`: 调试检查扩展
-- `Inspector.kt`: 运行时检查工具
-- `OsUtils.kt`: 系统环境工具
-- `ReflectionExtensions.kt`: 反射扩展
-- `RootUtils.kt`: Root 工具
-- `XProvider.kt`: Xposed 辅助 Provider
-- `XTry.kt`: 容错包装
-- `Xlogging.kt`: 日志封装
+- `ContextHook.kt`、`ContextProvider.kt`、`HookSideLoader.kt`: 当前入口启动链使用的 Context 捕获与 Hook 装载辅助
+- `ActivityHook.kt`: Activity Hook 辅助；当前 `Entrance` 未启用
+- `HookExtensions.kt`、`ReflectionExtensions.kt`、`XTry.kt`: Hook 与反射工具
+- `Inspector.kt`、`InspectExtensions.kt`、`Xlogging.kt`: 调试检查与日志工具
+- `OsUtils.kt`、`RootUtils.kt`、`XProvider.kt`: 系统环境、Root 与 Xposed Provider 辅助
 
 ## h/src/main/java/com/niki914/nexus/h/xevent/
 

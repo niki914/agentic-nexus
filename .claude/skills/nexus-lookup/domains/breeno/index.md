@@ -26,6 +26,7 @@ Breeno 侧当前走**回答卡片层注入**：先插入一张回答卡片，再
 - `renderSessionMutex + currentRenderSession` 用于保证单个活跃渲染会话。
 - `installFloatScreenDetachHooks()` 结合浮窗 detach 和 resume 做退出判定，触发 session reset。
 - takeover 轮次会立即清理当前 render session，不继续注入 LLM 文本。
+- `dataCenterInstance` 依赖 `CaptureInputHook` 捕获；如果未捕获到，`insertMessage()` / `updateMessage()` 调用会因为空接收者而不产生渲染效果。
 
 ## 调试入口
 

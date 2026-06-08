@@ -46,14 +46,22 @@
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/`
 
-- `BuiltinToolRegistry.kt`：当前默认注册 `create_custom_tool`、`memorize`、`notify`、`read_custom_tool`、`run_command`。
+- `BuiltinToolRegistry.kt`：当前默认注册 `create_custom_tool`、`launch_app`、`memorize`、`notify`、`open_uri`、`read_custom_tool`、`run_command`、`search_apps`。
 - `BuiltinToolExecutor.kt`：builtin 执行入口。
 - `BuiltinToolSettingsManager.kt`：builtin 设置读写辅助。
 - `impl/CreateCustomToolBuiltin.kt`
+- `impl/LaunchAppBuiltin.kt`
 - `impl/MemorizeBuiltin.kt`
 - `impl/NotifyBuiltin.kt`
+- `impl/OpenUriBuiltin.kt`
 - `impl/ReadCustomToolBuiltin.kt`
 - `impl/RunCommandBuildin_WIP_SAFE.kt`
+- `impl/SearchAppsBuiltin.kt`
+
+### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/device/`
+
+- `AppInfoProvider.kt`：为 app 控制类 builtin 提供已安装应用信息。
+- `AppInfoCache.kt`：缓存已安装应用信息。
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/`
 
@@ -80,7 +88,7 @@
 ### Builtin
 
 - 已实现：注册表、启用状态读取、执行分发。
-- 当前默认 builtin：`create_custom_tool`、`memorize`、`notify`、`read_custom_tool`、`run_command`。
+- 当前默认 builtin：`create_custom_tool`、`launch_app`、`memorize`、`notify`、`open_uri`、`read_custom_tool`、`run_command`、`search_apps`。
 - 边界：`run_command` 运行在 Android 设备 `/system/bin/sh` 环境，不是桌面 shell；安全策略仍是基础黑名单拦截。
 
 ### Custom
@@ -118,12 +126,17 @@
 - `buildin/BuiltinToolExecutor.kt`
 - `buildin/BuiltinToolSettingsManager.kt`
 - `buildin/impl/CreateCustomToolBuiltin.kt`
+- `buildin/impl/LaunchAppBuiltin.kt`
 - `buildin/impl/MemorizeBuiltin.kt`
 - `buildin/impl/NotifyBuiltin.kt`
+- `buildin/impl/OpenUriBuiltin.kt`
 - `buildin/impl/ReadCustomToolBuiltin.kt`
 - `buildin/impl/RunCommandBuildin_WIP_SAFE.kt`
+- `buildin/impl/SearchAppsBuiltin.kt`
 - `custom/CustomToolManager.kt`
 - `custom/CustomToolExecutor.kt`
+- `device/AppInfoProvider.kt`
+- `device/AppInfoCache.kt`
 - `mcp/McpDiscoveryCacheStore.kt`
 - `shell/ShellCommandSafetyPolicy.kt`
 - `shell/ShellCommandRunner.kt`

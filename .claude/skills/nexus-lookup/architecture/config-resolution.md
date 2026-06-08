@@ -10,24 +10,22 @@
 2. 进程内缓存（仅 `WEB_SETTINGS` 有内存缓存）
 3. 空 JSON `{}`
 
-## 主 App 刷新链路
+## 主 App 初始化链路
 
-主 App 在 `MainActivity.onResume()` 中执行：
+主 App 当前在 `MainActivity.onCreate()` 中执行：
 
-1. `OsUtils.getCurr()` 判断系统族。
-2. `resolveTargetHostPackage(osFamily)` 选择优先宿主包名。
-3. `getInstalledPackageVersionCode(targetPkg)` 读取宿主版本号。
-4. `XRepo.refreshWebSettings(context, packageName, versionCode)` 调到 `XService.refreshWebSettings()`。
-5. `XService` 访问 `http://127.0.0.1:8788/<packageName>/<versionCode>/config.json`。
-6. 成功后通过 `XIpcBridge.writeWebSettingsJson()` 写入 `WEB_SETTINGS`。
-7. 最终由 `XIpcStoreRepository` -> `ConfigPersistence` 原子写盘。
+1. `ContextProvider.provide(applicationContext)` 提供 App 侧 `Context`。
+2. `XRepo.init(applicationContext)` 初始化设置仓库。
+3. `resolveStartupAssistantUi()` 判断启动 UI 类型。
+4. `AppLaunchDecision.resolve(startupAssistantUi)` 决定进入 `StartupPage` 或 `HomePage`。
 
 ## 宿主进程读取链路
 
-宿主侧读取走 `XService`：
+宿主侧入口读取走 `XRepo` 与 `RuntimeEnvironment`：
 
-- `getWebSettings(context)` -> `XIpcBridge.readWebSettingsJson(context)`
-- `getLocalSettings(context)` -> `XIpcBridge.readLocalSettingsJson(context)`
+- `Entrance.onLoad()`：`XRepo.init(ctx)` -> `RuntimeEnvironment.install(createAppRuntimeBridge())` -> `XRepo.web.await()`
+- `HookLocalSettings.update(ctx)`：刷新 Hook 侧本地设置缓存
+- `createAppRuntimeBridge()`：为 runtime 提供设置读取网关
 
 `XIpcBridge` 会根据 `XValues.getAppTypeOf(context)` 分流：
 
@@ -79,6 +77,12 @@
 
 - `XService.kt`
 - `HookLocalSettings.kt`
+
+### `app/src/main/java/com/niki914/nexus/agentic/repo/`
+
+- `XRepo.kt`
+- `LocalSettingsCodec.kt`
+- `LocalSettingsStore.kt`
 
 ### `ipc/src/main/java/com/niki914/nexus/ipc/`
 

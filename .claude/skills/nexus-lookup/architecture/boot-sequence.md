@@ -10,14 +10,14 @@
 2. **基础 Hook 装载**
    - `Entrance.onLoad()` 先用 `HookSideLoader.load()` 装载：
    - `h/src/main/java/com/niki914/nexus/h/util/ContextHook.kt`
-   - `h/src/main/java/com/niki914/nexus/h/util/ActivityHook.kt`
+   - `ActivityHook` 与 `FloatWindowHook` 当前在入口中仍是注释状态，不属于已启用启动链。
 
 3. **上下文与运行时初始化**
    - `ContextProvider.await()` 等待宿主 `Context` 就绪。
    - `XRepo.init(ctx)` 初始化本地 repo。
    - `RuntimeEnvironment.install(createAppRuntimeBridge())` 安装 runtime settings gateway。
    - `HookLocalSettings.update(ctx)` 刷新宿主进程本地设置缓存。
-   - `XService.getWebSettings(ctx)` 读取当前宿主可见的 `WEB_SETTINGS`。
+   - `XRepo.web.await()` 读取当前宿主可见的 `WEB_SETTINGS`。
 
 4. **宿主路由**
    - `Entrance.onSettingsFetched()` 用 `HostApp.fromPackageName(params.packageName)` 判断宿主。
@@ -35,13 +35,12 @@
 
 - `a0/a0/a0/a0/a0/a0/Entrance.kt`
 - `com/niki914/nexus/agentic/mod/HookLocalSettings.kt`
-- `com/niki914/nexus/agentic/mod/XService.kt`
+- `com/niki914/nexus/agentic/repo/XRepo.kt`
 - `com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`
 - `com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt`
 
 ### `h/src/main/java/com/niki914/nexus/h/`
 
 - `util/ContextHook.kt`
-- `util/ActivityHook.kt`
 - `util/ContextProvider.kt`
 - `core/runtime/RuntimeBootstrap.kt`
