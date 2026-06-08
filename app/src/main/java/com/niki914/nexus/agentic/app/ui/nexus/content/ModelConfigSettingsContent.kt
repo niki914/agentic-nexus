@@ -5,16 +5,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.res.stringResource
-import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
-import com.niki914.nexus.agentic.app.ui.nexus.PageBackHandler
-import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
-import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureEffect
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureScene
@@ -29,25 +22,9 @@ fun ModelConfigSettingsContent(
         key = "settings-configure",
     )
     val uiState by viewModel.uiStateFlow.collectAsState()
-    val latestUiState by rememberUpdatedState(uiState)
-    val latestOnBack by rememberUpdatedState(onBack)
     var pendingFocusField by rememberSaveable {
         mutableStateOf<ConfigureEditableField?>(null)
     }
-    var showUnsavedChangesDialog by rememberSaveable { mutableStateOf(false) }
-
-    RegisterPageChrome(
-        PageChromeContribution(
-            backHandler = PageBackHandler(
-                shouldConsumeBack = {
-                    latestUiState.scene == ConfigureScene.Settings && latestUiState.hasUnsavedChanges
-                },
-                onConsumeBack = {
-                    showUnsavedChangesDialog = true
-                },
-            ),
-        ),
-    )
 
     LaunchedEffect(viewModel) {
         viewModel.sendIntent(ConfigureIntent.Initialize(scene = ConfigureScene.Settings))
@@ -78,51 +55,41 @@ fun ModelConfigSettingsContent(
         }
     }
 
-    ConfigurePageContent(
-        uiState = uiState,
-        onEndpointOverrideChange = { enabled ->
-            viewModel.sendIntent(ConfigureIntent.SetEndpointOverride(enabled))
+    EditableSettingsDetailChrome(
+        isCreating = false,
+        hasUnsavedChanges = {
+            uiState.scene == ConfigureScene.Settings && uiState.hasUnsavedChanges
         },
-        onEndpointChange = { endpoint ->
-            viewModel.sendIntent(ConfigureIntent.UpdateEndpoint(endpoint))
-        },
-        onModelChange = { model ->
-            viewModel.sendIntent(ConfigureIntent.UpdateModel(model))
-        },
-        onApiKeyChange = { apiKey ->
-            viewModel.sendIntent(ConfigureIntent.UpdateApiKey(apiKey))
-        },
-        onPromptChange = { prompt ->
-            viewModel.sendIntent(ConfigureIntent.UpdatePrompt(prompt))
-        },
-        onProxyChange = { proxy ->
-            viewModel.sendIntent(ConfigureIntent.UpdateProxy(proxy))
-        },
-        onToggleApiKeyVisibility = {
-            viewModel.sendIntent(ConfigureIntent.ToggleApiKeyVisibility)
-        },
-        onComplete = { viewModel.sendIntent(ConfigureIntent.Save) },
-        requestedFocusField = pendingFocusField,
-        onRequestedFocusHandled = {
-            pendingFocusField = null
-        },
-    )
-
-    ConfirmationLiquidDialog(
-        visible = showUnsavedChangesDialog,
-        onDismissRequest = {
-            showUnsavedChangesDialog = false
-        },
-        title = stringResource(R.string.unsaved_changes_dialog_title),
-        text = stringResource(R.string.unsaved_changes_dialog_text),
-        negativeButtonText = stringResource(R.string.unsaved_changes_dialog_cancel),
-        positiveButtonText = stringResource(R.string.unsaved_changes_dialog_confirm_exit),
-        onNegativeClick = {
-            showUnsavedChangesDialog = false
-        },
-        onPositiveClick = {
-            showUnsavedChangesDialog = false
-            latestOnBack()
-        },
-    )
+        onDiscardChanges = onBack,
+    ) {
+        ConfigurePageContent(
+            uiState = uiState,
+            onEndpointOverrideChange = { enabled ->
+                viewModel.sendIntent(ConfigureIntent.SetEndpointOverride(enabled))
+            },
+            onEndpointChange = { endpoint ->
+                viewModel.sendIntent(ConfigureIntent.UpdateEndpoint(endpoint))
+            },
+            onModelChange = { model ->
+                viewModel.sendIntent(ConfigureIntent.UpdateModel(model))
+            },
+            onApiKeyChange = { apiKey ->
+                viewModel.sendIntent(ConfigureIntent.UpdateApiKey(apiKey))
+            },
+            onPromptChange = { prompt ->
+                viewModel.sendIntent(ConfigureIntent.UpdatePrompt(prompt))
+            },
+            onProxyChange = { proxy ->
+                viewModel.sendIntent(ConfigureIntent.UpdateProxy(proxy))
+            },
+            onToggleApiKeyVisibility = {
+                viewModel.sendIntent(ConfigureIntent.ToggleApiKeyVisibility)
+            },
+            onComplete = { viewModel.sendIntent(ConfigureIntent.Save) },
+            requestedFocusField = pendingFocusField,
+            onRequestedFocusHandled = {
+                pendingFocusField = null
+            },
+        )
+    }
 }

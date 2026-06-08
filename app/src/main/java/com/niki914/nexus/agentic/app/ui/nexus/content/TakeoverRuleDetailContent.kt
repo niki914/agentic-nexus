@@ -1,34 +1,24 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsDetailFormScaffold
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsSegmentedSelector
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
-import com.niki914.nexus.agentic.app.ui.nexus.PageBackHandler
-import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
-import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
 import com.niki914.nexus.agentic.app.ui.nexus.model.TakeoverRuleFormState
 import com.niki914.nexus.agentic.app.ui.nexus.model.TakeoverInlineError
 import com.niki914.nexus.agentic.app.ui.nexus.model.TakeoverSettingsEffect
@@ -38,7 +28,6 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.TakeoverSettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.TakeoverTarget
 import com.niki914.nexus.agentic.app.ui.nexus.model.hasUnsavedChanges
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TakeoverRuleDetailPage
-import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 
 @Composable
 fun TakeoverRuleDetailContent(
@@ -47,35 +36,41 @@ fun TakeoverRuleDetailContent(
 ) {
     val viewModel = pageViewModel<TakeoverSettingsViewModel>()
     val uiState by viewModel.uiStateFlow.collectAsState()
-    val latestViewModel by rememberUpdatedState(viewModel)
-    val latestUiState by rememberUpdatedState(uiState)
-    val latestOnBack by rememberUpdatedState(onBack)
     var requestedFocusField by rememberSaveable { mutableStateOf<TakeoverEditableField?>(null) }
-    var showUnsavedChangesDialog by rememberSaveable { mutableStateOf(false) }
 
-    val pageChromeContribution = remember(page.isCreating) {
-        PageChromeContribution(
-            rightAction = if (page.isCreating) {
-                null
-            } else {
-                TopBarActionSpec(
-                    icon = Icons.Default.Delete,
-                    onClick = {
-                        latestViewModel.sendIntent(TakeoverSettingsIntent.DeleteCurrent)
-                    },
-                )
+    EditableSettingsDetailChrome(
+        isCreating = page.isCreating,
+        hasUnsavedChanges = {
+            uiState.formState.hasUnsavedChanges
+        },
+        onDelete = {
+            viewModel.sendIntent(TakeoverSettingsIntent.DeleteCurrent)
+        },
+        onDiscardChanges = onBack,
+    ) {
+        TakeoverRuleDetailContentBody(
+            uiState = uiState,
+            requestedFocusField = requestedFocusField,
+            onRequestedFocusHandled = {
+                requestedFocusField = null
             },
-            backHandler = PageBackHandler(
-                shouldConsumeBack = {
-                    latestUiState.formState.hasUnsavedChanges
-                },
-                onConsumeBack = {
-                    showUnsavedChangesDialog = true
-                },
-            ),
+            onNameChange = { value ->
+                viewModel.sendIntent(TakeoverSettingsIntent.NameChanged(value))
+            },
+            onEnabledChange = { value ->
+                viewModel.sendIntent(TakeoverSettingsIntent.EnabledChanged(value))
+            },
+            onTargetChange = { value ->
+                viewModel.sendIntent(TakeoverSettingsIntent.TargetChanged(value))
+            },
+            onPatternsInputChange = { value ->
+                viewModel.sendIntent(TakeoverSettingsIntent.PatternsChanged(value))
+            },
+            onSave = {
+                viewModel.sendIntent(TakeoverSettingsIntent.Save)
+            },
         )
     }
-    RegisterPageChrome(pageChromeContribution)
 
     LaunchedEffect(page.routeKey) {
         if (page.isCreating) {
@@ -101,47 +96,6 @@ fun TakeoverRuleDetailContent(
             }
         }
     }
-
-    TakeoverRuleDetailContentBody(
-        uiState = uiState,
-        requestedFocusField = requestedFocusField,
-        onRequestedFocusHandled = {
-            requestedFocusField = null
-        },
-        onNameChange = { value ->
-            viewModel.sendIntent(TakeoverSettingsIntent.NameChanged(value))
-        },
-        onEnabledChange = { value ->
-            viewModel.sendIntent(TakeoverSettingsIntent.EnabledChanged(value))
-        },
-        onTargetChange = { value ->
-            viewModel.sendIntent(TakeoverSettingsIntent.TargetChanged(value))
-        },
-        onPatternsInputChange = { value ->
-            viewModel.sendIntent(TakeoverSettingsIntent.PatternsChanged(value))
-        },
-        onSave = {
-            viewModel.sendIntent(TakeoverSettingsIntent.Save)
-        },
-    )
-
-    ConfirmationLiquidDialog(
-        visible = showUnsavedChangesDialog,
-        onDismissRequest = {
-            showUnsavedChangesDialog = false
-        },
-        title = stringResource(R.string.unsaved_changes_dialog_title),
-        text = stringResource(R.string.unsaved_changes_dialog_text),
-        negativeButtonText = stringResource(R.string.unsaved_changes_dialog_cancel),
-        positiveButtonText = stringResource(R.string.unsaved_changes_dialog_confirm_exit),
-        onNegativeClick = {
-            showUnsavedChangesDialog = false
-        },
-        onPositiveClick = {
-            showUnsavedChangesDialog = false
-            latestOnBack()
-        },
-    )
 }
 
 enum class TakeoverEditableField {
@@ -160,32 +114,15 @@ private fun TakeoverRuleDetailContentBody(
     onPatternsInputChange: (String) -> Unit,
     onSave: () -> Unit,
 ) {
-    val focusManager = LocalFocusManager.current
-    var expandedField by rememberSaveable { mutableStateOf<TakeoverEditableField?>(null) }
-
-    fun clearActiveField() {
-        expandedField = null
-        focusManager.clearFocus()
-    }
-
-    LaunchedEffect(requestedFocusField) {
-        if (requestedFocusField != null) {
-            expandedField = requestedFocusField
-            onRequestedFocusHandled()
-        }
-    }
-
-    SettingsDetailFormScaffold(
+    EditableSettingsDetailFormScaffold(
         actionText = stringResource(R.string.takeover_save_action),
-        onActionClick = {
-            clearActiveField()
-            onSave()
-        },
+        requestedFocusField = requestedFocusField,
+        onRequestedFocusHandled = onRequestedFocusHandled,
+        onActionClick = onSave,
         description = stringResource(R.string.takeover_editor_description),
         inlineErrorText = takeoverInlineErrorText(uiState.inlineError),
         actionEnabled = !uiState.isSaving,
-        onBackgroundTap = ::clearActiveField,
-    ) {
+    ) { fieldController ->
         SettingsGroupCard {
             SettingExpandableTextItem(
                 title = stringResource(R.string.takeover_field_name),
@@ -196,9 +133,11 @@ private fun TakeoverRuleDetailContentBody(
                 enabled = !uiState.isSaving,
                 minLines = 1,
                 maxLines = 1,
-                expanded = expandedField == TakeoverEditableField.Name,
+                expanded = fieldController.expandedField == TakeoverEditableField.Name,
                 onExpandedChange = { isExpanded ->
-                    expandedField = if (isExpanded) TakeoverEditableField.Name else null
+                    fieldController.onExpandedFieldChange(
+                        if (isExpanded) TakeoverEditableField.Name else null,
+                    )
                 },
             )
             SettingsItemDivider()
@@ -207,7 +146,7 @@ private fun TakeoverRuleDetailContentBody(
                 checked = uiState.formState.enabled,
                 enabled = !uiState.isSaving,
                 onCheckedChange = {
-                    clearActiveField()
+                    fieldController.clearActiveField()
                     onEnabledChange(it)
                 },
             )
@@ -221,7 +160,7 @@ private fun TakeoverRuleDetailContentBody(
                 label = { target -> target.label() },
                 enabled = !uiState.isSaving,
                 onSelected = {
-                    clearActiveField()
+                    fieldController.clearActiveField()
                     onTargetChange(it)
                 },
             )
@@ -239,9 +178,11 @@ private fun TakeoverRuleDetailContentBody(
                 enabled = !uiState.isSaving,
                 minLines = 4,
                 maxLines = 8,
-                expanded = expandedField == TakeoverEditableField.Patterns,
+                expanded = fieldController.expandedField == TakeoverEditableField.Patterns,
                 onExpandedChange = { isExpanded ->
-                    expandedField = if (isExpanded) TakeoverEditableField.Patterns else null
+                    fieldController.onExpandedFieldChange(
+                        if (isExpanded) TakeoverEditableField.Patterns else null,
+                    )
                 },
             )
         }

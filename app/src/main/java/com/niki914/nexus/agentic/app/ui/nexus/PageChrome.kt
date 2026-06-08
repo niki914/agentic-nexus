@@ -11,6 +11,7 @@ data class PageChromeContribution(
     val rightAction: TopBarActionSpec? = null,
     val menuItems: List<PageChromeMenuItem> = emptyList(),
     val backHandler: PageBackHandler? = null,
+    val overlay: (@Composable () -> Unit)? = null,
 ) {
     companion object {
         val Empty = PageChromeContribution()

@@ -190,113 +190,116 @@ fun NexusApp(
         }
     }
 
-    LiquidScreen(
-        state = screenState,
-        actionsEnabled = !isPageTransitioning,
-        leftButton = currentLeftAction?.let { action ->
-            {
-                AnimatedContent(
-                    targetState = action.icon,
-                    transitionSpec = {
-                        val iconAnimationSpec = tween<Float>(
-                            durationMillis = 280,
-                            easing = FastOutSlowInEasing,
-                        )
-                        (scaleIn(
-                            initialScale = 1.18f,
-                            animationSpec = iconAnimationSpec,
-                        ) + fadeIn(animationSpec = iconAnimationSpec)).togetherWith(
-                            scaleOut(
-                                targetScale = 0.78f,
+    Box(modifier = Modifier.fillMaxSize()) {
+        LiquidScreen(
+            state = screenState,
+            actionsEnabled = !isPageTransitioning,
+            leftButton = currentLeftAction?.let { action ->
+                {
+                    AnimatedContent(
+                        targetState = action.icon,
+                        transitionSpec = {
+                            val iconAnimationSpec = tween<Float>(
+                                durationMillis = 280,
+                                easing = FastOutSlowInEasing,
+                            )
+                            (scaleIn(
+                                initialScale = 1.18f,
                                 animationSpec = iconAnimationSpec,
-                            ) + fadeOut(animationSpec = iconAnimationSpec)
+                            ) + fadeIn(animationSpec = iconAnimationSpec)).togetherWith(
+                                scaleOut(
+                                    targetScale = 0.78f,
+                                    animationSpec = iconAnimationSpec,
+                                ) + fadeOut(animationSpec = iconAnimationSpec)
+                            )
+                        },
+                        label = "leftActionIcon",
+                    ) { imageVector ->
+                        ActionBarVectorIcon(
+                            imageVector = imageVector,
+                            tint = actionIconTint,
                         )
-                    },
-                    label = "leftActionIcon",
-                ) { imageVector ->
-                    ActionBarVectorIcon(
-                        imageVector = imageVector,
-                        tint = actionIconTint,
-                    )
+                    }
                 }
-            }
-        },
-        rightButton = currentRightAction?.let { action ->
-            {
-                AnimatedContent(
-                    targetState = action.icon,
-                    transitionSpec = {
-                        val iconAnimationSpec = tween<Float>(
-                            durationMillis = 280,
-                            easing = FastOutSlowInEasing,
-                        )
-                        (scaleIn(
-                            initialScale = 1.18f,
-                            animationSpec = iconAnimationSpec,
-                        ) + fadeIn(animationSpec = iconAnimationSpec)).togetherWith(
-                            scaleOut(
-                                targetScale = 0.78f,
+            },
+            rightButton = currentRightAction?.let { action ->
+                {
+                    AnimatedContent(
+                        targetState = action.icon,
+                        transitionSpec = {
+                            val iconAnimationSpec = tween<Float>(
+                                durationMillis = 280,
+                                easing = FastOutSlowInEasing,
+                            )
+                            (scaleIn(
+                                initialScale = 1.18f,
                                 animationSpec = iconAnimationSpec,
-                            ) + fadeOut(animationSpec = iconAnimationSpec)
+                            ) + fadeIn(animationSpec = iconAnimationSpec)).togetherWith(
+                                scaleOut(
+                                    targetScale = 0.78f,
+                                    animationSpec = iconAnimationSpec,
+                                ) + fadeOut(animationSpec = iconAnimationSpec)
+                            )
+                        },
+                        label = "rightActionIcon",
+                    ) { imageVector ->
+                        ActionBarVectorIcon(
+                            imageVector = imageVector,
+                            tint = actionIconTint,
                         )
+                    }
+                }
+            },
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                LiquidScreenSwipeContent(
+                    targetState = currentEntry,
+                    direction = controller.lastDirection,
+                    modifier = Modifier.fillMaxSize(),
+                    onTransitionActiveChanged = { active ->
+                        isPageTransitioning = active
                     },
-                    label = "rightActionIcon",
-                ) { imageVector ->
-                    ActionBarVectorIcon(
-                        imageVector = imageVector,
-                        tint = actionIconTint,
-                    )
+                ) { entry ->
+                    val pageChromeRegistrar = remember(entry.id, pageChromeHost) {
+                        pageChromeHost.registrarFor(entry.id)
+                    }
+                    CompositionLocalProvider(
+                        LocalNavigationEntry provides entry,
+                        LocalPageChrome provides pageChromeRegistrar,
+                    ) {
+                        NexusPageContent(
+                            entry = entry,
+                            startupAssistantUi = startupAssistantUi,
+                            onPush = ::push,
+                            onPop = { navigator.pop() },
+                            onResetTo = ::resetTo,
+                        )
+                    }
                 }
-            }
-        },
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            LiquidScreenSwipeContent(
-                targetState = currentEntry,
-                direction = controller.lastDirection,
-                modifier = Modifier.fillMaxSize(),
-                onTransitionActiveChanged = { active ->
-                    isPageTransitioning = active
-                },
-            ) { entry ->
-                val pageChromeRegistrar = remember(entry.id, pageChromeHost) {
-                    pageChromeHost.registrarFor(entry.id)
-                }
-                CompositionLocalProvider(
-                    LocalNavigationEntry provides entry,
-                    LocalPageChrome provides pageChromeRegistrar,
-                ) {
-                    NexusPageContent(
-                        entry = entry,
-                        startupAssistantUi = startupAssistantUi,
-                        onPush = ::push,
-                        onPop = { navigator.pop() },
-                        onResetTo = ::resetTo,
-                    )
-                }
-            }
 
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = screenState.actionBarHeight.value, end = 12.dp),
-            ) {
-                DropdownMenu(
-                    expanded = chromeMenuExpanded && currentChrome.menuItems.isNotEmpty(),
-                    onDismissRequest = ::closeChromeMenu,
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = screenState.actionBarHeight.value, end = 12.dp),
                 ) {
-                    currentChrome.menuItems.forEach { item ->
-                        DropdownMenuItem(
-                            text = { Text(item.title) },
-                            onClick = {
-                                closeChromeMenu()
-                                item.onClick()
-                            },
-                        )
+                    DropdownMenu(
+                        expanded = chromeMenuExpanded && currentChrome.menuItems.isNotEmpty(),
+                        onDismissRequest = ::closeChromeMenu,
+                    ) {
+                        currentChrome.menuItems.forEach { item ->
+                            DropdownMenuItem(
+                                text = { Text(item.title) },
+                                onClick = {
+                                    closeChromeMenu()
+                                    item.onClick()
+                                },
+                            )
+                        }
                     }
                 }
             }
         }
+        currentChrome.overlay?.invoke()
     }
 }
 

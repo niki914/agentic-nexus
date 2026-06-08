@@ -1,33 +1,25 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content.mcp
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsDetailFormScaffold
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
-import com.niki914.nexus.agentic.app.ui.nexus.PageBackHandler
-import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
-import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
+import com.niki914.nexus.agentic.app.ui.nexus.content.EditableSettingsDetailChrome
+import com.niki914.nexus.agentic.app.ui.nexus.content.EditableSettingsDetailFormScaffold
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpInlineError
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsEffect
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsIntent
@@ -35,7 +27,6 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.hasUnsavedChanges
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
-import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 
 @Composable
 fun McpServerDetailContent(
@@ -44,35 +35,41 @@ fun McpServerDetailContent(
 ) {
     val viewModel = pageViewModel<McpSettingsViewModel>()
     val uiState by viewModel.uiStateFlow.collectAsState()
-    val latestViewModel by rememberUpdatedState(viewModel)
-    val latestUiState by rememberUpdatedState(uiState)
-    val latestOnBack by rememberUpdatedState(onBack)
     var requestedFocusField by rememberSaveable { mutableStateOf<McpEditableField?>(null) }
-    var showUnsavedChangesDialog by rememberSaveable { mutableStateOf(false) }
 
-    val pageChromeContribution = remember(page.isCreating) {
-        PageChromeContribution(
-            rightAction = if (page.isCreating) {
-                null
-            } else {
-                TopBarActionSpec(
-                    icon = Icons.Default.Delete,
-                    onClick = {
-                        latestViewModel.sendIntent(McpSettingsIntent.DeleteCurrent)
-                    },
-                )
+    EditableSettingsDetailChrome(
+        isCreating = page.isCreating,
+        hasUnsavedChanges = {
+            uiState.formState.hasUnsavedChanges
+        },
+        onDelete = {
+            viewModel.sendIntent(McpSettingsIntent.DeleteCurrent)
+        },
+        onDiscardChanges = onBack,
+    ) {
+        McpServerDetailContentBody(
+            uiState = uiState,
+            requestedFocusField = requestedFocusField,
+            onRequestedFocusHandled = {
+                requestedFocusField = null
             },
-            backHandler = PageBackHandler(
-                shouldConsumeBack = {
-                    latestUiState.formState.hasUnsavedChanges
-                },
-                onConsumeBack = {
-                    showUnsavedChangesDialog = true
-                },
-            ),
+            onNameChange = { value ->
+                viewModel.sendIntent(McpSettingsIntent.NameChanged(value))
+            },
+            onEnabledChange = { value ->
+                viewModel.sendIntent(McpSettingsIntent.EnabledChanged(value))
+            },
+            onUrlChange = { value ->
+                viewModel.sendIntent(McpSettingsIntent.UrlChanged(value))
+            },
+            onHeadersChange = { value ->
+                viewModel.sendIntent(McpSettingsIntent.HeadersChanged(value))
+            },
+            onSave = {
+                viewModel.sendIntent(McpSettingsIntent.Save)
+            },
         )
     }
-    RegisterPageChrome(pageChromeContribution)
 
     LaunchedEffect(page.routeKey) {
         if (page.isCreating) {
@@ -98,47 +95,6 @@ fun McpServerDetailContent(
             }
         }
     }
-
-    McpServerDetailContentBody(
-        uiState = uiState,
-        requestedFocusField = requestedFocusField,
-        onRequestedFocusHandled = {
-            requestedFocusField = null
-        },
-        onNameChange = { value ->
-            viewModel.sendIntent(McpSettingsIntent.NameChanged(value))
-        },
-        onEnabledChange = { value ->
-            viewModel.sendIntent(McpSettingsIntent.EnabledChanged(value))
-        },
-        onUrlChange = { value ->
-            viewModel.sendIntent(McpSettingsIntent.UrlChanged(value))
-        },
-        onHeadersChange = { value ->
-            viewModel.sendIntent(McpSettingsIntent.HeadersChanged(value))
-        },
-        onSave = {
-            viewModel.sendIntent(McpSettingsIntent.Save)
-        },
-    )
-
-    ConfirmationLiquidDialog(
-        visible = showUnsavedChangesDialog,
-        onDismissRequest = {
-            showUnsavedChangesDialog = false
-        },
-        title = stringResource(R.string.unsaved_changes_dialog_title),
-        text = stringResource(R.string.unsaved_changes_dialog_text),
-        negativeButtonText = stringResource(R.string.unsaved_changes_dialog_cancel),
-        positiveButtonText = stringResource(R.string.unsaved_changes_dialog_confirm_exit),
-        onNegativeClick = {
-            showUnsavedChangesDialog = false
-        },
-        onPositiveClick = {
-            showUnsavedChangesDialog = false
-            latestOnBack()
-        },
-    )
 }
 
 @Composable
@@ -152,47 +108,30 @@ private fun McpServerDetailContentBody(
     onHeadersChange: (String) -> Unit,
     onSave: () -> Unit,
 ) {
-    val focusManager = LocalFocusManager.current
-    var expandedField by rememberSaveable { mutableStateOf<McpEditableField?>(null) }
-
-    fun clearActiveField() {
-        expandedField = null
-        focusManager.clearFocus()
-    }
-
-    LaunchedEffect(requestedFocusField) {
-        if (requestedFocusField != null) {
-            expandedField = requestedFocusField
-            onRequestedFocusHandled()
-        }
-    }
-
-    SettingsDetailFormScaffold(
+    EditableSettingsDetailFormScaffold(
         actionText = stringResource(R.string.mcp_save_action),
-        onActionClick = {
-            clearActiveField()
-            onSave()
-        },
+        requestedFocusField = requestedFocusField,
+        onRequestedFocusHandled = onRequestedFocusHandled,
+        onActionClick = onSave,
         description = stringResource(R.string.mcp_page_description),
         inlineErrorText = mcpInlineErrorText(uiState.inlineError),
         actionEnabled = !uiState.isSaving,
-        onBackgroundTap = ::clearActiveField,
-    ) {
+    ) { fieldController ->
         McpIdentitySettingsBlock(
             uiState = uiState,
-            expandedField = expandedField,
-            onExpandedFieldChange = { field -> expandedField = field },
+            expandedField = fieldController.expandedField,
+            onExpandedFieldChange = fieldController.onExpandedFieldChange,
             onNameChange = onNameChange,
             onEnabledChange = {
-                clearActiveField()
+                fieldController.clearActiveField()
                 onEnabledChange(it)
             },
         )
 
         McpConnectionSettingsBlock(
             uiState = uiState,
-            expandedField = expandedField,
-            onExpandedFieldChange = { field -> expandedField = field },
+            expandedField = fieldController.expandedField,
+            onExpandedFieldChange = fieldController.onExpandedFieldChange,
             onUrlChange = onUrlChange,
             onHeadersChange = onHeadersChange,
         )
