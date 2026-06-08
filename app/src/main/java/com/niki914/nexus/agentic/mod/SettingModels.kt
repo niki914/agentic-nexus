@@ -89,6 +89,9 @@ class LocalSettings(props: JsonObject = JsonObject(emptyMap())) : XSettings(prop
     val takeoverKeywords: List<String>
         get() = getStringList("takeover_keywords")
 
+    val takeoverRules: JsonArray?
+        get() = getArray("takeover_rules")
+
     val memoryPrompt: String
         get() = getString("memory_prompt")
 

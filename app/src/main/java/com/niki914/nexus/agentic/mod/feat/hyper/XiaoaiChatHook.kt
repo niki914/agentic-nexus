@@ -3,7 +3,6 @@ package com.niki914.nexus.agentic.mod.feat.hyper
 import com.niki914.nexus.agentic.chat.ActiveTurnStore
 import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.collectAsChunk
-import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.mod.feat.AbstractAssistantHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeInstructionByWhitelistHook
 import com.niki914.nexus.agentic.mod.feat.hyper.subhooks.BlockNativeTtsPlaybackHook
@@ -70,12 +69,6 @@ class XiaoaiChatHook( // TODO P2(由于标记 Beta 所以放缓) NewRoom / 卡�
         onInput: (roomId: String, query: String) -> Unit
     ) {
         CaptureInputHook(onInput = onInput).onHook(lpparam)
-    }
-
-    override fun shouldTakeOver(query: String): Boolean {
-        return HookLocalSettings.current().takeoverKeywords.any { keyword ->
-            keyword.isNotBlank() && query.contains(keyword)
-        }
     }
 
     override suspend fun dispatchQueryToLLM(turnId: Long, roomId: String, query: String) {

@@ -1,6 +1,7 @@
 package com.niki914.nexus.agentic.chat.agentic.shell
 
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
+import com.niki914.nexus.agentic.util.TextPatternMatcher
 import com.niki914.nexus.h.util.LockState
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRule as ExecutionRule
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRuleEnabledMode as ExecutionRuleEnabledMode
@@ -38,7 +39,7 @@ class ShellCommandSafetyPolicy(
                     .map(String::trim)
                     .filter(String::isNotBlank)
                     .forEach { pattern ->
-                        if (candidates.any { candidate -> candidate.matchesPattern(pattern) }) {
+                        if (candidates.any { candidate -> TextPatternMatcher.matches(candidate, pattern) }) {
                             return ShellCommandPolicyDecision(
                                 allowed = false,
                                 code = "RULE_BLOCKED",
@@ -160,14 +161,6 @@ class ShellCommandSafetyPolicy(
             ExecutionRuleEnabledMode.ALWAYS -> true
             ExecutionRuleEnabledMode.LOCKED_ONLY -> !unlocked
             ExecutionRuleEnabledMode.DISABLED -> false
-        }
-    }
-
-    private fun String.matchesPattern(pattern: String): Boolean {
-        return try {
-            Regex(pattern).containsMatchIn(this)
-        } catch (_: IllegalArgumentException) {
-            contains(pattern, ignoreCase = true)
         }
     }
 

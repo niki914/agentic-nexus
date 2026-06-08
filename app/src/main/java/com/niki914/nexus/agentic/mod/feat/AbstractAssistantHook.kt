@@ -4,6 +4,11 @@ import com.niki914.nexus.agentic.chat.ActiveTurnStore
 import com.niki914.nexus.agentic.chat.ConversationTurnState
 import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.TurnMode
+import com.niki914.nexus.agentic.mod.HookLocalSettings
+import com.niki914.nexus.agentic.repo.LocalSettingsCodec
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeTakeoverTarget
+import com.niki914.nexus.agentic.takeover.TakeoverDecision
+import com.niki914.nexus.agentic.takeover.TakeoverResolver
 import com.niki914.nexus.h.core.runtime.Hook
 import com.niki914.nexus.h.xevent.XEvent
 import com.niki914.nexus.h.xevent.XEventContext
@@ -48,19 +53,26 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
     protected open fun onBeforeInstallHooks(lpparam: XC_LoadPackage.LoadPackageParam) = Unit
 
     private suspend fun handleCapturedQuery(roomId: String, query: String) {
+        val takeoverDecision = resolveTakeover(query)
+        val turnMode = when (takeoverDecision.target) {
+            RuntimeTakeoverTarget.NATIVE_ASSISTANT -> TurnMode.NativeTakeover
+            RuntimeTakeoverTarget.NEXUS -> TurnMode.InjectedLLM
+        }
         val nextTurnState = ConversationTurnState().nextTurn(
             query = query,
-            mode = if (shouldTakeOver(query)) {
-                TurnMode.NativeTakeover
-            } else {
-                TurnMode.InjectedLLM
-            }
+            mode = turnMode
         )
         ActiveTurnStore.setCurrent(nextTurnState)
+        val takeoverFields = mapOf(
+            "mode" to nextTurnState.mode.eventName(),
+            "takeoverTarget" to takeoverDecision.target.name,
+            "matchedRuleId" to takeoverDecision.matchedRuleId.orEmpty(),
+            "matchedRuleName" to takeoverDecision.matchedRuleName.orEmpty(),
+        )
         val eventContext = XEventContext(
             roomId = roomId,
             turnId = nextTurnState.turnId,
-            fields = mapOf("mode" to nextTurnState.mode.eventName())
+            fields = takeoverFields
         )
         XEvent.setContext(eventContext)
         XEvent.withContext(eventContext) {
@@ -69,7 +81,7 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
                 fields = mapOf("queryLength" to query.length)
             )
             XEvent.turnDecided(
-                fields = mapOf(
+                fields = takeoverFields + mapOf(
                     "queryLength" to query.length
                 )
             )
@@ -89,7 +101,10 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
 
     protected open suspend fun onTurnStateChanged(state: ConversationTurnState) = Unit
 
-    protected open fun shouldTakeOver(query: String): Boolean = false
+    protected open fun resolveTakeover(query: String): TakeoverDecision {
+        val rules = LocalSettingsCodec.parseTakeoverRules(HookLocalSettings.current())
+        return TakeoverResolver.resolve(query, rules)
+    }
 
     private fun TurnMode.eventName(): String = when (this) {
         TurnMode.InjectedLLM -> "InjectedLLM"

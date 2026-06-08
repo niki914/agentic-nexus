@@ -18,6 +18,8 @@ import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRuleEnab
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeTakeoverRule as TakeoverRule
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeTakeoverTarget as TakeoverTarget
 
 internal object LocalSettingsCodec {
     fun parseLlm(settings: LocalSettings): LlmConfig {
@@ -252,6 +254,50 @@ internal object LocalSettingsCodec {
         )
     }
 
+    fun parseTakeoverRules(settings: LocalSettings): List<TakeoverRule> {
+        return settings.takeoverRules
+            .orEmptyObjects()
+            .mapNotNull { obj ->
+                val id = obj.string(ID_KEY).trim().takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val name = obj.string(NAME_KEY).trim().takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                TakeoverRule(
+                    id = id,
+                    name = name,
+                    target = obj.takeoverTarget(),
+                    enabled = obj.boolean(ENABLED_KEY, default = true),
+                    patterns = obj.array(PATTERNS_KEY)
+                        ?.jsonArray
+                        ?.mapNotNull { element -> element.jsonPrimitive.contentOrNull?.trim() }
+                        ?.filter { it.isNotBlank() }
+                        ?: emptyList(),
+                )
+            }
+    }
+
+    fun withTakeoverRules(settings: LocalSettings, rules: List<TakeoverRule>): LocalSettings {
+        return settings.withTopLevel(
+            TAKEOVER_RULES_KEY,
+            JsonArray(
+                rules.map { rule ->
+                    JsonObject(
+                        mapOf(
+                            ID_KEY to JsonPrimitive(rule.id),
+                            NAME_KEY to JsonPrimitive(rule.name),
+                            TARGET_KEY to JsonPrimitive(rule.target.name),
+                            ENABLED_KEY to JsonPrimitive(rule.enabled),
+                            PATTERNS_KEY to JsonArray(
+                                rule.patterns
+                                    .map(String::trim)
+                                    .filter(String::isNotBlank)
+                                    .map(::JsonPrimitive)
+                            ),
+                        )
+                    )
+                }
+            ),
+        )
+    }
+
     fun parseBuiltinFlags(settings: LocalSettings): Map<String, Boolean> {
         return settings.builtinToolFlags
             ?.mapNotNull { (name, value) ->
@@ -313,6 +359,12 @@ internal object LocalSettingsCodec {
             ?: ExecutionRuleEnabledMode.DISABLED
     }
 
+    private fun JsonObject.takeoverTarget(): TakeoverTarget {
+        val value = string(TARGET_KEY)
+        return TakeoverTarget.entries.firstOrNull { it.name == value }
+            ?: TakeoverTarget.NEXUS
+    }
+
     private fun JsonObject.array(key: String): JsonArray? {
         return this[key] as? JsonArray
     }
@@ -350,6 +402,7 @@ internal object LocalSettingsCodec {
     private const val MEMORY_PROMPT_KEY = "memory_prompt"
     private const val MEMORIES_KEY = "memories"
     private const val TAKEOVER_KEYWORDS_KEY = "takeover_keywords"
+    private const val TAKEOVER_RULES_KEY = "takeover_rules"
     private const val MCP_SERVERS_KEY = "mcp_servers"
     private const val MCP_CACHE_KEY = "mcp_discovered_tools_cache"
     private const val CUSTOM_TOOLS_KEY = "custom_tools"
@@ -366,5 +419,6 @@ internal object LocalSettingsCodec {
     private const val DESCRIPTION_KEY = "description"
     private const val COMMAND_KEY = "command"
     private const val ENABLED_MODE_KEY = "enabled_mode"
+    private const val TARGET_KEY = "target"
     private const val PATTERNS_KEY = "patterns"
 }

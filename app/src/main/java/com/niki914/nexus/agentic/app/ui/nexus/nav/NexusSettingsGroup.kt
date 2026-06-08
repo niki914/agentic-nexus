@@ -33,6 +33,11 @@ enum class NexusSettingsGroup(
         summaryRes = R.string.ui_settings_mcp_summary,
         routeSuffix = "mcp",
     ),
+    Takeover(
+        titleRes = R.string.ui_settings_takeover,
+        summaryRes = R.string.ui_settings_takeover_summary,
+        routeSuffix = "takeover",
+    ),
     ExecutionRules(
         titleRes = R.string.ui_settings_execution_rules,
         summaryRes = R.string.ui_settings_execution_rules_summary,

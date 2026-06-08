@@ -5,7 +5,6 @@ import com.niki914.nexus.agentic.chat.ConversationTurnState
 import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.TurnMode
 import com.niki914.nexus.agentic.chat.collectAsFull
-import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.mod.feat.AbstractAssistantHook
 import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.BlockNativeCardHook
 import com.niki914.nexus.agentic.mod.feat.oppo.subhooks.CaptureInputHook
@@ -50,12 +49,6 @@ class BreenoChatHook(scope: CoroutineScope) : AbstractAssistantHook(scope) {
         super.onSessionReset()
         LLMController.resetConversation()
         clearRenderSession()
-    }
-
-    override fun shouldTakeOver(query: String): Boolean {
-        return HookLocalSettings.current().takeoverKeywords.any { keyword ->
-            keyword.isNotBlank() && query.contains(keyword)
-        }
     }
 
     override fun installSessionHooks(lpparam: XC_LoadPackage.LoadPackageParam) {

@@ -1,16 +1,8 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -23,13 +15,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsSegmentedSelector
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsDetailFormScaffold
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
@@ -201,41 +193,13 @@ private fun ExecutionRuleEnabledModeSection(
     selectedMode: RuntimeExecutionRuleEnabledMode,
     onModeSelected: (RuntimeExecutionRuleEnabledMode) -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.execution_rules_field_enabled_mode),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        SingleChoiceSegmentedButtonRow(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            val options = RuntimeExecutionRuleEnabledMode.entries
-            options.forEachIndexed { index, option ->
-                SegmentedButton(
-                    selected = option == selectedMode,
-                    onClick = { onModeSelected(option) },
-                    shape = SegmentedButtonDefaults.itemShape(
-                        index = index,
-                        count = options.size,
-                    ),
-                    label = {
-                        Text(
-                            text = stringResource(option.labelRes()),
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                )
-            }
-        }
-    }
+    SettingsSegmentedSelector(
+        title = stringResource(R.string.execution_rules_field_enabled_mode),
+        options = RuntimeExecutionRuleEnabledMode.entries,
+        selected = selectedMode,
+        label = { option -> stringResource(option.labelRes()) },
+        onSelected = onModeSelected,
+    )
 }
 
 @Composable

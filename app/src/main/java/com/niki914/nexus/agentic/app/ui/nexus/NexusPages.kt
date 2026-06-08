@@ -14,6 +14,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.ProviderPickPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsHomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.StartupPage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.TakeoverRuleDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.route.ConfigurePageRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.CustomToolDetailRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.DonePageRoute
@@ -24,6 +25,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.route.ProviderPickPageRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.SettingsDetailPageRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.SettingsHomePageRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.StartupPageRoute
+import com.niki914.nexus.agentic.app.ui.nexus.route.TakeoverRuleDetailRoute
 
 @Composable
 fun NexusPageContent(
@@ -72,6 +74,11 @@ fun NexusPageContent(
         )
 
         is ExecutionRuleDetailPage -> ExecutionRuleDetailRoute(
+            page = page,
+            onBack = onPop,
+        )
+
+        is TakeoverRuleDetailPage -> TakeoverRuleDetailRoute(
             page = page,
             onBack = onPop,
         )

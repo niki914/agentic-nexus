@@ -15,6 +15,10 @@ import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRuleEnab
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeTakeoverRule as TakeoverRule
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeTakeoverRuleValidation as TakeoverRuleValidation
+import com.niki914.nexus.agentic.runtime.settings.model.TAKEOVER_FIELD_NAME
+import com.niki914.nexus.agentic.runtime.settings.model.TAKEOVER_FIELD_PATTERNS
 
 object XRepo {
     val mcp: McpApi = McpApi(this)
@@ -23,6 +27,7 @@ object XRepo {
     val memory: MemoryApi = MemoryApi(this)
     val web: WebSettingsApi = WebSettingsApi(this)
     val executionRules: ExecutionRulesApi = ExecutionRulesApi(this)
+    val takeoverRules: TakeoverRulesApi = TakeoverRulesApi(this)
 
     private val writeMutex = Mutex()
     private var appContext: Context? = null
@@ -251,6 +256,72 @@ class ExecutionRulesApi internal constructor(
             return LocalSettingsDefaults.defaultExecutionRules
         }
         return LocalSettingsCodec.parseExecutionRules(settings)
+    }
+}
+
+class TakeoverRulesApi internal constructor(
+    private val repo: XRepo,
+) {
+    suspend fun list(): List<TakeoverRule> {
+        return LocalSettingsCodec.parseTakeoverRules(repo.readLocal())
+    }
+
+    suspend fun get(id: String): TakeoverRule? {
+        return list().firstOrNull { it.id == id }
+    }
+
+    suspend fun replace(previousId: String?, rule: TakeoverRule) {
+        repo.updateLocal { settings ->
+            val rules = LocalSettingsCodec.parseTakeoverRules(settings)
+            val withoutPrevious = if (previousId != null && previousId != rule.id) {
+                rules.filterNot { it.id == previousId }
+            } else {
+                rules
+            }
+            val updated = if (withoutPrevious.any { it.id == rule.id }) {
+                withoutPrevious.map { if (it.id == rule.id) rule else it }
+            } else {
+                withoutPrevious + rule
+            }
+            LocalSettingsCodec.withTakeoverRules(settings, updated)
+        }
+    }
+
+    suspend fun delete(id: String) {
+        repo.updateLocal { settings ->
+            LocalSettingsCodec.withTakeoverRules(
+                settings = settings,
+                rules = LocalSettingsCodec.parseTakeoverRules(settings).filterNot { it.id == id },
+            )
+        }
+    }
+
+    suspend fun setEnabled(id: String, enabled: Boolean) {
+        repo.updateLocal { settings ->
+            LocalSettingsCodec.withTakeoverRules(
+                settings = settings,
+                rules = LocalSettingsCodec.parseTakeoverRules(settings).map { rule ->
+                    if (rule.id == id) rule.copy(enabled = enabled) else rule
+                },
+            )
+        }
+    }
+
+    fun validate(rule: TakeoverRule): List<TakeoverRuleValidation> {
+        val errors = mutableListOf<TakeoverRuleValidation>()
+        if (rule.name.trim().isBlank()) {
+            errors += TakeoverRuleValidation(
+                field = TAKEOVER_FIELD_NAME,
+                message = "Required field 'name' is missing.",
+            )
+        }
+        if (rule.patterns.map(String::trim).filter(String::isNotBlank).isEmpty()) {
+            errors += TakeoverRuleValidation(
+                field = TAKEOVER_FIELD_PATTERNS,
+                message = "At least one takeover pattern is required.",
+            )
+        }
+        return errors
     }
 }
 

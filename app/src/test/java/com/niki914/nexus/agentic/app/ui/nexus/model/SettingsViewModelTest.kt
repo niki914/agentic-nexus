@@ -17,7 +17,7 @@ class SettingsViewModelTest {
             )
         )
 
-        assertEquals(3, state.sections.size)
+        assertEquals(2, state.sections.size)
         assertEquals(
             listOf(NexusSettingsGroup.ModelConfig),
             state.sections[0].groups,
@@ -26,12 +26,10 @@ class SettingsViewModelTest {
             listOf(
                 NexusSettingsGroup.BuiltinTools,
                 NexusSettingsGroup.CustomShellTools,
+                NexusSettingsGroup.Takeover,
+                NexusSettingsGroup.ExecutionRules,
             ),
             state.sections[1].groups,
-        )
-        assertEquals(
-            listOf(NexusSettingsGroup.ExecutionRules),
-            state.sections[2].groups,
         )
     }
 
@@ -45,6 +43,7 @@ class SettingsViewModelTest {
         assertTrue(state.isGroupVisible(NexusSettingsGroup.BuiltinTools))
         assertTrue(state.isGroupVisible(NexusSettingsGroup.CustomShellTools))
         assertTrue(state.isGroupVisible(NexusSettingsGroup.Mcp))
+        assertTrue(state.isGroupVisible(NexusSettingsGroup.Takeover))
         assertTrue(state.isGroupVisible(NexusSettingsGroup.ExecutionRules))
         assertTrue(state.isGroupVisible(NexusSettingsGroup.About))
     }

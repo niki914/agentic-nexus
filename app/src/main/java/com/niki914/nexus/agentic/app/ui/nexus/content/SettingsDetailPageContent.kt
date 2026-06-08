@@ -11,6 +11,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.ExecutionRuleDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusSettingsGroup
+import com.niki914.nexus.agentic.app.ui.nexus.nav.TakeoverRuleDetailPage
 
 @Composable
 fun SettingsDetailPageContent(
@@ -62,6 +63,22 @@ fun SettingsDetailPageContent(
 
     if (group == NexusSettingsGroup.Memory) {
         MemorySettingsContent()
+        return
+    }
+
+    if (group == NexusSettingsGroup.Takeover) {
+        TakeoverSettingsContent(
+            onOpenRuleDetail = { id, name, index, isCreating ->
+                onPush(
+                    TakeoverRuleDetailPage(
+                        ruleId = id,
+                        ruleName = name,
+                        ruleIndex = index,
+                        isCreating = isCreating,
+                    )
+                )
+            },
+        )
         return
     }
 

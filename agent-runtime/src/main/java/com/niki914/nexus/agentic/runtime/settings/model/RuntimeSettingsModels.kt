@@ -51,6 +51,27 @@ data class RuntimeExecutionRule(
     val patterns: List<String>,
 )
 
+enum class RuntimeTakeoverTarget {
+    NATIVE_ASSISTANT,
+    NEXUS,
+}
+
+data class RuntimeTakeoverRule(
+    val id: String,
+    val name: String,
+    val target: RuntimeTakeoverTarget,
+    val enabled: Boolean = true,
+    val patterns: List<String>,
+)
+
+const val TAKEOVER_FIELD_NAME: String = "name"
+const val TAKEOVER_FIELD_PATTERNS: String = "patterns"
+
+data class RuntimeTakeoverRuleValidation(
+    val field: String,
+    val message: String,
+)
+
 data class RuntimeCustomToolValidation(
     val field: String,
     val message: String,

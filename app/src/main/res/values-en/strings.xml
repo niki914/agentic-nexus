@@ -81,6 +81,8 @@
     <string name="ui_settings_custom_shell_tools_summary">Wrap common commands as tools your Agent can use</string>
     <string name="ui_settings_mcp">MCP</string>
     <string name="ui_settings_mcp_summary">Connect external MCP services and tools</string>
+    <string name="ui_settings_takeover">Takeover Rules</string>
+    <string name="ui_settings_takeover_summary">Route matched requests to the native assistant or Nexus</string>
     <string name="ui_settings_execution_rules">Execution Rules</string>
     <string name="ui_settings_execution_rules_summary">Set safety rules for Shell execution</string>
     <string name="ui_settings_about">About</string>
@@ -143,6 +145,35 @@
     <string name="execution_rules_field_patterns_hint">For example: \brm\s+-rf\b</string>
     <string name="execution_rules_field_patterns_description">Enter one keyword or regular expression per line. The command is blocked as soon as any rule matches.</string>
     <string name="execution_rules_save_action">Save Rule</string>
+
+    <!-- Takeover Module -->
+    <string name="takeover_page_description">Check rules in order and choose who should respond.</string>
+    <string name="takeover_empty_action_hint">Tap the top right to add your first takeover rule.</string>
+    <string name="takeover_loading">Loading takeover rules...</string>
+    <string name="takeover_editor_title_create">New Takeover Rule</string>
+    <string name="takeover_editor_description">Choose which requests go to the native assistant and which stay with Nexus.</string>
+    <string name="takeover_field_name">Rule Name</string>
+    <string name="takeover_field_name_hint">For example: Native assistant services</string>
+    <string name="takeover_field_enabled">Enable Rule</string>
+    <string name="takeover_field_target">Responder When Matched</string>
+    <string name="takeover_target_native_assistant">Native Assistant</string>
+    <string name="takeover_target_nexus">Nexus</string>
+    <string name="takeover_field_patterns">Rules</string>
+    <string name="takeover_field_patterns_hint">weather\n.*alarm.*\nopen.*</string>
+    <string name="takeover_field_patterns_description">Enter one keyword or regular expression per line. The selected responder is used as soon as any rule matches.</string>
+    <string name="takeover_save_action">Save Rule</string>
+    <string name="takeover_rule_enabled">Enabled</string>
+    <string name="takeover_rule_disabled">Disabled</string>
+    <string name="takeover_rule_summary_more"> and %1$d total</string>
+    <string name="takeover_error_name_required">Please enter a rule name</string>
+    <string name="takeover_error_patterns_required">Please enter at least one pattern</string>
+    <string name="takeover_error_load_failed_generic">Failed to load takeover rules</string>
+    <string name="takeover_error_load_failed">Failed to load takeover rules: %1$s</string>
+    <string name="takeover_error_save_failed_generic">Failed to save takeover rules</string>
+    <string name="takeover_error_save_failed">Failed to save takeover rules: %1$s</string>
+    <string name="takeover_error_delete_failed_generic">Failed to delete takeover rules</string>
+    <string name="takeover_error_delete_failed">Failed to delete takeover rules: %1$s</string>
+    <string name="takeover_save_failed">Failed to save: %1$s</string>
 
     <!-- Builtin Tool Module -->
     <string name="builtin_tool_page_description">Turn preset built-in tools on or off. Changes take effect in the next conversation.</string>

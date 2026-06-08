@@ -124,6 +124,20 @@ data class ExecutionRuleDetailPage(
     override val rightAction: TopBarActionSpec? = null
 }
 
+data class TakeoverRuleDetailPage(
+    val ruleId: String?,
+    val ruleName: String,
+    val ruleIndex: Int,
+    val isCreating: Boolean = false,
+) : NexusPage {
+    override val routeKey: String = "takeover-rule-detail:${ruleId ?: "new"}:$ruleIndex:$ruleName"
+    override val titleSpec: PageTitleSpec = TextTitle(ruleName)
+    override val leftAction: TopBarActionSpec =
+        TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
+    override val rightAction: TopBarActionSpec? =
+        if (isCreating) null else TopBarActionSpec(Icons.Default.Delete)
+}
+
 data class CustomToolDetailPage(
     val toolName: String,
     val toolIndex: Int,
