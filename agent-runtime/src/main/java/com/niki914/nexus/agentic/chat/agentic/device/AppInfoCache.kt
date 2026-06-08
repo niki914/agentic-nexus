@@ -34,8 +34,13 @@ object AppInfoMatcher {
             return AppMatchResult.NotFound
         }
 
-        apps.firstOrNull { it.appName.lowercase() == query }
-            ?.let { return AppMatchResult.Found(it) }
+        val exactMatches = apps.filter { it.appName.lowercase() == query }
+        if (exactMatches.isNotEmpty()) {
+            return when (exactMatches.size) {
+                1 -> AppMatchResult.Found(exactMatches.first())
+                else -> AppMatchResult.Candidates(exactMatches)
+            }
+        }
 
         val candidates = apps.filter { it.appName.lowercase().contains(query) }
         return when (candidates.size) {
