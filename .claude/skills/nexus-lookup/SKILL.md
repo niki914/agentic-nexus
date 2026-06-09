@@ -26,12 +26,15 @@ Do not use this skill for trivial questions that can be answered from one alread
 
 ## Retrieval Protocol
 
-1. Read `index.md` first.
+Wiki root: `wiki/`
+
+1. Read `wiki/index.md` first.
 2. Match the current task against the `检索建议` table.
 3. Read only the recommended documents in order.
-4. Prefer wiki facts first, then inspect source files through the relative paths recorded in the docs.
-5. If wiki and source diverge, trust source code for current implementation and treat design docs as intent only.
-6. Keep the final lookup report concise and continue the actual task after routing is complete.
+4. Treat child document paths listed in `wiki/index.md` as relative to `wiki/` unless the page explicitly marks them as repo root docs.
+5. Prefer wiki facts first, then inspect source files through the relative paths recorded in the docs.
+6. If wiki and source diverge, trust source code for current implementation and treat design docs as intent only.
+7. Keep the final lookup report concise and continue the actual task after routing is complete.
 
 ## Output Format
 
@@ -55,7 +58,7 @@ Use a short lookup report in this shape:
 
 ## Hard Rules
 
-- Always read `index.md` before reading any subdocument.
+- Always read `wiki/index.md` before reading any subdocument.
 - DO NOT read `docs/.asc_task/` or treat task docs as proof of implementation.
 - ALWAYS trust source code for current implementation over design documents.
 - Do not paste large code blocks into lookup reports.
@@ -72,7 +75,7 @@ Use these tiers while reading:
 
 ## Common Mistakes
 
-- jumping directly into grep without reading `index.md`
+- jumping directly into grep without reading `wiki/index.md`
 - attempting to read or parse `docs/.asc_task/` files instead of relying on actual source code
 - treating design documents as the final source of truth instead of trusting the source code
 - copying code into wiki instead of pointing to source paths

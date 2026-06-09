@@ -21,7 +21,7 @@ Nexus 是一个 Android Xposed 模块，当前面向两条宿主分支：
 ## 首选模式
 
 - 需要项目上下文、架构事实、源码入口、能力现状时，优先进入 `nexus-lookup`
-- 在 `nexus-lookup` 模式下，先读 `index.md`，按检索建议路由，再看对应源码
+- 在 `nexus-lookup` 模式下，先读 `wiki/index.md`，按检索建议路由，再看对应源码
 - 若 wiki 与源码冲突，以源码为准
 
 ## Skill 路由

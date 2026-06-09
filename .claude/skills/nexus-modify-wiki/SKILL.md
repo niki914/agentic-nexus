@@ -7,15 +7,15 @@ description: Use when updating or adding `nexus-lookup` wiki pages, especially a
 
 ## Overview
 
-这个 skill 用于修改 `nexus-lookup` 下的 wiki 文档，目标是让文档持续反映**当前源码事实**，而不是继续累积过时设计、失效引用和写作者视角的噪音。
+这个 skill 用于修改 `wiki/` 下的 `nexus-lookup` 仓库 wiki 文档，目标是让文档持续反映**当前源码事实**，而不是继续累积过时设计、失效引用和写作者视角的噪音。
 
-它不是通用文档美化器。它只服务于 `nexus-lookup` 这套仓库内 wiki。
+它不是通用文档美化器。它只服务于 `wiki/` 这套仓库内 wiki。
 
 ## When to Use
 
 在以下场景使用：
 
-- 新增或重写 `nexus-lookup` 下的任意 wiki 文档
+- 新增或重写 `wiki/` 下的任意 wiki 文档
 - 代码已变化，需要同步 wiki 里的路径、状态或术语
 - 审稿后需要统一清理失效引用、过期设计痕迹、重复膨胀内容
 - 发现 wiki 把“半落地”写成“已落地”，或把 PRD 写成既成事实
@@ -31,7 +31,7 @@ description: Use when updating or adding `nexus-lookup` wiki pages, especially a
 
 - **REQUIRED SKILL:** 先加载 `Prompt Engineering`
 - **REQUIRED SKILL:** 再加载 `nexus-lookup`
-- 必须先读 `nexus-lookup/index.md`
+- 必须先读 `wiki/index.md`
 - 只读当前目标文档及其对应源码入口，不顺手扩写无关页面
 
 ## Core Rules
@@ -100,7 +100,7 @@ wiki 面向读者，不面向下一位写文档的人。
 
 ## Editing Workflow
 
-1. 读 `nexus-lookup/index.md`，确认应该改哪一篇，不扩散
+1. 读 `wiki/index.md`，确认应该改哪一篇，不扩散
 2. 读目标文档，圈出以下问题：
    - 路径不规范
    - 引用失效
@@ -112,15 +112,15 @@ wiki 面向读者，不面向下一位写文档的人。
 4. 删除失效信息，不保留“历史包袱”
 5. 用项目根相对路径、统一术语、细粒度状态重写正文
 6. 如果改动会影响相邻索引页或状态页，同步检查：
-   - `index.md`
-   - `overview/current-status.md`
-   - `reference/source-map.md`
-   - `reference/task-docs-registry.md`
+   - `wiki/index.md`
+   - `wiki/overview/current-status.md`
+   - `wiki/reference/source-map.md`
+   - `wiki/reference/task-docs-registry.md`
 7. 交付前做一次全文自检
 
 ## Rewrite Checklist
 
-- 已读 `index.md`
+- 已读 `wiki/index.md`
 - 已确认目标文档所属分区和职责边界
 - 每个“当前/已落地/实际/会”断言都能回指源码
 - 不含 `docs/.asc_task/`
