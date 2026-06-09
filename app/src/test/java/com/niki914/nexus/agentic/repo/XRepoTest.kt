@@ -44,6 +44,10 @@ class XRepoTest {
             LocalSettingsDefaults.DEFAULT_SYSTEM_PROMPT.trimIndent(),
             store.settings.prompt
         )
+        assertEquals(
+            LocalSettingsDefaults.defaultMemories,
+            LocalSettingsCodec.parseMemories(store.settings),
+        )
         assertEquals("", store.settings.endpoint)
         assertEquals("", store.settings.apiKey)
         assertEquals("", store.settings.model)

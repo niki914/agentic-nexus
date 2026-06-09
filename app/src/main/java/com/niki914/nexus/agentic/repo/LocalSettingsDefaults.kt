@@ -36,6 +36,15 @@ internal object LocalSettingsDefaults {
     </examples>
     """
 
+    val defaultMemories = listOf(
+        "Nexus 的 LocalSettings 文件实际位置是 /data/user/0/com.niki914.nexus.agentic/files/local_settings.json。",
+        "Nexus 自己的包名是 com.niki914.nexus.agentic。",
+        "Nexus 的 GitHub 仓库地址是 https://github.com/niki914/agentic-nexus 。",
+        "Nexus 的最新发布地址是 https://github.com/niki914/agentic-nexus/releases/latest 。",
+        "如果用户需要备份 LocalSettings，可以导出 local_settings.json，并在恢复时重新覆盖目标文件。",
+        "不要随意修改 LocalSettings 内容；如果没有明确需要，不要去读取它的内容，因为数据量可能很大。",
+    )
+
     private val defaultCustomTools = listOf(
         RuntimeCustomTool(
             name = "launch_wechat",
@@ -76,9 +85,12 @@ internal object LocalSettingsDefaults {
     fun applyTo(settings: LocalSettings): LocalSettings {
         return LocalSettingsCodec.withExecutionRules(
             settings = LocalSettingsCodec.withCustomTools(
-                settings = LocalSettingsCodec.withPrompt(
-                    settings = settings,
-                    prompt = DEFAULT_SYSTEM_PROMPT.trimIndent(),
+                settings = LocalSettingsCodec.withMemories(
+                    settings = LocalSettingsCodec.withPrompt(
+                        settings = settings,
+                        prompt = DEFAULT_SYSTEM_PROMPT.trimIndent(),
+                    ),
+                    memories = defaultMemories,
                 ),
                 tools = defaultCustomTools,
             ),
