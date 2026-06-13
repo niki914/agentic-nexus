@@ -58,16 +58,30 @@ class WebSettingsApi internal constructor(
     }
 
     suspend fun retry(): WebSettingsResult {
+        val maxRetries = 4
+        var delayMs = 250L
+
         return mutex.withLock {
             val context = repo.context()
             val target = resolveTarget(context)
                 ?: return@withLock WebSettingsResult.RequestFailed(WebSettingsFailureReason.UnsupportedVersion)
-            
-            val result = refreshFromNetwork(context, target)
-            if (result is WebSettingsResult.Success) {
-                cachedSuccess = result
+
+            var lastResult: WebSettingsResult? = null
+            repeat(maxRetries) { attempt ->
+                val result = refreshFromNetwork(context, target)
+                if (result is WebSettingsResult.Success) {
+                    cachedSuccess = result
+                    return@withLock result
+                }
+                lastResult = result
+
+                if (attempt < maxRetries - 1) {
+                    delay(delayMs)
+                    delayMs *= 2
+                }
             }
-            result
+
+            lastResult!!
         }
     }
 
