@@ -103,7 +103,12 @@ internal fun StartupPageRoute(
                     WebSettingsFailureReason.ServerError,
                     WebSettingsFailureReason.UnsupportedVersion,
                     WebSettingsFailureReason.InvalidConfig -> StartupWebSettingsDialog.FetchFailed
+                    WebSettingsFailureReason.IpcUnreachable -> StartupWebSettingsDialog.NetworkError
                 }
+            }
+
+            is WebSettingsResult.IpcUnreachable -> { // Not gonna happened
+                webSettingsDialog = StartupWebSettingsDialog.NetworkError
             }
         }
     }

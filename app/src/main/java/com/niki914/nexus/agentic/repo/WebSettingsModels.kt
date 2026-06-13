@@ -17,6 +17,8 @@ sealed interface WebSettingsResult {
         val cause: Throwable? = null,
     ) : WebSettingsResult
 
+    data object IpcUnreachable : WebSettingsResult
+
     fun configOrNull(): JsonObject? = (this as? Success)?.settings?.config
 }
 
@@ -30,6 +32,7 @@ enum class WebSettingsFailureReason {
     ServerError,
     UnsupportedVersion,
     InvalidConfig,
+    IpcUnreachable,
 }
 
 object WebSettingsVersionFallback {

@@ -2,6 +2,7 @@ package com.niki914.nexus.agentic.runtime
 
 import com.niki914.nexus.agentic.runtime.settings.RuntimeHostGateway
 import com.niki914.nexus.h.util.ContextProvider
+import com.niki914.nexus.ipc.IpcWriteResult
 import com.niki914.nexus.ipc.XIpcBridge
 
 class IpcRuntimeHostGateway : RuntimeHostGateway {
@@ -15,6 +16,6 @@ class IpcRuntimeHostGateway : RuntimeHostGateway {
             title = title,
             content = content,
             uri = uri,
-        )
+        ) is IpcWriteResult.Success
     }
 }

@@ -3,6 +3,7 @@ package com.niki914.nexus.ipc
 import android.content.Context
 import android.os.Bundle
 import com.niki914.nexus.ipc.store.XIpcStoreRepository
+import java.io.FileNotFoundException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -11,7 +12,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * `XIpcBridge` 是 `:ipc` 对外暴露的统一桥接入口，用来把“同一套能力在两个进程里运行”
+ * `XIpcBridge` 是 `:ipc` 对外暴露的统一桥接入口，用来把"同一套能力在两个进程里运行"
  * 这件事压平到调用方几乎无感。
  *
  * 当前工程里，同一份业务代码会同时运行在两个 App / 进程中：
@@ -27,15 +28,15 @@ import org.json.JSONObject
  * - 如果传入的是宿主 `Context`，就走 `ContentResolver.call()` 把请求转发给 Nexus
  * - 如果传入的是 Nexus `Context`，就直接调用本地 helper 完成持久化或通知
  *
- * 这样调用方只需要记住一条规则：始终把“当前手里的 `Context`”传进来即可，不需要自己关心
+ * 这样调用方只需要记住一条规则：始终把"当前手里的 `Context`"传进来即可，不需要自己关心
  * 现在是不是宿主进程、是否要走 provider、最终是谁在执行落盘或发通知。
  *
  * 额外约束：
- * - 本类只负责“路由”和少量 JSON 级别的读改写，不负责业务模型转换
+ * - 本类只负责"路由"和少量 JSON 级别的读改写，不负责业务模型转换
  * - `XService` 之类的高层 facade 应该依赖本类，而不是直接碰 `ContentResolver.call()`
  * - `SettingsContentProvider` 仍然只是 IPC 边界；它负责分发，真正执行仍然下沉到 helper
  *
- * 设计意图是把“宿主多绕一跳、主 App 直接执行”统一成同一个 API 面，从而让跨进程和单进程
+ * 设计意图是把"宿主多绕一跳、主 App 直接执行"统一成同一个 API 面，从而让跨进程和单进程
  * 的代码路径在语义上保持一致。
  */
 object XIpcBridge {
@@ -44,40 +45,48 @@ object XIpcBridge {
     private var cachedWebSettingsJson: String? = null
     private val webSettingsCacheMutex = Mutex()
 
-    suspend fun readWebSettingsJson(context: Context): String {
+    private sealed interface IpcCallResult {
+        data class Success(val bundle: Bundle?) : IpcCallResult
+        data object Unreachable : IpcCallResult
+    }
+
+    suspend fun readWebSettingsJson(context: Context): IpcReadResult {
         return readJson(context, IpcContract.Store.WEB_SETTINGS)
     }
 
-    suspend fun writeWebSettingsJson(context: Context, json: String) {
-        writeJson(context, IpcContract.Store.WEB_SETTINGS, json)
+    suspend fun writeWebSettingsJson(context: Context, json: String): IpcWriteResult {
+        return writeJson(context, IpcContract.Store.WEB_SETTINGS, json)
     }
 
-    suspend fun writeWebSetting(context: Context, key: String, value: Any?) {
-        mutateSetting(context, IpcContract.Store.WEB_SETTINGS, key, value)
+    suspend fun writeWebSetting(context: Context, key: String, value: Any?): IpcMutateResult {
+        return mutateSetting(context, IpcContract.Store.WEB_SETTINGS, key, value)
     }
 
-    suspend fun readLocalSettingsJson(context: Context): String {
+    suspend fun readLocalSettingsJson(context: Context): IpcReadResult {
         return readJson(context, IpcContract.Store.LOCAL_SETTINGS)
     }
 
-    suspend fun writeLocalSettingsJson(context: Context, json: String) {
-        writeJson(context, IpcContract.Store.LOCAL_SETTINGS, json)
+    suspend fun writeLocalSettingsJson(context: Context, json: String): IpcWriteResult {
+        return writeJson(context, IpcContract.Store.LOCAL_SETTINGS, json)
     }
 
-    suspend fun writeLocalSetting(context: Context, key: String, value: Any?) {
-        mutateSetting(context, IpcContract.Store.LOCAL_SETTINGS, key, value)
+    suspend fun writeLocalSetting(context: Context, key: String, value: Any?): IpcMutateResult {
+        return mutateSetting(context, IpcContract.Store.LOCAL_SETTINGS, key, value)
     }
 
     suspend fun readJson(
         context: Context,
         store: IpcContract.Store
-    ): String {
+    ): IpcReadResult {
         if (store == IpcContract.Store.WEB_SETTINGS) {
-            cachedWebSettingsJson?.let { return it }
+            cachedWebSettingsJson?.let { return IpcReadResult.Success(it) }
             return webSettingsCacheMutex.withLock {
-                cachedWebSettingsJson ?: readStoreJsonUncached(context, store).also {
-                    cachedWebSettingsJson = it
+                cachedWebSettingsJson?.let { return@withLock IpcReadResult.Success(it) }
+                val result = readStoreJsonUncached(context, store)
+                if (result is IpcReadResult.Success) {
+                    cachedWebSettingsJson = result.json
                 }
+                result
             }
         }
         return readStoreJsonUncached(context, store)
@@ -87,22 +96,19 @@ object XIpcBridge {
         context: Context,
         store: IpcContract.Store,
         json: String
-    ) {
-        val writeSucceeded = if (shouldUseProvider(context)) {
+    ): IpcWriteResult {
+        val result = if (shouldUseProvider(context)) {
             withContext(Dispatchers.IO) {
-                writeJsonViaProvider(
-                    context = context,
-                    store = store,
-                    json = json
-                )
+                writeJsonViaProvider(context, store, json)
             }
         } else {
             XIpcStoreRepository.writeJson(context, store, json)
-            true
+            IpcWriteResult.Success
         }
-        if (writeSucceeded) {
+        if (result is IpcWriteResult.Success) {
             updateWebCacheIfNeeded(store, json)
         }
+        return result
     }
 
     suspend fun mutateSetting(
@@ -110,27 +116,25 @@ object XIpcBridge {
         store: IpcContract.Store,
         key: String,
         value: Any?
-    ): String {
+    ): IpcMutateResult {
         val valueJson = serializeValue(value)
-        val updatedJson = if (shouldUseProvider(context)) {
+        val result = if (shouldUseProvider(context)) {
             withContext(Dispatchers.IO) {
-                mutateJsonViaProvider(
-                    context = context,
-                    store = store,
-                    key = key,
-                    valueJson = valueJson
-                )
+                mutateJsonViaProvider(context, store, key, valueJson)
             }
         } else {
-            XIpcStoreRepository.mutateJson(
+            val updatedJson = XIpcStoreRepository.mutateJson(
                 context = context,
                 store = store,
                 path = key,
                 valueJson = valueJson
             )
+            IpcMutateResult(IpcWriteResult.Success, updatedJson)
         }
-        updateWebCacheIfNeeded(store, updatedJson)
-        return updatedJson
+        if (result.writeResult is IpcWriteResult.Success && result.updatedJson != null) {
+            updateWebCacheIfNeeded(store, result.updatedJson)
+        }
+        return result
     }
 
     suspend fun postNotification(
@@ -138,9 +142,9 @@ object XIpcBridge {
         title: String,
         content: String,
         uri: String?
-    ): Boolean {
+    ): IpcWriteResult {
         return if (shouldUseProvider(context)) {
-            val bundle = withContext(Dispatchers.IO) {
+            val result = withContext(Dispatchers.IO) {
                 callProvider(
                     context = context,
                     method = IpcContract.Method.POST_NOTIFICATION,
@@ -151,44 +155,54 @@ object XIpcBridge {
                     )
                 )
             }
-            bundle?.readBoolean(IpcContract.Field.SUCCESS) == true
+            when (result) {
+                is IpcCallResult.Success -> {
+                    if (result.bundle?.readBoolean(IpcContract.Field.SUCCESS) == true) {
+                        IpcWriteResult.Success
+                    } else {
+                        IpcWriteResult.Unreachable
+                    }
+                }
+                is IpcCallResult.Unreachable -> IpcWriteResult.Unreachable
+            }
         } else {
             withContext(Dispatchers.IO) {
                 XNotificationBridge.post(context, title, content, uri)
-                true
             }
+            IpcWriteResult.Success
         }
     }
 
     private suspend fun readStoreJsonUncached(
         context: Context,
         store: IpcContract.Store
-    ): String {
+    ): IpcReadResult {
         return if (shouldUseProvider(context)) {
             withContext(Dispatchers.IO) {
                 readJsonViaProviderFile(context, store)
             }
         } else {
-            XIpcStoreRepository.readJson(context, store)
+            IpcReadResult.Success(XIpcStoreRepository.readJson(context, store))
         }
     }
 
     private fun readJsonViaProviderFile(
         context: Context,
         store: IpcContract.Store
-    ): String {
+    ): IpcReadResult {
         return try {
-            val json = context.contentResolver.openInputStream(store.fileUri)
-                ?.bufferedReader(Charsets.UTF_8)
-                ?.use { it.readText() }
-
-            if (json.isNullOrBlank()) {
-                EMPTY_JSON
+            val inputStream = context.contentResolver.openInputStream(store.fileUri)
+                ?: return IpcReadResult.NotFound
+            val json = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            if (json.isBlank()) {
+                IpcReadResult.NotFound
             } else {
-                json
+                IpcReadResult.Success(json)
             }
-        } catch (t: Throwable) {
-            EMPTY_JSON
+        } catch (_: FileNotFoundException) {
+            IpcReadResult.Unreachable
+        } catch (_: SecurityException) {
+            IpcReadResult.Unreachable
         }
     }
 
@@ -196,13 +210,21 @@ object XIpcBridge {
         context: Context,
         store: IpcContract.Store,
         json: String
-    ): Boolean {
-        val success = callProvider(
+    ): IpcWriteResult {
+        return when (val result = callProvider(
             context = context,
             method = store.writeMethod,
             extras = ipcBundleOf(store.payloadField to json)
-        )?.readBoolean(IpcContract.Field.SUCCESS) == true
-        return success
+        )) {
+            is IpcCallResult.Success -> {
+                if (result.bundle?.readBoolean(IpcContract.Field.SUCCESS) == true) {
+                    IpcWriteResult.Success
+                } else {
+                    IpcWriteResult.Unreachable
+                }
+            }
+            is IpcCallResult.Unreachable -> IpcWriteResult.Unreachable
+        }
     }
 
     private fun mutateJsonViaProvider(
@@ -210,29 +232,42 @@ object XIpcBridge {
         store: IpcContract.Store,
         key: String,
         valueJson: String
-    ): String {
-        callProvider(
+    ): IpcMutateResult {
+        when (callProvider(
             context = context,
             method = store.mutateMethod,
             extras = ipcBundleOf(
                 IpcContract.Field.PATH to key,
                 IpcContract.Field.VALUE_JSON to valueJson
             )
-        )
-        return readJsonViaProviderFile(context, store)
+        )) {
+            is IpcCallResult.Unreachable -> return IpcMutateResult(IpcWriteResult.Unreachable, null)
+            is IpcCallResult.Success -> { /* continue to read back */ }
+        }
+        val readResult = readJsonViaProviderFile(context, store)
+        val json = (readResult as? IpcReadResult.Success)?.json ?: EMPTY_JSON
+        return IpcMutateResult(IpcWriteResult.Success, json)
     }
 
     private fun callProvider(
         context: Context,
         method: IpcContract.Method,
         extras: Bundle? = null
-    ): Bundle? {
-        return context.contentResolver.call(
-            IpcContract.CONTENT_URI,
-            method.wireName,
-            null,
-            extras
-        )
+    ): IpcCallResult {
+        return try {
+            IpcCallResult.Success(
+                context.contentResolver.call(
+                    IpcContract.CONTENT_URI,
+                    method.wireName,
+                    null,
+                    extras
+                )
+            )
+        } catch (_: IllegalArgumentException) {
+            IpcCallResult.Unreachable
+        } catch (_: SecurityException) {
+            IpcCallResult.Unreachable
+        }
     }
 
     private fun updateWebCacheIfNeeded(
