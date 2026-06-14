@@ -5,6 +5,7 @@ import android.os.Bundle
 import com.niki914.nexus.ipc.store.XIpcStoreRepository
 import java.io.FileNotFoundException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -186,27 +187,37 @@ object XIpcBridge {
         }
     }
 
-    private fun readJsonViaProviderFile(
+    private suspend fun readJsonViaProviderFile(
         context: Context,
         store: IpcContract.Store
     ): IpcReadResult {
-        return try {
-            val inputStream = context.contentResolver.openInputStream(store.fileUri)
-                ?: return IpcReadResult.NotFound
-            val json = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-            if (json.isBlank()) {
-                IpcReadResult.NotFound
-            } else {
-                IpcReadResult.Success(json)
+        var delayMs = 250L
+        repeat(4) { attempt ->
+            try {
+                val inputStream = context.contentResolver.openInputStream(store.fileUri)
+                    ?: return IpcReadResult.NotFound
+                val json = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                return if (json.isBlank()) {
+                    IpcReadResult.NotFound
+                } else {
+                    IpcReadResult.Success(json)
+                }
+            } catch (e: FileNotFoundException) {
+                return IpcReadResult.Unreachable
+            } catch (e: IllegalArgumentException) {
+                if (!e.isUnknownAuthority() || attempt == 3) {
+                    return IpcReadResult.Unreachable
+                }
+            } catch (_: SecurityException) {
+                return IpcReadResult.Unreachable
             }
-        } catch (_: FileNotFoundException) {
-            IpcReadResult.Unreachable
-        } catch (_: SecurityException) {
-            IpcReadResult.Unreachable
+            delay(delayMs)
+            delayMs *= 2
         }
+        return IpcReadResult.Unreachable
     }
 
-    private fun writeJsonViaProvider(
+    private suspend fun writeJsonViaProvider(
         context: Context,
         store: IpcContract.Store,
         json: String
@@ -227,7 +238,7 @@ object XIpcBridge {
         }
     }
 
-    private fun mutateJsonViaProvider(
+    private suspend fun mutateJsonViaProvider(
         context: Context,
         store: IpcContract.Store,
         key: String,
@@ -249,25 +260,37 @@ object XIpcBridge {
         return IpcMutateResult(IpcWriteResult.Success, json)
     }
 
-    private fun callProvider(
+    private suspend fun callProvider(
         context: Context,
         method: IpcContract.Method,
         extras: Bundle? = null
     ): IpcCallResult {
-        return try {
-            IpcCallResult.Success(
-                context.contentResolver.call(
-                    IpcContract.CONTENT_URI,
-                    method.wireName,
-                    null,
-                    extras
+        var delayMs = 250L
+        repeat(4) { attempt ->
+            try {
+                return IpcCallResult.Success(
+                    context.contentResolver.call(
+                        IpcContract.CONTENT_URI,
+                        method.wireName,
+                        null,
+                        extras
+                    )
                 )
-            )
-        } catch (_: IllegalArgumentException) {
-            IpcCallResult.Unreachable
-        } catch (_: SecurityException) {
-            IpcCallResult.Unreachable
+            } catch (e: IllegalArgumentException) {
+                if (!e.isUnknownAuthority() || attempt == 3) {
+                    return IpcCallResult.Unreachable
+                }
+            } catch (_: SecurityException) {
+                return IpcCallResult.Unreachable
+            }
+            delay(delayMs)
+            delayMs *= 2
         }
+        return IpcCallResult.Unreachable
+    }
+
+    private fun Throwable.isUnknownAuthority(): Boolean {
+        return message?.contains("Unknown authority", ignoreCase = true) == true
     }
 
     private fun updateWebCacheIfNeeded(
