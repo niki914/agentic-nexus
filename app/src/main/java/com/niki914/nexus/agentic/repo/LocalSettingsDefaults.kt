@@ -37,12 +37,10 @@ internal object LocalSettingsDefaults {
     """
 
     val defaultMemories = listOf(
-        "Nexus 的 LocalSettings 文件实际位置是 /data/user/0/com.niki914.nexus.agentic/files/local_settings.json。",
-        "Nexus 自己的包名是 com.niki914.nexus.agentic。",
-        "Nexus 的 GitHub 仓库地址是 https://github.com/niki914/agentic-nexus 。",
-        "Nexus 的最新发布地址是 https://github.com/niki914/agentic-nexus/releases/latest 。",
-        "如果用户需要备份 LocalSettings，可以导出 local_settings.json，并在恢复时重新覆盖目标文件。",
-        "不要随意修改 LocalSettings 内容；如果没有明确需要，不要去读取它的内容，因为数据量可能很大。",
+        "Nexus 的 settings 根目录是 /data/user/0/com.niki914.nexus.agentic/files/settings/。",
+        "Nexus 自己的包名是 com.niki914.nexus.agentic。GitHub 仓库地址是 https://github.com/niki914/agentic-nexus 。",
+        "如果用户需要备份设置，可以导出 files/settings/ 目录下的 JSON 文件，并在恢复时覆盖对应文件。",
+        "不要随意修改 settings 内容；如果没有明确需要，不要读取或改写这些 JSON 文件。",
     )
 
     private val defaultCustomTools = listOf(

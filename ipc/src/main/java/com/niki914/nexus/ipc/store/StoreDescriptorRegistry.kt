@@ -18,7 +18,7 @@ object StoreDescriptorRegistry {
     private val safeServerIdPattern = Regex("[a-zA-Z0-9_-]{1,64}")
 
     private val staticDescriptors = listOf(
-        StoreDescriptor(WEB_SETTINGS_ID, "web_settings.json"),
+        StoreDescriptor(WEB_SETTINGS_ID, "settings/hooks.json"),
         StoreDescriptor(LOCAL_SETTINGS_ID, "local_settings.json"),
         StoreDescriptor(AGENT_MAIN_CONFIG_ID, "settings/agents/main/config.json"),
         StoreDescriptor(

@@ -83,6 +83,15 @@ class XRepoTest {
     }
 
     @Test
+    fun defaultMemoriesDescribeDomainSettingsTree() {
+        val text = LocalSettingsDefaults.defaultMemories.joinToString(separator = "\n")
+
+        assertFalse(text.contains("local_settings.json"))
+        assertTrue(text.contains("files/settings"))
+        assertTrue(text.contains("com.niki914.nexus.agentic"))
+    }
+
+    @Test
     fun tryPutDefaultSettings_skipsWhenOnboardingIsCompleted() = runTest {
         val store = FakeLocalSettingsStore(
             LocalSettingsCodec.withBoolean(LocalSettings(), "onboarding_completed", true)
