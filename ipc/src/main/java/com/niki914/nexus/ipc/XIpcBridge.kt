@@ -1,6 +1,7 @@
 package com.niki914.nexus.ipc
 
 import android.content.Context
+import android.net.Uri
 import android.os.Bundle
 import com.niki914.nexus.ipc.store.StoreDescriptorRegistry
 import com.niki914.nexus.ipc.store.XIpcStoreRepository
@@ -143,23 +144,35 @@ object XIpcBridge {
         json: String
     ): IpcWriteResult {
         return withContext(Dispatchers.IO) {
-            try {
-                context.contentResolver
-                    .openOutputStream(IpcContract.storeFileUri(storeId), "wt")
-                    ?.use { output ->
-                        output.write(json.toByteArray(Charsets.UTF_8))
-                        output.flush()
+            var delayMs = 250L
+            repeat(4) { attempt ->
+                try {
+                    context.contentResolver
+                        .openOutputStream(IpcContract.storeFileUri(storeId), "wt")
+                        ?.use { output ->
+                            output.write(json.toByteArray(Charsets.UTF_8))
+                            output.flush()
+                        }
+                        ?: return@withContext IpcWriteResult.Unreachable
+                    return@withContext if (waitForProviderWrite(context, storeId, json)) {
+                        updateWebCacheIfNeeded(storeId, json)
+                        IpcWriteResult.Success
+                    } else {
+                        IpcWriteResult.Unreachable
                     }
-                    ?: return@withContext IpcWriteResult.Unreachable
-                if (waitForProviderWrite(context, storeId, json)) {
-                    updateWebCacheIfNeeded(storeId, json)
-                    IpcWriteResult.Success
-                } else {
-                    IpcWriteResult.Unreachable
+                } catch (e: IllegalArgumentException) {
+                    if (!e.isUnknownAuthority() || attempt == 3) {
+                        return@withContext IpcWriteResult.Unreachable
+                    }
+                } catch (_: SecurityException) {
+                    return@withContext IpcWriteResult.Unreachable
+                } catch (_: Exception) {
+                    return@withContext IpcWriteResult.Unreachable
                 }
-            } catch (_: Exception) {
-                IpcWriteResult.Unreachable
+                delay(delayMs)
+                delayMs *= 2
             }
+            IpcWriteResult.Unreachable
         }
     }
 
@@ -300,24 +313,11 @@ object XIpcBridge {
         }
     }
 
-    private fun readJsonViaProviderFile(
+    private suspend fun readJsonViaProviderFile(
         context: Context,
         store: IpcContract.Store
     ): IpcReadResult {
-        return try {
-            val inputStream = context.contentResolver.openInputStream(store.fileUri)
-                ?: return IpcReadResult.NotFound
-            val json = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-            if (json.isBlank()) {
-                IpcReadResult.NotFound
-            } else {
-                validatedProviderJson(store.storeId, json)
-            }
-        } catch (_: FileNotFoundException) {
-            IpcReadResult.NotFound
-        } catch (_: SecurityException) {
-            IpcReadResult.Unreachable
-        }
+        return readJsonViaProviderFile(context, store.fileUri, store.storeId)
     }
 
     private fun validatedProviderJson(
@@ -332,27 +332,45 @@ object XIpcBridge {
         }
     }
 
-    private fun readJsonViaProviderFile(
+    private suspend fun readJsonViaProviderFile(
         context: Context,
         storeId: String
     ): IpcReadResult {
-        return try {
-            val inputStream = context.contentResolver.openInputStream(IpcContract.storeFileUri(storeId))
-                ?: return IpcReadResult.NotFound
-            val json = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-            if (json.isBlank()) {
-                IpcReadResult.NotFound
-            } else {
-                validatedProviderJson(storeId, json)
-            }
-        } catch (_: FileNotFoundException) {
-            IpcReadResult.NotFound
-        } catch (_: SecurityException) {
-            IpcReadResult.Unreachable
-        }
+        return readJsonViaProviderFile(context, IpcContract.storeFileUri(storeId), storeId)
     }
 
-    private fun writeJsonViaProvider(
+    private suspend fun readJsonViaProviderFile(
+        context: Context,
+        uri: Uri,
+        storeId: String
+    ): IpcReadResult {
+        var delayMs = 250L
+        repeat(4) { attempt ->
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                    ?: return IpcReadResult.NotFound
+                val json = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                return if (json.isBlank()) {
+                    IpcReadResult.NotFound
+                } else {
+                    validatedProviderJson(storeId, json)
+                }
+            } catch (_: FileNotFoundException) {
+                return IpcReadResult.NotFound
+            } catch (e: IllegalArgumentException) {
+                if (!e.isUnknownAuthority() || attempt == 3) {
+                    return IpcReadResult.Unreachable
+                }
+            } catch (_: SecurityException) {
+                return IpcReadResult.Unreachable
+            }
+            delay(delayMs)
+            delayMs *= 2
+        }
+        return IpcReadResult.Unreachable
+    }
+
+    private suspend fun writeJsonViaProvider(
         context: Context,
         store: IpcContract.Store,
         json: String
@@ -373,7 +391,7 @@ object XIpcBridge {
         }
     }
 
-    private fun mutateJsonViaProvider(
+    private suspend fun mutateJsonViaProvider(
         context: Context,
         store: IpcContract.Store,
         key: String,
@@ -395,7 +413,7 @@ object XIpcBridge {
         return IpcMutateResult(IpcWriteResult.Success, json)
     }
 
-    private fun mutateJsonViaProvider(
+    private suspend fun mutateJsonViaProvider(
         context: Context,
         storeId: String,
         path: String,
@@ -424,25 +442,37 @@ object XIpcBridge {
         return IpcMutateResult(IpcWriteResult.Success, json)
     }
 
-    private fun callProvider(
+    private suspend fun callProvider(
         context: Context,
         method: IpcContract.Method,
         extras: Bundle? = null
     ): IpcCallResult {
-        return try {
-            IpcCallResult.Success(
-                context.contentResolver.call(
-                    IpcContract.CONTENT_URI,
-                    method.wireName,
-                    null,
-                    extras
+        var delayMs = 250L
+        repeat(4) { attempt ->
+            try {
+                return IpcCallResult.Success(
+                    context.contentResolver.call(
+                        IpcContract.CONTENT_URI,
+                        method.wireName,
+                        null,
+                        extras
+                    )
                 )
-            )
-        } catch (_: IllegalArgumentException) {
-            IpcCallResult.Unreachable
-        } catch (_: SecurityException) {
-            IpcCallResult.Unreachable
+            } catch (e: IllegalArgumentException) {
+                if (!e.isUnknownAuthority() || attempt == 3) {
+                    return IpcCallResult.Unreachable
+                }
+            } catch (_: SecurityException) {
+                return IpcCallResult.Unreachable
+            }
+            delay(delayMs)
+            delayMs *= 2
         }
+        return IpcCallResult.Unreachable
+    }
+
+    private fun Throwable.isUnknownAuthority(): Boolean {
+        return message?.contains("Unknown authority", ignoreCase = true) == true
     }
 
     private fun updateWebCacheIfNeeded(

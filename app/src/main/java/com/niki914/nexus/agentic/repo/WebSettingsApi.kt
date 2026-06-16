@@ -8,8 +8,9 @@ import com.niki914.nexus.agentic.mod.parseJsonObject
 import com.niki914.nexus.h.util.OsFamily
 import com.niki914.nexus.h.util.OsUtils
 import com.niki914.nexus.ipc.HostApp
-import com.niki914.nexus.ipc.IpcReadResult
 import com.niki914.nexus.ipc.IpcWriteResult
+import com.niki914.nexus.ipc.IpcReadResult
+
 import com.niki914.nexus.ipc.XIpcBridge
 import com.niki914.nexus.ipc.XValues
 import kotlinx.coroutines.Dispatchers
@@ -184,11 +185,7 @@ class WebSettingsApi internal constructor(
         }
         val writeResult = XIpcBridge.writeWebSettingsJson(context, settings.props.toString())
         if (writeResult is IpcWriteResult.Unreachable) {
-            delay(500L)
-            val retryResult = XIpcBridge.writeWebSettingsJson(context, settings.props.toString())
-            if (retryResult is IpcWriteResult.Unreachable) {
-                return WebSettingsResult.RequestFailed(WebSettingsFailureReason.IpcUnreachable)
-            }
+            return WebSettingsResult.RequestFailed(WebSettingsFailureReason.IpcUnreachable)
         }
         return WebSettingsResult.Success(
             settings = settings,

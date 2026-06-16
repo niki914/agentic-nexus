@@ -107,7 +107,7 @@ internal fun StartupPageRoute(
                 }
             }
 
-            is WebSettingsResult.IpcUnreachable -> { // Not gonna happened
+            is WebSettingsResult.IpcUnreachable -> {
                 webSettingsDialog = StartupWebSettingsDialog.NetworkError
             }
         }
