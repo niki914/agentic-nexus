@@ -31,9 +31,12 @@ class TerminalBuiltin(
     override val name: String = "terminal"
 
     override val description: String =
-        "Manage Android terminal sessions. Actions: open, open_and_exec, exec, read_async_result, close. " +
-            "Use is_async=true with exec for long-running commands, then poll read_async_result by async_id. " +
-            "Command execution returns elapsed_seconds; concurrent exec on the same session fails with SESSION_BUSY."
+        "Manage Android terminal sessions. For one-shot commands, prefer open_and_exec, e.g. " +
+            """{"action":"open_and_exec","identity":"user","command":"pwd"}. """ +
+            "Use exec only after opening a session with open or open_and_exec. " +
+            "Use is_async=true only with exec for long-running commands, then poll read_async_result by async_id. " +
+            "If SESSION_NOT_FOUND, call open first or use open_and_exec for one-shot commands. " +
+            "If SESSION_BUSY, wait or poll read_async_result when async_id is present."
 
     override val defaultEnabled: Boolean = true
 
@@ -387,17 +390,17 @@ class TerminalBuiltin(
                 "action": {
                   "type": "string",
                   "enum": ["open", "open_and_exec", "exec", "read_async_result", "close"],
-                  "description": "Terminal action to perform."
+                  "description": "Terminal action to perform. For one-shot commands, prefer open_and_exec with identity and command. Use exec only after opening a session with open or open_and_exec."
                 },
                 "identity": {
                   "type": "string",
                   "enum": ["user", "root"],
-                  "description": "Identity used by open or open_and_exec."
+                  "description": "Identity used only by open or open_and_exec to choose the user or root terminal."
                 },
                 "session": {
                   "type": "string",
                   "enum": ["user", "root"],
-                  "description": "Existing terminal session handle used by exec, read_async_result, or close."
+                  "description": "Existing opened session handle used by exec, read_async_result, or close. This is not a substitute for identity; call open first or use open_and_exec for one-shot commands."
                 },
                 "command": {
                   "type": "string",
@@ -405,12 +408,12 @@ class TerminalBuiltin(
                 },
                 "cwd": {
                   "type": "string",
-                  "description": "Optional working directory used when opening a new session."
+                  "description": "Optional working directory used only when opening a new session with open or open_and_exec."
                 },
                 "timeout_ms": {
                   "type": "integer",
                   "minimum": 1,
-                  "description": "Command timeout in milliseconds. Defaults to 30000."
+                  "description": "Command timeout in milliseconds. Defaults to 30000. If a command times out, increase timeout_ms, narrow the command, or use exec with is_async=true."
                 },
                 "merge_stderr": {
                   "type": "boolean",
@@ -418,11 +421,11 @@ class TerminalBuiltin(
                 },
                 "is_async": {
                   "type": "boolean",
-                  "description": "For exec, start command in background and poll read_async_result."
+                  "description": "Only supported by exec. When true, start the command in background and poll read_async_result with the returned async_id."
                 },
                 "async_id": {
                   "type": "string",
-                  "description": "Async id returned by exec when is_async=true."
+                  "description": "Required by read_async_result. Use the async_id returned by exec when is_async=true."
                 }
               },
               "required": ["action"]

@@ -118,7 +118,10 @@ class BuiltinToolTest {
         assertEquals("terminal", tool.name)
         assertTrue(tool.defaultEnabled)
         assertTrue(tool.description.contains("open_and_exec"))
+        assertTrue(tool.description.contains("one-shot"))
+        assertTrue(tool.description.contains("exec only after"))
         assertTrue(tool.description.contains("read_async_result"))
+        assertTrue(tool.description.contains("SESSION_NOT_FOUND"))
         assertTrue(tool.description.contains("SESSION_BUSY"))
     }
 

@@ -13,6 +13,8 @@ object LocalToolResultClassifier {
             ?.let(::parseJsonObject)
             ?: return null
 
+        result.structuredErrorMessage()?.let { return it }
+
         val explicitOk = result["ok"]?.jsonPrimitive?.booleanOrNull
         if (explicitOk == false) {
             return result.statusMessage() ?: "Tool returned ok=false."
@@ -23,7 +25,7 @@ object LocalToolResultClassifier {
             ?.contentOrNull
             ?.toIntOrNull()
         if (exitCode != null && exitCode != 0) {
-            return result.statusMessage() ?: "Command exited with code $exitCode."
+            return result.nonZeroExitMessage(exitCode)
         }
 
         return null
@@ -31,6 +33,24 @@ object LocalToolResultClassifier {
 
     private fun parseJsonObject(value: String): JsonObject? {
         return runCatching { Json.parseToJsonElement(value) as? JsonObject }.getOrNull()
+    }
+
+    private fun JsonObject.structuredErrorMessage(): String? {
+        val error = this["error"] as? JsonObject ?: return null
+        val code = error["code"]
+            ?.jsonPrimitive
+            ?.contentOrNull
+            ?.takeIf { it.isNotBlank() }
+            ?: return null
+        return error["message"]
+            ?.jsonPrimitive
+            ?.contentOrNull
+            ?.takeIf { it.isNotBlank() }
+            ?: code
+    }
+
+    private fun JsonObject.nonZeroExitMessage(exitCode: Int): String {
+        return statusMessage() ?: "Command completed with non-zero exit code $exitCode."
     }
 
     private fun JsonObject.statusMessage(): String? {

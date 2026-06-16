@@ -67,6 +67,23 @@ class TerminalToolResponseTest {
     }
 
     @Test
+    fun commandTimeoutIncludesActionableRecovery() {
+        val json = parse(
+            TerminalToolResponse.commandTimeout(
+                result = commandResult(exitCode = null, timedOut = true),
+                elapsedSeconds = 10L,
+                timeoutMs = 10_000L,
+            )
+        )
+
+        val message = json["error"]!!.jsonObject["message"]!!.jsonPrimitive.content
+        assertErrorCode("TIMEOUT", json)
+        assertTrue(message.contains("timeout_ms"))
+        assertTrue(message.contains("is_async"))
+        assertTrue(message.contains("read_async_result"))
+    }
+
+    @Test
     fun asyncRunningUsesPartialFieldsWithoutExitCode() {
         val json = parse(TerminalToolResponse.asyncRunning("stdout so far", "stderr so far", 5L))
 
@@ -77,12 +94,32 @@ class TerminalToolResponseTest {
     }
 
     @Test
+    fun sessionNotFoundSuggestsOpenOrOpenAndExec() {
+        val json = parse(TerminalToolResponse.sessionNotFound("user"))
+
+        val message = json["error"]!!.jsonObject["message"]!!.jsonPrimitive.content
+        assertErrorCode("SESSION_NOT_FOUND", json)
+        assertTrue(message.contains("open"))
+        assertTrue(message.contains("open_and_exec"))
+    }
+
+    @Test
     fun sessionBusyIncludesAsyncIdWhenPresent() {
         val json = parse(TerminalToolResponse.sessionBusy(session = "user", asyncId = "a1"))
 
         assertErrorCode("SESSION_BUSY", json)
         assertEquals("a1", json["error"]!!.jsonObject["async_id"]!!.jsonPrimitive.content)
         assertTrue(json["error"]!!.jsonObject["message"]!!.jsonPrimitive.content.contains("read_async_result"))
+    }
+
+    @Test
+    fun sessionBusyWithoutAsyncIdSuggestsWaiting() {
+        val json = parse(TerminalToolResponse.sessionBusy(session = "user", asyncId = null))
+
+        val message = json["error"]!!.jsonObject["message"]!!.jsonPrimitive.content
+        assertErrorCode("SESSION_BUSY", json)
+        assertTrue(message.contains("Wait"))
+        assertTrue(message.contains("current command"))
     }
 
     @Test

@@ -22,6 +22,22 @@ class TerminalBuiltinTest {
     }
 
     @Test
+    fun invoke_returnsRawJsonOnlyHintWithOpenAndExecExample() = runTest {
+        val result = TerminalBuiltin().invoke(
+            BuiltinToolRequest(
+                name = "terminal",
+                argumentsJson = "{}",
+            )
+        )
+
+        assertFalse(result.ok)
+        assertEquals("RAW_JSON_ONLY", result.code)
+        assertTrue(result.hint.contains("open_and_exec"))
+        assertTrue(result.hint.contains("identity"))
+        assertTrue(result.hint.contains("command"))
+    }
+
+    @Test
     fun invokeRawJson_rejectsInvalidJson() = runTest {
         val json = invoke("""{"action":""")
 

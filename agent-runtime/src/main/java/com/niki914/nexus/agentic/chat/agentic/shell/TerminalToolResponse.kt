@@ -55,7 +55,7 @@ object TerminalToolResponse {
         payload["elapsed_seconds"] = JsonPrimitive(elapsedSeconds)
         payload["error"] = errorObject(
             code = "TIMEOUT",
-            message = "Command timed out after ${timeoutMs}ms.",
+            message = "Command timed out after ${timeoutMs}ms. Increase timeout_ms, run a smaller command, or use exec with is_async=true and poll read_async_result.",
         )
         return JsonObject(payload).toString()
     }
@@ -101,7 +101,7 @@ object TerminalToolResponse {
     fun sessionNotFound(session: String): String {
         return error(
             code = "SESSION_NOT_FOUND",
-            message = "Session '$session' not found. Use open or open_and_exec first.",
+            message = "Session '$session' not found. Call open first for reusable sessions, or use open_and_exec for one-shot commands.",
         )
     }
 
@@ -114,9 +114,9 @@ object TerminalToolResponse {
 
     fun sessionBusy(session: String, asyncId: String?): String {
         val message = if (asyncId.isNullOrBlank()) {
-            "Session '$session' is already running a command."
+            "Session '$session' is already running a command. Wait for the current command to finish before retrying."
         } else {
-            "Session '$session' is already running async command '$asyncId'. Use read_async_result to check its status."
+            "Session '$session' is already running async command '$asyncId'. Use read_async_result to check its status before running another command."
         }
         return error(
             code = "SESSION_BUSY",
