@@ -4,8 +4,7 @@ import com.niki914.nexus.agentic.chat.ActiveTurnStore
 import com.niki914.nexus.agentic.chat.ConversationTurnState
 import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.TurnMode
-import com.niki914.nexus.agentic.mod.HookLocalSettings
-import com.niki914.nexus.agentic.repo.LocalSettingsCodec
+import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeTakeoverTarget
 import com.niki914.nexus.agentic.takeover.TakeoverDecision
 import com.niki914.nexus.agentic.takeover.TakeoverResolver
@@ -101,8 +100,8 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
 
     protected open suspend fun onTurnStateChanged(state: ConversationTurnState) = Unit
 
-    protected open fun resolveTakeover(query: String): TakeoverDecision {
-        val rules = LocalSettingsCodec.parseTakeoverRules(HookLocalSettings.current())
+    protected open suspend fun resolveTakeover(query: String): TakeoverDecision {
+        val rules = XRepo.takeoverRules.list()
         return TakeoverResolver.resolve(query, rules)
     }
 

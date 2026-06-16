@@ -6,6 +6,7 @@ import com.niki914.nexus.ipc.IpcContract
 import com.niki914.nexus.ipc.XNotificationBridge
 import com.niki914.nexus.ipc.ipcBundleOf
 import com.niki914.nexus.ipc.readString
+import com.niki914.nexus.ipc.store.StoreDescriptorRegistry
 import com.niki914.nexus.ipc.store.XIpcStoreRepository
 import kotlinx.coroutines.runBlocking
 
@@ -20,19 +21,21 @@ internal object XProviderDispatcher {
             IpcContract.Method.GET_CONFIG,
             IpcContract.Method.GET_WEB_SETTINGS -> respondWithStoreHandle(IpcContract.Store.WEB_SETTINGS)
 
-            IpcContract.Method.PUT_WEB_SETTINGS -> {
-                val json = extras?.readString(IpcContract.Store.WEB_SETTINGS.payloadField)
-                    ?: IpcContract.Store.WEB_SETTINGS.legacyPayloadField?.let { field ->
-                        extras?.readString(field)
-                    }
+            IpcContract.Method.GET_STORE -> {
+                val storeId = extras?.readString(IpcContract.Field.STORE_ID)
                     ?: return null
-                writeStore(
+                respondWithStoreHandle(storeId) ?: return null
+            }
+
+            IpcContract.Method.MUTATE_STORE -> {
+                mutateStore(
                     context = context,
-                    store = IpcContract.Store.WEB_SETTINGS,
-                    json = json
-                )
+                    extras = extras
+                ) ?: return null
                 respondSuccess()
             }
+
+            IpcContract.Method.PUT_WEB_SETTINGS -> null
 
             IpcContract.Method.MUTATE_WEB_SETTINGS -> {
                 mutateStore(
@@ -45,16 +48,7 @@ internal object XProviderDispatcher {
 
             IpcContract.Method.GET_LOCAL_SETTINGS -> respondWithStoreHandle(IpcContract.Store.LOCAL_SETTINGS)
 
-            IpcContract.Method.PUT_LOCAL_SETTINGS -> {
-                val json = extras?.readString(IpcContract.Store.LOCAL_SETTINGS.payloadField)
-                    ?: return null
-                writeStore(
-                    context = context,
-                    store = IpcContract.Store.LOCAL_SETTINGS,
-                    json = json
-                )
-                respondSuccess()
-            }
+            IpcContract.Method.PUT_LOCAL_SETTINGS -> null
 
             IpcContract.Method.MUTATE_LOCAL_SETTINGS -> {
                 mutateStore(
@@ -84,14 +78,14 @@ internal object XProviderDispatcher {
         )
     }
 
-    private fun writeStore(
-        context: Context,
-        store: IpcContract.Store,
-        json: String
-    ) {
-        runBlocking {
-            XIpcStoreRepository.writeJson(context, store, json)
-        }
+    private fun respondWithStoreHandle(
+        storeId: String
+    ): Bundle? {
+        StoreDescriptorRegistry.resolveDynamic(storeId) ?: return null
+        return ipcBundleOf(
+            IpcContract.Field.SUCCESS to true,
+            IpcContract.Field.STORE_URI to IpcContract.storeFileUri(storeId).toString()
+        )
     }
 
     private fun mutateStore(
@@ -113,6 +107,33 @@ internal object XProviderDispatcher {
             )
         }
         return Unit
+    }
+
+    private fun mutateStore(
+        context: Context,
+        extras: Bundle?
+    ): Unit? {
+        val storeId = extras?.readString(IpcContract.Field.STORE_ID)
+            ?: return null
+        StoreDescriptorRegistry.resolveDynamic(storeId) ?: return null
+        val path = extras.readString(IpcContract.Field.PATH)
+            ?.takeIf(String::isNotBlank)
+            ?: return null
+        val valueJson = extras.readString(IpcContract.Field.VALUE_JSON)
+            ?: return null
+        return runCatching {
+            runBlocking {
+                XIpcStoreRepository.mutateJson(
+                    context = context,
+                    storeId = storeId,
+                    path = path,
+                    valueJson = valueJson
+                )
+            }
+        }.fold(
+            onSuccess = { Unit },
+            onFailure = { null }
+        )
     }
 
     private fun respondSuccess(): Bundle {

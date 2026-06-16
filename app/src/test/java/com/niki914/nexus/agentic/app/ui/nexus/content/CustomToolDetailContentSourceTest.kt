@@ -9,31 +9,36 @@ class CustomToolDetailContentSourceTest {
     @Test
     fun customToolDetailContent_usesDetailScaffoldAndChromeBackContract() {
         val source = readCustomToolDetailContentSource()
+        val sharedScaffoldSource = readEditableSettingsDetailScaffoldSource()
 
-        assertTrue(source.contains("SettingsDetailFormScaffold("))
-        assertTrue(source.contains("RegisterPageChrome(pageChromeContribution)"))
-        assertTrue(source.contains("PageChromeContribution("))
-        assertTrue(source.contains("backHandler = PageBackHandler("))
-        assertTrue(source.contains("Icons.Default.Delete"))
+        assertTrue(source.contains("EditableSettingsDetailChrome("))
+        assertTrue(source.contains("EditableSettingsDetailFormScaffold("))
         assertTrue(source.contains("CustomToolSettingsIntent.DeleteCurrent"))
-        assertTrue(source.contains("onBackgroundTap = ::clearActiveField"))
         assertTrue(source.contains("requestedFocusField"))
+        assertTrue(sharedScaffoldSource.contains("SettingsDetailFormScaffold("))
+        assertTrue(sharedScaffoldSource.contains("RegisterPageChrome(pageChromeContribution)"))
+        assertTrue(sharedScaffoldSource.contains("PageChromeContribution("))
+        assertTrue(sharedScaffoldSource.contains("backHandler = PageBackHandler("))
+        assertTrue(sharedScaffoldSource.contains("Icons.Default.Delete"))
+        assertTrue(sharedScaffoldSource.contains("onBackgroundTap = fieldController.clearActiveField"))
     }
 
     @Test
     fun customToolDetailContent_routesBackThroughUnsavedChangesDialog() {
         val source = readCustomToolDetailContentSource()
+        val sharedScaffoldSource = readEditableSettingsDetailScaffoldSource()
 
-        assertTrue(source.contains("shouldConsumeBack = {"))
-        assertTrue(source.contains("latestUiState.formState.hasUnsavedChanges"))
-        assertTrue(source.contains("onConsumeBack = {"))
-        assertTrue(source.contains("showUnsavedChangesDialog = true"))
-        assertTrue(source.contains("latestOnBack()"))
-        assertTrue(source.contains("ConfirmationLiquidDialog("))
-        assertTrue(source.contains("visible = showUnsavedChangesDialog"))
-        assertTrue(source.contains("negativeButtonText = stringResource(R.string.unsaved_changes_dialog_cancel)"))
-        assertTrue(source.contains("positiveButtonText = stringResource(R.string.unsaved_changes_dialog_confirm_exit)"))
-        assertTrue(source.contains("onPositiveClick = {"))
+        assertTrue(source.contains("uiState.formState.hasUnsavedChanges"))
+        assertTrue(source.contains("onDiscardChanges = onBack"))
+        assertTrue(sharedScaffoldSource.contains("shouldConsumeBack = {"))
+        assertTrue(sharedScaffoldSource.contains("latestHasUnsavedChanges()"))
+        assertTrue(sharedScaffoldSource.contains("onConsumeBack = {"))
+        assertTrue(sharedScaffoldSource.contains("showUnsavedChangesDialog = true"))
+        assertTrue(sharedScaffoldSource.contains("ConfirmationLiquidDialog("))
+        assertTrue(sharedScaffoldSource.contains("visible = showUnsavedChangesDialog"))
+        assertTrue(sharedScaffoldSource.contains("negativeButtonText = stringResource(R.string.unsaved_changes_dialog_cancel)"))
+        assertTrue(sharedScaffoldSource.contains("positiveButtonText = stringResource(R.string.unsaved_changes_dialog_confirm_exit)"))
+        assertTrue(sharedScaffoldSource.contains("latestOnDiscardChanges()"))
     }
 
     @Test
@@ -51,6 +56,7 @@ class CustomToolDetailContentSourceTest {
     @Test
     fun customToolDetailContent_usesConfirmedStringKeys() {
         val source = readCustomToolDetailContentSource()
+        val sharedScaffoldSource = readEditableSettingsDetailScaffoldSource()
 
         assertTrue(source.contains("R.string.custom_tool_editor_description"))
         assertTrue(source.contains("R.string.custom_tool_field_name"))
@@ -64,15 +70,21 @@ class CustomToolDetailContentSourceTest {
         assertTrue(source.contains("R.string.custom_tool_error_load_failed"))
         assertTrue(source.contains("R.string.custom_tool_error_save_failed"))
         assertTrue(source.contains("R.string.custom_tool_error_delete_failed"))
-        assertTrue(source.contains("R.string.unsaved_changes_dialog_title"))
-        assertTrue(source.contains("R.string.unsaved_changes_dialog_text"))
-        assertTrue(source.contains("R.string.unsaved_changes_dialog_confirm_exit"))
-        assertTrue(source.contains("R.string.unsaved_changes_dialog_cancel"))
+        assertTrue(sharedScaffoldSource.contains("R.string.unsaved_changes_dialog_title"))
+        assertTrue(sharedScaffoldSource.contains("R.string.unsaved_changes_dialog_text"))
+        assertTrue(sharedScaffoldSource.contains("R.string.unsaved_changes_dialog_confirm_exit"))
+        assertTrue(sharedScaffoldSource.contains("R.string.unsaved_changes_dialog_cancel"))
     }
 
     private fun readCustomToolDetailContentSource(): String {
         return File(
             "src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/CustomToolDetailContent.kt"
+        ).readText()
+    }
+
+    private fun readEditableSettingsDetailScaffoldSource(): String {
+        return File(
+            "src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/EditableSettingsDetailScaffold.kt"
         ).readText()
     }
 

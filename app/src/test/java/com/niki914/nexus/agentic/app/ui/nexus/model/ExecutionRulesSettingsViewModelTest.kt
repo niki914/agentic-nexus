@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.repo.LocalSettingsCodec
+import com.niki914.nexus.agentic.repo.LocalSettingsDefaults
 import com.niki914.nexus.agentic.repo.LocalSettingsStore
 import com.niki914.nexus.agentic.repo.XRepo
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -77,9 +78,10 @@ class ExecutionRulesSettingsViewModelTest {
         viewModel.sendIntent(ExecutionRulesSettingsIntent.Save)
         advanceUntilIdle()
 
-        val rule = XRepo.executionRules.list().single()
+        val rule = XRepo.executionRules.list().single { it.name == "新规则" }
         assertEquals("新规则", rule.name)
         assertEquals(listOf("echo danger"), rule.patterns)
+        assertEquals(LocalSettingsDefaults.defaultExecutionRules.size + 1, XRepo.executionRules.list().size)
         assertEquals(listOf(ExecutionRulesSettingsEffect.ExitDetail), effects)
         assertFalse(viewModel.uiStateFlow.value.isSaving)
     }

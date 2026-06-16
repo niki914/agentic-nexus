@@ -2,9 +2,11 @@ package com.niki914.nexus.ipc
 
 import android.content.Context
 import android.os.Bundle
+import com.niki914.nexus.ipc.store.StoreDescriptorRegistry
 import com.niki914.nexus.ipc.store.XIpcStoreRepository
 import java.io.FileNotFoundException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -51,15 +53,15 @@ object XIpcBridge {
     }
 
     suspend fun readWebSettingsJson(context: Context): IpcReadResult {
-        return readJson(context, IpcContract.Store.WEB_SETTINGS)
+        return readStoreJson(context, StoreDescriptorRegistry.WEB_SETTINGS_ID)
     }
 
     suspend fun writeWebSettingsJson(context: Context, json: String): IpcWriteResult {
-        return writeJson(context, IpcContract.Store.WEB_SETTINGS, json)
+        return writeStoreJsonFromOwner(context, StoreDescriptorRegistry.WEB_SETTINGS_ID, json)
     }
 
     suspend fun writeWebSetting(context: Context, key: String, value: Any?): IpcMutateResult {
-        return mutateSetting(context, IpcContract.Store.WEB_SETTINGS, key, value)
+        return mutateStoreJson(context, StoreDescriptorRegistry.WEB_SETTINGS_ID, key, value)
     }
 
     suspend fun readLocalSettingsJson(context: Context): IpcReadResult {
@@ -72,6 +74,107 @@ object XIpcBridge {
 
     suspend fun writeLocalSetting(context: Context, key: String, value: Any?): IpcMutateResult {
         return mutateSetting(context, IpcContract.Store.LOCAL_SETTINGS, key, value)
+    }
+
+    suspend fun readStoreJson(
+        context: Context,
+        storeId: String
+    ): IpcReadResult {
+        StoreDescriptorRegistry.resolveDynamic(storeId) ?: return IpcReadResult.NotFound
+        if (storeId == StoreDescriptorRegistry.WEB_SETTINGS_ID) {
+            cachedWebSettingsJson?.let { return IpcReadResult.Success(it) }
+            return webSettingsCacheMutex.withLock {
+                cachedWebSettingsJson?.let { return@withLock IpcReadResult.Success(it) }
+                val result = readStoreJsonUncached(context, storeId)
+                if (result is IpcReadResult.Success) {
+                    cachedWebSettingsJson = result.json
+                }
+                result
+            }
+        }
+        return readStoreJsonUncached(context, storeId)
+    }
+
+    suspend fun mutateStoreJson(
+        context: Context,
+        storeId: String,
+        path: String,
+        value: Any?
+    ): IpcMutateResult {
+        StoreDescriptorRegistry.resolveDynamic(storeId)
+            ?: return IpcMutateResult(IpcWriteResult.Unreachable, null)
+        val valueJson = serializeValue(value)
+        val result = if (shouldUseProvider(context)) {
+            withContext(Dispatchers.IO) {
+                mutateJsonViaProvider(context, storeId, path, valueJson)
+            }
+        } else {
+            val updatedJson = XIpcStoreRepository.mutateJson(
+                context = context,
+                storeId = storeId,
+                path = path,
+                valueJson = valueJson
+            )
+            IpcMutateResult(IpcWriteResult.Success, updatedJson)
+        }
+        if (result.writeResult is IpcWriteResult.Success && result.updatedJson != null) {
+            updateWebCacheIfNeeded(storeId, result.updatedJson)
+        }
+        return result
+    }
+
+    suspend fun writeStoreJsonFromOwner(
+        context: Context,
+        storeId: String,
+        json: String
+    ): IpcWriteResult {
+        StoreDescriptorRegistry.resolveDynamic(storeId) ?: return IpcWriteResult.Unreachable
+        if (shouldUseProvider(context)) {
+            return writeStoreJsonViaProviderStream(context, storeId, json)
+        }
+        XIpcStoreRepository.writeJson(context, storeId, json)
+        updateWebCacheIfNeeded(storeId, json)
+        return IpcWriteResult.Success
+    }
+
+    private suspend fun writeStoreJsonViaProviderStream(
+        context: Context,
+        storeId: String,
+        json: String
+    ): IpcWriteResult {
+        return withContext(Dispatchers.IO) {
+            try {
+                context.contentResolver
+                    .openOutputStream(IpcContract.storeFileUri(storeId), "wt")
+                    ?.use { output ->
+                        output.write(json.toByteArray(Charsets.UTF_8))
+                        output.flush()
+                    }
+                    ?: return@withContext IpcWriteResult.Unreachable
+                if (waitForProviderWrite(context, storeId, json)) {
+                    updateWebCacheIfNeeded(storeId, json)
+                    IpcWriteResult.Success
+                } else {
+                    IpcWriteResult.Unreachable
+                }
+            } catch (_: Exception) {
+                IpcWriteResult.Unreachable
+            }
+        }
+    }
+
+    private suspend fun waitForProviderWrite(
+        context: Context,
+        storeId: String,
+        expectedJson: String
+    ): Boolean {
+        repeat(25) {
+            if (readJsonViaProviderFile(context, storeId) == IpcReadResult.Success(expectedJson)) {
+                return true
+            }
+            delay(20L)
+        }
+        return false
     }
 
     suspend fun readJson(
@@ -98,9 +201,7 @@ object XIpcBridge {
         json: String
     ): IpcWriteResult {
         val result = if (shouldUseProvider(context)) {
-            withContext(Dispatchers.IO) {
-                writeJsonViaProvider(context, store, json)
-            }
+            IpcWriteResult.Unreachable
         } else {
             XIpcStoreRepository.writeJson(context, store, json)
             IpcWriteResult.Success
@@ -148,7 +249,7 @@ object XIpcBridge {
                 callProvider(
                     context = context,
                     method = IpcContract.Method.POST_NOTIFICATION,
-                    extras = ipcBundleOf(
+                    extras = bridgeBundleOf(
                         IpcContract.Field.TITLE to title,
                         IpcContract.Field.CONTENT to content,
                         IpcContract.Field.URI to uri
@@ -157,7 +258,7 @@ object XIpcBridge {
             }
             when (result) {
                 is IpcCallResult.Success -> {
-                    if (result.bundle?.readBoolean(IpcContract.Field.SUCCESS) == true) {
+                    if (result.bundle?.isSuccessBundle() == true) {
                         IpcWriteResult.Success
                     } else {
                         IpcWriteResult.Unreachable
@@ -186,6 +287,19 @@ object XIpcBridge {
         }
     }
 
+    private suspend fun readStoreJsonUncached(
+        context: Context,
+        storeId: String
+    ): IpcReadResult {
+        return if (shouldUseProvider(context)) {
+            withContext(Dispatchers.IO) {
+                readJsonViaProviderFile(context, storeId)
+            }
+        } else {
+            IpcReadResult.Success(XIpcStoreRepository.readJson(context, storeId))
+        }
+    }
+
     private fun readJsonViaProviderFile(
         context: Context,
         store: IpcContract.Store
@@ -197,10 +311,42 @@ object XIpcBridge {
             if (json.isBlank()) {
                 IpcReadResult.NotFound
             } else {
-                IpcReadResult.Success(json)
+                validatedProviderJson(store.storeId, json)
             }
         } catch (_: FileNotFoundException) {
+            IpcReadResult.NotFound
+        } catch (_: SecurityException) {
             IpcReadResult.Unreachable
+        }
+    }
+
+    private fun validatedProviderJson(
+        storeId: String,
+        json: String
+    ): IpcReadResult {
+        val descriptor = StoreDescriptorRegistry.resolveDynamic(storeId) ?: return IpcReadResult.Unreachable
+        return if (runCatching { JSONObject(json) }.isSuccess) {
+            IpcReadResult.Success(json)
+        } else {
+            IpcReadResult.Success(descriptor.defaultJson)
+        }
+    }
+
+    private fun readJsonViaProviderFile(
+        context: Context,
+        storeId: String
+    ): IpcReadResult {
+        return try {
+            val inputStream = context.contentResolver.openInputStream(IpcContract.storeFileUri(storeId))
+                ?: return IpcReadResult.NotFound
+            val json = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            if (json.isBlank()) {
+                IpcReadResult.NotFound
+            } else {
+                validatedProviderJson(storeId, json)
+            }
+        } catch (_: FileNotFoundException) {
+            IpcReadResult.NotFound
         } catch (_: SecurityException) {
             IpcReadResult.Unreachable
         }
@@ -214,10 +360,10 @@ object XIpcBridge {
         return when (val result = callProvider(
             context = context,
             method = store.writeMethod,
-            extras = ipcBundleOf(store.payloadField to json)
+            extras = bridgeBundleOf(store.payloadField to json)
         )) {
             is IpcCallResult.Success -> {
-                if (result.bundle?.readBoolean(IpcContract.Field.SUCCESS) == true) {
+                if (result.bundle?.isSuccessBundle() == true) {
                     IpcWriteResult.Success
                 } else {
                     IpcWriteResult.Unreachable
@@ -236,7 +382,7 @@ object XIpcBridge {
         when (callProvider(
             context = context,
             method = store.mutateMethod,
-            extras = ipcBundleOf(
+            extras = bridgeBundleOf(
                 IpcContract.Field.PATH to key,
                 IpcContract.Field.VALUE_JSON to valueJson
             )
@@ -245,6 +391,35 @@ object XIpcBridge {
             is IpcCallResult.Success -> { /* continue to read back */ }
         }
         val readResult = readJsonViaProviderFile(context, store)
+        val json = (readResult as? IpcReadResult.Success)?.json ?: EMPTY_JSON
+        return IpcMutateResult(IpcWriteResult.Success, json)
+    }
+
+    private fun mutateJsonViaProvider(
+        context: Context,
+        storeId: String,
+        path: String,
+        valueJson: String
+    ): IpcMutateResult {
+        val callResult = callProvider(
+            context = context,
+            method = IpcContract.Method.MUTATE_STORE,
+            extras = bridgeBundleOf(
+                IpcContract.Field.STORE_ID to storeId,
+                IpcContract.Field.PATH to path,
+                IpcContract.Field.VALUE_JSON to valueJson
+            )
+        )
+        when (callResult) {
+            is IpcCallResult.Unreachable -> return IpcMutateResult(IpcWriteResult.Unreachable, null)
+            is IpcCallResult.Success -> {
+                if (callResult.bundle?.isSuccessBundle() != true) {
+                    return IpcMutateResult(IpcWriteResult.Unreachable, null)
+                }
+            }
+        }
+
+        val readResult = readJsonViaProviderFile(context, storeId)
         val json = (readResult as? IpcReadResult.Success)?.json ?: EMPTY_JSON
         return IpcMutateResult(IpcWriteResult.Success, json)
     }
@@ -279,6 +454,15 @@ object XIpcBridge {
         }
     }
 
+    private fun updateWebCacheIfNeeded(
+        storeId: String,
+        json: String
+    ) {
+        if (storeId == StoreDescriptorRegistry.WEB_SETTINGS_ID) {
+            cachedWebSettingsJson = json
+        }
+    }
+
     private fun shouldUseProvider(context: Context): Boolean {
         return when (XValues.getAppTypeOf(context)) {
             XValues.AppType.Host -> true
@@ -295,6 +479,23 @@ object XIpcBridge {
             is String -> JSONObject.quote(jsonValue)
             else -> jsonValue.toString()
         }
+    }
+
+    private fun bridgeBundleOf(vararg pairs: Pair<IpcContract.Field, Any?>): Bundle {
+        return Bundle().apply {
+            pairs.forEach { (field, value) ->
+                when (value) {
+                    null -> putString(field.wireName, null)
+                    is String -> putString(field.wireName, value)
+                    is Boolean -> putBoolean(field.wireName, value)
+                    else -> error("Unsupported bundle type for field=${field.name}")
+                }
+            }
+        }
+    }
+
+    private fun Bundle.isSuccessBundle(): Boolean {
+        return getBoolean(IpcContract.Field.SUCCESS.wireName)
     }
 
     private const val EMPTY_JSON = "{}"

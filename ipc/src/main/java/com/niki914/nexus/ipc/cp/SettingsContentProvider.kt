@@ -12,6 +12,11 @@ import android.os.Process
 import com.niki914.nexus.ipc.IpcContract
 import com.niki914.nexus.ipc.XValues
 import com.niki914.nexus.ipc.store.ConfigPersistence
+import com.niki914.nexus.ipc.store.StoreDescriptorRegistry
+import com.niki914.nexus.ipc.store.XIpcStoreRepository
+import java.io.FileInputStream
+import kotlin.concurrent.thread
+import kotlinx.coroutines.runBlocking
 
 class SettingsContentProvider : ContentProvider() {
 
@@ -31,13 +36,41 @@ class SettingsContentProvider : ContentProvider() {
     }
 
     override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor? {
-        if (mode != "r") return null
         val appContext = context ?: return null
         if (!isCallerAllowed(appContext)) return null
-        val store = IpcContract.Store.fromFilePathSegments(uri.pathSegments) ?: return null
-        val file = ConfigPersistence.fileFor(appContext, store)
-        if (!file.exists()) return null
-        return ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+        val storeId = IpcContract.storeIdFromPathSegments(uri.pathSegments) ?: return null
+        val descriptor = StoreDescriptorRegistry.resolveDynamic(storeId) ?: return null
+        val file = ConfigPersistence.fileFor(appContext, descriptor)
+        return when (mode) {
+            "r" -> {
+                if (!file.exists()) return null
+                ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+            }
+            "w", "wt" -> {
+                openAtomicWritePipe(appContext, storeId)
+            }
+            else -> null
+        }
+    }
+
+    private fun openAtomicWritePipe(
+        appContext: Context,
+        storeId: String
+    ): ParcelFileDescriptor? {
+        val (readSide, writeSide) = ParcelFileDescriptor.createPipe()
+        thread(name = "nexus-store-write-$storeId") {
+            readSide.use { source ->
+                runCatching {
+                    val json = FileInputStream(source.fileDescriptor)
+                        .bufferedReader(Charsets.UTF_8)
+                        .use { it.readText() }
+                    runBlocking {
+                        XIpcStoreRepository.writeJson(appContext, storeId, json)
+                    }
+                }
+            }
+        }
+        return writeSide
     }
 
     private fun isCallerAllowed(appContext: Context): Boolean {

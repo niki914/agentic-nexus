@@ -185,7 +185,10 @@ class WebSettingsApi internal constructor(
         val writeResult = XIpcBridge.writeWebSettingsJson(context, settings.props.toString())
         if (writeResult is IpcWriteResult.Unreachable) {
             delay(500L)
-            XIpcBridge.writeWebSettingsJson(context, settings.props.toString())
+            val retryResult = XIpcBridge.writeWebSettingsJson(context, settings.props.toString())
+            if (retryResult is IpcWriteResult.Unreachable) {
+                return WebSettingsResult.RequestFailed(WebSettingsFailureReason.IpcUnreachable)
+            }
         }
         return WebSettingsResult.Success(
             settings = settings,

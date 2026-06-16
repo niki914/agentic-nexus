@@ -47,6 +47,8 @@ object IpcContract {
         GET_LOCAL_SETTINGS("get_local_settings"),
         PUT_LOCAL_SETTINGS("put_local_settings"),
         MUTATE_LOCAL_SETTINGS("mutate_local_settings"),
+        GET_STORE("get_store"),
+        MUTATE_STORE("mutate_store"),
         POST_NOTIFICATION("post_notification");
 
         companion object {
@@ -62,6 +64,7 @@ object IpcContract {
         CONFIG_JSON("config_json"),
         WEB_SETTINGS_JSON("web_settings_json"),
         LOCAL_SETTINGS_JSON("local_settings_json"),
+        STORE_ID("store_id"),
         PATH("path"),
         VALUE_JSON("value_json"),
         TITLE("title"),
@@ -101,6 +104,9 @@ object IpcContract {
                 .appendPath(filePathSegment)
                 .build()
 
+        val storeId: String
+            get() = filePathSegment
+
         companion object {
             private val byFilePathSegment = entries.associateBy(Store::filePathSegment)
 
@@ -109,6 +115,18 @@ object IpcContract {
                 return byFilePathSegment[pathSegments[1]]
             }
         }
+    }
+
+    fun storeFileUri(storeId: String): Uri {
+        return CONTENT_URI.buildUpon()
+            .appendPath(STORE_FILE_ROOT)
+            .appendPath(storeId)
+            .build()
+    }
+
+    fun storeIdFromPathSegments(pathSegments: List<String>): String? {
+        if (pathSegments.size != 2 || pathSegments[0] != STORE_FILE_ROOT) return null
+        return pathSegments[1]
     }
 }
 
