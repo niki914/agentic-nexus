@@ -1,6 +1,7 @@
 package com.niki914.nexus.agentic.chat
 
 import com.niki914.libterm.OpenResult
+import com.niki914.libterm.SshOpenOptions
 import com.niki914.libterm.TerminalBytes
 import com.niki914.libterm.TerminalIdentity
 import com.niki914.libterm.runtime.CommandResult
@@ -220,7 +221,11 @@ class TerminalBuiltinTest {
         val openedSessions = mutableListOf<FakeTerminalSession>()
         val openedIdentities = mutableListOf<TerminalIdentity>()
 
-        override suspend fun open(identity: TerminalIdentity, cwd: String?): OpenResult<TerminalSessionPort> {
+        override suspend fun open(
+            identity: TerminalIdentity,
+            cwd: String?,
+            sshOptions: SshOpenOptions?,
+        ): OpenResult<TerminalSessionPort> {
             openedIdentities.add(identity)
             val session = FakeTerminalSession(
                 id = "runtime-${openedSessions.size + 1}",

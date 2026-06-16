@@ -1,6 +1,9 @@
 package com.niki914.nexus.agentic.chat
 
 import com.niki914.libterm.OpenResult
+import com.niki914.libterm.SshAuth
+import com.niki914.libterm.SshHostKeyPolicy
+import com.niki914.libterm.SshOpenOptions
 import com.niki914.libterm.TerminalBytes
 import com.niki914.libterm.TerminalIdentity
 import com.niki914.libterm.runtime.CommandResult
@@ -144,6 +147,51 @@ class TerminalSessionPoolTest {
     }
 
     @Test
+    fun openSshUsesSshIdentityAndOptions() = runTest {
+        val fakeRuntime = FakeTerminalRuntime()
+        installFakeRuntime(fakeRuntime).use {
+            installHandles("a3f9").use {
+                val outcome = TerminalSessionPool.openSsh(
+                    options = SshOpenOptions(
+                        host = "example.com",
+                        port = 2222,
+                        username = "alice",
+                        auth = SshAuth.Password("secret"),
+                        hostKeyPolicy = SshHostKeyPolicy.KnownHostsFile(
+                            path = "/data/local/tmp/known_hosts",
+                            strict = false,
+                        ),
+                        connectTimeoutMillis = 1234,
+                        serverAliveIntervalMillis = 5678,
+                    ),
+                    cwd = "/tmp",
+                )
+
+                val success = outcome as TerminalOpenOutcome.Success
+                assertEquals("a3f9", success.session)
+                assertEquals("ssh", success.identity)
+                assertEquals(listOf(TerminalIdentity.Ssh), fakeRuntime.openedIdentities)
+                assertEquals(
+                    SshOpenOptions(
+                        host = "example.com",
+                        port = 2222,
+                        username = "alice",
+                        auth = SshAuth.Password("secret"),
+                        hostKeyPolicy = SshHostKeyPolicy.KnownHostsFile(
+                            path = "/data/local/tmp/known_hosts",
+                            strict = false,
+                        ),
+                        connectTimeoutMillis = 1234,
+                        serverAliveIntervalMillis = 5678,
+                    ),
+                    fakeRuntime.openedSshOptions.single(),
+                )
+                assertEquals(listOf("/tmp"), fakeRuntime.openedCwds)
+            }
+        }
+    }
+
+    @Test
     fun executeBlockingKeepsSessionsIsolatedByHandle() = runTest {
         val fakeRuntime = FakeTerminalRuntime()
         installFakeRuntime(fakeRuntime).use {
@@ -248,10 +296,18 @@ class TerminalSessionPoolTest {
     private class FakeTerminalRuntime : TerminalRuntimePort {
         val openedSessions = mutableListOf<FakeTerminalSession>()
         val openedIdentities = mutableListOf<TerminalIdentity>()
+        val openedSshOptions = mutableListOf<SshOpenOptions?>()
+        val openedCwds = mutableListOf<String?>()
         var closeAllCount = 0
 
-        override suspend fun open(identity: TerminalIdentity, cwd: String?): OpenResult<TerminalSessionPort> {
+        override suspend fun open(
+            identity: TerminalIdentity,
+            cwd: String?,
+            sshOptions: SshOpenOptions?,
+        ): OpenResult<TerminalSessionPort> {
             openedIdentities.add(identity)
+            openedSshOptions.add(sshOptions)
+            openedCwds.add(cwd)
             val session = FakeTerminalSession(id = "runtime-${openedSessions.size + 1}")
             openedSessions.add(session)
             return OpenResult.Success(session)

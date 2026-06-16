@@ -10,6 +10,7 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.impl.MemorizeBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.OpenUriBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.ReadCustomToolBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.SearchAppsBuiltin
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.SshTerminalBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.TerminalBuiltin
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.serialization.json.Json
@@ -75,6 +76,7 @@ class BuiltinToolTest {
                 "open_uri",
                 "read_custom_tool",
                 "search_apps",
+                "ssh_terminal",
                 "terminal",
             ),
             registry.all().map { it.name }.sorted()
@@ -86,6 +88,7 @@ class BuiltinToolTest {
         assertEquals("open_uri", registry.find("open_uri")?.name)
         assertEquals("read_custom_tool", registry.find("read_custom_tool")?.name)
         assertEquals("search_apps", registry.find("search_apps")?.name)
+        assertEquals("ssh_terminal", registry.find("ssh_terminal")?.name)
         assertEquals("terminal", registry.find("terminal")?.name)
         assertNull(registry.find("run_command"))
     }
@@ -123,6 +126,22 @@ class BuiltinToolTest {
         assertTrue(tool.description.contains("read_async_result"))
         assertTrue(tool.description.contains("SESSION_NOT_FOUND"))
         assertTrue(tool.description.contains("SESSION_BUSY"))
+    }
+
+    @Test
+    fun sshTerminalBuiltinDescription_matchesConfigureDescription() {
+        val tool = SshTerminalBuiltin()
+        val config = LocalToolConfig()
+
+        tool.configure(config)
+
+        assertEquals(tool.description, config.description)
+        assertEquals("ssh_terminal", tool.name)
+        assertTrue(tool.defaultEnabled)
+        assertTrue(tool.description.contains("open_and_exec"))
+        assertTrue(tool.description.contains("password"))
+        assertTrue(tool.description.contains("should not be echoed"))
+        assertTrue(tool.description.contains("should not be stored"))
     }
 
     private class FakeBuiltinTool(

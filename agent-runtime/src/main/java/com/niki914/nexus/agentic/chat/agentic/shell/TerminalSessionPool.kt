@@ -2,6 +2,8 @@ package com.niki914.nexus.agentic.chat.agentic.shell
 
 import com.niki914.libterm.OpenResult
 import com.niki914.libterm.OutputStream
+import com.niki914.libterm.SshAuth
+import com.niki914.libterm.SshOpenOptions
 import com.niki914.libterm.TerminalFailure
 import com.niki914.libterm.TerminalIdentity
 import com.niki914.libterm.runtime.CommandResult
@@ -27,6 +29,7 @@ import kotlinx.coroutines.sync.Mutex
 
 object TerminalSessionPool {
     private const val CUSTOM_TOOL_SESSION = "__custom_user"
+    private const val SSH_PUBLIC_IDENTITY = "ssh"
     private const val PUBLIC_HANDLE_LENGTH = 4
     private const val MAX_HANDLE_GENERATION_ATTEMPTS = 64
     private const val GENERATED_HANDLE_COLLISION_MESSAGE = "Generated session handle collision."
@@ -40,35 +43,25 @@ object TerminalSessionPool {
     private var runtimePortFactory: suspend (CoroutineScope) -> TerminalRuntimePort = ::createLibTermRuntimePort
 
     suspend fun open(identity: String, cwd: String? = null): TerminalOpenOutcome {
-        try {
+        val mappedIdentity = try {
             mapIdentity(identity)
         } catch (error: IllegalArgumentException) {
             return TerminalOpenOutcome.InvalidRequest(error.message.orEmpty())
         }
-        repeat(MAX_HANDLE_GENERATION_ATTEMPTS) {
-            val handle = try {
-                generateAvailablePublicHandle()
-            } catch (error: IllegalStateException) {
-                return TerminalOpenOutcome.InvalidRequest(error.message.orEmpty())
-            }
-            when (val outcome = openSession(
-                handle = handle,
-                identity = identity,
-                cwd = cwd,
-                reuseExisting = false,
-            )) {
-                is TerminalOpenOutcome.InvalidRequest -> {
-                    if (outcome.message == GENERATED_HANDLE_COLLISION_MESSAGE) {
-                        return@repeat
-                    }
-                    return outcome
-                }
+        return openWithGeneratedHandle(
+            publicIdentity = identity.trim(),
+            terminalIdentity = mappedIdentity,
+            cwd = cwd,
+            sshOptions = null,
+        )
+    }
 
-                else -> return outcome
-            }
-        }
-        return TerminalOpenOutcome.InvalidRequest(
-            "Unable to allocate terminal session handle after $MAX_HANDLE_GENERATION_ATTEMPTS attempts.",
+    suspend fun openSsh(options: SshOpenOptions, cwd: String? = null): TerminalOpenOutcome {
+        return openWithGeneratedHandle(
+            publicIdentity = SSH_PUBLIC_IDENTITY,
+            terminalIdentity = TerminalIdentity.Ssh,
+            cwd = cwd,
+            sshOptions = options,
         )
     }
 
@@ -99,11 +92,40 @@ object TerminalSessionPool {
         }
     }
 
+    suspend fun openAndExecuteSsh(
+        options: SshOpenOptions,
+        cwd: String?,
+        command: String,
+        timeoutMs: Long,
+    ): TerminalCommandOutcome {
+        return when (val openOutcome = openSsh(options = options, cwd = cwd)) {
+            is TerminalOpenOutcome.Success -> executeBlocking(
+                session = openOutcome.session,
+                command = command,
+                timeoutMs = timeoutMs,
+            )
+
+            is TerminalOpenOutcome.Failure -> TerminalCommandOutcome.Failure(
+                session = null,
+                identity = SSH_PUBLIC_IDENTITY,
+                failure = openOutcome.failure,
+                elapsedSeconds = openOutcome.elapsedSeconds,
+            )
+
+            is TerminalOpenOutcome.InvalidRequest -> TerminalCommandOutcome.UnexpectedError(
+                throwable = IllegalArgumentException(openOutcome.message),
+                elapsedSeconds = 0L,
+            )
+        }
+    }
+
     suspend fun executeCustomCommand(command: String, timeoutMs: Long): TerminalCommandOutcome {
         return when (val openOutcome = openSession(
             handle = CUSTOM_TOOL_SESSION,
-            identity = "user",
+            publicIdentity = "user",
+            terminalIdentity = TerminalIdentity.User,
             cwd = null,
+            sshOptions = null,
             reuseExisting = true,
         )) {
             is TerminalOpenOutcome.Success -> executeBlocking(
@@ -126,18 +148,50 @@ object TerminalSessionPool {
         }
     }
 
+    private suspend fun openWithGeneratedHandle(
+        publicIdentity: String,
+        terminalIdentity: TerminalIdentity,
+        cwd: String?,
+        sshOptions: SshOpenOptions?,
+    ): TerminalOpenOutcome {
+        repeat(MAX_HANDLE_GENERATION_ATTEMPTS) {
+            val handle = try {
+                generateAvailablePublicHandle()
+            } catch (error: IllegalStateException) {
+                return TerminalOpenOutcome.InvalidRequest(error.message.orEmpty())
+            }
+            when (val outcome = openSession(
+                handle = handle,
+                publicIdentity = publicIdentity,
+                terminalIdentity = terminalIdentity,
+                cwd = cwd,
+                sshOptions = sshOptions,
+                reuseExisting = false,
+            )) {
+                is TerminalOpenOutcome.InvalidRequest -> {
+                    if (outcome.message == GENERATED_HANDLE_COLLISION_MESSAGE) {
+                        return@repeat
+                    }
+                    return outcome
+                }
+
+                else -> return outcome
+            }
+        }
+        return TerminalOpenOutcome.InvalidRequest(
+            "Unable to allocate terminal session handle after $MAX_HANDLE_GENERATION_ATTEMPTS attempts.",
+        )
+    }
+
     private suspend fun openSession(
         handle: String,
-        identity: String,
+        publicIdentity: String,
+        terminalIdentity: TerminalIdentity,
         cwd: String? = null,
+        sshOptions: SshOpenOptions? = null,
         reuseExisting: Boolean,
     ): TerminalOpenOutcome {
         val startTimeMs = System.currentTimeMillis()
-        val mappedIdentity = try {
-            mapIdentity(identity)
-        } catch (error: IllegalArgumentException) {
-            return TerminalOpenOutcome.InvalidRequest(error.message.orEmpty())
-        }
         synchronized(lock) {
             sessions[handle]?.let { existing ->
                 if (!reuseExisting) {
@@ -151,11 +205,15 @@ object TerminalSessionPool {
         }
 
         val holder = runtime()
-        return when (val result = holder.runtime.open(identity = mappedIdentity, cwd = cwd)) {
+        return when (val result = holder.runtime.open(
+            identity = terminalIdentity,
+            cwd = cwd,
+            sshOptions = sshOptions,
+        )) {
             is OpenResult.Success -> {
                 val entry = TerminalSessionEntry(
                     handle = handle,
-                    identity = identity.trim(),
+                    identity = publicIdentity,
                     session = result.value,
                     libTermSessionId = result.value.id,
                 )
@@ -584,7 +642,11 @@ internal data class TerminalSessionEntry(
 )
 
 internal interface TerminalRuntimePort {
-    suspend fun open(identity: TerminalIdentity, cwd: String?): OpenResult<TerminalSessionPort>
+    suspend fun open(
+        identity: TerminalIdentity,
+        cwd: String?,
+        sshOptions: SshOpenOptions?,
+    ): OpenResult<TerminalSessionPort>
     suspend fun close(sessionId: String)
     suspend fun closeAll(): Int
 }
@@ -599,10 +661,30 @@ internal interface TerminalSessionPort {
 private class LibTermTerminalRuntimePort(
     private val runtime: LibTermRuntime,
 ) : TerminalRuntimePort {
-    override suspend fun open(identity: TerminalIdentity, cwd: String?): OpenResult<TerminalSessionPort> {
+    override suspend fun open(
+        identity: TerminalIdentity,
+        cwd: String?,
+        sshOptions: SshOpenOptions?,
+    ): OpenResult<TerminalSessionPort> {
         return when (val result = runtime.open {
             this.identity = identity
             this.cwd = cwd
+            if (sshOptions != null) {
+                ssh {
+                    host = sshOptions.host
+                    port = sshOptions.port
+                    username = sshOptions.username
+                    hostKeyPolicy = sshOptions.hostKeyPolicy
+                    connectTimeoutMillis = sshOptions.connectTimeoutMillis
+                    serverAliveIntervalMillis = sshOptions.serverAliveIntervalMillis
+                    when (val auth = sshOptions.auth) {
+                        is SshAuth.Password -> password(auth.value)
+                        is SshAuth.PrivateKey -> {
+                            throw IllegalArgumentException("Private key authentication is not supported yet")
+                        }
+                    }
+                }
+            }
         }) {
             is OpenResult.Success -> OpenResult.Success(LibTermTerminalSessionPort(result.value))
             is OpenResult.Failure -> OpenResult.Failure(result.failure)

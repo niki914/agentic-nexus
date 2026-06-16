@@ -182,6 +182,24 @@ class TerminalToolResponseTest {
     }
 
     @Test
+    fun failureMapsSshAuthenticationFailureAndPublicIdentity() {
+        val json = parse(
+            TerminalToolResponse.failure(
+                failure = TerminalFailure.SshAuthenticationFailed(
+                    message = "Auth fail",
+                    username = "alice",
+                ),
+                elapsedSeconds = 2L,
+            )
+        )
+
+        assertEquals("ssh", json["identity"]!!.jsonPrimitive.content)
+        assertErrorCode("SSH_AUTHENTICATION_FAILED", json)
+        assertEquals("SshAuthenticationFailed", json["error"]!!.jsonObject["failure_type"]!!.jsonPrimitive.content)
+        assertEquals("ssh", json["error"]!!.jsonObject["identity"]!!.jsonPrimitive.content)
+    }
+
+    @Test
     fun internalErrorUsesStructuredError() {
         val json = parse(TerminalToolResponse.internalError(IllegalStateException("boom"), elapsedSeconds = 6L))
 
