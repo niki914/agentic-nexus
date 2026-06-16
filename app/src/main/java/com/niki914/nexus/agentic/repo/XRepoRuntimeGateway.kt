@@ -12,7 +12,11 @@ import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool
 class XRepoRuntimeGateway(
     private val repo: XRepo = XRepo,
 ) : RuntimeSettingsGateway {
-    override suspend fun readLlmConfig(): RuntimeLlmConfig = repo.llm()
+    override suspend fun readLlmConfig(): RuntimeLlmConfig {
+        val llm = repo.llm()
+        val memories = repo.memory.list()
+        return llm.copy(memories = memories)
+    }
 
     override suspend fun listMcpServers(): List<RuntimeMcpServer> = repo.mcp.list()
 
