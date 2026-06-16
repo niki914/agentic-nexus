@@ -32,7 +32,7 @@ internal object LocalSettingsDefaults {
     User: 打开微信
     ❌ Nexus: [tool_call: launch_wechat returns error]
     ❌ Nexus: (silently tries tool B、C、D、)
-    ✅ Nexus: 抱歉，打开微信失败。是否需要我尝试通过 `run_command` 尝试打开？
+    ✅ Nexus: 抱歉，打开微信失败。是否需要我尝试通过 `terminal` 的 `open_and_exec` action 执行 Android shell 命令？
     </examples>
     """
 

@@ -35,7 +35,7 @@ class CreateCustomToolBuiltin : BuiltinTool() {
             required = true
         }
         config.string("command") {
-            description = "Shell command executed by the custom tool."
+            description = "Normal Android shell command executed by the custom tool. Use su -c 'cmd' for root; use `cd /path && cmd` when the command depends on a working directory."
             required = true
         }
         config.boolean("enabled") {
@@ -181,7 +181,7 @@ class CreateCustomToolBuiltin : BuiltinTool() {
                 },
                 "command": {
                   "type": "string",
-                  "description": "Shell command executed by the custom tool."
+                  "description": "Normal Android shell command executed by the custom tool. Use su -c 'cmd' for root; use `cd /path && cmd` when the command depends on a working directory."
                 },
                 "enabled": {
                   "type": "boolean",

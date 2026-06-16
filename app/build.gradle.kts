@@ -60,6 +60,12 @@ android {
         compose = true
     }
 
+    packaging {
+        resources {
+            excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+        }
+    }
+
     lint { checkReleaseBuilds = false }
 }
 

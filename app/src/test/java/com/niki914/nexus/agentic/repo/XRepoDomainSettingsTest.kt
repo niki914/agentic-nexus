@@ -131,6 +131,26 @@ class XRepoDomainSettingsTest {
     }
 
     @Test
+    fun builtinTerminalInheritsLegacyRunCommandDisabledFlag() = runTest {
+        val store = FakeDomainSettingsStore(
+            StoreDescriptorRegistry.TOOLS_BUILTIN_ID to """
+                {
+                  "enabled_for_agents": {
+                    "run_command": []
+                  }
+                }
+            """.trimIndent()
+        )
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        val terminal = XRepo.builtinTools.list().first { it.name == "terminal" }
+
+        assertFalse(terminal.enabled)
+        assertTrue(store.writeIds.isEmpty())
+    }
+
+    @Test
     fun onboardingCompletedWritesOnlyAppStateStore() = runTest {
         val store = FakeDomainSettingsStore()
         XRepo.installStoreForTest(store)

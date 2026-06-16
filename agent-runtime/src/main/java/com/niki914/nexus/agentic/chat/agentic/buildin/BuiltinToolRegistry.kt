@@ -6,8 +6,8 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.impl.MemorizeBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.NotifyBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.OpenUriBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.ReadCustomToolBuiltin
-import com.niki914.nexus.agentic.chat.agentic.buildin.impl.RunCommandBuildin_WIP_SAFE
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.SearchAppsBuiltin
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.TerminalBuiltin
 
 class BuiltinToolRegistry(
     private val tools: List<BuiltinTool>,
@@ -27,7 +27,7 @@ class BuiltinToolRegistry(
                 NotifyBuiltin(),
                 OpenUriBuiltin(),
                 ReadCustomToolBuiltin(),
-                RunCommandBuildin_WIP_SAFE(),
+                TerminalBuiltin(),
                 SearchAppsBuiltin(),
             )
         )

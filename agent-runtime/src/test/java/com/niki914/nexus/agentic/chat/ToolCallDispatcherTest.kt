@@ -8,8 +8,8 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolExecutor
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
+import com.niki914.nexus.agentic.chat.agentic.custom.CustomCommandExecutionResult
 import com.niki914.nexus.agentic.chat.agentic.custom.CustomToolExecutor
-import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandRunner
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.test.runTest
@@ -121,7 +121,9 @@ class ToolCallDispatcherTest {
             builtinToolExecutor = BuiltinToolExecutor(BuiltinToolRegistry(emptyList())),
             customToolExecutor = CustomToolExecutor(
                 timeoutMs = 1_000,
-                shellCommandRunner = ShellCommandRunner("/bin/sh"),
+                commandExecutor = { _, _ ->
+                    CustomCommandExecutionResult(ok = true, stdout = "sample_model")
+                },
             ),
             currentTools = {
                 ResolvedTools(

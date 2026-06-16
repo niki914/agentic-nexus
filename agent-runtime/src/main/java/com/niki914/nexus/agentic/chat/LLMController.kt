@@ -6,6 +6,7 @@ import com.niki914.nexus.agentic.chat.agentic.SessionToolBinder
 import com.niki914.nexus.agentic.chat.agentic.ToolCallDispatcher
 import com.niki914.nexus.agentic.chat.agentic.ToolManager
 import com.niki914.nexus.agentic.chat.agentic.mcp.McpDiscoveryCacheStore
+import com.niki914.nexus.agentic.chat.agentic.shell.TerminalSessionPool
 import com.niki914.nexus.agentic.chat.agentic.stream.LlmStreamEventMapper
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.agentic.runtime.settings.model.LlmApiType
@@ -214,6 +215,7 @@ object LLMController {
 
     suspend fun resetConversation() {
         session?.resetConversation()
+        TerminalSessionPool.closeAll()
     }
 
     suspend fun stopCurrentRound(keepCurrentTurn: Boolean = false) {

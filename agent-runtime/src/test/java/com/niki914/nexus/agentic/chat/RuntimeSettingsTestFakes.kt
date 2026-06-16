@@ -167,6 +167,6 @@ private fun defaultBuiltinToolSettings(): List<RuntimeBuiltinToolSetting> {
         RuntimeBuiltinToolSetting("memorize", "Add a memory item.", enabled = true),
         RuntimeBuiltinToolSetting("notify", "Post host notifications.", enabled = true),
         RuntimeBuiltinToolSetting("read_custom_tool", "Read custom tool implementations.", enabled = true),
-        RuntimeBuiltinToolSetting("run_command", "Run shell commands.", enabled = true),
+        RuntimeBuiltinToolSetting("terminal", "Manage Android terminal sessions.", enabled = true),
     )
 }

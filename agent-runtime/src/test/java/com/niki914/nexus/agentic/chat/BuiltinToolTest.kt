@@ -9,14 +9,15 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.impl.LaunchAppBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.MemorizeBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.OpenUriBuiltin
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.ReadCustomToolBuiltin
-import com.niki914.nexus.agentic.chat.agentic.buildin.impl.RunCommandBuildin_WIP_SAFE
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.SearchAppsBuiltin
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.TerminalBuiltin
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -73,8 +74,8 @@ class BuiltinToolTest {
                 "notify",
                 "open_uri",
                 "read_custom_tool",
-                "run_command",
                 "search_apps",
+                "terminal",
             ),
             registry.all().map { it.name }.sorted()
         )
@@ -84,8 +85,9 @@ class BuiltinToolTest {
         assertEquals("notify", registry.find("notify")?.name)
         assertEquals("open_uri", registry.find("open_uri")?.name)
         assertEquals("read_custom_tool", registry.find("read_custom_tool")?.name)
-        assertEquals("run_command", registry.find("run_command")?.name)
         assertEquals("search_apps", registry.find("search_apps")?.name)
+        assertEquals("terminal", registry.find("terminal")?.name)
+        assertNull(registry.find("run_command"))
     }
 
     @Test
@@ -106,17 +108,18 @@ class BuiltinToolTest {
     }
 
     @Test
-    fun runCommandBuiltinDescription_matchesConfigureDescription() {
-        val tool = RunCommandBuildin_WIP_SAFE()
+    fun terminalBuiltinDescription_matchesConfigureDescription() {
+        val tool = TerminalBuiltin()
         val config = LocalToolConfig()
 
         tool.configure(config)
 
         assertEquals(tool.description, config.description)
-        assertEquals(
-            "Run a command in the Android device shell (`/system/bin/sh`), not in a desktop Linux or macOS shell. Each call starts in a fresh shell and defaults to cwd='/'. The environment is minimal: many desktop tools such as apt, python, pip, node, git, or bash may be unavailable. Prefer shell builtins, common Android shell commands, and absolute device paths. Unsafe commands may be blocked by safety policy.",
-            tool.description,
-        )
+        assertEquals("terminal", tool.name)
+        assertTrue(tool.defaultEnabled)
+        assertTrue(tool.description.contains("open_and_exec"))
+        assertTrue(tool.description.contains("read_async_result"))
+        assertTrue(tool.description.contains("SESSION_BUSY"))
     }
 
     private class FakeBuiltinTool(

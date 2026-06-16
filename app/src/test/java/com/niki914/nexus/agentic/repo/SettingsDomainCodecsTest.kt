@@ -69,12 +69,31 @@ class SettingsDomainCodecsTest {
     @Test
     fun builtinFlagsEncodeEnabledForMainAgent() {
         val json = ToolSettingsCodec.encodeBuiltinEnabledForAgents(
-            mapOf("launch_app" to true, "run_command" to false)
+            mapOf("launch_app" to true, "terminal" to false)
         )
         val agents = jsonObject(json)["enabled_for_agents"]!!.jsonObject
 
         assertEquals(listOf("main"), agents["launch_app"]!!.jsonArray.map { it.jsonPrimitive.content })
+        assertTrue(agents["terminal"]!!.jsonArray.isEmpty())
+    }
+
+    @Test
+    fun builtinFlagsDecodeLegacyRunCommandWithoutRewritingKey() {
+        val json = """
+            {
+              "enabled_for_agents": {
+                "run_command": []
+              }
+            }
+        """.trimIndent()
+
+        val flags = ToolSettingsCodec.parseBuiltinEnabledForAgents(json)
+        val encoded = ToolSettingsCodec.encodeBuiltinEnabledForAgents(flags)
+        val agents = jsonObject(encoded)["enabled_for_agents"]!!.jsonObject
+
+        assertEquals(false, flags["run_command"])
         assertTrue(agents["run_command"]!!.jsonArray.isEmpty())
+        assertFalse(agents.containsKey("terminal"))
     }
 
     @Test

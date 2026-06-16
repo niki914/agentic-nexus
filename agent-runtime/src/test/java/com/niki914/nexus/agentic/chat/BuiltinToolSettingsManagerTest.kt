@@ -27,7 +27,7 @@ class BuiltinToolSettingsManagerTest {
         val items = manager.load()
 
         assertEquals(
-            listOf("create_custom_tool", "memorize", "notify", "read_custom_tool", "run_command"),
+            listOf("create_custom_tool", "memorize", "notify", "read_custom_tool", "terminal"),
             items.map { it.name }.sorted()
         )
         assertTrue(items.all { it.enabled })
@@ -68,6 +68,21 @@ class BuiltinToolSettingsManagerTest {
         assertFalse(result.ok)
         assertEquals("UNKNOWN_BUILTIN_TOOL", result.code)
         assertEquals(0, gateway.writeCount)
+    }
+
+    @Test
+    fun setEnabled_acceptsTerminalBuiltin() = runTest {
+        val gateway = installRuntimeSettingsGatewayForTest()
+
+        val result = manager.setEnabled(
+            name = "terminal",
+            enabled = false,
+        )
+
+        assertTrue(result.ok)
+        assertEquals("terminal", result.data["name"]!!.jsonPrimitive.content)
+        assertFalse(result.data["enabled"]!!.jsonPrimitive.boolean)
+        assertFalse(gateway.builtinTools.single { it.name == "terminal" }.enabled)
     }
 
     @Test

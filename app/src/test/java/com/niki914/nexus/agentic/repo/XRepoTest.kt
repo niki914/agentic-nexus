@@ -410,6 +410,48 @@ class XRepoTest {
     }
 
     @Test
+    fun builtinListContainsTerminalAndNotRunCommand() = runTest {
+        val store = FakeLocalSettingsStore(LocalSettings())
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        val names = XRepo.builtinTools.list().map { it.name }
+
+        assertTrue(names.contains("terminal"))
+        assertFalse(names.contains("run_command"))
+    }
+
+    @Test
+    fun builtinTerminalInheritsLegacyRunCommandDisabledFlag() = runTest {
+        val settings = LocalSettingsCodec.withBuiltinFlag(LocalSettings(), "run_command", false)
+        val store = FakeLocalSettingsStore(settings)
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        val terminal = XRepo.builtinTools.list().single { it.name == "terminal" }
+
+        assertFalse(terminal.enabled)
+        assertEquals(0, store.writeCount)
+    }
+
+    @Test
+    fun builtinSetEnabled_acceptsTerminalAndRejectsRunCommand() = runTest {
+        val store = FakeLocalSettingsStore(LocalSettings())
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        val terminalValidation = XRepo.builtinTools.setEnabled("terminal", false)
+        val runCommandValidation = XRepo.builtinTools.setEnabled("run_command", false)
+        val flags = LocalSettingsCodec.parseBuiltinFlags(store.settings)
+
+        assertNull(terminalValidation)
+        assertEquals(false, flags["terminal"])
+        assertNotNull(runCommandValidation)
+        assertEquals("name", runCommandValidation!!.field)
+        assertEquals(1, store.writeCount)
+    }
+
+    @Test
     fun customToolSave_acceptsSafeCommand() = runTest {
         val store = FakeLocalSettingsStore(LocalSettings())
         XRepo.installStoreForTest(store)
