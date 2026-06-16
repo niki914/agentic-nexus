@@ -1,10 +1,21 @@
 package com.niki914.nexus.agentic.chat
 
+import com.niki914.libterm.OpenResult
+import com.niki914.libterm.TerminalBytes
+import com.niki914.libterm.TerminalIdentity
+import com.niki914.libterm.runtime.CommandResult
+import com.niki914.libterm.runtime.TermResult
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.impl.TerminalBuiltin
+import com.niki914.nexus.agentic.chat.agentic.shell.TerminalRuntimePort
+import com.niki914.nexus.agentic.chat.agentic.shell.TerminalSessionPort
+import com.niki914.nexus.agentic.chat.agentic.shell.TerminalSessionPool
 import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
+import com.niki914.s3ss10n.LocalToolConfig
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.After
@@ -18,7 +29,10 @@ import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRuleEnab
 class TerminalBuiltinTest {
     @After
     fun tearDown() {
-        RuntimeEnvironment.clearForTest()
+        runTest {
+            TerminalSessionPool.closeAll()
+            RuntimeEnvironment.clearForTest()
+        }
     }
 
     @Test
@@ -89,6 +103,57 @@ class TerminalBuiltinTest {
     }
 
     @Test
+    fun invokeRawJson_execWithIdentityNameReturnsSessionNotFound() = runTest {
+        installRuntimeSettingsGatewayForTest()
+
+        val json = invoke("""{"action":"exec","session":"root","command":"pwd"}""")
+
+        assertErrorCode("SESSION_NOT_FOUND", json)
+        val message = json["error"]!!.jsonObject["message"]!!.jsonPrimitive.content
+        assertTrue(message.contains("handle returned by open or open_and_exec"))
+        assertTrue(message.contains("Do not pass identity names"))
+    }
+
+    @Test
+    fun invokeRawJson_openAndExecReturnsGeneratedHandle() = runTest {
+        installRuntimeSettingsGatewayForTest()
+        val fakeRuntime = FakeTerminalRuntime(
+            nextResult = commandResult(stdout = "ok\n"),
+        )
+        installFakeRuntime(fakeRuntime).use {
+            installHandles("a3f9").use {
+                val json = invoke("""{"action":"open_and_exec","identity":"user","command":"pwd"}""")
+
+                assertEquals("a3f9", json["session"]!!.jsonPrimitive.content)
+                assertEquals("user", json["identity"]!!.jsonPrimitive.content)
+                assertEquals("0", json["exit_code"]!!.jsonPrimitive.content)
+                assertEquals("ok\n", json["stdout"]!!.jsonPrimitive.content)
+                assertEquals(listOf("pwd"), fakeRuntime.openedSessions.single().commands)
+            }
+        }
+    }
+
+    @Test
+    fun configure_sessionSchemaDoesNotEnumerateUserRoot() {
+        val config = LocalToolConfig()
+
+        TerminalBuiltin().configure(config)
+
+        val schema = Json.parseToJsonElement(config.rawInputSchemaJson!!).jsonObject
+        val properties = schema["properties"]!!.jsonObject
+        val sessionSchema = properties["session"]!!.jsonObject
+        val identitySchema = properties["identity"]!!.jsonObject
+        assertFalse(sessionSchema.containsKey("enum"))
+        assertEquals(
+            listOf("user", "root"),
+            identitySchema["enum"]!!.jsonArray.map { it.jsonPrimitive.content },
+        )
+        assertTrue(
+            sessionSchema["description"]!!.jsonPrimitive.content.contains("returned by open or open_and_exec")
+        )
+    }
+
+    @Test
     fun invokeRawJson_asyncExecReturnsSessionNotFoundWithoutOpening() = runTest {
         installRuntimeSettingsGatewayForTest()
 
@@ -134,6 +199,69 @@ class TerminalBuiltinTest {
 
     private fun assertErrorCode(expected: String, json: kotlinx.serialization.json.JsonObject) {
         assertEquals(expected, json["error"]!!.jsonObject["code"]!!.jsonPrimitive.content)
+    }
+
+    private fun installFakeRuntime(fakeRuntime: FakeTerminalRuntime): AutoCloseable {
+        return TerminalSessionPool.installRuntimePortFactoryForTest { fakeRuntime }
+    }
+
+    private fun installHandles(vararg handles: String): AutoCloseable {
+        val iterator = handles.iterator()
+        return TerminalSessionPool.installHandleGeneratorForTest {
+            check(iterator.hasNext()) { "No fake terminal handles left." }
+            iterator.next()
+        }
+    }
+
+    private class FakeTerminalRuntime(
+        private val nextResult: CommandResult = commandResult(),
+    ) : TerminalRuntimePort {
+        val openedSessions = mutableListOf<FakeTerminalSession>()
+
+        override suspend fun open(identity: TerminalIdentity, cwd: String?): OpenResult<TerminalSessionPort> {
+            val session = FakeTerminalSession(
+                id = "runtime-${openedSessions.size + 1}",
+                nextResult = nextResult,
+            )
+            openedSessions.add(session)
+            return OpenResult.Success(session)
+        }
+
+        override suspend fun close(sessionId: String) = Unit
+
+        override suspend fun closeAll(): Int = openedSessions.size
+    }
+
+    private class FakeTerminalSession(
+        override val id: String,
+        private val nextResult: CommandResult,
+    ) : TerminalSessionPort {
+        override val stream = emptyFlow<com.niki914.libterm.runtime.TerminalTextChunk>()
+        val commands = mutableListOf<String>()
+
+        override suspend fun exec(command: String, timeoutMillis: Long): TermResult<CommandResult> {
+            commands.add(command)
+            return TermResult.Success(nextResult)
+        }
+
+        override suspend fun close() = Unit
+    }
+
+    private companion object {
+        fun commandResult(
+            stdout: String = "",
+            stderr: String = "",
+            exitCode: Int? = 0,
+            timedOut: Boolean = false,
+        ): CommandResult {
+            return CommandResult(
+                command = "cmd",
+                stdout = TerminalBytes.of(stdout.encodeToByteArray()),
+                stderr = TerminalBytes.of(stderr.encodeToByteArray()),
+                exitCode = exitCode,
+                timedOut = timedOut,
+            )
+        }
     }
 
     private fun dangerousRules(): List<ExecutionRule> {

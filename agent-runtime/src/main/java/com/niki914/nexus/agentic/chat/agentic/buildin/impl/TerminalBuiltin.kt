@@ -33,9 +33,9 @@ class TerminalBuiltin(
     override val description: String =
         "Manage Android terminal sessions. For one-shot commands, prefer open_and_exec, e.g. " +
             """{"action":"open_and_exec","identity":"user","command":"pwd"}. """ +
-            "Use exec only after opening a session with open or open_and_exec. " +
+            "Use exec only with the opaque session handle returned by open or open_and_exec. " +
             "Use is_async=true only with exec for long-running commands, then poll read_async_result by async_id. " +
-            "If SESSION_NOT_FOUND, call open first or use open_and_exec for one-shot commands. " +
+            "If SESSION_NOT_FOUND, call open first or use the returned handle instead of identity names. " +
             "If SESSION_BUSY, wait or poll read_async_result when async_id is present."
 
     override val defaultEnabled: Boolean = true
@@ -108,8 +108,8 @@ class TerminalBuiltin(
             is TerminalCommandOutcome.Success -> TerminalToolResponse.commandSuccess(
                 result = outcome.result,
                 elapsedSeconds = outcome.elapsedSeconds,
-                session = identity,
-                identity = identity,
+                session = outcome.session,
+                identity = outcome.identity,
                 mergeStderr = args.mergeStderr,
             )
 
@@ -117,16 +117,16 @@ class TerminalBuiltin(
                 result = outcome.result,
                 elapsedSeconds = outcome.elapsedSeconds,
                 timeoutMs = timeoutMs,
-                session = identity,
-                identity = identity,
+                session = outcome.session,
+                identity = outcome.identity,
                 mergeStderr = args.mergeStderr,
             )
 
             is TerminalCommandOutcome.Failure -> TerminalToolResponse.failure(
                 failure = outcome.failure,
                 elapsedSeconds = outcome.elapsedSeconds,
-                session = identity,
-                identity = identity,
+                session = outcome.session,
+                identity = outcome.identity,
             )
 
             is TerminalCommandOutcome.SessionNotFound -> TerminalToolResponse.sessionNotFound(outcome.session)
@@ -171,6 +171,8 @@ class TerminalBuiltin(
                 is TerminalCommandOutcome.Success -> TerminalToolResponse.commandSuccess(
                     result = outcome.result,
                     elapsedSeconds = outcome.elapsedSeconds,
+                    session = outcome.session,
+                    identity = outcome.identity,
                     mergeStderr = args.mergeStderr,
                 )
 
@@ -178,13 +180,16 @@ class TerminalBuiltin(
                     result = outcome.result,
                     elapsedSeconds = outcome.elapsedSeconds,
                     timeoutMs = timeoutMs,
+                    session = outcome.session,
+                    identity = outcome.identity,
                     mergeStderr = args.mergeStderr,
                 )
 
                 is TerminalCommandOutcome.Failure -> TerminalToolResponse.failure(
                     failure = outcome.failure,
                     elapsedSeconds = outcome.elapsedSeconds,
-                    session = session,
+                    session = outcome.session,
+                    identity = outcome.identity,
                 )
 
                 is TerminalCommandOutcome.SessionNotFound -> TerminalToolResponse.sessionNotFound(outcome.session)
@@ -278,7 +283,7 @@ class TerminalBuiltin(
     private fun TerminalToolArgs.requireIdentity(): String {
         val value = identity?.takeIf(String::isNotBlank)
             ?: throw IllegalArgumentException("Field 'identity' must be one of user, root.")
-        if (value !in PUBLIC_SESSIONS) {
+        if (value !in PUBLIC_IDENTITIES) {
             throw IllegalArgumentException("Field 'identity' must be one of user, root.")
         }
         return value
@@ -287,9 +292,6 @@ class TerminalBuiltin(
     private fun TerminalToolArgs.requireSession(): String {
         val value = session?.takeIf(String::isNotBlank)
             ?: throw IllegalArgumentException("Field 'session' is required for action '${action.wireName()}'.")
-        if (value !in PUBLIC_SESSIONS) {
-            throw IllegalArgumentException("Field 'session' must be one of user, root.")
-        }
         return value
     }
 
@@ -371,7 +373,7 @@ class TerminalBuiltin(
 
     companion object {
         private const val DEFAULT_TIMEOUT_MS = 30_000L
-        private val PUBLIC_SESSIONS = setOf("user", "root")
+        private val PUBLIC_IDENTITIES = setOf("user", "root")
         private val REQUEST_KEYS = setOf(
             "action",
             "identity",
@@ -390,7 +392,7 @@ class TerminalBuiltin(
                 "action": {
                   "type": "string",
                   "enum": ["open", "open_and_exec", "exec", "read_async_result", "close"],
-                  "description": "Terminal action to perform. For one-shot commands, prefer open_and_exec with identity and command. Use exec only after opening a session with open or open_and_exec."
+                  "description": "Terminal action to perform. open and open_and_exec create a new session and return an opaque handle. For one-shot commands, prefer open_and_exec with identity and command. Use exec only with the returned session handle."
                 },
                 "identity": {
                   "type": "string",
@@ -399,8 +401,7 @@ class TerminalBuiltin(
                 },
                 "session": {
                   "type": "string",
-                  "enum": ["user", "root"],
-                  "description": "Existing opened session handle used by exec, read_async_result, or close. This is not a substitute for identity; call open first or use open_and_exec for one-shot commands."
+                  "description": "Opaque session handle returned by open or open_and_exec. Do not pass identity names such as user or root."
                 },
                 "command": {
                   "type": "string",

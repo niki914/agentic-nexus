@@ -101,7 +101,7 @@ object TerminalToolResponse {
     fun sessionNotFound(session: String): String {
         return error(
             code = "SESSION_NOT_FOUND",
-            message = "Session '$session' not found. Call open first for reusable sessions, or use open_and_exec for one-shot commands.",
+            message = "Session '$session' not found. Use the session handle returned by open or open_and_exec. Do not pass identity names such as user or root.",
         )
     }
 

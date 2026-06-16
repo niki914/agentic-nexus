@@ -104,6 +104,17 @@ class TerminalToolResponseTest {
     }
 
     @Test
+    fun sessionNotFoundTellsCallerToUseReturnedHandle() {
+        val json = parse(TerminalToolResponse.sessionNotFound("user"))
+
+        val message = json["error"]!!.jsonObject["message"]!!.jsonPrimitive.content
+        assertErrorCode("SESSION_NOT_FOUND", json)
+        assertTrue(message.contains("handle returned by open or open_and_exec"))
+        assertTrue(message.contains("Do not pass identity names"))
+        assertTrue(message.contains("user or root"))
+    }
+
+    @Test
     fun sessionBusyIncludesAsyncIdWhenPresent() {
         val json = parse(TerminalToolResponse.sessionBusy(session = "user", asyncId = "a1"))
 
