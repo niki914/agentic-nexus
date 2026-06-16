@@ -53,30 +53,29 @@ fun EditableSettingsDetailChrome(
                     showUnsavedChangesDialog = true
                 },
             ),
-            overlay = {
-                ConfirmationLiquidDialog(
-                    visible = showUnsavedChangesDialog,
-                    onDismissRequest = {
-                        showUnsavedChangesDialog = false
-                    },
-                    title = stringResource(R.string.unsaved_changes_dialog_title),
-                    text = stringResource(R.string.unsaved_changes_dialog_text),
-                    negativeButtonText = stringResource(R.string.unsaved_changes_dialog_cancel),
-                    positiveButtonText = stringResource(R.string.unsaved_changes_dialog_confirm_exit),
-                    onNegativeClick = {
-                        showUnsavedChangesDialog = false
-                    },
-                    onPositiveClick = {
-                        showUnsavedChangesDialog = false
-                        latestOnDiscardChanges()
-                    },
-                )
-            },
         )
     }
     RegisterPageChrome(pageChromeContribution)
 
     content()
+
+    ConfirmationLiquidDialog(
+        visible = showUnsavedChangesDialog,
+        onDismissRequest = {
+            showUnsavedChangesDialog = false
+        },
+        title = stringResource(R.string.unsaved_changes_dialog_title),
+        text = stringResource(R.string.unsaved_changes_dialog_text),
+        negativeButtonText = stringResource(R.string.unsaved_changes_dialog_cancel),
+        positiveButtonText = stringResource(R.string.unsaved_changes_dialog_confirm_exit),
+        onNegativeClick = {
+            showUnsavedChangesDialog = false
+        },
+        onPositiveClick = {
+            showUnsavedChangesDialog = false
+            latestOnDiscardChanges()
+        },
+    )
 }
 
 @Composable

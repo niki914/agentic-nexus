@@ -10,7 +10,8 @@ class NexusAppSourceTest {
         val source = readNexusAppSource()
 
         assertTrue(source.contains("fun requestBack()"))
-        assertTrue(source.contains("val backHandler = currentChrome.backHandler"))
+        assertTrue(source.contains("val latestCurrentChrome by rememberUpdatedState(currentChrome)"))
+        assertTrue(source.contains("val backHandler = latestCurrentChrome.backHandler"))
         assertTrue(source.contains("backHandler.shouldConsumeBack()"))
         assertTrue(source.contains("backHandler.onConsumeBack()"))
         assertTrue(source.contains("popOrMoveTaskToBack()"))

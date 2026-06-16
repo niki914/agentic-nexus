@@ -11,26 +11,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
+import com.niki914.nexus.agentic.app.ui.infra.LiquidScreen
+import com.niki914.nexus.agentic.app.ui.infra.rememberLiquidScreenState
 import com.niki914.nexus.cb.BaseTheme
 
 @Composable
 private fun ConfirmationLiquidDialogPreviewContent() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center,
-    ) {
-        ConfirmationLiquidDialog(
-            visible = true,
-            onDismissRequest = {},
-            title = "Hi,\niOS",
-            text = "This is,\nthe\ncontent",
-            negativeButtonText = "Cancel",
-            positiveButtonText = "Bypass",
-            onNegativeClick = {},
-            onPositiveClick = {},
-        )
+    val screenState = rememberLiquidScreenState(
+        title = "",
+        showLeftButton = false,
+        showRightButton = false,
+        showBlurLayer = false,
+    )
+
+    LiquidScreen(state = screenState) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.Center,
+        ) {
+            ConfirmationLiquidDialog(
+                visible = true,
+                onDismissRequest = {},
+                title = "Hi,\niOS",
+                text = "This is,\nthe\ncontent",
+                negativeButtonText = "Cancel",
+                positiveButtonText = "Bypass",
+                onNegativeClick = {},
+                onPositiveClick = {},
+            )
+        }
     }
 }
 

@@ -27,7 +27,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.ProvidableCompositionLocal
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,9 +47,83 @@ import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.niki914.nexus.agentic.app.ui.infra.shape.G2FieldShape
+import java.util.concurrent.atomic.AtomicLong
+
+internal class LiquidDialogHostEntry(
+    val id: Long,
+    content: @Composable () -> Unit,
+) {
+    var content by mutableStateOf(content)
+        internal set
+}
+
+internal class LiquidDialogHostState {
+    private val mutableEntries = mutableStateListOf<LiquidDialogHostEntry>()
+
+    val entries: List<LiquidDialogHostEntry>
+        get() = mutableEntries
+
+    internal fun upsert(id: Long, content: @Composable () -> Unit) {
+        val entry = mutableEntries.firstOrNull { it.id == id }
+        if (entry != null) {
+            entry.content = content
+        } else {
+            mutableEntries += LiquidDialogHostEntry(id = id, content = content)
+        }
+    }
+
+    internal fun remove(id: Long) {
+        mutableEntries.removeAll { it.id == id }
+    }
+}
+
+internal val LocalLiquidDialogHostState: ProvidableCompositionLocal<LiquidDialogHostState> =
+    staticCompositionLocalOf {
+        error("LiquidDialog must be used inside LiquidScreen")
+    }
+
+private val liquidDialogHostEntryId = AtomicLong(0L)
+
+private fun nextLiquidDialogHostEntryId(): Long = liquidDialogHostEntryId.incrementAndGet()
 
 @Composable
 fun LiquidDialog(
+    visible: Boolean,
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+    dismissOnBackgroundTap: Boolean = true,
+    title: (@Composable () -> Unit)? = null,
+    text: (@Composable () -> Unit)? = null,
+    actions: (@Composable RowScope.() -> Unit)? = null,
+    content: (@Composable ColumnScope.() -> Unit)? = null,
+) {
+    val hostState = LocalLiquidDialogHostState.current
+    val dialogId = remember { nextLiquidDialogHostEntryId() }
+
+    SideEffect {
+        hostState.upsert(dialogId) {
+            LiquidDialogSurface(
+                visible = visible,
+                onDismissRequest = onDismissRequest,
+                modifier = modifier,
+                dismissOnBackgroundTap = dismissOnBackgroundTap,
+                title = title,
+                text = text,
+                actions = actions,
+                content = content,
+            )
+        }
+    }
+
+    DisposableEffect(hostState, dialogId) {
+        onDispose {
+            hostState.remove(dialogId)
+        }
+    }
+}
+
+@Composable
+private fun LiquidDialogSurface(
     visible: Boolean,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
@@ -96,10 +178,14 @@ fun LiquidDialog(
                     .fillMaxSize()
                     .background(scrimColor)
                     .clickable(
-                        enabled = dismissOnBackgroundTap,
+                        enabled = true,
                         interactionSource = interactionSource,
                         indication = null,
-                        onClick = onDismissRequest,
+                        onClick = {
+                            if (dismissOnBackgroundTap) {
+                                onDismissRequest()
+                            }
+                        },
                     ),
             )
 
@@ -124,7 +210,7 @@ fun LiquidDialog(
                     )
                     .clip(panelShape)
                     .clickable(
-                        enabled = false,
+                        enabled = true,
                         interactionSource = interactionSource,
                         indication = null,
                         onClick = {},

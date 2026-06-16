@@ -33,6 +33,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -70,6 +71,7 @@ fun LiquidScreen(
     val density = LocalDensity.current
     val hazeState = rememberHazeState(blurEnabled = true)
     val chromeBackdrop = rememberLayerBackdrop()
+    val dialogHostState = remember { LiquidDialogHostState() }
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val titleBarHeight = 56.dp
     val buttonSlotHeight = 72.dp
@@ -112,6 +114,7 @@ fun LiquidScreen(
                 hazeState = hazeState,
             ),
             LocalLiquidViewportAvoidanceController provides state.viewportAvoidanceController,
+            LocalLiquidDialogHostState provides dialogHostState,
         ) {
             Box(
                 modifier = Modifier
@@ -310,6 +313,19 @@ fun LiquidScreen(
                             content = buttonContent,
                         )
                     }
+                }
+            }
+        }
+
+        // 第 4 层：Dialog host 必须高于顶栏按钮层，避免点击穿透。
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(4f),
+        ) {
+            dialogHostState.entries.forEach { entry ->
+                key(entry.id) {
+                    entry.content()
                 }
             }
         }

@@ -29,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,6 +79,7 @@ fun NexusApp(
     val currentPage = currentEntry.page
     val currentLeftAction = currentPage.leftAction
     val currentChrome = pageChromeHost.stateFor(currentEntry.id)
+    val latestCurrentChrome by rememberUpdatedState(currentChrome)
     fun closeChromeMenu() {
         chromeMenuExpanded = false
     }
@@ -130,7 +132,11 @@ fun NexusApp(
     }
 
     fun requestBack() {
-        val backHandler = currentChrome.backHandler
+        if (chromeMenuExpanded) {
+            closeChromeMenu()
+            return
+        }
+        val backHandler = latestCurrentChrome.backHandler
         if (backHandler != null && backHandler.shouldConsumeBack()) {
             backHandler.onConsumeBack()
         } else {
@@ -139,11 +145,7 @@ fun NexusApp(
     }
 
     BackHandler(enabled = true) {
-        if (chromeMenuExpanded) {
-            closeChromeMenu()
-        } else {
-            requestBack()
-        }
+        requestBack()
     }
 
     LaunchedEffect(
