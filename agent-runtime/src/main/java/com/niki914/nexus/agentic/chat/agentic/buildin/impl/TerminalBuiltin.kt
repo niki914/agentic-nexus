@@ -33,6 +33,8 @@ class TerminalBuiltin(
     override val description: String =
         "Manage Android terminal sessions. For one-shot commands, prefer open_and_exec, e.g. " +
             """{"action":"open_and_exec","identity":"user","command":"pwd"}. """ +
+            "identity can be user, root, or shizuku. " +
+            "Shizuku depends on device support, a running service, and granted authorization. " +
             "Use exec only with the opaque session handle returned by open or open_and_exec. " +
             "Use is_async=true only with exec for long-running commands, then poll read_async_result by async_id. " +
             "If SESSION_NOT_FOUND, call open first or use the returned handle instead of identity names. " +
@@ -282,9 +284,9 @@ class TerminalBuiltin(
 
     private fun TerminalToolArgs.requireIdentity(): String {
         val value = identity?.takeIf(String::isNotBlank)
-            ?: throw IllegalArgumentException("Field 'identity' must be one of user, root.")
+            ?: throw IllegalArgumentException("Field 'identity' must be one of user, root, shizuku.")
         if (value !in PUBLIC_IDENTITIES) {
-            throw IllegalArgumentException("Field 'identity' must be one of user, root.")
+            throw IllegalArgumentException("Field 'identity' must be one of user, root, shizuku.")
         }
         return value
     }
@@ -373,7 +375,7 @@ class TerminalBuiltin(
 
     companion object {
         private const val DEFAULT_TIMEOUT_MS = 30_000L
-        private val PUBLIC_IDENTITIES = setOf("user", "root")
+        private val PUBLIC_IDENTITIES = setOf("user", "root", "shizuku")
         private val REQUEST_KEYS = setOf(
             "action",
             "identity",
@@ -396,8 +398,8 @@ class TerminalBuiltin(
                 },
                 "identity": {
                   "type": "string",
-                  "enum": ["user", "root"],
-                  "description": "Identity used only by open or open_and_exec to choose the user or root terminal."
+                  "enum": ["user", "root", "shizuku"],
+                  "description": "Identity used only by open or open_and_exec to choose the user, root, or shizuku terminal. Shizuku requires device support, a running service, and granted authorization."
                 },
                 "session": {
                   "type": "string",

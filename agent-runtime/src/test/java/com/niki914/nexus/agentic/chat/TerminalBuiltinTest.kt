@@ -122,19 +122,20 @@ class TerminalBuiltinTest {
         )
         installFakeRuntime(fakeRuntime).use {
             installHandles("a3f9").use {
-                val json = invoke("""{"action":"open_and_exec","identity":"user","command":"pwd"}""")
+                val json = invoke("""{"action":"open_and_exec","identity":"shizuku","command":"pwd"}""")
 
                 assertEquals("a3f9", json["session"]!!.jsonPrimitive.content)
-                assertEquals("user", json["identity"]!!.jsonPrimitive.content)
+                assertEquals("shizuku", json["identity"]!!.jsonPrimitive.content)
                 assertEquals("0", json["exit_code"]!!.jsonPrimitive.content)
                 assertEquals("ok\n", json["stdout"]!!.jsonPrimitive.content)
+                assertEquals(listOf(TerminalIdentity.Shizuku), fakeRuntime.openedIdentities)
                 assertEquals(listOf("pwd"), fakeRuntime.openedSessions.single().commands)
             }
         }
     }
 
     @Test
-    fun configure_sessionSchemaDoesNotEnumerateUserRoot() {
+    fun configure_sessionSchemaEnumeratesPublicIdentitiesIncludingShizuku() {
         val config = LocalToolConfig()
 
         TerminalBuiltin().configure(config)
@@ -145,7 +146,7 @@ class TerminalBuiltinTest {
         val identitySchema = properties["identity"]!!.jsonObject
         assertFalse(sessionSchema.containsKey("enum"))
         assertEquals(
-            listOf("user", "root"),
+            listOf("user", "root", "shizuku"),
             identitySchema["enum"]!!.jsonArray.map { it.jsonPrimitive.content },
         )
         assertTrue(
@@ -217,8 +218,10 @@ class TerminalBuiltinTest {
         private val nextResult: CommandResult = commandResult(),
     ) : TerminalRuntimePort {
         val openedSessions = mutableListOf<FakeTerminalSession>()
+        val openedIdentities = mutableListOf<TerminalIdentity>()
 
         override suspend fun open(identity: TerminalIdentity, cwd: String?): OpenResult<TerminalSessionPort> {
+            openedIdentities.add(identity)
             val session = FakeTerminalSession(
                 id = "runtime-${openedSessions.size + 1}",
                 nextResult = nextResult,

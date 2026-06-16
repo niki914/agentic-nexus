@@ -32,11 +32,11 @@ class TerminalSessionPoolTest {
 
     @Test
     fun openRejectsUnknownIdentityBeforeRuntimeInitialization() = runTest {
-        val outcome = TerminalSessionPool.open(identity = "shizuku")
+        val outcome = TerminalSessionPool.open(identity = "foobar")
 
         assertTrue(outcome is TerminalOpenOutcome.InvalidRequest)
         assertEquals(
-            "Field 'identity' must be one of user, root.",
+            "Field 'identity' must be one of user, root, shizuku.",
             (outcome as TerminalOpenOutcome.InvalidRequest).message,
         )
     }
@@ -124,6 +124,21 @@ class TerminalSessionPoolTest {
                 assertEquals("b401", secondSuccess.session)
                 assertEquals("root", secondSuccess.identity)
                 assertEquals(2, fakeRuntime.openedSessions.size)
+            }
+        }
+    }
+
+    @Test
+    fun openMapsShizukuIdentityIntoRuntime() = runTest {
+        val fakeRuntime = FakeTerminalRuntime()
+        installFakeRuntime(fakeRuntime).use {
+            installHandles("a3f9").use {
+                val outcome = TerminalSessionPool.open(identity = "shizuku")
+
+                val success = outcome as TerminalOpenOutcome.Success
+                assertEquals("a3f9", success.session)
+                assertEquals("shizuku", success.identity)
+                assertEquals(listOf(TerminalIdentity.Shizuku), fakeRuntime.openedIdentities)
             }
         }
     }
@@ -232,9 +247,11 @@ class TerminalSessionPoolTest {
 
     private class FakeTerminalRuntime : TerminalRuntimePort {
         val openedSessions = mutableListOf<FakeTerminalSession>()
+        val openedIdentities = mutableListOf<TerminalIdentity>()
         var closeAllCount = 0
 
         override suspend fun open(identity: TerminalIdentity, cwd: String?): OpenResult<TerminalSessionPort> {
+            openedIdentities.add(identity)
             val session = FakeTerminalSession(id = "runtime-${openedSessions.size + 1}")
             openedSessions.add(session)
             return OpenResult.Success(session)

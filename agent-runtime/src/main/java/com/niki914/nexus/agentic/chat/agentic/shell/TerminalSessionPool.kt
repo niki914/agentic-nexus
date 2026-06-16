@@ -537,7 +537,8 @@ object TerminalSessionPool {
         return when (identity?.trim()) {
             "user" -> TerminalIdentity.User
             "root" -> TerminalIdentity.Su
-            else -> throw IllegalArgumentException("Field 'identity' must be one of user, root.")
+            "shizuku" -> TerminalIdentity.Shizuku
+            else -> throw IllegalArgumentException("Field 'identity' must be one of user, root, shizuku.")
         }
     }
 

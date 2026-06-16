@@ -149,6 +149,24 @@ class TerminalToolResponseTest {
     }
 
     @Test
+    fun failureMapsShizukuBackendUnavailableAndPublicIdentity() {
+        val json = parse(
+            TerminalToolResponse.failure(
+                failure = TerminalFailure.BackendUnavailable(
+                    TerminalIdentity.Shizuku,
+                    "Shizuku is not installed or not running",
+                ),
+                elapsedSeconds = 1L,
+            )
+        )
+
+        assertEquals("shizuku", json["identity"]!!.jsonPrimitive.content)
+        assertErrorCode("BACKEND_UNAVAILABLE", json)
+        assertEquals("BackendUnavailable", json["error"]!!.jsonObject["failure_type"]!!.jsonPrimitive.content)
+        assertEquals("shizuku", json["error"]!!.jsonObject["identity"]!!.jsonPrimitive.content)
+    }
+
+    @Test
     fun failureMapsRuntimeTerminated() {
         val json = parse(
             TerminalToolResponse.failure(
