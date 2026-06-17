@@ -18,6 +18,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -55,18 +57,25 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolState
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolStatus
+import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 import com.niki914.nexus.cb.BaseTheme
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun HomePageContent(
+    selectedConversationId: String?,
+    onConversationSelectionConsumed: (String) -> Unit,
+    onOpenHistory: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val viewModel = pageViewModel<HomeChatViewModel>()
     val clearMenuLabel = stringResource(R.string.ui_home_menu_clear)
     val settingsMenuLabel = stringResource(R.string.ui_settings_menu_entry)
+    val historyContentDescription = stringResource(R.string.ui_home_history_content_description)
     val latestViewModel by rememberUpdatedState(viewModel)
+    val latestOnOpenHistory by rememberUpdatedState(onOpenHistory)
     val latestOnOpenSettings by rememberUpdatedState(onOpenSettings)
+    val latestOnConversationSelectionConsumed by rememberUpdatedState(onConversationSelectionConsumed)
     val uiState by viewModel.uiStateFlow.collectAsState()
     val density = LocalDensity.current
     val focusManager = LocalFocusManager.current
@@ -131,9 +140,23 @@ fun HomePageContent(
             listState.scrollToItem(uiState.turns.size)
         }
     }
+    LaunchedEffect(selectedConversationId) {
+        val id = selectedConversationId?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+        latestViewModel.sendIntent(HomeChatIntent.LoadConversation(id))
+        latestOnConversationSelectionConsumed(id)
+    }
 
-    val pageChromeContribution = remember(clearMenuLabel, settingsMenuLabel) {
+    val pageChromeContribution = remember(
+        clearMenuLabel,
+        settingsMenuLabel,
+        historyContentDescription,
+    ) {
         PageChromeContribution(
+            leftAction = TopBarActionSpec(
+                icon = Icons.Default.History,
+                onClick = { latestOnOpenHistory() },
+                contentDescription = historyContentDescription,
+            ),
             menuItems = listOf(
                 PageChromeMenuItem(
                     key = "clear",

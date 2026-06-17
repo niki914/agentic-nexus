@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import com.niki914.nexus.agentic.app.ui.infra.nav.NavigationEntry
 import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
 import com.niki914.nexus.agentic.app.ui.nexus.nav.ConfigurePage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.ConversationHistoryPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.CustomToolDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.DonePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.ExecutionRuleDetailPage
@@ -16,6 +17,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsHomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.StartupPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TakeoverRuleDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.route.ConfigurePageRoute
+import com.niki914.nexus.agentic.app.ui.nexus.route.ConversationHistoryPageRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.CustomToolDetailRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.DonePageRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.ExecutionRuleDetailRoute
@@ -32,8 +34,13 @@ fun NexusPageContent(
     entry: NavigationEntry<NexusPage>,
     startupAssistantUi: StartupAssistantUi,
     onPush: (NexusPage) -> Unit,
+    onPushFromLeft: (NexusPage) -> Unit,
     onPop: () -> Unit,
+    onPopToRight: () -> Unit,
     onResetTo: (NexusPage) -> Unit,
+    selectedConversationId: String?,
+    onConversationSelected: (String) -> Unit,
+    onConversationSelectionConsumed: (String) -> Unit,
 ) {
     when (val page = entry.page) {
         StartupPage -> StartupPageRoute(
@@ -56,6 +63,17 @@ fun NexusPageContent(
 
         HomePage -> HomePageRoute(
             onPush = onPush,
+            onPushFromLeft = onPushFromLeft,
+            selectedConversationId = selectedConversationId,
+            onConversationSelectionConsumed = onConversationSelectionConsumed,
+        )
+
+        ConversationHistoryPage -> ConversationHistoryPageRoute(
+            onBack = onPopToRight,
+            onConversationSelected = { id ->
+                onConversationSelected(id)
+                onPopToRight()
+            },
         )
 
         SettingsHomePage -> SettingsHomePageRoute(

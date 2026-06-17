@@ -72,13 +72,14 @@ fun NexusApp(
     var chromeMenuExpanded by remember { mutableStateOf(false) }
     var lastRootBackPressedAt by remember { mutableStateOf(0L) }
     var isPageTransitioning by remember { mutableStateOf(false) }
+    var selectedConversationId by remember { mutableStateOf<String?>(null) }
     val initialPage = launchDecision.initialPage
     val controller = rememberNavigationController<NexusPage>(initialPage = initialPage)
     val navigator = controller.navigator
     val currentEntry = controller.currentEntry
     val currentPage = currentEntry.page
-    val currentLeftAction = currentPage.leftAction
     val currentChrome = pageChromeHost.stateFor(currentEntry.id)
+    val currentLeftAction = currentChrome.leftAction ?: currentPage.leftAction
     val latestCurrentChrome by rememberUpdatedState(currentChrome)
     fun closeChromeMenu() {
         chromeMenuExpanded = false
@@ -111,9 +112,18 @@ fun NexusApp(
         navigator.push(page)
     }
 
+    fun pushFromLeft(page: NexusPage) {
+        closeChromeMenu()
+        navigator.push(page, direction = TitleDirection.Back)
+    }
+
     fun resetTo(page: NexusPage) {
         closeChromeMenu()
         navigator.resetTo(page)
+    }
+
+    fun popToRight() {
+        navigator.pop(direction = TitleDirection.Forward)
     }
 
     fun popOrMoveTaskToBack() {
@@ -152,6 +162,7 @@ fun NexusApp(
         currentEntry.id,
         controller.lastDirection,
         currentTitle,
+        currentLeftAction,
         currentRightAction,
         currentChrome.menuItems,
         currentChrome.backHandler,
@@ -273,8 +284,19 @@ fun NexusApp(
                             entry = entry,
                             startupAssistantUi = startupAssistantUi,
                             onPush = ::push,
+                            onPushFromLeft = ::pushFromLeft,
                             onPop = { navigator.pop() },
+                            onPopToRight = ::popToRight,
                             onResetTo = ::resetTo,
+                            selectedConversationId = selectedConversationId,
+                            onConversationSelected = { id ->
+                                selectedConversationId = id
+                            },
+                            onConversationSelectionConsumed = { id ->
+                                if (selectedConversationId == id) {
+                                    selectedConversationId = null
+                                }
+                            },
                         )
                     }
                 }

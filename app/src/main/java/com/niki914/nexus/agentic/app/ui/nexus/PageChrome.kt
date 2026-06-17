@@ -8,6 +8,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 
 data class PageChromeContribution(
+    val leftAction: TopBarActionSpec? = null,
     val rightAction: TopBarActionSpec? = null,
     val menuItems: List<PageChromeMenuItem> = emptyList(),
     val backHandler: PageBackHandler? = null,

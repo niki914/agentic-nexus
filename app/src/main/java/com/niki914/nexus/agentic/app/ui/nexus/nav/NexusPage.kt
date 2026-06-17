@@ -80,6 +80,13 @@ data object HomePage : NexusPage {
     )
 }
 
+data object ConversationHistoryPage : NexusPage {
+    override val routeKey: String = "conversation-history"
+    override val titleSpec: PageTitleSpec = ResTitle(R.string.ui_home_title)
+    override val leftAction: TopBarActionSpec? = null
+    override val rightAction: TopBarActionSpec? = null
+}
+
 data object SettingsHomePage : NexusPage {
     override val routeKey: String = "settings-home"
     override val titleSpec: PageTitleSpec = ResTitle(R.string.ui_settings_title)

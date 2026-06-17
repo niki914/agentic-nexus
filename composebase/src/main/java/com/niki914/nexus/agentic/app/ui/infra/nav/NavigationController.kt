@@ -44,18 +44,23 @@ class NavigationController<P : Page>(
 
     val navigator: Navigator<P> = Navigator(this)
 
-    fun push(page: P) {
+    fun push(
+        page: P,
+        direction: TitleDirection = TitleDirection.Forward,
+    ) {
         if (!tryConsumeNavigationDebounce()) return
         entryStack += createEntry(page)
-        lastDirection = TitleDirection.Forward
+        lastDirection = direction
     }
 
-    fun pop(): Boolean {
+    fun pop(
+        direction: TitleDirection = TitleDirection.Back,
+    ): Boolean {
         if (!canGoBack) return false
         if (!tryConsumeNavigationDebounce()) return false
         val removedEntry = entryStack.removeAt(entryStack.lastIndex)
         removedEntry.viewModelStore.clear()
-        lastDirection = TitleDirection.Back
+        lastDirection = direction
         return true
     }
 

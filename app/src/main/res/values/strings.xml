@@ -59,6 +59,13 @@
     <string name="ui_home_error_retry_body">请稍后重试。</string>
     <string name="ui_home_error_config_required_title">配置还没填好</string>
     <string name="ui_home_error_config_required_body">请先填写模型地址和模型名称。</string>
+    <string name="ui_home_history_content_description">对话历史</string>
+    <string name="ui_conversation_history_back_content_description">返回</string>
+    <string name="ui_conversation_history_loading">正在读取对话历史...</string>
+    <string name="ui_conversation_history_empty_title">暂无对话历史</string>
+    <string name="ui_conversation_history_empty_body">发送一条消息后，对话会显示在这里。</string>
+    <string name="ui_conversation_history_error_title">无法读取对话历史</string>
+    <string name="ui_conversation_history_untitled">未命名对话</string>
     <string name="ui_root_back_to_home_hint">再按一次返回桌面</string>
 
     <!-- Settings Shell -->
