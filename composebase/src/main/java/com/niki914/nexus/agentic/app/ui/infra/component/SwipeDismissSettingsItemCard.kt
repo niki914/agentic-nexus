@@ -1,13 +1,12 @@
 package com.niki914.nexus.agentic.app.ui.infra.component
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -19,7 +18,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -33,22 +31,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.ui.infra.shape.G2CardShape
-import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
+import kotlin.math.abs
 import kotlin.math.exp
-import kotlin.math.roundToInt
 
 @Composable
 fun SwipeDismissSettingsItemCard(
     title: String,
     onClick: () -> Unit,
-    onDismiss: () -> Unit,
+    onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     threshold: Dp = SwipeDismissSettingsItemDefaults.Threshold,
@@ -59,12 +57,10 @@ fun SwipeDismissSettingsItemCard(
     val density = LocalDensity.current
     val thresholdPx = with(density) { threshold.toPx() }
     val dampingRangePx = with(density) { dampingRange.toPx() }
-    val currentOnDismiss by rememberUpdatedState(onDismiss)
+    val currentOnDismissRequest by rememberUpdatedState(onDismissRequest)
 
     var rawDistancePx by remember { mutableFloatStateOf(0f) }
     var isDragging by remember { mutableStateOf(false) }
-    var visible by remember { mutableStateOf(true) }
-    var exitDirection by remember { mutableFloatStateOf(1f) }
     val progress = (rawDistancePx.absoluteValue / thresholdPx).coerceIn(0f, 1f)
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
@@ -81,101 +77,116 @@ fun SwipeDismissSettingsItemCard(
         label = "swipeDismissDistance",
     )
 
-    LaunchedEffect(visible) {
-        if (!visible) {
-            delay(SwipeDismissSettingsItemDefaults.ExitAnimationMillis.toLong())
-            currentOnDismiss()
-        }
-    }
+    val shape = G2CardShape(28.dp)
+    val backgroundColor = lerp(
+        start = MaterialTheme.colorScheme.surfaceContainer,
+        stop = MaterialTheme.colorScheme.error,
+        fraction = animatedProgress,
+    )
+    val contentColor = lerp(
+        start = MaterialTheme.colorScheme.onSurface,
+        stop = MaterialTheme.colorScheme.onError,
+        fraction = animatedProgress,
+    )
 
-    AnimatedVisibility(
-        visible = visible,
-        modifier = modifier.fillMaxWidth(),
-        exit = slideOutHorizontally(
-            animationSpec = tween(durationMillis = 180),
-            targetOffsetX = { (-exitDirection * it / 3).roundToInt() },
-        ) + fadeOut(animationSpec = tween(durationMillis = 180)) +
-                shrinkVertically(animationSpec = tween(durationMillis = 180)),
-    ) {
-        val shape = G2CardShape(28.dp)
-        val backgroundColor = lerp(
-            start = MaterialTheme.colorScheme.surfaceContainer,
-            stop = MaterialTheme.colorScheme.error,
-            fraction = animatedProgress,
-        )
-        val contentColor = lerp(
-            start = MaterialTheme.colorScheme.onSurface,
-            stop = MaterialTheme.colorScheme.onError,
-            fraction = animatedProgress,
-        )
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(backgroundColor, shape)
+            .then(
+                if (enabled) {
+                    Modifier.pointerInput(thresholdPx) {
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            var pointerId = down.id
+                            var dragAxis = DragAxis.Undecided
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(shape)
-                .background(backgroundColor, shape)
-                .pointerInput(enabled, thresholdPx, visible) {
-                    detectDragGestures(
-                        onDragStart = {
-                            isDragging = true
-                        },
-                        onDragCancel = {
-                            isDragging = false
-                            rawDistancePx = 0f
-                        },
-                        onDragEnd = {
-                            isDragging = false
-                            val endProgress = (rawDistancePx.absoluteValue / thresholdPx).coerceIn(0f, 1f)
-                            if (endProgress >= SwipeDismissSettingsItemDefaults.DeleteProgressThreshold) {
-                                exitDirection = if (rawDistancePx >= 0f) 1f else -1f
-                                visible = false
-                            } else {
+                            fun finishHorizontalDrag() {
+                                isDragging = false
+                                val endProgress =
+                                    (rawDistancePx.absoluteValue / thresholdPx).coerceIn(0f, 1f)
+                                rawDistancePx = 0f
+                                if (endProgress >= SwipeDismissSettingsItemDefaults.DeleteProgressThreshold) {
+                                    currentOnDismissRequest()
+                                }
+                            }
+
+                            fun cancelHorizontalDrag() {
+                                isDragging = false
                                 rawDistancePx = 0f
                             }
-                        },
-                        onDrag = { change, dragAmount ->
-                            if (!enabled || !visible) {
-                                return@detectDragGestures
+
+                            val slopChange = awaitTouchSlopOrCancellation(pointerId) { change, overSlop ->
+                                pointerId = change.id
+                                dragAxis = resolveDragAxis(overSlop.x, overSlop.y)
+                                if (dragAxis == DragAxis.Horizontal) {
+                                    isDragging = true
+                                    rawDistancePx -= overSlop.x
+                                    change.consume()
+                                }
                             }
-                            val nextDistance = rawDistancePx - dragAmount.x
-                            if (nextDistance != 0f || rawDistancePx != 0f) {
-                                change.consume()
+
+                            when {
+                                slopChange == null -> {
+                                    cancelHorizontalDrag()
+                                }
+
+                                dragAxis == DragAxis.Vertical || dragAxis == DragAxis.Undecided -> {
+                                    cancelHorizontalDrag()
+                                }
+
+                                else -> {
+                                    val dragCompleted = drag(pointerId) { change ->
+                                        val deltaX = change.positionChange().x
+                                        if (deltaX != 0f) {
+                                            change.consume()
+                                        }
+                                        rawDistancePx -= deltaX
+                                    }
+                                    if (dragCompleted) {
+                                        finishHorizontalDrag()
+                                    } else {
+                                        cancelHorizontalDrag()
+                                    }
+                                }
                             }
-                            rawDistancePx = nextDistance
-                        },
-                    )
-                },
-        ) {
-            Icon(
-                imageVector = dismissIcon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onError,
-                modifier = Modifier
-                    .align(if (rawDistancePx < 0f) Alignment.CenterStart else Alignment.CenterEnd)
-                    .then(
-                        if (rawDistancePx < 0f) {
-                            Modifier.padding(start = iconAnchor)
-                        } else {
-                            Modifier.padding(end = iconAnchor)
-                        },
-                    )
-                    .alpha(animatedProgress)
-                    .size(22.dp),
-            )
-            SettingsItemSurface(
-                enabled = enabled,
-                onClick = onClick,
-                modifier = Modifier
-                    .offset { IntOffset(x = -animatedDistancePx.roundToInt(), y = 0) },
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = contentColor,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                        }
+                    }
+                } else {
+                    Modifier
+                }
+            ),
+    ) {
+        Icon(
+            imageVector = dismissIcon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onError,
+            modifier = Modifier
+                .align(if (rawDistancePx < 0f) Alignment.CenterStart else Alignment.CenterEnd)
+                .then(
+                    if (rawDistancePx < 0f) {
+                        Modifier.padding(start = iconAnchor)
+                    } else {
+                        Modifier.padding(end = iconAnchor)
+                    },
                 )
-            }
+                .alpha(animatedProgress)
+                .size(22.dp),
+        )
+        SettingsItemSurface(
+            enabled = enabled,
+            onClick = onClick,
+            modifier = Modifier
+                .offset { IntOffset(x = -animatedDistancePx.toInt(), y = 0) },
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = contentColor,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
@@ -184,8 +195,24 @@ object SwipeDismissSettingsItemDefaults {
     val Threshold: Dp = 40.dp
     val IconAnchor: Dp = 20.dp
     val DampingRange: Dp = 72.dp
+    const val HorizontalBiasRatio: Float = 1.2f
     const val DeleteProgressThreshold: Float = 1f
-    const val ExitAnimationMillis: Int = 180
+}
+
+private enum class DragAxis {
+    Undecided,
+    Horizontal,
+    Vertical,
+}
+
+private fun resolveDragAxis(deltaX: Float, deltaY: Float): DragAxis {
+    val absX = abs(deltaX)
+    val absY = abs(deltaY)
+    return when {
+        absX > absY * SwipeDismissSettingsItemDefaults.HorizontalBiasRatio -> DragAxis.Horizontal
+        absY > absX * SwipeDismissSettingsItemDefaults.HorizontalBiasRatio -> DragAxis.Vertical
+        else -> DragAxis.Undecided
+    }
 }
 
 private fun visualSignedDistancePx(

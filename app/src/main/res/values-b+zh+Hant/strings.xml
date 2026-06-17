@@ -125,6 +125,10 @@
     <string name="memory_field_content_hint">例如：使用者的生日是 X 月 Y 日</string>
     <string name="memory_save_action">儲存記憶</string>
     <string name="memory_cancel_action">取消</string>
+    <string name="memory_delete_dialog_title">刪除記憶</string>
+    <string name="memory_delete_dialog_text">確定要刪除這條記憶嗎？\n\n%1$s</string>
+    <string name="memory_delete_dialog_confirm">刪除</string>
+    <string name="memory_delete_dialog_cancel">取消</string>
     <string name="memory_error_load_failed">讀取記憶失敗：%1$s</string>
     <string name="memory_error_save_failed">儲存記憶失敗：%1$s</string>
     <string name="memory_error_delete_failed">刪除記憶失敗：%1$s</string>

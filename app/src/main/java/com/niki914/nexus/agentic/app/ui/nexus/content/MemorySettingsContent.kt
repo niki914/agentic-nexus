@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.LiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.LiquidTextField
@@ -39,6 +40,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.PageBackHandler
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
 import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
 import com.niki914.nexus.agentic.app.ui.nexus.model.MemoryEditDialogState
+import com.niki914.nexus.agentic.app.ui.nexus.model.MemoryDeleteConfirmationState
 import com.niki914.nexus.agentic.app.ui.nexus.model.MemoryInlineError
 import com.niki914.nexus.agentic.app.ui.nexus.model.MemorySettingsIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.MemorySettingsUiState
@@ -62,10 +64,14 @@ fun MemorySettingsContent() {
             ),
             backHandler = PageBackHandler(
                 shouldConsumeBack = {
-                    latestUiState.editingDialog != null
+                    latestUiState.editingDialog != null || latestUiState.deleteConfirmation != null
                 },
                 onConsumeBack = {
-                    latestViewModel.sendIntent(MemorySettingsIntent.DismissEditDialog)
+                    if (latestUiState.editingDialog != null) {
+                        latestViewModel.sendIntent(MemorySettingsIntent.DismissEditDialog)
+                    } else if (latestUiState.deleteConfirmation != null) {
+                        latestViewModel.sendIntent(MemorySettingsIntent.DismissDeleteConfirmation)
+                    }
                 },
             ),
         )
@@ -81,8 +87,8 @@ fun MemorySettingsContent() {
         onStartEdit = { index ->
             viewModel.sendIntent(MemorySettingsIntent.StartEdit(index))
         },
-        onDelete = { index ->
-            viewModel.sendIntent(MemorySettingsIntent.DeleteItem(index))
+        onRequestDelete = { index ->
+            viewModel.sendIntent(MemorySettingsIntent.RequestDeleteItem(index))
         },
         onDialogValueChange = { value ->
             viewModel.sendIntent(MemorySettingsIntent.EditValueChanged(value))
@@ -93,6 +99,12 @@ fun MemorySettingsContent() {
         onDialogSave = {
             viewModel.sendIntent(MemorySettingsIntent.SaveEditDialog)
         },
+        onDeleteConfirmationDismiss = {
+            viewModel.sendIntent(MemorySettingsIntent.DismissDeleteConfirmation)
+        },
+        onDeleteConfirmationConfirm = {
+            viewModel.sendIntent(MemorySettingsIntent.ConfirmDeleteItem)
+        },
     )
 }
 
@@ -100,10 +112,12 @@ fun MemorySettingsContent() {
 private fun MemorySettingsContentBody(
     uiState: MemorySettingsUiState,
     onStartEdit: (Int) -> Unit,
-    onDelete: (Int) -> Unit,
+    onRequestDelete: (Int) -> Unit,
     onDialogValueChange: (String) -> Unit,
     onDialogDismiss: () -> Unit,
     onDialogSave: () -> Unit,
+    onDeleteConfirmationDismiss: () -> Unit,
+    onDeleteConfirmationConfirm: () -> Unit,
 ) {
     val pageDescription = when {
         uiState.isLoading || uiState.items.isNotEmpty() -> {
@@ -131,8 +145,8 @@ private fun MemorySettingsContentBody(
                             onClick = {
                                 onStartEdit(index)
                             },
-                            onDismiss = {
-                                onDelete(index)
+                            onDismissRequest = {
+                                onRequestDelete(index)
                             },
                         )
                     }
@@ -151,6 +165,31 @@ private fun MemorySettingsContentBody(
         onValueChange = onDialogValueChange,
         onDismissRequest = onDialogDismiss,
         onSaveClick = onDialogSave,
+    )
+
+    MemoryDeleteConfirmationDialog(
+        state = uiState.deleteConfirmation,
+        onDismissRequest = onDeleteConfirmationDismiss,
+        onConfirmClick = onDeleteConfirmationConfirm,
+    )
+}
+
+@Composable
+private fun MemoryDeleteConfirmationDialog(
+    state: MemoryDeleteConfirmationState?,
+    onDismissRequest: () -> Unit,
+    onConfirmClick: () -> Unit,
+) {
+    val deleteValue = state?.value.orEmpty()
+    ConfirmationLiquidDialog(
+        visible = state != null,
+        onDismissRequest = onDismissRequest,
+        title = stringResource(R.string.memory_delete_dialog_title),
+        text = stringResource(R.string.memory_delete_dialog_text, deleteValue),
+        negativeButtonText = stringResource(R.string.memory_delete_dialog_cancel),
+        positiveButtonText = stringResource(R.string.memory_delete_dialog_confirm),
+        onNegativeClick = onDismissRequest,
+        onPositiveClick = onConfirmClick,
     )
 }
 

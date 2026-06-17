@@ -12,11 +12,17 @@ data class MemorySettingsUiState(
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val editingDialog: MemoryEditDialogState? = null,
+    val deleteConfirmation: MemoryDeleteConfirmationState? = null,
     val inlineError: MemoryInlineError? = null,
 )
 
 data class MemoryEditDialogState(
     val index: Int?,
+    val value: String,
+)
+
+data class MemoryDeleteConfirmationState(
+    val index: Int,
     val value: String,
 )
 
@@ -33,6 +39,9 @@ sealed interface MemorySettingsIntent {
     data class EditValueChanged(val value: String) : MemorySettingsIntent
     data object DismissEditDialog : MemorySettingsIntent
     data object SaveEditDialog : MemorySettingsIntent
+    data class RequestDeleteItem(val index: Int) : MemorySettingsIntent
+    data object DismissDeleteConfirmation : MemorySettingsIntent
+    data object ConfirmDeleteItem : MemorySettingsIntent
     data class DeleteItem(val index: Int) : MemorySettingsIntent
 }
 
@@ -60,6 +69,12 @@ class MemorySettingsViewModel :
             }
 
             MemorySettingsIntent.SaveEditDialog -> saveEditDialog()
+            is MemorySettingsIntent.RequestDeleteItem -> requestDeleteItem(intent.index)
+            MemorySettingsIntent.DismissDeleteConfirmation -> updateState {
+                copy(deleteConfirmation = null, inlineError = null)
+            }
+
+            MemorySettingsIntent.ConfirmDeleteItem -> confirmDeleteItem()
             is MemorySettingsIntent.DeleteItem -> deleteItem(intent.index)
         }
     }
@@ -72,6 +87,7 @@ class MemorySettingsViewModel :
                 copy(
                     items = loadedItems,
                     isLoading = false,
+                    deleteConfirmation = null,
                     inlineError = null,
                 )
             }
@@ -92,6 +108,7 @@ class MemorySettingsViewModel :
         updateState {
             copy(
                 editingDialog = MemoryEditDialogState(index = null, value = ""),
+                deleteConfirmation = null,
                 inlineError = null,
             )
         }
@@ -102,6 +119,7 @@ class MemorySettingsViewModel :
         updateState {
             copy(
                 editingDialog = MemoryEditDialogState(index = index, value = value),
+                deleteConfirmation = null,
                 inlineError = null,
             )
         }
@@ -150,6 +168,7 @@ class MemorySettingsViewModel :
                     items = updatedItems,
                     isSaving = false,
                     editingDialog = null,
+                    deleteConfirmation = null,
                     inlineError = null,
                 )
             }
@@ -167,16 +186,34 @@ class MemorySettingsViewModel :
         }
     }
 
+    private fun requestDeleteItem(index: Int) {
+        if (currentState.editingDialog != null) return
+        val value = currentState.items.getOrNull(index) ?: return
+        updateState {
+            copy(
+                deleteConfirmation = MemoryDeleteConfirmationState(index = index, value = value),
+                inlineError = null,
+            )
+        }
+    }
+
+    private suspend fun confirmDeleteItem() {
+        val deleteConfirmation = currentState.deleteConfirmation ?: return
+        updateState { copy(deleteConfirmation = null) }
+        deleteItem(deleteConfirmation.index)
+    }
+
     private suspend fun deleteItem(index: Int) {
         val previousItems = currentState.items
         if (index !in previousItems.indices) return
-        updateState { copy(isSaving = true, inlineError = null) }
+        updateState { copy(isSaving = true, deleteConfirmation = null, inlineError = null) }
         try {
             XRepo.memory.delete(index)
             updateState {
                 copy(
                     items = previousItems.filterIndexed { itemIndex, _ -> itemIndex != index },
                     isSaving = false,
+                    deleteConfirmation = null,
                     inlineError = null,
                 )
             }
@@ -188,6 +225,7 @@ class MemorySettingsViewModel :
                 copy(
                     items = reloadedItems,
                     isSaving = false,
+                    deleteConfirmation = null,
                     inlineError = MemoryInlineError.DeleteFailed(
                         throwable.message ?: "删除记忆失败",
                     ),
