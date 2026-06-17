@@ -3,6 +3,11 @@ plugins {
     id("org.jetbrains.kotlin.android") version "2.2.0"
     id("org.jetbrains.kotlin.plugin.compose") version "2.2.0"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.2.0"
+    id("com.google.devtools.ksp")
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 android {
@@ -76,8 +81,13 @@ dependencies {
     implementation(project(":ipc"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-    implementation("com.github.niki914:s3ss10n:2.1.2")
+    implementation("com.github.niki914:s3ss10n:2.1.5")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // Room
+    implementation("androidx.room:room-runtime:2.7.2")
+    implementation("androidx.room:room-ktx:2.7.2")
+    ksp("androidx.room:room-compiler:2.7.2")
 
     // Android root
     compileOnly("de.robv.android.xposed:api:82")
@@ -100,6 +110,9 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    testImplementation("androidx.room:room-testing:2.7.2")
+    testImplementation("org.robolectric:robolectric:4.13")
+    testImplementation("androidx.test:core:1.6.1")
 }
 
 // 获取 ADB 路径

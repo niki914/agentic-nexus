@@ -149,6 +149,17 @@ object XRepo {
         }
     }
 
+    suspend fun lastOpenedConversationId(): String {
+        return AppStateSettingsCodec.parse(readJson(StoreDescriptorRegistry.APP_STATE_ID)).lastOpenedConversationId
+    }
+
+    suspend fun setLastOpenedConversationId(value: String) {
+        updateJson(StoreDescriptorRegistry.APP_STATE_ID) { json ->
+            val current = AppStateSettingsCodec.parse(json)
+            AppStateSettingsCodec.encode(current.copy(lastOpenedConversationId = value.trim()))
+        }
+    }
+
     suspend fun llm(): LlmConfig {
         return AgentSettingsCodec.parseMainConfig(readJson(StoreDescriptorRegistry.AGENT_MAIN_CONFIG_ID))
     }

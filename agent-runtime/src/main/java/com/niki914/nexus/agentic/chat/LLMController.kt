@@ -12,6 +12,7 @@ import com.niki914.nexus.agentic.runtime.settings.RuntimeEnvironment
 import com.niki914.nexus.agentic.runtime.settings.model.LlmApiType
 import com.niki914.nexus.h.util.LockState
 import com.niki914.nexus.h.xevent.XEvent
+import com.niki914.s3ss10n.ChatTurn
 import com.niki914.s3ss10n.Session
 import com.niki914.s3ss10n.SessionConfig
 import com.niki914.s3ss10n.SessionProtocols
@@ -124,6 +125,15 @@ object LLMController {
     suspend fun refreshFromHookContext(): LlmRuntimeSnapshot = refresh()
 
     suspend fun snapshot(): LlmRuntimeSnapshot? = runtimeState?.snapshot
+
+    suspend fun getHistory(): List<ChatTurn> {
+        return session?.getHistory().orEmpty()
+    }
+
+    suspend fun replaceHistory(history: List<ChatTurn>) {
+        refresh()
+        runtimeState?.session?.replaceHistory(history)
+    }
 
     fun stream(query: String): Flow<LlmStreamEvent> = channelFlow {
         val state = try {

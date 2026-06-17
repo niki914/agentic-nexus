@@ -1,7 +1,19 @@
 package com.niki914.nexus.agentic.app.ui.nexus.model
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import com.niki914.nexus.agentic.app.conversation.ConversationFormatter
+import com.niki914.nexus.agentic.app.conversation.ConversationRecord
+import com.niki914.nexus.agentic.app.conversation.ConversationRepo
+import com.niki914.nexus.agentic.app.conversation.ConversationSummary
 import com.niki914.nexus.agentic.chat.LlmStreamEvent
 import com.niki914.nexus.agentic.chat.ToolCallStatus
+import com.niki914.nexus.agentic.repo.AppStateSettings
+import com.niki914.nexus.agentic.repo.AppStateSettingsCodec
+import com.niki914.nexus.agentic.repo.DomainSettingsStore
+import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.ipc.store.StoreDescriptorRegistry
+import com.niki914.s3ss10n.ChatTurn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
@@ -10,27 +22,55 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestWatcher
+import org.junit.runner.RunWith
 import org.junit.runner.Description
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeChatViewModelTest {
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+    val mainDispatcherRule = MainDispatcherRule(UnconfinedTestDispatcher())
+
+    private lateinit var context: Context
+    private lateinit var store: FakeDomainSettingsStore
+
+    @Before
+    fun setUp() {
+        context = ApplicationProvider.getApplicationContext()
+        context.deleteDatabase(DB_NAME)
+        store = FakeDomainSettingsStore()
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+        ConversationRepo.init(context)
+    }
+
+    @After
+    fun tearDown() = runTest {
+        ConversationRepo.closeForTest()
+        XRepo.resetForTest()
+        context.deleteDatabase(DB_NAME)
+    }
 
     @Test
     fun send_collectsTextAndToolCallsInStreamOrder() = runTest {
+        val conversations = FakeHomeConversationStore()
         val viewModel = HomeChatViewModel(
+            conversations = conversations,
             runtime = FakeHomeChatRuntime(stream = { query ->
                 assertEquals("hello", query)
                 flowOf(
@@ -59,6 +99,7 @@ class HomeChatViewModelTest {
         )
 
         viewModel.sendIntent(HomeChatIntent.InputChanged("  hello  "))
+        runCurrent()
         viewModel.sendIntent(HomeChatIntent.Send)
         advanceUntilIdle()
 
@@ -94,13 +135,16 @@ class HomeChatViewModelTest {
     @Test
     fun clearConversation_clearsUiStateAndResetsRuntime() = runTest {
         var resetCalled = false
+        val conversations = FakeHomeConversationStore()
         val viewModel = HomeChatViewModel(
+            conversations = conversations,
             runtime = FakeHomeChatRuntime(
                 stream = { flowOf(LlmStreamEvent.Completed("done")) },
                 resetConversation = { resetCalled = true },
             ),
         )
         viewModel.sendIntent(HomeChatIntent.InputChanged("hello"))
+        runCurrent()
         viewModel.sendIntent(HomeChatIntent.Send)
         advanceUntilIdle()
 
@@ -116,7 +160,9 @@ class HomeChatViewModelTest {
 
     @Test
     fun send_doesNotCreateVisibleFallbackWhenUnexpectedErrorHasNoMessage() = runTest {
+        val conversations = FakeHomeConversationStore()
         val viewModel = HomeChatViewModel(
+            conversations = conversations,
             runtime = FakeHomeChatRuntime(stream = {
                 flow {
                     throw RuntimeException()
@@ -125,6 +171,7 @@ class HomeChatViewModelTest {
         )
 
         viewModel.sendIntent(HomeChatIntent.InputChanged("hello"))
+        runCurrent()
         viewModel.sendIntent(HomeChatIntent.Send)
         advanceUntilIdle()
 
@@ -136,13 +183,16 @@ class HomeChatViewModelTest {
 
     @Test
     fun send_appendsErrorBlockWhenStreamReportsError() = runTest {
+        val conversations = FakeHomeConversationStore()
         val viewModel = HomeChatViewModel(
+            conversations = conversations,
             runtime = FakeHomeChatRuntime(stream = {
                 flowOf(LlmStreamEvent.Error("network failed"))
             }),
         )
 
         viewModel.sendIntent(HomeChatIntent.InputChanged("hello"))
+        runCurrent()
         viewModel.sendIntent(HomeChatIntent.Send)
         advanceUntilIdle()
 
@@ -157,7 +207,9 @@ class HomeChatViewModelTest {
 
     @Test
     fun send_ignoresSecondSendWhileGenerating() = runTest {
+        val conversations = FakeHomeConversationStore()
         val viewModel = HomeChatViewModel(
+            conversations = conversations,
             runtime = FakeHomeChatRuntime(stream = {
                 flow {
                     emit(LlmStreamEvent.RoundStarted)
@@ -167,9 +219,11 @@ class HomeChatViewModelTest {
         )
 
         viewModel.sendIntent(HomeChatIntent.InputChanged("first"))
+        runCurrent()
         viewModel.sendIntent(HomeChatIntent.Send)
         runCurrent()
         viewModel.sendIntent(HomeChatIntent.InputChanged("second"))
+        runCurrent()
         viewModel.sendIntent(HomeChatIntent.Send)
         advanceUntilIdle()
 
@@ -186,7 +240,9 @@ class HomeChatViewModelTest {
     @Test
     fun stopGenerating_keepsPartialAssistantMessageAndAllowsNextSend() = runTest {
         var sentQueries = emptyList<String>()
+        val conversations = FakeHomeConversationStore()
         val viewModel = HomeChatViewModel(
+            conversations = conversations,
             runtime = FakeHomeChatRuntime(stream = { query ->
                 sentQueries = sentQueries + query
                 flow {
@@ -198,6 +254,7 @@ class HomeChatViewModelTest {
         )
 
         viewModel.sendIntent(HomeChatIntent.InputChanged("first"))
+        runCurrent()
         viewModel.sendIntent(HomeChatIntent.Send)
         runCurrent()
         viewModel.sendIntent(HomeChatIntent.StopGenerating)
@@ -211,6 +268,7 @@ class HomeChatViewModelTest {
         )
 
         viewModel.sendIntent(HomeChatIntent.InputChanged("second"))
+        runCurrent()
         viewModel.sendIntent(HomeChatIntent.Send)
         runCurrent()
 
@@ -222,14 +280,186 @@ class HomeChatViewModelTest {
         viewModel.sendIntent(HomeChatIntent.ClearConversation)
         advanceUntilIdle()
     }
+
+    @Test
+    fun completed_persistsRuntimeHistoryAndLastOpenedConversationId() = runTest {
+        val history = listOf(
+            ChatTurn.User("hello"),
+            ChatTurn.Assistant("hello back"),
+        )
+        val conversations = FakeHomeConversationStore()
+        val viewModel = HomeChatViewModel(
+            conversations = conversations,
+            runtime = FakeHomeChatRuntime(
+                stream = { flowOf(LlmStreamEvent.Completed(fullText = "hello back")) },
+                getHistory = { history },
+            ),
+        )
+
+        viewModel.sendIntent(HomeChatIntent.InputChanged("hello"))
+        runCurrent()
+        viewModel.sendIntent(HomeChatIntent.Send)
+        advanceUntilIdle()
+
+        val summary = conversations.listConversations().single()
+        val record = conversations.getConversation(summary.id)!!
+        assertEquals(summary.id, conversations.lastOpenedConversationId())
+        assertEquals(history, record.history)
+        assertEquals("", record.draftText)
+        assertEquals("hello back", record.summary.lastMessagePreview)
+    }
+
+    @Test
+    fun clearConversation_keepsPersistedConversationButClearsCurrentPointer() = runTest {
+        val conversations = FakeHomeConversationStore()
+        val viewModel = HomeChatViewModel(
+            conversations = conversations,
+            runtime = FakeHomeChatRuntime(
+                stream = { flowOf(LlmStreamEvent.Completed(fullText = "answer")) },
+                getHistory = { listOf(ChatTurn.User("hello"), ChatTurn.Assistant("answer")) },
+            ),
+        )
+        viewModel.sendIntent(HomeChatIntent.InputChanged("hello"))
+        runCurrent()
+        viewModel.sendIntent(HomeChatIntent.Send)
+        advanceUntilIdle()
+        val conversationId = conversations.listConversations().single().id
+
+        viewModel.sendIntent(HomeChatIntent.ClearConversation)
+        advanceUntilIdle()
+
+        assertEquals("", conversations.lastOpenedConversationId())
+        assertEquals(conversationId, conversations.getConversation(conversationId)?.summary?.id)
+        assertTrue(viewModel.uiStateFlow.value.turns.isEmpty())
+    }
+
+    @Test
+    fun startupRestore_restoresHistoryTurnsAndDraft() = runTest {
+        val history = listOf(ChatTurn.User("hello"), ChatTurn.Assistant("answer"))
+        val conversations = FakeHomeConversationStore()
+        val conversationId = conversations.createConversation("hello")
+        conversations.saveHistory(conversationId, history)
+        conversations.updateDraft(conversationId, "draft")
+        conversations.setLastOpenedConversationId(conversationId)
+        var replacedHistory: List<ChatTurn>? = null
+
+        val viewModel = HomeChatViewModel(
+            conversations = conversations,
+            runtime = FakeHomeChatRuntime(
+                stream = { flowOf() },
+                replaceHistory = { replacedHistory = it },
+            ),
+        )
+        advanceUntilIdle()
+
+        assertEquals(history, replacedHistory)
+        val state = viewModel.uiStateFlow.value
+        assertEquals("draft", state.input)
+        assertEquals(1, state.turns.size)
+        assertEquals("hello", state.turns.single().userText)
+        assertEquals(listOf(HomeChatBlock.Text("answer")), state.turns.single().blocks)
+    }
+
+    @Test
+    fun loadConversation_restoresHistoryButDoesNotRestoreDraft() = runTest {
+        val conversations = FakeHomeConversationStore()
+        val firstId = conversations.createConversation("first")
+        conversations.saveHistory(firstId, listOf(ChatTurn.User("first"), ChatTurn.Assistant("one")))
+        conversations.setLastOpenedConversationId(firstId)
+        val secondHistory = listOf(ChatTurn.User("second"), ChatTurn.Assistant("two"))
+        val secondId = conversations.createConversation("second")
+        conversations.saveHistory(secondId, secondHistory)
+        conversations.updateDraft(secondId, "must not restore")
+        var replacedHistory = emptyList<ChatTurn>()
+        val viewModel = HomeChatViewModel(
+            conversations = conversations,
+            runtime = FakeHomeChatRuntime(
+                stream = { flowOf() },
+                replaceHistory = { replacedHistory = it },
+            ),
+        )
+        advanceUntilIdle()
+
+        viewModel.sendIntent(HomeChatIntent.LoadConversation(secondId))
+        advanceUntilIdle()
+
+        assertEquals(secondHistory, replacedHistory)
+        assertEquals(secondId, conversations.lastOpenedConversationId())
+        val state = viewModel.uiStateFlow.value
+        assertEquals("", state.input)
+        assertEquals("second", state.turns.single().userText)
+        assertEquals(listOf(HomeChatBlock.Text("two")), state.turns.single().blocks)
+    }
 }
 
 private class FakeHomeChatRuntime(
     private val stream: (String) -> Flow<LlmStreamEvent>,
     private val resetConversation: suspend () -> Unit = {},
+    private val getHistory: suspend () -> List<ChatTurn> = { emptyList() },
+    private val replaceHistory: suspend (List<ChatTurn>) -> Unit = {},
 ) : HomeChatRuntime {
     override fun stream(query: String): Flow<LlmStreamEvent> = stream.invoke(query)
     override suspend fun resetConversation() = resetConversation.invoke()
+    override suspend fun getHistory(): List<ChatTurn> = getHistory.invoke()
+    override suspend fun replaceHistory(history: List<ChatTurn>) = replaceHistory.invoke(history)
+}
+
+private class FakeHomeConversationStore : HomeConversationStore {
+    private val records = linkedMapOf<String, ConversationRecord>()
+    private var nextId = 0
+    private var lastOpenedId = ""
+
+    override suspend fun lastOpenedConversationId(): String = lastOpenedId
+
+    override suspend fun setLastOpenedConversationId(value: String) {
+        lastOpenedId = value.trim()
+    }
+
+    override suspend fun createConversation(firstUserInput: String): String {
+        val id = "conversation-${nextId++}"
+        val now = nextId.toLong()
+        records[id] = ConversationRecord(
+            summary = ConversationSummary(
+                id = id,
+                title = ConversationFormatter.titleFromFirstInput(firstUserInput),
+                titleEdited = false,
+                createdAt = now,
+                updatedAt = now,
+                lastMessagePreview = ConversationFormatter.previewFromText(firstUserInput),
+                turnCount = 0,
+            ),
+            draftText = "",
+            history = emptyList(),
+        )
+        return id
+    }
+
+    override suspend fun getConversation(id: String): ConversationRecord? = records[id]
+
+    override suspend fun saveHistory(conversationId: String, history: List<ChatTurn>) {
+        val record = records[conversationId] ?: return
+        records[conversationId] = record.copy(
+            summary = record.summary.copy(
+                updatedAt = record.summary.updatedAt + 1,
+                lastMessagePreview = ConversationFormatter.previewFromHistory(history),
+                turnCount = history.count { it !is ChatTurn.System },
+            ),
+            history = history.filterNot { it is ChatTurn.System },
+        )
+    }
+
+    override suspend fun updateDraft(conversationId: String, draftText: String) {
+        val record = records[conversationId] ?: return
+        records[conversationId] = record.copy(draftText = draftText)
+    }
+
+    override suspend fun deleteConversation(id: String) {
+        records.remove(id)
+    }
+
+    fun listConversations(): List<ConversationSummary> {
+        return records.values.map { it.summary }.sortedByDescending { it.updatedAt }
+    }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -244,3 +474,26 @@ class MainDispatcherRule(
         Dispatchers.resetMain()
     }
 }
+
+private class FakeDomainSettingsStore : DomainSettingsStore {
+    private val values = mutableMapOf(
+        StoreDescriptorRegistry.APP_STATE_ID to AppStateSettingsCodec.encode(AppStateSettings()),
+    )
+
+    override suspend fun readJson(context: Context, storeId: String): String {
+        return values[storeId]
+            ?: StoreDescriptorRegistry.resolveDynamic(storeId)?.defaultJson
+            ?: "{}"
+    }
+
+    override suspend fun writeJsonFromOwner(context: Context, storeId: String, json: String): Boolean {
+        values[storeId] = json
+        return true
+    }
+
+    override suspend fun mutateJson(context: Context, storeId: String, path: String, value: Any?): Boolean {
+        return false
+    }
+}
+
+private const val DB_NAME = "conversation_history.db"

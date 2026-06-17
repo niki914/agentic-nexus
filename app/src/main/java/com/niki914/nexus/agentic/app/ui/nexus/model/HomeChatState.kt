@@ -1,15 +1,55 @@
 package com.niki914.nexus.agentic.app.ui.nexus.model
 
 import androidx.lifecycle.viewModelScope
+import com.niki914.nexus.agentic.app.conversation.ConversationFormatter
+import com.niki914.nexus.agentic.app.conversation.ConversationRepo
 import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.LlmErrorCode
 import com.niki914.nexus.agentic.chat.LlmStreamEvent
+import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.cb.ComposeMVIViewModel
+import com.niki914.s3ss10n.ChatTurn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+
+internal interface HomeConversationStore {
+    suspend fun lastOpenedConversationId(): String
+    suspend fun setLastOpenedConversationId(value: String)
+    suspend fun createConversation(firstUserInput: String): String
+    suspend fun getConversation(id: String): com.niki914.nexus.agentic.app.conversation.ConversationRecord?
+    suspend fun saveHistory(conversationId: String, history: List<ChatTurn>)
+    suspend fun updateDraft(conversationId: String, draftText: String)
+    suspend fun deleteConversation(id: String)
+}
+
+private object DefaultHomeConversationStore : HomeConversationStore {
+    override suspend fun lastOpenedConversationId(): String = XRepo.lastOpenedConversationId()
+    override suspend fun setLastOpenedConversationId(value: String) = XRepo.setLastOpenedConversationId(value)
+    override suspend fun createConversation(firstUserInput: String): String {
+        return ConversationRepo.createConversation(firstUserInput)
+    }
+
+    override suspend fun getConversation(
+        id: String,
+    ): com.niki914.nexus.agentic.app.conversation.ConversationRecord? {
+        return ConversationRepo.getConversation(id)
+    }
+
+    override suspend fun saveHistory(conversationId: String, history: List<ChatTurn>) {
+        ConversationRepo.saveHistory(conversationId = conversationId, history = history)
+    }
+
+    override suspend fun updateDraft(conversationId: String, draftText: String) {
+        ConversationRepo.updateDraft(conversationId = conversationId, draftText = draftText)
+    }
+
+    override suspend fun deleteConversation(id: String) {
+        ConversationRepo.deleteConversation(id)
+    }
+}
 
 enum class HomeToolState {
     Running,
@@ -48,23 +88,37 @@ sealed interface HomeChatIntent {
     data object Send : HomeChatIntent
     data object StopGenerating : HomeChatIntent
     data object ClearConversation : HomeChatIntent
+    data class LoadConversation(val id: String) : HomeChatIntent
+    data class DeleteConversation(val id: String) : HomeChatIntent
 }
 
 internal interface HomeChatRuntime {
     fun stream(query: String): Flow<LlmStreamEvent>
     suspend fun resetConversation()
+    suspend fun getHistory(): List<ChatTurn>
+    suspend fun replaceHistory(history: List<ChatTurn>)
 }
 
 private object LlmHomeChatRuntime : HomeChatRuntime {
     override fun stream(query: String): Flow<LlmStreamEvent> = LLMController.stream(query)
     override suspend fun resetConversation() = LLMController.resetConversation()
+    override suspend fun getHistory(): List<ChatTurn> = LLMController.getHistory()
+    override suspend fun replaceHistory(history: List<ChatTurn>) = LLMController.replaceHistory(history)
 }
 
 class HomeChatViewModel internal constructor(
     private val runtime: HomeChatRuntime = LlmHomeChatRuntime,
+    private val conversations: HomeConversationStore = DefaultHomeConversationStore,
 ) : ComposeMVIViewModel<HomeChatIntent, HomeChatUiState, Nothing>() {
     private var nextTurnId = 0L
     private var streamJob: Job? = null
+    private var draftSaveJob: Job? = null
+    private var currentConversationId: String? = null
+    private var startupRestoreAttempted = false
+
+    init {
+        restoreLastConversationOnStartup()
+    }
 
     override fun initUiState(): HomeChatUiState {
         return HomeChatUiState()
@@ -76,14 +130,21 @@ class HomeChatViewModel internal constructor(
             HomeChatIntent.Send -> sendCurrentInput()
             HomeChatIntent.StopGenerating -> stopGenerating()
             HomeChatIntent.ClearConversation -> clearConversation()
+            is HomeChatIntent.LoadConversation -> loadConversation(intent.id)
+            is HomeChatIntent.DeleteConversation -> deleteConversation(intent.id)
         }
     }
 
     private fun onInputChanged(value: String) {
         updateState { copy(input = value) }
+        val conversationId = currentConversationId ?: return
+        draftSaveJob?.cancel()
+        draftSaveJob = viewModelScope.launch {
+            conversations.updateDraft(conversationId = conversationId, draftText = value)
+        }
     }
 
-    private fun sendCurrentInput() {
+    private suspend fun sendCurrentInput() {
         val query = currentState.input.trim()
         if (query.isBlank() || currentState.isGenerating) return
 
@@ -97,9 +158,13 @@ class HomeChatViewModel internal constructor(
                 streamEventCount = 0,
             )
         }
+        draftSaveJob?.cancel()
+        draftSaveJob = null
 
         streamJob = viewModelScope.launch {
             try {
+                val conversationId = ensureCurrentConversation(query)
+                conversations.updateDraft(conversationId = conversationId, draftText = "")
                 collectLlmStream(turnId = turnId, query = query)
             } catch (throwable: Throwable) {
                 if (throwable is CancellationException) throw throwable
@@ -125,10 +190,15 @@ class HomeChatViewModel internal constructor(
     private fun clearConversation() {
         streamJob?.cancel()
         streamJob = null
+        draftSaveJob?.cancel()
+        draftSaveJob = null
+        currentConversationId = null
+        nextTurnId = 0L
         updateState { HomeChatUiState() }
         viewModelScope.launch {
             try {
                 runtime.resetConversation()
+                conversations.setLastOpenedConversationId("")
             } catch (throwable: Throwable) {
                 if (throwable is CancellationException) throw throwable
             }
@@ -149,7 +219,7 @@ class HomeChatViewModel internal constructor(
         }
     }
 
-    private fun applyEvent(turnId: Long, event: LlmStreamEvent) {
+    private suspend fun applyEvent(turnId: Long, event: LlmStreamEvent) {
         when (event) {
             LlmStreamEvent.RoundStarted -> updateState { copy(isGenerating = true) }
             is LlmStreamEvent.TextDelta -> updateTurn(turnId) {
@@ -176,8 +246,99 @@ class HomeChatViewModel internal constructor(
                 updateTurn(turnId) {
                     it.appendFinalText(event.fullText)
                 }
+                val completedConversationId = currentConversationId
+                val completedHistory = if (completedConversationId != null) {
+                    runtime.getHistory()
+                } else {
+                    emptyList()
+                }
+                if (completedConversationId != null) {
+                    persistCompletedHistory(completedConversationId, completedHistory)
+                }
                 updateState { copy(isGenerating = false) }
             }
+        }
+    }
+
+    private fun restoreLastConversationOnStartup() {
+        if (startupRestoreAttempted) return
+        startupRestoreAttempted = true
+        viewModelScope.launch {
+            try {
+                val conversationId = conversations.lastOpenedConversationId()
+                if (conversationId.isBlank()) return@launch
+                val record = conversations.getConversation(conversationId) ?: return@launch
+                runtime.replaceHistory(record.history)
+                currentConversationId = conversationId
+                val restoredTurns = ConversationFormatter.toHomeTurns(record.history)
+                nextTurnId = restoredTurns.nextTurnId()
+                updateState {
+                    copy(
+                        input = record.draftText,
+                        turns = restoredTurns,
+                        isGenerating = false,
+                        lastEventName = null,
+                        streamEventCount = 0,
+                    )
+                }
+            } catch (throwable: Throwable) {
+                if (throwable is CancellationException) throw throwable
+            }
+        }
+    }
+
+    private suspend fun persistCompletedHistory(
+        conversationId: String,
+        history: List<ChatTurn>,
+    ) {
+        conversations.saveHistory(conversationId = conversationId, history = history)
+        if (currentConversationId == conversationId) {
+            conversations.setLastOpenedConversationId(conversationId)
+        }
+    }
+
+    private suspend fun loadConversation(id: String) {
+        streamJob?.cancel()
+        streamJob = null
+        draftSaveJob?.cancel()
+        draftSaveJob = null
+        val record = conversations.getConversation(id) ?: return
+        runtime.replaceHistory(record.history)
+        currentConversationId = id
+        conversations.setLastOpenedConversationId(id)
+        val restoredTurns = ConversationFormatter.toHomeTurns(record.history)
+        nextTurnId = restoredTurns.nextTurnId()
+        updateState {
+            copy(
+                input = "",
+                turns = restoredTurns,
+                isGenerating = false,
+                lastEventName = null,
+                streamEventCount = 0,
+            )
+        }
+    }
+
+    private suspend fun deleteConversation(id: String) {
+        conversations.deleteConversation(id)
+        if (id != currentConversationId) return
+
+        streamJob?.cancel()
+        streamJob = null
+        draftSaveJob?.cancel()
+        draftSaveJob = null
+        currentConversationId = null
+        nextTurnId = 0L
+        runtime.resetConversation()
+        conversations.setLastOpenedConversationId("")
+        updateState { HomeChatUiState() }
+    }
+
+    private suspend fun ensureCurrentConversation(firstUserInput: String): String {
+        currentConversationId?.let { return it }
+        return conversations.createConversation(firstUserInput).also { id ->
+            currentConversationId = id
+            conversations.setLastOpenedConversationId(id)
         }
     }
 
@@ -268,9 +429,15 @@ class HomeChatViewModel internal constructor(
         }
     }
 
+    private fun List<HomeChatTurn>.nextTurnId(): Long {
+        return maxOfOrNull { it.id + 1 } ?: 0L
+    }
+
     override fun onCleared() {
         streamJob?.cancel()
         streamJob = null
+        draftSaveJob?.cancel()
+        draftSaveJob = null
         super.onCleared()
     }
 
