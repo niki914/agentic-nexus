@@ -1,6 +1,8 @@
 package com.niki914.nexus.agentic.app.ui.nexus.model
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.viewModelScope
+import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.cb.ComposeMVIViewModel
 import kotlinx.coroutines.CancellationException
@@ -25,6 +27,8 @@ data class ExecutionRuleFormState(
     val enabledMode: ExecutionRuleEnabledMode = ExecutionRuleEnabledMode.ALWAYS,
     val patternsInput: String = "",
     val initialSnapshot: ExecutionRuleFormSnapshot? = null,
+    @param:StringRes val nameErrorResId: Int? = null,
+    @param:StringRes val patternsErrorResId: Int? = null,
 )
 
 data class ExecutionRuleFormSnapshot(
@@ -64,6 +68,8 @@ sealed interface ExecutionRulesInlineError {
 
 sealed interface ExecutionRulesSettingsEffect {
     data object ExitDetail : ExecutionRulesSettingsEffect
+    data object FocusName : ExecutionRulesSettingsEffect
+    data object FocusPatterns : ExecutionRulesSettingsEffect
 }
 
 class ExecutionRulesSettingsViewModel :
@@ -95,7 +101,10 @@ class ExecutionRulesSettingsViewModel :
 
             is ExecutionRulesSettingsIntent.NameChanged -> updateState {
                 copy(
-                    formState = formState.copy(name = intent.value),
+                    formState = formState.copy(
+                        name = intent.value,
+                        nameErrorResId = null,
+                    ),
                     inlineError = null,
                 )
             }
@@ -109,7 +118,10 @@ class ExecutionRulesSettingsViewModel :
 
             is ExecutionRulesSettingsIntent.PatternsChanged -> updateState {
                 copy(
-                    formState = formState.copy(patternsInput = intent.value),
+                    formState = formState.copy(
+                        patternsInput = intent.value,
+                        patternsErrorResId = null,
+                    ),
                     inlineError = null,
                 )
             }
@@ -223,16 +235,35 @@ class ExecutionRulesSettingsViewModel :
         val normalizedName = formState.name.trim()
         val normalizedPatterns = formState.patternsInput.normalizedPatterns()
         if (normalizedName.isBlank() || normalizedPatterns.isEmpty()) {
+            val nameErrorResId = if (normalizedName.isBlank()) {
+                R.string.execution_rules_error_name_required
+            } else {
+                null
+            }
+            val patternsErrorResId = if (normalizedPatterns.isEmpty()) {
+                R.string.execution_rules_error_patterns_required
+            } else {
+                null
+            }
             updateState {
                 copy(
                     formState = formState.copy(
                         name = normalizedName,
                         patternsInput = normalizedPatterns.joinToString(separator = "\n"),
+                        nameErrorResId = nameErrorResId,
+                        patternsErrorResId = patternsErrorResId,
                     ),
                     isSaving = false,
-                    inlineError = ExecutionRulesInlineError.SaveFailed("策略名称和规则内容不能为空"),
+                    inlineError = null,
                 )
             }
+            sendEffect(
+                if (nameErrorResId != null) {
+                    ExecutionRulesSettingsEffect.FocusName
+                } else {
+                    ExecutionRulesSettingsEffect.FocusPatterns
+                }
+            )
             return
         }
 
@@ -242,8 +273,11 @@ class ExecutionRulesSettingsViewModel :
         )
         updateState {
             copy(
-                formState = normalizedFormState,
                 isSaving = true,
+                formState = normalizedFormState.copy(
+                    nameErrorResId = null,
+                    patternsErrorResId = null,
+                ),
                 inlineError = null,
             )
         }

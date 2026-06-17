@@ -148,6 +148,8 @@
     <string name="execution_rules_field_patterns">规则</string>
     <string name="execution_rules_field_patterns_hint">例如：\brm\s+-rf\b</string>
     <string name="execution_rules_field_patterns_description">每行输入一个关键字或正则表达式，命中任意一条时，拦截该命令。</string>
+    <string name="execution_rules_error_name_required">请输入策略名称</string>
+    <string name="execution_rules_error_patterns_required">请输入至少一条规则</string>
     <string name="execution_rules_save_action">保存策略</string>
 
     <!-- Takeover Module -->

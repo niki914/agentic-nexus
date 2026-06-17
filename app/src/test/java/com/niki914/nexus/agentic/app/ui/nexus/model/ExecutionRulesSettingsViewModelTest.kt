@@ -2,6 +2,7 @@ package com.niki914.nexus.agentic.app.ui.nexus.model
 
 import android.content.Context
 import android.content.ContextWrapper
+import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.agentic.repo.LocalSettingsCodec
 import com.niki914.nexus.agentic.repo.LocalSettingsDefaults
@@ -84,6 +85,36 @@ class ExecutionRulesSettingsViewModelTest {
         assertEquals(LocalSettingsDefaults.defaultExecutionRules.size + 1, XRepo.executionRules.list().size)
         assertEquals(listOf(ExecutionRulesSettingsEffect.ExitDetail), effects)
         assertFalse(viewModel.uiStateFlow.value.isSaving)
+    }
+
+    @Test
+    fun save_invalidFields_setsFieldErrorsAndFocusesFirstInvalidField() = runTest {
+        installStore(LocalSettings())
+        val viewModel = ExecutionRulesSettingsViewModel()
+        val effects = collectEffects(viewModel, count = 2)
+
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.StartCreate)
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.Save)
+        advanceUntilIdle()
+
+        var formState = viewModel.uiStateFlow.value.formState
+        assertEquals(R.string.execution_rules_error_name_required, formState.nameErrorResId)
+        assertEquals(R.string.execution_rules_error_patterns_required, formState.patternsErrorResId)
+
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.NameChanged("危险删改"))
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.Save)
+        advanceUntilIdle()
+
+        formState = viewModel.uiStateFlow.value.formState
+        assertEquals(null, formState.nameErrorResId)
+        assertEquals(R.string.execution_rules_error_patterns_required, formState.patternsErrorResId)
+        assertEquals(
+            listOf(
+                ExecutionRulesSettingsEffect.FocusName,
+                ExecutionRulesSettingsEffect.FocusPatterns,
+            ),
+            effects,
+        )
     }
 
     @Test

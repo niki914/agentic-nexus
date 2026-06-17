@@ -148,6 +148,8 @@
     <string name="execution_rules_field_patterns">比對規則</string>
     <string name="execution_rules_field_patterns_hint">例如：\brm\s+-rf\b</string>
     <string name="execution_rules_field_patterns_description">每行輸入一個關鍵字或正則表達式，只要符合其中一項，便會攔截該指令。</string>
+    <string name="execution_rules_error_name_required">請輸入規則名稱</string>
+    <string name="execution_rules_error_patterns_required">請輸入至少一條規則</string>
     <string name="execution_rules_save_action">儲存規則</string>
 
     <!-- Takeover Module -->

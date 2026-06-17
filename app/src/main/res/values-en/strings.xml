@@ -148,6 +148,8 @@
     <string name="execution_rules_field_patterns">Patterns</string>
     <string name="execution_rules_field_patterns_hint">For example: \brm\s+-rf\b</string>
     <string name="execution_rules_field_patterns_description">Enter one keyword or regular expression per line. The command is blocked as soon as any rule matches.</string>
+    <string name="execution_rules_error_name_required">Enter a rule name</string>
+    <string name="execution_rules_error_patterns_required">Enter at least one pattern</string>
     <string name="execution_rules_save_action">Save Rule</string>
 
     <!-- Takeover Module -->

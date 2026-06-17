@@ -5,8 +5,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -14,7 +15,6 @@ import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsSegmentedSelector
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsDetailFormScaffold
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
@@ -34,6 +34,9 @@ fun ExecutionRuleDetailContent(
 ) {
     val viewModel = pageViewModel<ExecutionRulesSettingsViewModel>()
     val uiState by viewModel.uiStateFlow.collectAsState()
+    var requestedFocusField by rememberSaveable {
+        mutableStateOf<ExecutionRuleEditableField?>(null)
+    }
 
     EditableSettingsDetailChrome(
         isCreating = page.isCreating,
@@ -47,6 +50,10 @@ fun ExecutionRuleDetailContent(
     ) {
         ExecutionRuleDetailContentBody(
             uiState = uiState,
+            requestedFocusField = requestedFocusField,
+            onRequestedFocusHandled = {
+                requestedFocusField = null
+            },
             onNameChange = { value ->
                 viewModel.sendIntent(ExecutionRulesSettingsIntent.NameChanged(value))
             },
@@ -80,49 +87,67 @@ fun ExecutionRuleDetailContent(
         viewModel.uiEffect.collect { effect ->
             when (effect) {
                 ExecutionRulesSettingsEffect.ExitDetail -> onBack()
+                ExecutionRulesSettingsEffect.FocusName -> {
+                    requestedFocusField = ExecutionRuleEditableField.Name
+                }
+
+                ExecutionRulesSettingsEffect.FocusPatterns -> {
+                    requestedFocusField = ExecutionRuleEditableField.Patterns
+                }
             }
         }
     }
 }
 
+private enum class ExecutionRuleEditableField {
+    Name,
+    Patterns,
+}
+
 @Composable
 private fun ExecutionRuleDetailContentBody(
     uiState: ExecutionRulesSettingsUiState,
+    requestedFocusField: ExecutionRuleEditableField?,
+    onRequestedFocusHandled: () -> Unit,
     onNameChange: (String) -> Unit,
     onEnabledModeChange: (RuntimeExecutionRuleEnabledMode) -> Unit,
     onPatternsInputChange: (String) -> Unit,
     onSave: () -> Unit,
 ) {
-    val focusManager = LocalFocusManager.current
-    fun clearFocus() {
-        focusManager.clearFocus()
-    }
-
-    SettingsDetailFormScaffold(
+    EditableSettingsDetailFormScaffold(
         actionText = stringResource(R.string.execution_rules_save_action),
-        onActionClick = {
-            clearFocus()
-            onSave()
-        },
+        requestedFocusField = requestedFocusField,
+        onRequestedFocusHandled = onRequestedFocusHandled,
+        onActionClick = onSave,
         description = stringResource(R.string.execution_rules_editor_description),
         inlineErrorText = executionRulesInlineErrorText(uiState.inlineError),
         actionEnabled = !uiState.isSaving,
-        onBackgroundTap = ::clearFocus,
-    ) {
+    ) { fieldController ->
         SettingsGroupCard {
             SettingExpandableTextItem(
                 title = stringResource(R.string.execution_rules_field_name),
                 value = uiState.formState.name,
                 onValueChange = onNameChange,
                 placeholder = stringResource(R.string.execution_rules_field_name_hint),
+                description = executionRulesFieldErrorText(uiState.formState.nameErrorResId),
                 enabled = !uiState.isSaving,
                 minLines = 1,
                 maxLines = 1,
+                expanded = fieldController.expandedField == ExecutionRuleEditableField.Name,
+                onExpandedChange = { isExpanded ->
+                    fieldController.onExpandedFieldChange(
+                        if (isExpanded) ExecutionRuleEditableField.Name else null,
+                    )
+                },
             )
             SettingsItemDivider()
             ExecutionRuleEnabledModeSection(
                 selectedMode = uiState.formState.enabledMode,
-                onModeSelected = onEnabledModeChange,
+                enabled = !uiState.isSaving,
+                onModeSelected = {
+                    fieldController.clearActiveField()
+                    onEnabledModeChange(it)
+                },
             )
         }
 
@@ -132,10 +157,17 @@ private fun ExecutionRuleDetailContentBody(
                 value = uiState.formState.patternsInput,
                 onValueChange = onPatternsInputChange,
                 placeholder = stringResource(R.string.execution_rules_field_patterns_hint),
-                description = stringResource(R.string.execution_rules_field_patterns_description),
+                description = executionRulesFieldErrorText(uiState.formState.patternsErrorResId)
+                    ?: stringResource(R.string.execution_rules_field_patterns_description),
                 enabled = !uiState.isSaving,
                 minLines = 4,
                 maxLines = 6,
+                expanded = fieldController.expandedField == ExecutionRuleEditableField.Patterns,
+                onExpandedChange = { isExpanded ->
+                    fieldController.onExpandedFieldChange(
+                        if (isExpanded) ExecutionRuleEditableField.Patterns else null,
+                    )
+                },
             )
         }
     }
@@ -145,6 +177,7 @@ private fun ExecutionRuleDetailContentBody(
 private fun ExecutionRuleEnabledModeSection(
     selectedMode: RuntimeExecutionRuleEnabledMode,
     onModeSelected: (RuntimeExecutionRuleEnabledMode) -> Unit,
+    enabled: Boolean = true,
 ) {
     SettingsSegmentedSelector(
         title = stringResource(R.string.execution_rules_field_enabled_mode),
@@ -152,7 +185,13 @@ private fun ExecutionRuleEnabledModeSection(
         selected = selectedMode,
         label = { option -> stringResource(option.labelRes()) },
         onSelected = onModeSelected,
+        enabled = enabled,
     )
+}
+
+@Composable
+private fun executionRulesFieldErrorText(errorResId: Int?): String? {
+    return errorResId?.let { stringResource(id = it) }
 }
 
 @Composable
@@ -192,6 +231,8 @@ private fun ExecutionRuleDetailContentPreview() {
                     isLoading = false,
                     isSaving = false,
                 ),
+                requestedFocusField = null,
+                onRequestedFocusHandled = {},
                 onNameChange = {},
                 onEnabledModeChange = {},
                 onPatternsInputChange = {},
