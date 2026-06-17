@@ -1,88 +1,141 @@
 # Config Resolution
 
-本文件描述当前源码里的配置来源、IPC 边界与落盘方式。
+本文件描述当前源码里的配置来源、runtime settings 网关、IPC 边界与落盘方式。
 
-## 读取优先级
+## 配置分层
 
-当前读取顺序是：
+当前实现已经不是单一 `web_settings.json` / `local_settings.json` 双文件模型。
 
-1. 已刷新并落盘的 JSON
-2. 进程内缓存（仅 `WEB_SETTINGS` 有内存缓存）
-3. 空 JSON `{}`
+- `web_settings`：宿主版本相关的远端配置缓存，默认落到 `settings/hooks.json`。
+- `local_settings`：仍保留的兼容 store，当前落到 `local_settings.json`。
+- agent/runtime 配置：已经拆到 `settings/*` 目录下的多 store，由 `ipc/src/main/java/com/niki914/nexus/ipc/store/StoreDescriptorRegistry.kt` 统一注册。
+
+静态 store 注册如下：
+
+| Store ID | 相对路径 |
+| --- | --- |
+| `web_settings` | `settings/hooks.json` |
+| `local_settings` | `local_settings.json` |
+| `agent.main.config` | `settings/agents/main/config.json` |
+| `agent.main.memory` | `settings/agents/main/memory.json` |
+| `tools.builtin` | `settings/tools/builtin_tools.json` |
+| `tools.custom` | `settings/tools/custom_tools.json` |
+| `tools.mcp.servers` | `settings/tools/mcp/servers.json` |
+| `rules.execution` | `settings/rules/execution_rules.json` |
+| `rules.takeover` | `settings/rules/takeover_rules.json` |
+| `app.state` | `settings/app_state.json` |
+
+动态 MCP cache store 通过 `StoreDescriptorRegistry.mcpCacheStoreId(serverId)` 生成，实际文件路径为 `settings/tools/mcp/cache/<serverId>.json`。
 
 ## 主 App 初始化链路
 
-主 App 当前在 `MainActivity.onCreate()` 中执行：
+主 App 启动时的配置相关初始化分成两层：
 
-1. `ContextProvider.provide(applicationContext)` 提供 App 侧 `Context`。
-2. `XRepo.init(applicationContext)` 初始化设置仓库。
-3. `resolveStartupAssistantUi()` 判断启动 UI 类型。
-4. `AppLaunchDecision.resolve(startupAssistantUi)` 决定进入 `StartupPage` 或 `HomePage`。
+1. `app/src/main/java/com/niki914/nexus/agentic/app/App.kt`：`XRepo.init(applicationContext)` -> `RuntimeEnvironment.install(createAppRuntimeBridge())` -> 异步触发 `XRepo.web.await()` 和 `XRepo.tryPutDefaultSettings()`。
+2. `app/src/main/java/com/niki914/nexus/agentic/app/MainActivity.kt`：`ContextProvider.provide(applicationContext)` -> `XRepo.init(applicationContext)` -> `resolveStartupAssistantUi()` -> `AppLaunchDecision.resolve(...)`。
+
+`app/src/main/java/com/niki914/nexus/agentic/runtime/AppRuntimeBridge.kt` 当前把 runtime settings 网关固定到 `XRepoRuntimeGateway()`；`agent-runtime` 侧统一通过 `RuntimeEnvironment.awaitSettingsGateway()` 访问配置，不直接碰 `XRepo`。
 
 ## 宿主进程读取链路
 
-宿主侧入口读取走 `XRepo` 与 `RuntimeEnvironment`：
+宿主侧入口仍从 `app/src/main/java/a0/a0/a0/a0/a0/a0/Entrance.kt` 启动：
 
-- `Entrance.onLoad()`：`XRepo.init(ctx)` -> `RuntimeEnvironment.install(createAppRuntimeBridge())` -> `XRepo.web.await()`
-- `HookLocalSettings.update(ctx)`：刷新 Hook 侧本地设置缓存
-- `createAppRuntimeBridge()`：为 runtime 提供设置读取网关
+- `XRepo.init(ctx)`：初始化仓库入口。
+- `RuntimeEnvironment.install(createAppRuntimeBridge())`：把同一套 runtime settings gateway 装进宿主进程。
+- `HookLocalSettings.update(ctx)`：刷新 Hook 侧 `LocalSettings` 缓存。
+- `XRepo.web.await()`：读取或刷新远端 web settings。
 
-`XIpcBridge` 会根据 `XValues.getAppTypeOf(context)` 分流：
+`app/src/main/java/com/niki914/nexus/agentic/repo/XRepoRuntimeGateway.kt` 是 runtime 到仓库的适配层：
 
-- 主 App 进程：直接访问 `XIpcStoreRepository`
-- 宿主进程：通过 `ContentResolver.openInputStream(store.fileUri)` 读取 `SettingsContentProvider.openFile()` 暴露的只读文件流
+- `readLlmConfig()` 读取 `agent.main.config` 并合并 `agent.main.memory`。
+- `listBuiltinToolSettings()`、`listCustomTools()`、`listMcpServers()`、`listCachedTools(server)`、`listExecutionRules()` 全部走 `XRepo` 对应 API。
+- `saveDiscoveredTools()`、`setBuiltinToolEnabled()`、`saveCustomTool()` 等写操作也回到 `XRepo`。
 
-当前 provider contract 里虽然保留了 `GET_WEB_SETTINGS` / `GET_LOCAL_SETTINGS`，但实际 host 读取主路径是**直接打开 Store 文件流**，不是把整段 JSON 放进 `Bundle` 返回。
+## IPC 与持久化职责
 
-## 持久化职责
+### 进程分流
 
-- `XIpcBridge`：屏蔽主进程与宿主进程的读写差异。
-- `SettingsContentProvider`：做 caller 校验，并提供 `call()` 与 `openFile()` 两个 IPC 入口。
-- `XProviderDispatcher`：处理 PUT / MUTATE / NOTIFICATION 这类命令式请求。
-- `XIpcStoreRepository`：按 Store 加锁，做读、写、局部 mutate。
-- `ConfigPersistence`：把 `WEB_SETTINGS` 和 `LOCAL_SETTINGS` 写入 `filesDir` 下的 JSON 文件，使用 `AtomicFile` 原子落盘。
+`ipc/src/main/java/com/niki914/nexus/ipc/XIpcBridge.kt` 根据 `XValues.getAppTypeOf(context)` 分流：
 
-## Store 边界
+- 主 App 进程：直接调用 `ipc/src/main/java/com/niki914/nexus/ipc/store/XIpcStoreRepository.kt`。
+- 宿主进程：通过 `ContentResolver.openInputStream()` / `openOutputStream()` 访问 `SettingsContentProvider.openFile()` 暴露的 store 文件；命令式局部更新走 provider `call()`。
 
-| Store | 文件名 | 读取方式 | 写入方式 |
-| --- | --- | --- | --- |
-| `WEB_SETTINGS` | `web_settings.json` | 主进程直接读；宿主通过 `openInputStream(store.fileUri)` | `XIpcBridge.writeWebSettingsJson()` |
-| `LOCAL_SETTINGS` | `local_settings.json` | 主进程直接读；宿主通过 `openInputStream(store.fileUri)` | `XIpcBridge.writeLocalSettingsJson()` / `mutateSetting()` |
+当前只有 `web_settings` 在 `XIpcBridge` 内做进程内字符串缓存；其他 store 读取都走 uncached 路径。
 
-- `WEB_SETTINGS` 在 `XIpcBridge` 有进程内缓存。
-- `LOCAL_SETTINGS` 当前不做长期缓存，读路径始终走 uncached。
-- 旧 SharedPreferences 路径不再是当前实现。
+### Provider 协议
 
-## Server 回退策略
+`ipc/src/main/java/com/niki914/nexus/ipc/XRes.kt` 当前同时保留旧方法和泛化方法：
 
-本地服务实现位于：
+- 旧兼容方法：`GET_WEB_SETTINGS`、`GET_LOCAL_SETTINGS`、`MUTATE_WEB_SETTINGS`、`MUTATE_LOCAL_SETTINGS`。
+- 当前泛化方法：`GET_STORE`、`MUTATE_STORE`。
 
-- `server/server.py`
+`ipc/src/main/java/com/niki914/nexus/ipc/cp/XProviderDispatcher.kt` 的现状是：
 
-当前规则：
+- `GET_STORE` 与旧的 `GET_WEB_SETTINGS` / `GET_LOCAL_SETTINGS` 都只返回 `STORE_URI`，不再把整段 JSON 放进 `Bundle`。
+- `MUTATE_STORE` 调用 `XIpcStoreRepository.mutateJson(storeId, path, valueJson)`。
+- `PUT_WEB_SETTINGS` 与 `PUT_LOCAL_SETTINGS` 当前没有实际分发逻辑；宿主写整段 JSON 的主路径已经改成 `openFile(..., "wt")`。
 
-- 请求路径匹配 `/<packageName>/<versionCode>/config.json`
-- 精确命中时直接返回文件
-- 未命中时，在同包名目录下选择数值距离最近的版本目录回退
-- 不使用宿主 alias
+`ipc/src/main/java/com/niki914/nexus/ipc/cp/SettingsContentProvider.kt` 的职责是：
+
+- 做 caller 校验。
+- 在 `call()` 中把 `GET_STORE` / `MUTATE_STORE` / 兼容方法分发给 `XProviderDispatcher`。
+- 在 `openFile()` 中按 `StoreDescriptorRegistry.resolveDynamic(storeId)` 打开真实 store 文件；写入时创建 pipe，再由后台线程调用 `XIpcStoreRepository.writeJson()` 做原子落盘。
+
+### Store 仓库
+
+`ipc/src/main/java/com/niki914/nexus/ipc/store/XIpcStoreRepository.kt` 当前按 store 维度维护 `Mutex`：
+
+- `readJson()`：读取持久化 JSON；文件不存在或内容非法时回退到 `StoreDescriptor.defaultJson`。
+- `writeJson()`：要求写入内容是 JSON object，再调用 `ConfigPersistence.writeJson()`。
+- `mutateJson()`：基于 `IpcJsonMutator` 做局部路径更新后再落盘。
+
+`ipc/src/main/java/com/niki914/nexus/ipc/store/ConfigPersistence.kt` 把 store 写到 `filesDir/<relativePath>`，通过 `AtomicFile` 保证原子写入。
+
+## Web Settings 回退
+
+当前仓库里同时存在客户端回退逻辑和本地测试服务实现：
+
+- 客户端位于 `app/src/main/java/com/niki914/nexus/agentic/repo/WebSettingsApi.kt`。
+- 本地测试服务位于 `server/server.py`。
+
+当前客户端行为：
+
+1. 先请求 `https://gitee.com/niki914/nexus-res/raw/main/<packageName>/<versionCode>/config.json`。
+2. 若精确版本 404，则请求 `https://gitee.com/niki914/nexus-res/raw/main/<packageName>/versions.json`。
+3. 通过 `app/src/main/java/com/niki914/nexus/agentic/repo/WebSettingsModels.kt` 中的 `WebSettingsVersionFallback.nearestVersionCode()` 选择距离最近的版本；距离相同优先较低版本。
+4. 成功结果回写 `web_settings` store，并带上 `requested_version_code` 与 `resolved_version_code`。
+
+本地 `server/server.py` 的规则与客户端约定一致：优先命中 `/<packageName>/<versionCode>/config.json`，未命中时在同包名目录下选择数值距离最近的版本目录回退。
 
 ## 关键源码
 
 ### `app/src/main/java/com/niki914/nexus/agentic/app/`
 
+- `App.kt`
 - `MainActivity.kt`
-- `EXT.kt`
-
-### `app/src/main/java/com/niki914/nexus/agentic/mod/`
-
-- `XService.kt`
-- `HookLocalSettings.kt`
 
 ### `app/src/main/java/com/niki914/nexus/agentic/repo/`
 
 - `XRepo.kt`
-- `LocalSettingsCodec.kt`
-- `LocalSettingsStore.kt`
+- `XRepoRuntimeGateway.kt`
+- `DomainSettingsStore.kt`
+- `WebSettingsApi.kt`
+- `WebSettingsModels.kt`
+- `AgentSettingsCodec.kt`
+- `MemorySettingsCodec.kt`
+- `ToolSettingsCodec.kt`
+- `McpSettingsCodec.kt`
+- `RuleSettingsCodec.kt`
+- `AppStateSettingsCodec.kt`
+
+### `app/src/main/java/com/niki914/nexus/agentic/runtime/`
+
+- `AppRuntimeBridge.kt`
+
+### `app/src/main/java/com/niki914/nexus/agentic/mod/`
+
+- `HookLocalSettings.kt`
+- `XService.kt`
 
 ### `ipc/src/main/java/com/niki914/nexus/ipc/`
 
@@ -90,5 +143,11 @@
 - `XRes.kt`
 - `cp/SettingsContentProvider.kt`
 - `cp/XProviderDispatcher.kt`
+- `store/StoreDescriptor.kt`
+- `store/StoreDescriptorRegistry.kt`
 - `store/XIpcStoreRepository.kt`
 - `store/ConfigPersistence.kt`
+
+### `server/`
+
+- `server.py`

@@ -50,6 +50,7 @@ UI Shell 当前明确拆成两层：
 - `DonePageContent.kt`：当前是独立完成页实现，不再复用配置页内容。
 - `SettingsHomePageContent.kt`
 - `SettingsDetailPageContent.kt`：`ModelConfig`、`BuiltinTools`、`CustomShellTools`、`Mcp`、`About`、`Memory`、`Takeover`、`ExecutionRules` 均有独立分发；未知分组才落到 `TODOPageContent`。
+- `EditableSettingsDetailScaffold.kt`：详情页共用编辑壳，负责未保存退出确认、删除按钮 chrome 与字段焦点控制。
 - `ModelConfigSettingsContent.kt`：复用配置页表单作为 settings 内的 ModelConfig 编辑入口，并处理未保存退出确认。
 - `MemorySettingsContent.kt`：Memory 列表与编辑弹窗。
 - `TakeoverSettingsContent.kt`：takeover 规则列表、启用开关与详情入口。
@@ -67,6 +68,7 @@ UI Shell 当前明确拆成两层：
 
 ### `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/`
 
+- `ActionBarButton.kt`
 - `ConfirmationLiquidDialog.kt`
 - `LiquidDialog.kt`
 - `LiquidScreen.kt`
@@ -80,6 +82,8 @@ UI Shell 当前明确拆成两层：
 
 ### `composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/component/`
 
+- `MaterialTintLiquidButton.kt`
+- `TintLiquidButton.kt`
 - `LiquidButton.kt`
 - `LiquidTextField.kt`
 - `LiquidSecretTextField.kt`
@@ -89,6 +93,8 @@ UI Shell 当前明确拆成两层：
 - `SettingExpandableTextItem.kt`
 - `SettingExpandableTextCard.kt`
 - `SettingToggleItem.kt`
+- `PageDescriptionText.kt`
+- `SettingsDetailPageDefaults.kt`
 - `SettingsItemSurface.kt`
 - `SettingsListItem.kt`
 - `SwipeDismissSettingsItemCard.kt`
@@ -100,5 +106,5 @@ UI Shell 当前明确拆成两层：
 ## 当前边界
 
 - 不要把 UI Shell 理解成只有页面层；导航、page chrome、交互层和组件层已明确下沉到 `composebase/`。
-- 不要把 settings 全部视为已完成；`Memory`、`Takeover`、`ExecutionRules`、`About` 已有真实内容，但命令执行隔离仍不是完整沙箱或审批体系。
+- 不要把 settings 全部视为已完成；`Memory`、`Takeover`、`ExecutionRules`、`About` 已有真实内容，列表页与详情页共用 scaffold 也已成型，但命令执行隔离仍不是完整沙箱或审批体系。
 - 不要把宿主差异理解成初始页差异；当前差异发生在 `StartupPage` 的继续按钮逻辑，而不是 `AppLaunchDecision`。

@@ -1,110 +1,103 @@
 # LLM Runtime
 
-本文档只记录当前源码已经存在的 LLM runtime 事实，不把设计意图写成实现。
+本文档只记录当前源码里已经落地的 LLM runtime 事实。
 
 ## 运行时主链
 
 ### Refresh
 
-`LLMController.refresh()` 的当前顺序是：
+`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/LLMController.kt` 中的 `refresh()` 当前顺序如下：
 
-1. 从 `RuntimeEnvironment.awaitSettingsGateway()` 读取 LLM、builtin、custom、MCP 配置。
-2. `ToolManager.resolve()` 解析出 `ResolvedTools` 与 prompt lines。
-3. 先把不含 runtime prompt 的配置写入 `SessionConfig.Builder`。
-4. 当 session 首次创建、provider 变化，或 MCP 指纹变化时，调用 `Session.refreshMcpTools()`。
-5. `McpDiscoveryCacheStore.onToolsDiscovered()` 把发现到的 tools 写回本地 settings cache。
-6. `PromptComposer.compose()` 把 `system`、`memory_*`、`tool_*`、`runtime_*` 区块拼成最终 `systemPrompt`。
-7. 再次 `applyRuntimeConfig()`，写入最终 prompt 与最新 tool 绑定。
+1. 通过 `RuntimeEnvironment.awaitSettingsGateway()` 读取 `readLlmConfig()`、`listMcpServers()`、`listCustomTools()`、`listBuiltinToolSettings()`，并按 server 调用 `listCachedTools(server)`。
+2. `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolManager.kt` 把 builtin、custom、MCP 配置解析成 `ResolvedTools`；这里不拼 prompt。
+3. `LLMController` 先构造不含运行时 prompt 的 `ResolvedLlmConfig`，再按 provider 复用或重建 `Session`。
+4. 第一次 `applyRuntimeConfig()` 通过 `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/SessionToolBinder.kt` 先绑定 builtin、custom 和 MCP cached tools。
+5. 当存在启用中的 MCP server，且 session 首次创建或 MCP 指纹变化时，调用 `Session.refreshMcpTools()`；`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStore.kt` 再经 `RuntimeEnvironment.awaitSettingsGateway().saveDiscoveredTools()` 把发现结果写回 cache store。
+6. `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/PromptComposer.kt` 在拿到 `Session.getMcpDiscoverySnapshot()` 之后拼接最终 prompt。当前 section 只有 `Agent Memory`、`Tool Context`、`Additional instructions` 三类；MCP 发现状态写进 `<mcp_servers>` 块，不再维护旧的 `runtime_*` prompt 区块。
+7. 第二次 `applyRuntimeConfig()` 把最终 `systemPrompt` 与同一组 `ResolvedTools` 写回 session，并更新 `runtimeState`。
+
+`refreshFromHookContext()` 只是 `refresh()` 的别名，没有单独的 Hook 分支逻辑。
 
 ### Stream
 
-`LLMController.stream(query)` 的当前顺序是：
+`LLMController.stream(query)` 的当前顺序如下：
 
-1. 先尝试 `refreshIfPossibleFromHookContext()`。
-2. refresh 失败时回退到最近一次 `runtimeState`；若仍为空，则发出 `LlmStreamEvent.Error`。
-3. `session.send(query)` 的底层事件交给 `LlmStreamEventMapper.map()`。
-4. 文本流累计全文并计算 `charsPerSecond`。
-5. tool 结果先经 `LocalToolResultClassifier` 判定成功或失败。
-6. tool 相关事件交给宿主层按需用 `ToolEventFormatter` 转成展示文案。
+1. 直接调用 `refresh()`；当前源码里没有 `refreshIfPossibleFromHookContext()` 这条路径。
+2. 如果 refresh 抛错且已有最近一次 `runtimeState`，则回退到旧快照继续发送；如果旧快照也不存在，则发出 `LlmStreamEvent.Error` 并结束。
+3. `session.send(query)` 的 `SessionEvent` 统一交给 `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/LlmStreamEventMapper.kt` 转成 `LlmStreamEvent`。
+4. 文本流在 mapper 内累计全文，并基于起始时间计算 `charsPerSecond`。
+5. local tool 结果先经 `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/LocalToolResultClassifier.kt` 判定成功或失败，再映射成 `ToolRunning`、`ToolSucceeded`、`ToolFailed`。
+6. `LlmStreamEvent` 只承载结构化事件；宿主层是否把 tool 事件转成展示文案，由 `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/ToolEventFormatter.kt` 决定。
 
 ## 组件边界
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/`
 
-- `LLMController.kt`：总入口；维护单例 `Session`、最近一次 `LlmRuntimeSnapshot`、MCP 刷新时机与 stream 主链。
+- `LLMController.kt`：runtime 总入口；持有单例 `Session`、最近一次 `LlmRuntimeSnapshot`、MCP refresh 指纹和 stream 主链。
 - `LlmModels.kt`：`ResolvedLlmConfig`、`ResolvedTools`、`LocalTool`、`McpServerDefinition` 等运行时模型。
 - `LlmStreamEvent.kt`：对宿主暴露的统一流式事件模型。
-- `ConversationTurnState.kt`：turn 状态与 `turnId` 生成。
-- `ActiveTurnStore.kt`：当前注入轮次状态存储。
+- `ConversationTurnState.kt`
+- `ActiveTurnStore.kt`
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/`
 
-- `PromptComposer.kt`：把 `system`、`memory_*`、`tool_*`、`runtime_*` 区块拼成最终 prompt；当前 `runtimeSections` 已用于写入 MCP discovery 状态行，不是空实现。
-- `ToolManager.kt`：解析 builtin、custom、MCP 配置，产出 `ResolvedTools`。
-- `SessionToolBinder.kt`：把 local tools 与 MCP servers 绑定到 `SessionConfig.Builder`。
-- `ToolCallDispatcher.kt`：在运行时分发 builtin 和 custom local tool 调用。
+- `PromptComposer.kt`：拼接 memory、tool context、附加指令；MCP 发现状态只影响 `<mcp_servers>` 内容。
+- `ToolManager.kt`：把 builtin settings、custom tools、MCP servers 和 cached tools 解析成 `ResolvedTools`。
+- `SessionToolBinder.kt`：把 builtin、custom、MCP server 定义写入 `SessionConfig.Builder`。
+- `ToolCallDispatcher.kt`：运行时分发 builtin 与 custom local tool 调用。
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/`
 
-- `BuiltinToolRegistry.kt`：当前默认注册 `create_custom_tool`、`launch_app`、`memorize`、`notify`、`open_uri`、`read_custom_tool`、`run_command`、`search_apps`。
+- `BuiltinToolRegistry.kt`：当前默认注册 `create_custom_tool`、`launch_app`、`memorize`、`notify`、`open_uri`、`read_custom_tool`、`terminal`、`ssh_terminal`、`search_apps`。
 - `BuiltinToolExecutor.kt`：builtin 执行入口。
-- `BuiltinToolSettingsManager.kt`：builtin 设置读写辅助。
-- `impl/CreateCustomToolBuiltin.kt`
-- `impl/LaunchAppBuiltin.kt`
-- `impl/MemorizeBuiltin.kt`
-- `impl/NotifyBuiltin.kt`
-- `impl/OpenUriBuiltin.kt`
-- `impl/ReadCustomToolBuiltin.kt`
-- `impl/RunCommandBuildin_WIP_SAFE.kt`
-- `impl/SearchAppsBuiltin.kt`
-
-### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/device/`
-
-- `AppInfoProvider.kt`：为 app 控制类 builtin 提供已安装应用信息。
-- `AppInfoCache.kt`：缓存已安装应用信息。
+- `BuiltinToolSettingsManager.kt`：通过 `RuntimeEnvironment.awaitSettingsGateway()` 读写 builtin 开关。
+- `impl/TerminalBuiltin.kt`：Android 终端 builtin；raw JSON 协议，支持 `open`、`open_and_exec`、`exec`、`read_async_result`、`close`。
+- `impl/SshTerminalBuiltin.kt`：交互式 SSH 终端 builtin；支持 `open`、`send_line`、`write`、`interrupt`、`read`、`close`。
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/`
 
 - `CustomToolManager.kt`：custom tool 的校验、保存、删除、启停。
-- `CustomToolExecutor.kt`：执行固定 shell command；不把 `argumentsJson` 展开进命令模板。
+- `CustomToolExecutor.kt`：通过 `TerminalSessionPool.executeCustomCommand()` 执行固定命令；不会把 tool call 入参展开进命令模板。
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/`
 
-- `McpDiscoveryCacheStore.kt`：把 discovered tools 写回本地缓存。
+- `McpDiscoveryCacheStore.kt`：把 discovered tools 回写到 runtime settings gateway 对应的 MCP cache store。
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/shell/`
 
-- `ShellCommandSafetyPolicy.kt`：基础危险命令拦截。
-- `ShellCommandRunner.kt`：通过 `/system/bin/sh` 执行命令，带超时和 stdout/stderr 处理。
+- `ShellCommandSafetyPolicy.kt`：命令安全策略。
+- `TerminalSessionPool.kt`：当前终端入口；负责 Android shell session、SSH session、异步执行、交互输出缓存和 session 关闭。
+- `TerminalToolResponse.kt`：terminal/ssh_terminal 的 JSON 响应格式。
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/`
 
-- `LlmStreamEventMapper.kt`：`SessionEvent` -> `LlmStreamEvent`。
-- `LocalToolResultClassifier.kt`：根据 local tool result 判断 tool 调用是否失败。
-- `ToolEventFormatter.kt`：tool 事件文案格式化，支持 `AppendOnly` 与 `ReplaceStatus`。
+- `LlmStreamEventMapper.kt`：`SessionEvent` 到 `LlmStreamEvent` 的映射。
+- `LocalToolResultClassifier.kt`：根据 local tool result 判定 tool 调用失败。
+- `ToolEventFormatter.kt`：tool 事件文案格式化。
 
 ## 能力状态
 
 ### Builtin
 
-- 已实现：注册表、启用状态读取、执行分发。
-- 当前默认 builtin：`create_custom_tool`、`launch_app`、`memorize`、`notify`、`open_uri`、`read_custom_tool`、`run_command`、`search_apps`。
-- 边界：`run_command` 运行在 Android 设备 `/system/bin/sh` 环境，不是桌面 shell；安全策略仍是基础黑名单拦截。
+- 已实现：注册表、运行期开关读取、builtin 执行分发。
+- 当前默认 builtin：`create_custom_tool`、`launch_app`、`memorize`、`notify`、`open_uri`、`read_custom_tool`、`terminal`、`ssh_terminal`、`search_apps`。
+- 边界：`terminal` 运行在 Android terminal session，不是桌面 shell；`ssh_terminal` 是交互式 SSH 终端，不支持 `exec` 或 `open_and_exec`。
+- 兼容性：`app/src/main/java/com/niki914/nexus/agentic/repo/XRepo.kt` 在解析 builtin 开关时仍兼容旧 `run_command` key，但当前真实 builtin 名称已经是 `terminal`。
 
 ### Custom
 
-- 已实现：名称校验、保留名校验、基础命令安全校验、保存、删除、启停、执行。
-- 边界：执行的始终是配置里的固定 `command`；tool call 入参不会参与命令模板展开。
+- 已实现：名称校验、保留名校验、命令安全校验、保存、删除、启停、执行。
+- 边界：执行的始终是配置中的固定 `command`；tool call 入参不会拼进命令模板。
 
 ### MCP
 
 - 已实现：HTTP MCP server 绑定、tools discovery、discovered tools 本地缓存写回、按 server 指纹控制 refresh。
-- 边界：当前 `McpServerDefinition` 只有 `Http`；源码里未见 stdio / 本地进程 transport。
+- 边界：当前 `McpServerDefinition` 只有 `Http`；源码里未见 stdio 或本地进程 transport。
 
 ### Stream
 
-- 已实现：`RoundStarted`、`TextDelta`、`ToolRunning`、`ToolSucceeded`、`ToolFailed`、`Error`、`Completed` 映射；local tool 结果会先经过 `LocalToolResultClassifier` 做失败分类。
-- 边界：tool 展示文本由 `ToolEventFormatter` 生成；`LlmStreamEvent` 自身只承载结构化状态。
+- 已实现：`RoundStarted`、`TextDelta`、`ToolRunning`、`ToolSucceeded`、`ToolFailed`、`Error`、`Completed` 映射。
+- 边界：`LlmStreamEvent` 自身只提供结构化状态；展示文本格式化仍在宿主层。
 
 ## 关键源码
 
@@ -125,21 +118,14 @@
 - `buildin/BuiltinToolRegistry.kt`
 - `buildin/BuiltinToolExecutor.kt`
 - `buildin/BuiltinToolSettingsManager.kt`
-- `buildin/impl/CreateCustomToolBuiltin.kt`
-- `buildin/impl/LaunchAppBuiltin.kt`
-- `buildin/impl/MemorizeBuiltin.kt`
-- `buildin/impl/NotifyBuiltin.kt`
-- `buildin/impl/OpenUriBuiltin.kt`
-- `buildin/impl/ReadCustomToolBuiltin.kt`
-- `buildin/impl/RunCommandBuildin_WIP_SAFE.kt`
-- `buildin/impl/SearchAppsBuiltin.kt`
+- `buildin/impl/TerminalBuiltin.kt`
+- `buildin/impl/SshTerminalBuiltin.kt`
 - `custom/CustomToolManager.kt`
 - `custom/CustomToolExecutor.kt`
-- `device/AppInfoProvider.kt`
-- `device/AppInfoCache.kt`
 - `mcp/McpDiscoveryCacheStore.kt`
 - `shell/ShellCommandSafetyPolicy.kt`
-- `shell/ShellCommandRunner.kt`
+- `shell/TerminalSessionPool.kt`
+- `shell/TerminalToolResponse.kt`
 - `stream/LlmStreamEventMapper.kt`
 - `stream/LocalToolResultClassifier.kt`
 - `stream/ToolEventFormatter.kt`

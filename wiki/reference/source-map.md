@@ -79,7 +79,8 @@
 - `NotifyBuiltin.kt`: 内建通知工具
 - `OpenUriBuiltin.kt`: 打开 URI
 - `ReadCustomToolBuiltin.kt`: 内建读取 custom tool 定义工具
-- `RunCommandBuildin_WIP_SAFE.kt`: 内建命令执行工具
+- `TerminalBuiltin.kt`: 本地 Android 终端工具，tool name 为 `terminal`
+- `SshTerminalBuiltin.kt`: 交互式 SSH 终端工具，tool name 为 `ssh_terminal`
 - `SearchAppsBuiltin.kt`: 搜索已安装应用
 
 ## agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/device/
@@ -100,12 +101,26 @@
 
 - `ShellCommandRunner.kt`: shell 命令执行器
 - `ShellCommandSafetyPolicy.kt`: shell 命令安全策略
+- `TerminalSessionPool.kt`: 终端 session、异步执行与交互式 SSH 输出池
+- `TerminalToolResponse.kt`: terminal / ssh_terminal 响应格式化
 
 ## agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/
 
 - `LlmStreamEventMapper.kt`: `SessionEvent` 到 `LlmStreamEvent` 的映射
 - `LocalToolResultClassifier.kt`: local tool 结果失败分类
 - `ToolEventFormatter.kt`: 工具事件格式化
+
+## agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/
+
+- `RuntimeBridge.kt`: runtime 对 settings / host gateway 的组合桥
+- `RuntimeEnvironment.kt`: runtime bridge 安装与全局获取
+- `RuntimeHostGateway.kt`: 宿主侧能力接口
+- `RuntimeSettingsGateway.kt`: runtime 读取和写回配置的门面
+
+## agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/model/
+
+- `LlmApiType.kt`: LLM API 类型枚举
+- `RuntimeSettingsModels.kt`: runtime 使用的 LLM、MCP、builtin、custom、execution、takeover 模型
 
 ## app/src/main/java/com/niki914/nexus/agentic/app/
 
@@ -156,6 +171,7 @@
 
 ## app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/
 
+- `EditableSettingsDetailScaffold.kt`: 可编辑详情页 chrome 与表单壳
 - `AboutSettingsContent.kt`: About 设置页
 - `BuiltinToolsSettingsContent.kt`: Builtin Tools 设置页
 - `ConfigureEditableField.kt`: 配置字段编辑块
@@ -192,11 +208,21 @@
 
 ## app/src/main/java/com/niki914/nexus/agentic/repo/
 
+- `AgentSettingsCodec.kt`: 主 agent 配置编解码
+- `AppStateSettingsCodec.kt`: onboarding 等 app 状态编解码
 - `LocalSettingsCodec.kt`: `LocalSettings` 编解码与字段投影
 - `LocalSettingsDefaults.kt`: 本地设置默认值
+- `McpSettingsCodec.kt`: MCP server 与 cache 编解码
+- `MemorySettingsCodec.kt`: memory store 编解码
+- `RuleSettingsCodec.kt`: execution / takeover 规则编解码
 - `LocalSettingsStore.kt`: `LocalSettings` 读写存储
+- `ToolSettingsCodec.kt`: builtin / custom tool store 编解码
 - `XRepo.kt`: App 侧设置读写门面
 - `XRepoRuntimeGateway.kt`: runtime 访问 repository 的桥接
+
+## app/src/main/java/com/niki914/nexus/agentic/takeover/
+
+- `TakeoverResolver.kt`: query 到 takeover target 的规则匹配与决策
 
 ## app/src/main/java/com/niki914/nexus/agentic/runtime/
 
@@ -223,11 +249,13 @@
 
 ## composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/component/
 
+- `MaterialTintLiquidButton.kt`、`TintLiquidButton.kt`: 带主题着色的 Liquid 按钮封装
 - `LiquidButton.kt`、`LiquidTextField.kt`、`LiquidSecretTextField.kt`、`LiquidToggle.kt`: 基础输入与开关组件
 - `SettingsGroupCard.kt`、`SettingsListItem.kt`、`SettingNavigationItem.kt`、`SettingToggleItem.kt`: 设置页列表与分组组件
-- `SettingExpandableTextItem.kt`、`SettingsDetailFormScaffold.kt`、`SettingsSegmentedSelector.kt`: 设置详情编辑组件
+- `SettingExpandableTextItem.kt`、`SettingExpandableTextCard.kt`、`SettingsItemSurface.kt`: 可展开文本与设置项表面组件
+- `SettingsDetailFormScaffold.kt`、`SettingsDetailPageDefaults.kt`、`SettingsSegmentedSelector.kt`: 设置详情编辑骨架与默认参数
 - `SwipeDismissSettingsItemCard.kt`、`SettingsToggleListItemCard.kt`: 设置项滑动删除与开关卡片
-- `SettingsListPageContent.kt`、`SettingsDetailPageDefaults.kt`: 设置页容器与默认配置
+- `SettingsListPageContent.kt`、`PageDescriptionText.kt`: 设置列表页容器与说明文本
 
 ## composebase/src/main/java/com/niki914/nexus/agentic/app/ui/infra/interaction/
 
