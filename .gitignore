@@ -55,7 +55,8 @@ pnpm-debug.log*
 *.kotlin_builtins
 
 ### External
-s3ss10n-main
+libterm
+s3ss10n
 
 /server/server.pid
 /.as-run/app.run.xml

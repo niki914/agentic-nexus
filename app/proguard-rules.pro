@@ -36,6 +36,33 @@
 
 -dontwarn java.lang.reflect.AnnotatedType
 
+# libterm / jsch 在 Android 上不会走到的桌面侧可选依赖。
+# 这些类来自 Pageant、Log4j2、JGSS 等 JVM/Windows 能力，release 混淆时仅需忽略缺失告警。
+# TODO remvoe
+-dontwarn com.sun.jna.Memory
+-dontwarn com.sun.jna.Pointer
+-dontwarn com.sun.jna.platform.win32.BaseTSD$ULONG_PTR
+-dontwarn com.sun.jna.platform.win32.Kernel32
+-dontwarn com.sun.jna.platform.win32.User32
+-dontwarn com.sun.jna.platform.win32.WinBase$SECURITY_ATTRIBUTES
+-dontwarn com.sun.jna.platform.win32.WinBase
+-dontwarn com.sun.jna.platform.win32.WinDef$HWND
+-dontwarn com.sun.jna.platform.win32.WinDef$LPARAM
+-dontwarn com.sun.jna.platform.win32.WinDef$LRESULT
+-dontwarn com.sun.jna.platform.win32.WinDef$WPARAM
+-dontwarn com.sun.jna.platform.win32.WinNT$HANDLE
+-dontwarn com.sun.jna.platform.win32.WinUser$COPYDATASTRUCT
+-dontwarn org.apache.logging.log4j.Level
+-dontwarn org.apache.logging.log4j.LogManager
+-dontwarn org.apache.logging.log4j.Logger
+-dontwarn org.ietf.jgss.GSSContext
+-dontwarn org.ietf.jgss.GSSCredential
+-dontwarn org.ietf.jgss.GSSException
+-dontwarn org.ietf.jgss.GSSManager
+-dontwarn org.ietf.jgss.GSSName
+-dontwarn org.ietf.jgss.MessageProp
+-dontwarn org.ietf.jgss.Oid
+
 # =================== 必要的框架和库规则 ===================
 
 # Xposed Framework (保留核心接口即可)
