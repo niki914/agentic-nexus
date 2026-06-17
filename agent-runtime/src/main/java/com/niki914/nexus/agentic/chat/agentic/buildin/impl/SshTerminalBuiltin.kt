@@ -7,11 +7,10 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.buildin.RawJsonBuiltinTool
-import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
-import com.niki914.nexus.agentic.chat.agentic.shell.TerminalAsyncReadOutcome
-import com.niki914.nexus.agentic.chat.agentic.shell.TerminalAsyncStartOutcome
 import com.niki914.nexus.agentic.chat.agentic.shell.TerminalCloseOutcome
-import com.niki914.nexus.agentic.chat.agentic.shell.TerminalCommandOutcome
+import com.niki914.nexus.agentic.chat.agentic.shell.TerminalInteractiveReadMode
+import com.niki914.nexus.agentic.chat.agentic.shell.TerminalInteractiveReadOutcome
+import com.niki914.nexus.agentic.chat.agentic.shell.TerminalInteractiveWriteOutcome
 import com.niki914.nexus.agentic.chat.agentic.shell.TerminalOpenOutcome
 import com.niki914.nexus.agentic.chat.agentic.shell.TerminalSessionPool
 import com.niki914.nexus.agentic.chat.agentic.shell.TerminalToolResponse
@@ -28,18 +27,15 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 
-class SshTerminalBuiltin(
-    private val safetyPolicy: ShellCommandSafetyPolicy = ShellCommandSafetyPolicy(),
-) : BuiltinTool(), RawJsonBuiltinTool {
+class SshTerminalBuiltin : BuiltinTool(), RawJsonBuiltinTool {
     override val name: String = "ssh_terminal"
 
     override val description: String =
-        "Manage SSH terminal sessions. For one-shot commands, prefer open_and_exec, e.g. " +
-            """{"action":"open_and_exec","host":"192.168.1.10","username":"root","password":"***","command":"pwd"}. """ +
-            "Use exec only with the opaque session handle returned by open or open_and_exec. " +
-            "Use is_async=true only with exec for long-running commands, then poll read_async_result by async_id. " +
-            "Credentials are passed for this call, should not be echoed, and should not be stored by this tool. " +
-            "Private key authentication is not supported yet."
+        "Manage interactive SSH terminal sessions. Open a terminal, send input with send_line, write, or interrupt, " +
+            "then read terminal output with read. password credentials are passed for this call. " +
+            "SSH command completion is unknowable, so exec/open_and_exec are intentionally unsupported. " +
+            "Credentials should not be echoed, " +
+            "and should not be stored by this tool. Private key authentication is not supported yet."
 
     override val defaultEnabled: Boolean = true
 
@@ -52,7 +48,7 @@ class SshTerminalBuiltin(
         return BuiltinToolResult.failure(
             code = "RAW_JSON_ONLY",
             message = "ssh_terminal accepts raw JSON requests only.",
-            hint = """Use ssh_terminal with raw JSON, e.g. {"action":"open_and_exec","host":"192.168.1.10","username":"root","password":"***","command":"pwd"}""",
+            hint = """Use ssh_terminal with raw JSON, e.g. {"action":"open","host":"192.168.1.10","username":"root","password":"***"} then {"action":"send_line","session":"a3f9","text":"pwd"}.""",
         )
     }
 
@@ -60,11 +56,12 @@ class SshTerminalBuiltin(
         return try {
             val args = parseArguments(request.argumentsJson)
             when (args.action) {
-                TerminalAction.OPEN -> handleOpen(args)
-                TerminalAction.OPEN_AND_EXEC -> handleOpenAndExec(args)
-                TerminalAction.EXEC -> handleExec(args)
-                TerminalAction.READ_ASYNC_RESULT -> handleReadAsyncResult(args)
-                TerminalAction.CLOSE -> handleClose(args)
+                SshTerminalAction.OPEN -> handleOpen(args)
+                SshTerminalAction.SEND_LINE -> handleWrite(args, appendNewline = true)
+                SshTerminalAction.WRITE -> handleWrite(args, appendNewline = false)
+                SshTerminalAction.INTERRUPT -> handleInterrupt(args)
+                SshTerminalAction.READ -> handleRead(args)
+                SshTerminalAction.CLOSE -> handleClose(args)
             }
         } catch (error: CancellationException) {
             throw error
@@ -93,156 +90,65 @@ class SshTerminalBuiltin(
         }
     }
 
-    private suspend fun handleOpenAndExec(args: SshTerminalToolArgs): String {
-        val sshOptions = args.requireOpenOptions()
-        val command = args.requireCommand()
-        val timeoutMs = args.timeoutMs ?: DEFAULT_TIMEOUT_MS
-        val decision = safetyPolicy.evaluate(command)
-        if (!decision.allowed) {
-            return TerminalToolResponse.policyBlocked(decision)
-        }
+    private suspend fun handleWrite(args: SshTerminalToolArgs, appendNewline: Boolean): String {
+        val session = args.requireSession()
+        val text = args.requireText()
+        val payload = if (appendNewline) "$text\n" else text
+        return writePayload(session = session, payload = payload, requestId = args.requestId)
+    }
 
-        return when (val outcome = TerminalSessionPool.openAndExecuteSsh(
-            options = sshOptions,
-            cwd = args.cwd,
-            command = command,
-            timeoutMs = timeoutMs,
+    private suspend fun handleInterrupt(args: SshTerminalToolArgs): String {
+        val session = args.requireSession()
+        return writePayload(session = session, payload = CTRL_C, requestId = args.requestId)
+    }
+
+    private suspend fun writePayload(session: String, payload: String, requestId: String?): String {
+        return when (val outcome = TerminalSessionPool.writeInteractive(
+            session = session,
+            text = payload,
+            requestId = requestId,
         )) {
-            is TerminalCommandOutcome.Success -> TerminalToolResponse.commandSuccess(
-                result = outcome.result,
-                elapsedSeconds = outcome.elapsedSeconds,
-                session = outcome.session,
-                identity = outcome.identity,
-                mergeStderr = args.mergeStderr,
+            is TerminalInteractiveWriteOutcome.Accepted -> JsonObject(
+                mapOf(
+                    "accepted" to JsonPrimitive(true),
+                    "bytes_written" to JsonPrimitive(outcome.bytesWritten),
+                    "sequence" to JsonPrimitive(outcome.sequence),
+                    "replayed" to JsonPrimitive(outcome.replayed),
+                )
+            ).toString()
+
+            is TerminalInteractiveWriteOutcome.SessionNotFound -> TerminalToolResponse.sessionNotFound(outcome.session)
+            is TerminalInteractiveWriteOutcome.NotInteractive -> TerminalToolResponse.invalidRequest(
+                "Session '${outcome.session}' is not an interactive SSH terminal."
             )
 
-            is TerminalCommandOutcome.Timeout -> TerminalToolResponse.commandTimeout(
-                result = outcome.result,
-                elapsedSeconds = outcome.elapsedSeconds,
-                timeoutMs = timeoutMs,
-                session = outcome.session,
-                identity = outcome.identity,
-                mergeStderr = args.mergeStderr,
-            )
-
-            is TerminalCommandOutcome.Failure -> TerminalToolResponse.failure(
-                failure = outcome.failure,
-                elapsedSeconds = outcome.elapsedSeconds,
-                session = outcome.session,
-                identity = outcome.identity ?: SSH_PUBLIC_IDENTITY,
-            )
-
-            is TerminalCommandOutcome.SessionNotFound -> TerminalToolResponse.sessionNotFound(outcome.session)
-            is TerminalCommandOutcome.Busy -> TerminalToolResponse.sessionBusy(outcome.session, outcome.asyncId)
-            is TerminalCommandOutcome.UnexpectedError -> TerminalToolResponse.internalError(
-                throwable = outcome.throwable,
-                elapsedSeconds = outcome.elapsedSeconds,
-            )
+            is TerminalInteractiveWriteOutcome.Busy -> TerminalToolResponse.sessionBusy(outcome.session, asyncId = null)
+            is TerminalInteractiveWriteOutcome.UnexpectedError -> TerminalToolResponse.internalError(outcome.throwable)
         }
     }
 
-    private suspend fun handleExec(args: SshTerminalToolArgs): String {
+    private fun handleRead(args: SshTerminalToolArgs): String {
         val session = args.requireSession()
-        val command = args.requireCommand()
-        val timeoutMs = args.timeoutMs ?: DEFAULT_TIMEOUT_MS
-        val decision = safetyPolicy.evaluate(command)
-        if (!decision.allowed) {
-            return TerminalToolResponse.policyBlocked(decision)
-        }
-
-        return if (args.isAsync) {
-            when (val outcome = TerminalSessionPool.startAsync(
-                session = session,
-                command = command,
-                timeoutMs = timeoutMs,
-            )) {
-                is TerminalAsyncStartOutcome.Accepted -> TerminalToolResponse.asyncAccepted(
-                    asyncId = outcome.asyncId,
-                    elapsedSeconds = outcome.elapsedSeconds,
+        val mode = args.readMode ?: TerminalInteractiveReadMode.DELTA
+        val maxBytes = args.maxBytes ?: DEFAULT_MAX_BYTES
+        return when (val outcome = TerminalSessionPool.readInteractive(
+            session = session,
+            mode = mode,
+            maxBytes = maxBytes,
+        )) {
+            is TerminalInteractiveReadOutcome.Success -> JsonObject(
+                mapOf(
+                    "stdout" to JsonPrimitive(outcome.stdout),
+                    "stderr" to JsonPrimitive(outcome.stderr),
+                    "mode" to JsonPrimitive(outcome.mode.wireName),
+                    "sequence" to JsonPrimitive(outcome.sequence),
+                    "truncated" to JsonPrimitive(outcome.truncated),
                 )
+            ).toString()
 
-                is TerminalAsyncStartOutcome.SessionNotFound -> TerminalToolResponse.sessionNotFound(outcome.session)
-                is TerminalAsyncStartOutcome.Busy -> TerminalToolResponse.sessionBusy(outcome.session, outcome.asyncId)
-                is TerminalAsyncStartOutcome.InvalidRequest -> TerminalToolResponse.invalidRequest(outcome.message)
-            }
-        } else {
-            when (val outcome = TerminalSessionPool.executeBlocking(
-                session = session,
-                command = command,
-                timeoutMs = timeoutMs,
-            )) {
-                is TerminalCommandOutcome.Success -> TerminalToolResponse.commandSuccess(
-                    result = outcome.result,
-                    elapsedSeconds = outcome.elapsedSeconds,
-                    session = outcome.session,
-                    identity = outcome.identity,
-                    mergeStderr = args.mergeStderr,
-                )
-
-                is TerminalCommandOutcome.Timeout -> TerminalToolResponse.commandTimeout(
-                    result = outcome.result,
-                    elapsedSeconds = outcome.elapsedSeconds,
-                    timeoutMs = timeoutMs,
-                    session = outcome.session,
-                    identity = outcome.identity,
-                    mergeStderr = args.mergeStderr,
-                )
-
-                is TerminalCommandOutcome.Failure -> TerminalToolResponse.failure(
-                    failure = outcome.failure,
-                    elapsedSeconds = outcome.elapsedSeconds,
-                    session = outcome.session,
-                    identity = outcome.identity,
-                )
-
-                is TerminalCommandOutcome.SessionNotFound -> TerminalToolResponse.sessionNotFound(outcome.session)
-                is TerminalCommandOutcome.Busy -> TerminalToolResponse.sessionBusy(outcome.session, outcome.asyncId)
-                is TerminalCommandOutcome.UnexpectedError -> TerminalToolResponse.internalError(
-                    throwable = outcome.throwable,
-                    elapsedSeconds = outcome.elapsedSeconds,
-                )
-            }
-        }
-    }
-
-    private suspend fun handleReadAsyncResult(args: SshTerminalToolArgs): String {
-        val session = args.requireSession()
-        val asyncId = args.requireAsyncId()
-        return when (val outcome = TerminalSessionPool.readAsyncResult(session = session, asyncId = asyncId)) {
-            is TerminalAsyncReadOutcome.Running -> TerminalToolResponse.asyncRunning(
-                stdoutPartial = outcome.stdoutPartial,
-                stderrPartial = outcome.stderrPartial,
-                elapsedSeconds = outcome.elapsedSeconds,
-            )
-
-            is TerminalAsyncReadOutcome.Completed -> TerminalToolResponse.commandSuccess(
-                result = outcome.result,
-                elapsedSeconds = outcome.elapsedSeconds,
-                mergeStderr = args.mergeStderr,
-            )
-
-            is TerminalAsyncReadOutcome.TimedOut -> TerminalToolResponse.commandTimeout(
-                result = outcome.result,
-                elapsedSeconds = outcome.elapsedSeconds,
-                timeoutMs = args.timeoutMs ?: DEFAULT_TIMEOUT_MS,
-                mergeStderr = args.mergeStderr,
-            )
-
-            is TerminalAsyncReadOutcome.Failure -> TerminalToolResponse.failure(
-                failure = outcome.failure,
-                elapsedSeconds = outcome.elapsedSeconds,
-                session = session,
-            )
-
-            is TerminalAsyncReadOutcome.AsyncNotFound -> TerminalToolResponse.asyncNotFound(
-                session = outcome.session,
-                asyncId = outcome.asyncId,
-            )
-
-            is TerminalAsyncReadOutcome.SessionNotFound -> TerminalToolResponse.sessionNotFound(outcome.session)
-            is TerminalAsyncReadOutcome.UnexpectedError -> TerminalToolResponse.internalError(
-                throwable = outcome.throwable,
-                elapsedSeconds = outcome.elapsedSeconds,
+            is TerminalInteractiveReadOutcome.SessionNotFound -> TerminalToolResponse.sessionNotFound(outcome.session)
+            is TerminalInteractiveReadOutcome.NotInteractive -> TerminalToolResponse.invalidRequest(
+                "Session '${outcome.session}' is not an interactive SSH terminal."
             )
         }
     }
@@ -267,16 +173,11 @@ class SshTerminalBuiltin(
             ?: throw IllegalArgumentException("argumentsJson must be a JSON object.")
         obj.requireKnownKeys()
         return SshTerminalToolArgs(
-            action = TerminalAction.from(obj.optionalString("action")),
+            action = SshTerminalAction.from(obj.optionalString("action")),
             session = obj.optionalString("session")?.trim(),
-            command = obj.optionalString("command"),
+            text = obj.optionalString("text"),
+            requestId = obj.optionalString("request_id")?.trim(),
             cwd = obj.optionalString("cwd"),
-            timeoutMs = obj.optionalLong("timeout_ms")?.also { timeoutMs ->
-                require(timeoutMs > 0L) { "Field 'timeout_ms' must be greater than 0." }
-            },
-            mergeStderr = obj.optionalBoolean("merge_stderr") ?: false,
-            isAsync = obj.optionalBoolean("is_async") ?: false,
-            asyncId = obj.optionalString("async_id")?.trim(),
             host = obj.optionalString("host")?.trim(),
             port = obj.optionalLong("port")?.also { port ->
                 require(port in 1L..65535L) { "Field 'port' must be in 1..65535." }
@@ -294,6 +195,10 @@ class SshTerminalBuiltin(
             }?.toInt() ?: SshOpenOptions.DEFAULT_SERVER_ALIVE_INTERVAL_MILLIS,
             privateKeyPem = obj.optionalString("private_key_pem"),
             passphrase = obj.optionalString("passphrase"),
+            readMode = obj.optionalString("mode")?.let(::parseReadMode),
+            maxBytes = obj.optionalLong("max_bytes")?.also { maxBytes ->
+                require(maxBytes > 0L) { "Field 'max_bytes' must be greater than 0." }
+            }?.toInt(),
         )
     }
 
@@ -307,7 +212,19 @@ class SshTerminalBuiltin(
             ?: throw IllegalArgumentException("Field 'username' must not be blank.")
         val password = password?.takeIf(String::isNotBlank)
             ?: throw IllegalArgumentException("Field 'password' must not be blank.")
-        val resolvedHostKeyPolicy = when (hostKeyPolicy?.lowercase() ?: HOST_KEY_POLICY_ACCEPT_ANY) {
+        return SshOpenOptions(
+            host = host,
+            port = port,
+            username = username,
+            auth = SshAuth.Password(password),
+            hostKeyPolicy = resolveHostKeyPolicy(),
+            connectTimeoutMillis = connectTimeoutMs,
+            serverAliveIntervalMillis = serverAliveIntervalMs,
+        )
+    }
+
+    private fun SshTerminalToolArgs.resolveHostKeyPolicy(): SshHostKeyPolicy {
+        return when (hostKeyPolicy?.lowercase() ?: HOST_KEY_POLICY_ACCEPT_ANY) {
             HOST_KEY_POLICY_ACCEPT_ANY -> SshHostKeyPolicy.AcceptAny
             HOST_KEY_POLICY_KNOWN_HOSTS_FILE -> {
                 val path = knownHostsPath?.takeIf(String::isNotBlank)
@@ -324,39 +241,22 @@ class SshTerminalBuiltin(
                 "Field 'host_key_policy' must be one of accept_any, known_hosts_file."
             )
         }
-        return SshOpenOptions(
-            host = host,
-            port = port,
-            username = username,
-            auth = SshAuth.Password(password),
-            hostKeyPolicy = resolvedHostKeyPolicy,
-            connectTimeoutMillis = connectTimeoutMs,
-            serverAliveIntervalMillis = serverAliveIntervalMs,
-        )
     }
 
     private fun SshTerminalToolArgs.requireSession(): String {
         return session?.takeIf(String::isNotBlank)
-            ?: throw IllegalArgumentException("Field 'session' is required for action '${action.wireName()}'.")
+            ?: throw IllegalArgumentException("Field 'session' is required for action '${action.wireName}'.")
     }
 
-    private fun SshTerminalToolArgs.requireCommand(): String {
-        return command?.takeIf(String::isNotBlank)
-            ?: throw IllegalArgumentException("Field 'command' must not be blank.")
+    private fun SshTerminalToolArgs.requireText(): String {
+        return text ?: throw IllegalArgumentException("Field 'text' is required for action '${action.wireName}'.")
     }
 
-    private fun SshTerminalToolArgs.requireAsyncId(): String {
-        return asyncId?.takeIf(String::isNotBlank)
-            ?: throw IllegalArgumentException("Field 'async_id' is required for action 'read_async_result'.")
-    }
-
-    private fun TerminalAction.wireName(): String {
-        return when (this) {
-            TerminalAction.OPEN -> "open"
-            TerminalAction.OPEN_AND_EXEC -> "open_and_exec"
-            TerminalAction.EXEC -> "exec"
-            TerminalAction.READ_ASYNC_RESULT -> "read_async_result"
-            TerminalAction.CLOSE -> "close"
+    private fun parseReadMode(raw: String): TerminalInteractiveReadMode {
+        return when (raw.trim().lowercase()) {
+            TerminalInteractiveReadMode.DELTA.wireName -> TerminalInteractiveReadMode.DELTA
+            TerminalInteractiveReadMode.SNAPSHOT.wireName -> TerminalInteractiveReadMode.SNAPSHOT
+            else -> throw IllegalArgumentException("Field 'mode' must be one of delta, snapshot.")
         }
     }
 
@@ -407,14 +307,11 @@ class SshTerminalBuiltin(
     }
 
     private data class SshTerminalToolArgs(
-        val action: TerminalAction,
+        val action: SshTerminalAction,
         val session: String?,
-        val command: String?,
+        val text: String?,
+        val requestId: String?,
         val cwd: String?,
-        val timeoutMs: Long?,
-        val mergeStderr: Boolean,
-        val isAsync: Boolean,
-        val asyncId: String?,
         val host: String?,
         val port: Int,
         val username: String?,
@@ -426,22 +323,49 @@ class SshTerminalBuiltin(
         val serverAliveIntervalMs: Int,
         val privateKeyPem: String?,
         val passphrase: String?,
+        val readMode: TerminalInteractiveReadMode?,
+        val maxBytes: Int?,
     )
 
+    private enum class SshTerminalAction(val wireName: String) {
+        OPEN("open"),
+        SEND_LINE("send_line"),
+        WRITE("write"),
+        INTERRUPT("interrupt"),
+        READ("read"),
+        CLOSE("close"),
+        ;
+
+        companion object {
+            fun from(raw: String?): SshTerminalAction {
+                return when (raw?.trim()?.lowercase()) {
+                    "open" -> OPEN
+                    "send_line" -> SEND_LINE
+                    "write" -> WRITE
+                    "interrupt" -> INTERRUPT
+                    "read" -> READ
+                    "close" -> CLOSE
+                    else -> throw IllegalArgumentException(
+                        "Field 'action' must be one of open, send_line, write, interrupt, read, close. " +
+                            "SSH command completion is unknowable; use send_line plus read instead of exec."
+                    )
+                }
+            }
+        }
+    }
+
     companion object {
-        private const val DEFAULT_TIMEOUT_MS = 30_000L
+        private const val DEFAULT_MAX_BYTES = 8192
+        private const val CTRL_C = "\u0003"
         private const val SSH_PUBLIC_IDENTITY = "ssh"
         private const val HOST_KEY_POLICY_ACCEPT_ANY = "accept_any"
         private const val HOST_KEY_POLICY_KNOWN_HOSTS_FILE = "known_hosts_file"
         private val REQUEST_KEYS = setOf(
             "action",
             "session",
-            "command",
+            "text",
+            "request_id",
             "cwd",
-            "timeout_ms",
-            "merge_stderr",
-            "is_async",
-            "async_id",
             "host",
             "port",
             "username",
@@ -453,6 +377,9 @@ class SshTerminalBuiltin(
             "server_alive_interval_ms",
             "private_key_pem",
             "passphrase",
+            "mode",
+            "max_bytes",
+            "command",
         )
         private const val SSH_TERMINAL_SCHEMA = """
             {
@@ -460,32 +387,24 @@ class SshTerminalBuiltin(
               "properties": {
                 "action": {
                   "type": "string",
-                  "enum": ["open", "open_and_exec", "exec", "read_async_result", "close"]
+                  "enum": ["open", "send_line", "write", "interrupt", "read", "close"],
+                  "description": "Interactive SSH terminal action. Use send_line plus read instead of exec."
                 },
                 "session": {
                   "type": "string",
-                  "description": "Opaque session handle returned by open or open_and_exec."
+                  "description": "Opaque session handle returned by open."
                 },
-                "command": {
+                "text": {
                   "type": "string",
-                  "description": "Remote shell command. Required for open_and_exec and exec."
+                  "description": "Input to write. send_line appends a newline; write does not."
+                },
+                "request_id": {
+                  "type": "string",
+                  "description": "Optional idempotency key for write/send_line retry protection."
                 },
                 "cwd": {
                   "type": "string",
                   "description": "Optional working directory used only when opening a new SSH session."
-                },
-                "timeout_ms": {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                "merge_stderr": {
-                  "type": "boolean"
-                },
-                "is_async": {
-                  "type": "boolean"
-                },
-                "async_id": {
-                  "type": "string"
                 },
                 "host": {
                   "type": "string"
@@ -518,6 +437,15 @@ class SshTerminalBuiltin(
                 "server_alive_interval_ms": {
                   "type": "integer",
                   "minimum": 0
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": ["delta", "snapshot"],
+                  "description": "Read mode. Defaults to delta, which consumes newly collected output."
+                },
+                "max_bytes": {
+                  "type": "integer",
+                  "minimum": 1
                 },
                 "private_key_pem": {
                   "type": "string",

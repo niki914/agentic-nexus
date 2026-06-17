@@ -252,6 +252,8 @@ class TerminalBuiltinTest {
             return TermResult.Success(nextResult)
         }
 
+        override suspend fun write(text: String) = Unit
+
         override suspend fun close() = Unit
     }
 

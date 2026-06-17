@@ -32,12 +32,14 @@ object TerminalSessionPool {
     private const val SSH_PUBLIC_IDENTITY = "ssh"
     private const val PUBLIC_HANDLE_LENGTH = 4
     private const val MAX_HANDLE_GENERATION_ATTEMPTS = 64
+    private const val DEFAULT_INTERACTIVE_READ_MAX_BYTES = 8192
     private const val GENERATED_HANDLE_COLLISION_MESSAGE = "Generated session handle collision."
     private val PUBLIC_HANDLE_REGEX: Regex = Regex("^[0-9a-f]{4}$")
     private val lock = Any()
     private var runtimeHolder: RuntimeHolder? = null
     private val sessions: MutableMap<String, TerminalSessionEntry> = linkedMapOf()
     private val asyncStates: MutableMap<String, AsyncState> = linkedMapOf()
+    private val interactiveStates: MutableMap<String, InteractiveState> = linkedMapOf()
     private val executionLocks: MutableMap<String, Mutex> = linkedMapOf()
     private var handleGenerator: () -> String = ::randomPublicHandle
     private var runtimePortFactory: suspend (CoroutineScope) -> TerminalRuntimePort = ::createLibTermRuntimePort
@@ -53,6 +55,7 @@ object TerminalSessionPool {
             terminalIdentity = mappedIdentity,
             cwd = cwd,
             sshOptions = null,
+            collectOutput = false,
         )
     }
 
@@ -62,6 +65,7 @@ object TerminalSessionPool {
             terminalIdentity = TerminalIdentity.Ssh,
             cwd = cwd,
             sshOptions = options,
+            collectOutput = true,
         )
     }
 
@@ -126,6 +130,7 @@ object TerminalSessionPool {
             terminalIdentity = TerminalIdentity.User,
             cwd = null,
             sshOptions = null,
+            collectOutput = false,
             reuseExisting = true,
         )) {
             is TerminalOpenOutcome.Success -> executeBlocking(
@@ -153,6 +158,7 @@ object TerminalSessionPool {
         terminalIdentity: TerminalIdentity,
         cwd: String?,
         sshOptions: SshOpenOptions?,
+        collectOutput: Boolean,
     ): TerminalOpenOutcome {
         repeat(MAX_HANDLE_GENERATION_ATTEMPTS) {
             val handle = try {
@@ -166,6 +172,7 @@ object TerminalSessionPool {
                 terminalIdentity = terminalIdentity,
                 cwd = cwd,
                 sshOptions = sshOptions,
+                collectOutput = collectOutput,
                 reuseExisting = false,
             )) {
                 is TerminalOpenOutcome.InvalidRequest -> {
@@ -189,6 +196,7 @@ object TerminalSessionPool {
         terminalIdentity: TerminalIdentity,
         cwd: String? = null,
         sshOptions: SshOpenOptions? = null,
+        collectOutput: Boolean,
         reuseExisting: Boolean,
     ): TerminalOpenOutcome {
         val startTimeMs = System.currentTimeMillis()
@@ -238,6 +246,9 @@ object TerminalSessionPool {
                         TerminalOpenOutcome.InvalidRequest(GENERATED_HANDLE_COLLISION_MESSAGE)
                     }
                 } else {
+                    if (collectOutput) {
+                        startInteractiveCollector(entry = entry, holder = holder)
+                    }
                     TerminalOpenOutcome.Success(
                         session = entry.handle,
                         identity = entry.identity,
@@ -250,6 +261,102 @@ object TerminalSessionPool {
                 elapsedSeconds = elapsedSeconds(startTimeMs),
             )
         }
+    }
+
+    suspend fun writeInteractive(
+        session: String,
+        text: String,
+        requestId: String? = null,
+    ): TerminalInteractiveWriteOutcome {
+        val (entry, state) = synchronized(lock) {
+            val entry = sessions[session] ?: return TerminalInteractiveWriteOutcome.SessionNotFound(session)
+            val state = interactiveStates[session] ?: return TerminalInteractiveWriteOutcome.NotInteractive(session)
+            entry to state
+        }
+        val replay = requestId?.let { id ->
+            synchronized(state.lock) {
+                state.writeResults[id]
+            }
+        }
+        if (replay != null) {
+            return TerminalInteractiveWriteOutcome.Accepted(
+                bytesWritten = replay.bytesWritten,
+                sequence = replay.sequence,
+                replayed = true,
+            )
+        }
+
+        return try {
+            if (!state.inputLock.tryLock()) {
+                return TerminalInteractiveWriteOutcome.Busy(session)
+            }
+            try {
+                entry.session.write(text)
+                val writeResult = synchronized(state.lock) {
+                    state.inputSequence += 1L
+                    InteractiveWriteResult(
+                        bytesWritten = text.encodeToByteArray().size,
+                        sequence = state.inputSequence,
+                    ).also { result ->
+                        requestId?.takeIf(String::isNotBlank)?.let { id ->
+                            state.writeResults[id] = result
+                        }
+                    }
+                }
+                TerminalInteractiveWriteOutcome.Accepted(
+                    bytesWritten = writeResult.bytesWritten,
+                    sequence = writeResult.sequence,
+                    replayed = false,
+                )
+            } finally {
+                state.inputLock.unlock()
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            TerminalInteractiveWriteOutcome.UnexpectedError(error)
+        }
+    }
+
+    fun readInteractive(
+        session: String,
+        mode: TerminalInteractiveReadMode = TerminalInteractiveReadMode.DELTA,
+        maxBytes: Int = DEFAULT_INTERACTIVE_READ_MAX_BYTES,
+    ): TerminalInteractiveReadOutcome {
+        val state = synchronized(lock) {
+            if (!sessions.containsKey(session)) {
+                return TerminalInteractiveReadOutcome.SessionNotFound(session)
+            }
+            interactiveStates[session] ?: return TerminalInteractiveReadOutcome.NotInteractive(session)
+        }
+        val maxChars = maxBytes.coerceAtLeast(1)
+        val snapshot = synchronized(state.lock) {
+            val rawStdout = when (mode) {
+                TerminalInteractiveReadMode.DELTA -> state.stdout.substring(state.stdoutDeltaOffset)
+                TerminalInteractiveReadMode.SNAPSHOT -> state.stdout.toString()
+            }
+            val rawStderr = when (mode) {
+                TerminalInteractiveReadMode.DELTA -> state.stderr.substring(state.stderrDeltaOffset)
+                TerminalInteractiveReadMode.SNAPSHOT -> state.stderr.toString()
+            }
+            if (mode == TerminalInteractiveReadMode.DELTA) {
+                state.stdoutDeltaOffset = state.stdout.length
+                state.stderrDeltaOffset = state.stderr.length
+            }
+            InteractiveReadSnapshot(
+                stdout = rawStdout.takeLast(maxChars),
+                stderr = rawStderr.takeLast(maxChars),
+                sequence = state.outputSequence,
+                truncated = rawStdout.length > maxChars || rawStderr.length > maxChars,
+            )
+        }
+        return TerminalInteractiveReadOutcome.Success(
+            stdout = snapshot.stdout,
+            stderr = snapshot.stderr,
+            mode = mode,
+            sequence = snapshot.sequence,
+            truncated = snapshot.truncated,
+        )
     }
 
     internal fun get(session: String): TerminalSessionEntry? {
@@ -461,6 +568,7 @@ object TerminalSessionPool {
             RemovedSession(
                 entry = sessions.remove(session),
                 asyncState = asyncStates.remove(session),
+                interactiveState = interactiveStates.remove(session),
                 executionLock = executionLocks.remove(session),
             )
         }
@@ -469,6 +577,7 @@ object TerminalSessionPool {
             state.collectorJob.cancel()
             unlockIfLocked(removed.executionLock)
         }
+        removed.interactiveState?.collectorJob?.cancel()
         val entry = removed.entry ?: return TerminalCloseOutcome.Closed
         return try {
             entry.session.close()
@@ -486,18 +595,23 @@ object TerminalSessionPool {
                 holder = runtimeHolder,
                 sessionCount = sessions.size,
                 asyncStates = asyncStates.toMap(),
+                interactiveStates = interactiveStates.toMap(),
                 executionLocks = executionLocks.toMap(),
             )
             runtimeHolder = null
             sessions.clear()
             asyncStates.clear()
+            interactiveStates.clear()
             executionLocks.clear()
             removed
         }
         removed.asyncStates.forEach { (session, state) ->
             state.execJob.cancel()
-            state.collectorJob.cancel()
+            state.collectorJob?.cancel()
             unlockIfLocked(removed.executionLocks[session])
+        }
+        removed.interactiveStates.values.forEach { state ->
+            state.collectorJob?.cancel()
         }
         val runtimeClosedCount = removed.holder?.let { holder ->
             runCatching { holder.runtime.closeAll() }.getOrDefault(0)
@@ -606,6 +720,30 @@ object TerminalSessionPool {
         }
     }
 
+    private fun startInteractiveCollector(entry: TerminalSessionEntry, holder: RuntimeHolder) {
+        val state = InteractiveState(
+            inputLock = Mutex(),
+            lock = Any(),
+        )
+        synchronized(lock) {
+            interactiveStates[entry.handle] = state
+        }
+        val collectorJob = holder.scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            entry.session.stream.collect { chunk ->
+                synchronized(state.lock) {
+                    when (chunk.stream) {
+                        OutputStream.STDOUT -> state.stdout.append(chunk.text)
+                        OutputStream.STDERR -> state.stderr.append(chunk.text)
+                    }
+                    state.outputSequence += 1L
+                }
+            }
+        }
+        synchronized(state.lock) {
+            state.collectorJob = collectorJob
+        }
+    }
+
     private fun completeAsync(session: String, state: AsyncState) {
         val executeLock = synchronized(lock) {
             if (asyncStates[session] === state) {
@@ -655,6 +793,7 @@ internal interface TerminalSessionPort {
     val id: String
     val stream: Flow<TerminalTextChunk>
     suspend fun exec(command: String, timeoutMillis: Long): TermResult<CommandResult>
+    suspend fun write(text: String)
     suspend fun close()
 }
 
@@ -713,6 +852,10 @@ private class LibTermTerminalSessionPort(
         return delegate.exec(command = command, timeoutMillis = timeoutMillis)
     }
 
+    override suspend fun write(text: String) {
+        delegate.write(text)
+    }
+
     override suspend fun close() {
         delegate.close()
     }
@@ -729,6 +872,31 @@ private data class AsyncState(
     var result: CommandResult? = null,
     var failure: TerminalFailure? = null,
     var unexpectedError: Throwable? = null,
+)
+
+private data class InteractiveState(
+    val inputLock: Mutex,
+    val lock: Any,
+    val stdout: StringBuilder = StringBuilder(),
+    val stderr: StringBuilder = StringBuilder(),
+    val writeResults: MutableMap<String, InteractiveWriteResult> = linkedMapOf(),
+    var collectorJob: Job? = null,
+    var stdoutDeltaOffset: Int = 0,
+    var stderrDeltaOffset: Int = 0,
+    var inputSequence: Long = 0L,
+    var outputSequence: Long = 0L,
+)
+
+private data class InteractiveWriteResult(
+    val bytesWritten: Int,
+    val sequence: Long,
+)
+
+private data class InteractiveReadSnapshot(
+    val stdout: String,
+    val stderr: String,
+    val sequence: Long,
+    val truncated: Boolean,
 )
 
 sealed interface TerminalOpenOutcome {
@@ -791,6 +959,37 @@ sealed interface TerminalCloseOutcome {
     data class UnexpectedError(val throwable: Throwable) : TerminalCloseOutcome
 }
 
+enum class TerminalInteractiveReadMode(val wireName: String) {
+    DELTA("delta"),
+    SNAPSHOT("snapshot"),
+}
+
+sealed interface TerminalInteractiveWriteOutcome {
+    data class Accepted(
+        val bytesWritten: Int,
+        val sequence: Long,
+        val replayed: Boolean,
+    ) : TerminalInteractiveWriteOutcome
+
+    data class SessionNotFound(val session: String) : TerminalInteractiveWriteOutcome
+    data class NotInteractive(val session: String) : TerminalInteractiveWriteOutcome
+    data class Busy(val session: String) : TerminalInteractiveWriteOutcome
+    data class UnexpectedError(val throwable: Throwable) : TerminalInteractiveWriteOutcome
+}
+
+sealed interface TerminalInteractiveReadOutcome {
+    data class Success(
+        val stdout: String,
+        val stderr: String,
+        val mode: TerminalInteractiveReadMode,
+        val sequence: Long,
+        val truncated: Boolean,
+    ) : TerminalInteractiveReadOutcome
+
+    data class SessionNotFound(val session: String) : TerminalInteractiveReadOutcome
+    data class NotInteractive(val session: String) : TerminalInteractiveReadOutcome
+}
+
 data class TerminalCloseAllOutcome(
     val closedCount: Int,
 )
@@ -807,6 +1006,7 @@ private data class AsyncSnapshot(
 private data class RemovedSession(
     val entry: TerminalSessionEntry?,
     val asyncState: AsyncState?,
+    val interactiveState: InteractiveState?,
     val executionLock: Mutex?,
 )
 
@@ -814,5 +1014,6 @@ private data class RemovedAll(
     val holder: RuntimeHolder?,
     val sessionCount: Int,
     val asyncStates: Map<String, AsyncState>,
+    val interactiveStates: Map<String, InteractiveState>,
     val executionLocks: Map<String, Mutex>,
 )
