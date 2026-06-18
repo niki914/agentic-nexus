@@ -64,4 +64,46 @@ class ConversationFormatterTest {
         assertEquals("next", turns[1].userText)
         assertEquals(emptyList<HomeChatBlock>(), turns[1].blocks)
     }
+
+    @Test
+    fun toHomeTurns_restoresToolStateFromToolResults() {
+        val turns = ConversationFormatter.toHomeTurns(
+            listOf(
+                ChatTurn.User("question"),
+                ChatTurn.Assistant(
+                    content = "answer",
+                    toolCalls = listOf(
+                        ToolCallSpec("ok-call", "search", "{}"),
+                        ToolCallSpec("failed-ok-call", "memory", "{}"),
+                        ToolCallSpec("failed-exit-call", "command", "{}"),
+                    ),
+                ),
+                ChatTurn.ToolResult(
+                    callId = "ok-call",
+                    toolName = "search",
+                    resultJson = """{"ok":true}""",
+                ),
+                ChatTurn.ToolResult(
+                    callId = "failed-ok-call",
+                    toolName = "memory",
+                    resultJson = """{"ok":false,"message":"denied"}""",
+                ),
+                ChatTurn.ToolResult(
+                    callId = "failed-exit-call",
+                    toolName = "command",
+                    resultJson = """{"exit_code":"2","stderr":"boom"}""",
+                ),
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                HomeChatBlock.Text("answer"),
+                HomeChatBlock.Tool(HomeToolStatus("ok-call", "search", HomeToolState.Succeeded)),
+                HomeChatBlock.Tool(HomeToolStatus("failed-ok-call", "memory", HomeToolState.Failed)),
+                HomeChatBlock.Tool(HomeToolStatus("failed-exit-call", "command", HomeToolState.Failed)),
+            ),
+            turns.single().blocks,
+        )
+    }
 }

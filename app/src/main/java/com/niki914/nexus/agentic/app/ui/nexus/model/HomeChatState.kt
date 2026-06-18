@@ -81,13 +81,15 @@ data class HomeChatUiState(
     val isGenerating: Boolean = false,
     val lastEventName: String? = null,
     val streamEventCount: Int = 0,
+    val currentConversationId: String? = null,
+    val currentConversationTitle: String? = null,
 )
 
 sealed interface HomeChatIntent {
     data class InputChanged(val value: String) : HomeChatIntent
     data object Send : HomeChatIntent
     data object StopGenerating : HomeChatIntent
-    data object ClearConversation : HomeChatIntent
+    data object NewConversation : HomeChatIntent
     data class LoadConversation(val id: String) : HomeChatIntent
     data class DeleteConversation(val id: String) : HomeChatIntent
 }
@@ -129,9 +131,9 @@ class HomeChatViewModel internal constructor(
             is HomeChatIntent.InputChanged -> onInputChanged(intent.value)
             HomeChatIntent.Send -> sendCurrentInput()
             HomeChatIntent.StopGenerating -> stopGenerating()
-            HomeChatIntent.ClearConversation -> clearConversation()
+            HomeChatIntent.NewConversation -> startNewConversation()
             is HomeChatIntent.LoadConversation -> loadConversation(intent.id)
-            is HomeChatIntent.DeleteConversation -> deleteConversation(intent.id)
+            is HomeChatIntent.DeleteConversation -> deleteConversationNow(intent.id)
         }
     }
 
@@ -187,7 +189,7 @@ class HomeChatViewModel internal constructor(
         updateState { copy(isGenerating = false) }
     }
 
-    private fun clearConversation() {
+    private fun startNewConversation() {
         streamJob?.cancel()
         streamJob = null
         draftSaveJob?.cancel()
@@ -271,6 +273,9 @@ class HomeChatViewModel internal constructor(
                 runtime.replaceHistory(record.history)
                 currentConversationId = conversationId
                 val restoredTurns = ConversationFormatter.toHomeTurns(record.history)
+                val restoredTitle = record.summary.title.takeIf {
+                    restoredTurns.isNotEmpty() && it.isNotBlank()
+                }
                 nextTurnId = restoredTurns.nextTurnId()
                 updateState {
                     copy(
@@ -279,6 +284,8 @@ class HomeChatViewModel internal constructor(
                         isGenerating = false,
                         lastEventName = null,
                         streamEventCount = 0,
+                        currentConversationId = conversationId,
+                        currentConversationTitle = restoredTitle,
                     )
                 }
             } catch (throwable: Throwable) {
@@ -307,6 +314,9 @@ class HomeChatViewModel internal constructor(
         currentConversationId = id
         conversations.setLastOpenedConversationId(id)
         val restoredTurns = ConversationFormatter.toHomeTurns(record.history)
+        val restoredTitle = record.summary.title.takeIf {
+            restoredTurns.isNotEmpty() && it.isNotBlank()
+        }
         nextTurnId = restoredTurns.nextTurnId()
         updateState {
             copy(
@@ -315,11 +325,13 @@ class HomeChatViewModel internal constructor(
                 isGenerating = false,
                 lastEventName = null,
                 streamEventCount = 0,
+                currentConversationId = id,
+                currentConversationTitle = restoredTitle,
             )
         }
     }
 
-    private suspend fun deleteConversation(id: String) {
+    internal suspend fun deleteConversationNow(id: String) {
         conversations.deleteConversation(id)
         if (id != currentConversationId) return
 
@@ -339,6 +351,14 @@ class HomeChatViewModel internal constructor(
         return conversations.createConversation(firstUserInput).also { id ->
             currentConversationId = id
             conversations.setLastOpenedConversationId(id)
+            updateState {
+                copy(
+                    currentConversationId = id,
+                    currentConversationTitle = ConversationFormatter
+                        .titleFromFirstInput(firstUserInput)
+                        .takeIf { turns.isNotEmpty() && it.isNotBlank() },
+                )
+            }
         }
     }
 

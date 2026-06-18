@@ -5,9 +5,11 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import com.niki914.nexus.agentic.app.ui.nexus.nav.PageTitleSpec
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 
 data class PageChromeContribution(
+    val titleSpec: PageTitleSpec? = null,
     val leftAction: TopBarActionSpec? = null,
     val rightAction: TopBarActionSpec? = null,
     val menuItems: List<PageChromeMenuItem> = emptyList(),

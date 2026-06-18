@@ -41,6 +41,10 @@ fun NexusPageContent(
     selectedConversationId: String?,
     onConversationSelected: (String) -> Unit,
     onConversationSelectionConsumed: (String) -> Unit,
+    activeConversationId: String?,
+    activeConversationTitle: String?,
+    onActiveConversationChanged: (String?, String?) -> Unit,
+    onCurrentConversationDeleted: suspend (String) -> Unit,
 ) {
     when (val page = entry.page) {
         StartupPage -> StartupPageRoute(
@@ -66,14 +70,18 @@ fun NexusPageContent(
             onPushFromLeft = onPushFromLeft,
             selectedConversationId = selectedConversationId,
             onConversationSelectionConsumed = onConversationSelectionConsumed,
+            onActiveConversationChanged = onActiveConversationChanged,
         )
 
         ConversationHistoryPage -> ConversationHistoryPageRoute(
+            activeConversationId = activeConversationId,
+            activeConversationTitle = activeConversationTitle,
             onBack = onPopToRight,
             onConversationSelected = { id ->
                 onConversationSelected(id)
                 onPopToRight()
             },
+            onCurrentConversationDeleted = onCurrentConversationDeleted,
         )
 
         SettingsHomePage -> SettingsHomePageRoute(

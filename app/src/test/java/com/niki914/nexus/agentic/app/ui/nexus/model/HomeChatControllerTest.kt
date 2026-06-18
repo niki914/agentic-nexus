@@ -107,6 +107,9 @@ class HomeChatViewModelTest {
         assertEquals("", state.input)
         assertFalse(state.isGenerating)
         assertEquals(1, state.turns.size)
+        val summary = conversations.listConversations().single()
+        assertEquals(summary.id, state.currentConversationId)
+        assertEquals("hello", state.currentConversationTitle)
         val turn = state.turns.single()
         assertEquals("hello", turn.userText)
         assertEquals(
@@ -133,7 +136,7 @@ class HomeChatViewModelTest {
     }
 
     @Test
-    fun clearConversation_clearsUiStateAndResetsRuntime() = runTest {
+    fun newConversation_clearsUiStateAndResetsRuntime() = runTest {
         var resetCalled = false
         val conversations = FakeHomeConversationStore()
         val viewModel = HomeChatViewModel(
@@ -148,7 +151,7 @@ class HomeChatViewModelTest {
         viewModel.sendIntent(HomeChatIntent.Send)
         advanceUntilIdle()
 
-        viewModel.sendIntent(HomeChatIntent.ClearConversation)
+        viewModel.sendIntent(HomeChatIntent.NewConversation)
         advanceUntilIdle()
 
         assertTrue(resetCalled)
@@ -156,6 +159,8 @@ class HomeChatViewModelTest {
         assertEquals("", state.input)
         assertFalse(state.isGenerating)
         assertTrue(state.turns.isEmpty())
+        assertEquals(null, state.currentConversationId)
+        assertEquals(null, state.currentConversationTitle)
     }
 
     @Test
@@ -233,7 +238,7 @@ class HomeChatViewModelTest {
         assertEquals(1, state.turns.size)
         assertEquals("first", state.turns.single().userText)
 
-        viewModel.sendIntent(HomeChatIntent.ClearConversation)
+        viewModel.sendIntent(HomeChatIntent.NewConversation)
         advanceUntilIdle()
     }
 
@@ -277,7 +282,7 @@ class HomeChatViewModelTest {
         assertEquals(listOf("first", "second"), sentQueries)
         assertEquals(2, nextState.turns.size)
 
-        viewModel.sendIntent(HomeChatIntent.ClearConversation)
+        viewModel.sendIntent(HomeChatIntent.NewConversation)
         advanceUntilIdle()
     }
 
@@ -304,13 +309,16 @@ class HomeChatViewModelTest {
         val summary = conversations.listConversations().single()
         val record = conversations.getConversation(summary.id)!!
         assertEquals(summary.id, conversations.lastOpenedConversationId())
+        val state = viewModel.uiStateFlow.value
+        assertEquals(summary.id, state.currentConversationId)
+        assertEquals("hello", state.currentConversationTitle)
         assertEquals(history, record.history)
         assertEquals("", record.draftText)
         assertEquals("hello back", record.summary.lastMessagePreview)
     }
 
     @Test
-    fun clearConversation_keepsPersistedConversationButClearsCurrentPointer() = runTest {
+    fun newConversation_keepsPersistedConversationButClearsCurrentPointer() = runTest {
         val conversations = FakeHomeConversationStore()
         val viewModel = HomeChatViewModel(
             conversations = conversations,
@@ -325,12 +333,15 @@ class HomeChatViewModelTest {
         advanceUntilIdle()
         val conversationId = conversations.listConversations().single().id
 
-        viewModel.sendIntent(HomeChatIntent.ClearConversation)
+        viewModel.sendIntent(HomeChatIntent.NewConversation)
         advanceUntilIdle()
 
         assertEquals("", conversations.lastOpenedConversationId())
         assertEquals(conversationId, conversations.getConversation(conversationId)?.summary?.id)
-        assertTrue(viewModel.uiStateFlow.value.turns.isEmpty())
+        val state = viewModel.uiStateFlow.value
+        assertTrue(state.turns.isEmpty())
+        assertEquals(null, state.currentConversationId)
+        assertEquals(null, state.currentConversationTitle)
     }
 
     @Test
@@ -355,6 +366,8 @@ class HomeChatViewModelTest {
         assertEquals(history, replacedHistory)
         val state = viewModel.uiStateFlow.value
         assertEquals("draft", state.input)
+        assertEquals(conversationId, state.currentConversationId)
+        assertEquals("hello", state.currentConversationTitle)
         assertEquals(1, state.turns.size)
         assertEquals("hello", state.turns.single().userText)
         assertEquals(listOf(HomeChatBlock.Text("answer")), state.turns.single().blocks)
@@ -387,8 +400,42 @@ class HomeChatViewModelTest {
         assertEquals(secondId, conversations.lastOpenedConversationId())
         val state = viewModel.uiStateFlow.value
         assertEquals("", state.input)
+        assertEquals(secondId, state.currentConversationId)
+        assertEquals("second", state.currentConversationTitle)
         assertEquals("second", state.turns.single().userText)
         assertEquals(listOf(HomeChatBlock.Text("two")), state.turns.single().blocks)
+    }
+
+    @Test
+    fun deleteCurrentConversation_deletesRecordAndClearsCurrentState() = runTest {
+        var resetCalled = false
+        val conversations = FakeHomeConversationStore()
+        val viewModel = HomeChatViewModel(
+            conversations = conversations,
+            runtime = FakeHomeChatRuntime(
+                stream = { flowOf(LlmStreamEvent.Completed(fullText = "answer")) },
+                getHistory = { listOf(ChatTurn.User("hello"), ChatTurn.Assistant("answer")) },
+                resetConversation = { resetCalled = true },
+            ),
+        )
+        viewModel.sendIntent(HomeChatIntent.InputChanged("hello"))
+        runCurrent()
+        viewModel.sendIntent(HomeChatIntent.Send)
+        advanceUntilIdle()
+        val conversationId = conversations.listConversations().single().id
+
+        viewModel.sendIntent(HomeChatIntent.DeleteConversation(conversationId))
+        advanceUntilIdle()
+
+        assertTrue(resetCalled)
+        assertEquals(null, conversations.getConversation(conversationId))
+        assertEquals("", conversations.lastOpenedConversationId())
+        val state = viewModel.uiStateFlow.value
+        assertEquals("", state.input)
+        assertFalse(state.isGenerating)
+        assertTrue(state.turns.isEmpty())
+        assertEquals(null, state.currentConversationId)
+        assertEquals(null, state.currentConversationTitle)
     }
 }
 

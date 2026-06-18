@@ -29,6 +29,8 @@ fun SettingsListItem(
     currentState: String? = null,
     enabled: Boolean = true,
     showChevron: Boolean = false,
+    highlightPulseKey: Any? = null,
+    highlightPulseDurationMillis: Int = 500,
     leadingContent: (@Composable () -> Unit)? = null,
     trailingContent: (@Composable RowScope.() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
@@ -43,6 +45,8 @@ fun SettingsListItem(
         modifier = modifier,
         enabled = enabled,
         contentPadding = contentPadding,
+        highlightPulseKey = highlightPulseKey,
+        highlightPulseDurationMillis = highlightPulseDurationMillis,
         onClick = onClick,
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {

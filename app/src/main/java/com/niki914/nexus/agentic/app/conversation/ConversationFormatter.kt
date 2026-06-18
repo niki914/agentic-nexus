@@ -4,6 +4,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatBlock
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatTurn
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolState
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolStatus
+import com.niki914.nexus.agentic.chat.agentic.stream.LocalToolResultClassifier
 import com.niki914.s3ss10n.ChatTurn
 
 object ConversationFormatter {
@@ -56,7 +57,17 @@ object ConversationFormatter {
                 }
 
                 is ChatTurn.ToolResult -> {
-                    Unit
+                    val target = turns.lastOrNull() ?: return@forEach
+                    val updated = target.updateToolState(
+                        callId = turn.callId,
+                        toolName = turn.toolName,
+                        state = if (LocalToolResultClassifier.failureMessage(turn.resultJson) == null) {
+                            HomeToolState.Succeeded
+                        } else {
+                            HomeToolState.Failed
+                        },
+                    )
+                    turns.replaceLastOrAdd(updated)
                 }
 
                 is ChatTurn.System -> Unit
@@ -83,6 +94,27 @@ object ConversationFormatter {
             )
         }
         return copy(blocks = blocks + toolBlocks)
+    }
+
+    private fun HomeChatTurn.updateToolState(
+        callId: String,
+        toolName: String,
+        state: HomeToolState,
+    ): HomeChatTurn {
+        val index = blocks.indexOfLast { block ->
+            block is HomeChatBlock.Tool && block.status.matchesTool(callId, toolName)
+        }
+        if (index == -1) return this
+        return copy(
+            blocks = blocks.toMutableList().also { mutableBlocks ->
+                val block = mutableBlocks[index] as HomeChatBlock.Tool
+                mutableBlocks[index] = block.copy(status = block.status.copy(state = state))
+            },
+        )
+    }
+
+    private fun HomeToolStatus.matchesTool(callId: String, toolName: String): Boolean {
+        return this.callId == callId || (this.callId.isNullOrBlank() && name == toolName)
     }
 
     private fun MutableList<HomeChatTurn>.replaceLastOrAdd(turn: HomeChatTurn) {

@@ -12,10 +12,12 @@ internal fun HomePageRoute(
     onPushFromLeft: (NexusPage) -> Unit,
     selectedConversationId: String?,
     onConversationSelectionConsumed: (String) -> Unit,
+    onActiveConversationChanged: (String?, String?) -> Unit,
 ) {
     HomePageContent(
         selectedConversationId = selectedConversationId,
         onConversationSelectionConsumed = onConversationSelectionConsumed,
+        onActiveConversationChanged = onActiveConversationChanged,
         onOpenHistory = {
             onPushFromLeft(ConversationHistoryPage)
         },

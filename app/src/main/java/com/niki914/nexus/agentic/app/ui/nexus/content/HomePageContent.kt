@@ -57,6 +57,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolState
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolStatus
+import com.niki914.nexus.agentic.app.ui.nexus.nav.TextTitle
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 import com.niki914.nexus.cb.BaseTheme
 import kotlinx.coroutines.flow.collectLatest
@@ -65,17 +66,19 @@ import kotlinx.coroutines.flow.collectLatest
 fun HomePageContent(
     selectedConversationId: String?,
     onConversationSelectionConsumed: (String) -> Unit,
+    onActiveConversationChanged: (String?, String?) -> Unit,
     onOpenHistory: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val viewModel = pageViewModel<HomeChatViewModel>()
-    val clearMenuLabel = stringResource(R.string.ui_home_menu_clear)
+    val newConversationMenuLabel = stringResource(R.string.ui_home_menu_new_conversation)
     val settingsMenuLabel = stringResource(R.string.ui_settings_menu_entry)
     val historyContentDescription = stringResource(R.string.ui_home_history_content_description)
     val latestViewModel by rememberUpdatedState(viewModel)
     val latestOnOpenHistory by rememberUpdatedState(onOpenHistory)
     val latestOnOpenSettings by rememberUpdatedState(onOpenSettings)
     val latestOnConversationSelectionConsumed by rememberUpdatedState(onConversationSelectionConsumed)
+    val latestOnActiveConversationChanged by rememberUpdatedState(onActiveConversationChanged)
     val uiState by viewModel.uiStateFlow.collectAsState()
     val density = LocalDensity.current
     val focusManager = LocalFocusManager.current
@@ -145,13 +148,23 @@ fun HomePageContent(
         latestViewModel.sendIntent(HomeChatIntent.LoadConversation(id))
         latestOnConversationSelectionConsumed(id)
     }
+    LaunchedEffect(uiState.currentConversationId, uiState.currentConversationTitle) {
+        latestOnActiveConversationChanged(
+            uiState.currentConversationId,
+            uiState.currentConversationTitle,
+        )
+    }
 
     val pageChromeContribution = remember(
-        clearMenuLabel,
+        uiState.currentConversationTitle,
+        newConversationMenuLabel,
         settingsMenuLabel,
         historyContentDescription,
     ) {
         PageChromeContribution(
+            titleSpec = uiState.currentConversationTitle
+                ?.takeIf { it.isNotBlank() }
+                ?.let { TextTitle(it) },
             leftAction = TopBarActionSpec(
                 icon = Icons.Default.History,
                 onClick = { latestOnOpenHistory() },
@@ -159,10 +172,10 @@ fun HomePageContent(
             ),
             menuItems = listOf(
                 PageChromeMenuItem(
-                    key = "clear",
-                    title = clearMenuLabel,
+                    key = "new_conversation",
+                    title = newConversationMenuLabel,
                     onClick = {
-                        latestViewModel.sendIntent(HomeChatIntent.ClearConversation)
+                        latestViewModel.sendIntent(HomeChatIntent.NewConversation)
                     },
                 ),
                 PageChromeMenuItem(

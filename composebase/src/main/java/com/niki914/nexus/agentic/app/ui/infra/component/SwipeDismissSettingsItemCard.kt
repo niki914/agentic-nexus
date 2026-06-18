@@ -7,12 +7,19 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.drag
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -48,6 +56,10 @@ fun SwipeDismissSettingsItemCard(
     onClick: () -> Unit,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
+    summary: String? = null,
+    showChevron: Boolean = false,
+    highlightPulseKey: Any? = null,
+    highlightPulseDurationMillis: Int = 500,
     enabled: Boolean = true,
     threshold: Dp = SwipeDismissSettingsItemDefaults.Threshold,
     iconAnchor: Dp = SwipeDismissSettingsItemDefaults.IconAnchor,
@@ -85,6 +97,11 @@ fun SwipeDismissSettingsItemCard(
     )
     val contentColor = lerp(
         start = MaterialTheme.colorScheme.onSurface,
+        stop = MaterialTheme.colorScheme.onError,
+        fraction = animatedProgress,
+    )
+    val summaryColor = lerp(
+        start = MaterialTheme.colorScheme.onSurfaceVariant,
         stop = MaterialTheme.colorScheme.onError,
         fraction = animatedProgress,
     )
@@ -176,17 +193,71 @@ fun SwipeDismissSettingsItemCard(
         )
         SettingsItemSurface(
             enabled = enabled,
+            highlightPulseKey = highlightPulseKey,
+            highlightPulseDurationMillis = highlightPulseDurationMillis,
             onClick = onClick,
             modifier = Modifier
                 .offset { IntOffset(x = -animatedDistancePx.toInt(), y = 0) },
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = contentColor,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+            SwipeDismissSettingsItemContent(
+                title = title,
+                summary = summary,
+                showChevron = showChevron,
+                contentColor = contentColor,
+                summaryColor = summaryColor,
             )
+        }
+    }
+}
+
+@Composable
+private fun SwipeDismissSettingsItemContent(
+    title: String,
+    summary: String?,
+    showChevron: Boolean,
+    contentColor: Color,
+    summaryColor: Color,
+) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val titleAreaMaxWidth = maxWidth * 0.66f
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Column(
+                modifier = Modifier.widthIn(max = titleAreaMaxWidth),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = contentColor,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (!summary.isNullOrBlank()) {
+                    Text(
+                        text = summary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = summaryColor,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            if (showChevron) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = summaryColor,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
     }
 }

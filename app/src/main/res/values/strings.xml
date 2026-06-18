@@ -48,7 +48,7 @@
 
     <!-- Home -->
     <string name="ui_home_title">Nexus</string>
-    <string name="ui_home_menu_clear">清除</string>
+    <string name="ui_home_menu_new_conversation">新对话</string>
     <string name="ui_home_input_placeholder">输入消息...</string>
     <string name="ui_tool_status_running">running</string>
     <string name="ui_tool_status_success">success</string>
@@ -66,6 +66,11 @@
     <string name="ui_conversation_history_empty_body">发送一条消息后，对话会显示在这里。</string>
     <string name="ui_conversation_history_error_title">无法读取对话历史</string>
     <string name="ui_conversation_history_untitled">未命名对话</string>
+    <string name="ui_conversation_history_delete_dialog_title">删除对话</string>
+    <string name="ui_conversation_history_delete_dialog_text">确定要删除这个对话吗？此操作不可撤销。\n\n%1$s</string>
+    <string name="ui_conversation_history_delete_dialog_confirm">删除</string>
+    <string name="ui_conversation_history_delete_dialog_cancel">取消</string>
+    <string name="ui_conversation_history_delete_error">删除对话失败：%1$s</string>
     <string name="ui_root_back_to_home_hint">再按一次返回桌面</string>
 
     <!-- Settings Shell -->

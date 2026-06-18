@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.LiquidScreen
 import com.niki914.nexus.agentic.app.ui.infra.LiquidScreenSwipeContent
@@ -49,7 +50,9 @@ import com.niki914.nexus.agentic.app.ui.infra.nav.LocalNavigationEntry
 import com.niki914.nexus.agentic.app.ui.infra.nav.rememberNavigationController
 import com.niki914.nexus.agentic.app.ui.infra.rememberLiquidScreenState
 import com.niki914.nexus.agentic.app.ui.nexus.model.AppLaunchDecision
+import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
+import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NoTitle
 import com.niki914.nexus.agentic.app.ui.nexus.nav.PageTitleSpec
@@ -73,6 +76,8 @@ fun NexusApp(
     var lastRootBackPressedAt by remember { mutableStateOf(0L) }
     var isPageTransitioning by remember { mutableStateOf(false) }
     var selectedConversationId by remember { mutableStateOf<String?>(null) }
+    var activeConversationId by remember { mutableStateOf<String?>(null) }
+    var activeConversationTitle by remember { mutableStateOf<String?>(null) }
     val initialPage = launchDecision.initialPage
     val controller = rememberNavigationController<NexusPage>(initialPage = initialPage)
     val navigator = controller.navigator
@@ -99,7 +104,7 @@ fun NexusApp(
     val showLeftButton =
         currentLeftAction != null && (currentLeftAction.onClick != null || controller.canGoBack)
     val showRightButton = currentRightAction != null
-    val currentTitle = resolveTitle(currentPage.titleSpec)
+    val currentTitle = resolveTitle(currentChrome.titleSpec ?: currentPage.titleSpec)
     val screenState = rememberLiquidScreenState(
         title = currentTitle,
         showLeftButton = showLeftButton,
@@ -151,6 +156,20 @@ fun NexusApp(
             backHandler.onConsumeBack()
         } else {
             popOrMoveTaskToBack()
+        }
+    }
+
+    suspend fun deleteActiveConversation(id: String) {
+        val homeEntry = controller.stack.lastOrNull { entry -> entry.page == HomePage }
+            ?: error("Home entry is required before deleting the active conversation.")
+        val homeViewModel = ViewModelProvider(homeEntry)[
+            HomeChatViewModel::class.java.name,
+            HomeChatViewModel::class.java,
+        ]
+        homeViewModel.deleteConversationNow(id)
+        if (activeConversationId == id) {
+            activeConversationId = null
+            activeConversationTitle = null
         }
     }
 
@@ -296,6 +315,15 @@ fun NexusApp(
                                 if (selectedConversationId == id) {
                                     selectedConversationId = null
                                 }
+                            },
+                            activeConversationId = activeConversationId,
+                            activeConversationTitle = activeConversationTitle,
+                            onActiveConversationChanged = { id, title ->
+                                activeConversationId = id
+                                activeConversationTitle = title
+                            },
+                            onCurrentConversationDeleted = { id ->
+                                deleteActiveConversation(id)
                             },
                         )
                     }

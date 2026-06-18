@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
@@ -17,24 +18,35 @@ import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
 import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
 import com.niki914.nexus.agentic.app.ui.nexus.content.ConversationHistoryPageContent
 import com.niki914.nexus.agentic.app.ui.nexus.content.ConversationHistoryUiState
+import com.niki914.nexus.agentic.app.ui.nexus.nav.TextTitle
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun ConversationHistoryPageRoute(
+    activeConversationId: String?,
+    activeConversationTitle: String?,
     onBack: () -> Unit,
     onConversationSelected: (String) -> Unit,
+    onCurrentConversationDeleted: suspend (String) -> Unit,
 ) {
     var uiState by remember {
         mutableStateOf(ConversationHistoryUiState(isLoading = true))
     }
     val latestOnBack by rememberUpdatedState(onBack)
     val latestOnConversationSelected by rememberUpdatedState(onConversationSelected)
+    val latestActiveConversationId by rememberUpdatedState(activeConversationId)
+    val latestOnCurrentConversationDeleted by rememberUpdatedState(onCurrentConversationDeleted)
+    val scope = rememberCoroutineScope()
     val backContentDescription = stringResource(
         R.string.ui_conversation_history_back_content_description,
     )
 
-    val pageChromeContribution = remember(backContentDescription) {
+    val pageChromeContribution = remember(backContentDescription, activeConversationTitle) {
         PageChromeContribution(
+            titleSpec = activeConversationTitle
+                ?.takeIf { it.isNotBlank() }
+                ?.let { TextTitle(it) },
             rightAction = TopBarActionSpec(
                 icon = Icons.AutoMirrored.Filled.ArrowForward,
                 onClick = { latestOnBack() },
@@ -49,25 +61,47 @@ internal fun ConversationHistoryPageRoute(
     RegisterPageChrome(pageChromeContribution)
 
     LaunchedEffect(Unit) {
-        uiState = ConversationHistoryUiState(isLoading = true)
-        uiState = runCatching {
-            ConversationRepo.listConversations()
-        }.fold(
-            onSuccess = { conversations ->
-                ConversationHistoryUiState(conversations = conversations)
-            },
-            onFailure = { throwable ->
-                ConversationHistoryUiState(
-                    errorMessage = throwable.message ?: throwable::class.java.simpleName,
-                )
-            },
-        )
+        uiState = loadConversationHistoryState()
     }
 
     ConversationHistoryPageContent(
         uiState = uiState,
+        activeConversationId = activeConversationId,
         onConversationClick = { id ->
             latestOnConversationSelected(id)
+        },
+        onConversationDelete = { id ->
+            scope.launch {
+                uiState = uiState.copy(deleteErrorMessage = null)
+                runCatching {
+                    if (latestActiveConversationId == id) {
+                        latestOnCurrentConversationDeleted(id)
+                    } else {
+                        ConversationRepo.deleteConversation(id)
+                    }
+                }.onSuccess {
+                    uiState = loadConversationHistoryState()
+                }.onFailure { throwable ->
+                    uiState = uiState.copy(
+                        deleteErrorMessage = throwable.message ?: throwable::class.java.simpleName,
+                    )
+                }
+            }
+        },
+    )
+}
+
+private suspend fun loadConversationHistoryState(): ConversationHistoryUiState {
+    return runCatching {
+        ConversationRepo.listConversations()
+    }.fold(
+        onSuccess = { conversations ->
+            ConversationHistoryUiState(conversations = conversations)
+        },
+        onFailure = { throwable ->
+            ConversationHistoryUiState(
+                errorMessage = throwable.message ?: throwable::class.java.simpleName,
+            )
         },
     )
 }

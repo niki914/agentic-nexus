@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +26,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 
 @Composable
 fun SettingsItemSurface(
@@ -33,6 +35,8 @@ fun SettingsItemSurface(
     minHeight: Dp = 64.dp,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
     hapticFeedbackType: HapticFeedbackType? = HapticFeedbackType.ContextClick,
+    highlightPulseKey: Any? = null,
+    highlightPulseDurationMillis: Int = 500,
     onClick: (() -> Unit)? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
@@ -45,10 +49,22 @@ fun SettingsItemSurface(
 
     var backgroundColor by remember { mutableStateOf(restingColor) }
     val animatedBackgroundColor by animateColorAsState(
-        targetValue = if (isInteractive) backgroundColor else restingColor,
+        targetValue = if (isInteractive || (enabled && highlightPulseKey != null)) {
+            backgroundColor
+        } else {
+            restingColor
+        },
         animationSpec = tween(durationMillis = 500),
         label = "settingsItemSurfaceBackground",
     )
+
+    LaunchedEffect(highlightPulseKey) {
+        if (highlightPulseKey != null) {
+            backgroundColor = pressedColor
+            delay(highlightPulseDurationMillis.coerceAtLeast(0).toLong())
+            backgroundColor = restingColor
+        }
+    }
 
     val interactiveModifier = if (isInteractive) {
         Modifier.pointerInput(currentOnClick, hapticFeedbackType) {
