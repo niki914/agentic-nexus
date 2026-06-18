@@ -15,11 +15,12 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -341,6 +344,7 @@ fun AssistantErrorBlock(
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun LiquidChatComposer(
     value: String,
     onValueChange: (String) -> Unit,
@@ -352,6 +356,7 @@ fun LiquidChatComposer(
 ) {
     val canSend = !isGenerating && value.isNotBlank()
     val buttonEnabled = isGenerating || canSend
+    val stopContentDescription = stringResource(R.string.ui_home_stop_content_description)
     val contentColor = if (buttonEnabled) {
         MaterialTheme.colorScheme.primary
     } else {
@@ -373,16 +378,23 @@ fun LiquidChatComposer(
                     enabled = buttonEnabled,
                     modifier = Modifier.size(40.dp),
                 ) {
-                    Icon(
-                        imageVector = if (isGenerating) Icons.Default.Stop else Icons.Default.Send,
-                        contentDescription = stringResource(
-                            if (isGenerating) {
-                                R.string.ui_home_stop_content_description
-                            } else {
+                    if (isGenerating) {
+                        LoadingIndicator(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clearAndSetSemantics {
+                                    contentDescription = stopContentDescription
+                                },
+                            color = contentColor,
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Send,
+                            contentDescription = stringResource(
                                 R.string.ui_home_send_content_description
-                            }
-                        ),
-                    )
+                            ),
+                        )
+                    }
                 }
             }
         },

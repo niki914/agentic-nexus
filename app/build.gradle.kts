@@ -1,6 +1,7 @@
+import java.util.Properties
+
 plugins {
-    id("com.android.application") version "8.11.0"
-    id("org.jetbrains.kotlin.android") version "2.2.0"
+    id("com.android.application") version "9.1.1"
     id("org.jetbrains.kotlin.plugin.compose") version "2.2.0"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.2.0"
     id("com.google.devtools.ksp")
@@ -12,7 +13,7 @@ ksp {
 
 android {
     namespace = "com.niki914.nexus.agentic.app"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.niki914.nexus.agentic"
@@ -51,14 +52,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = "17"
-        freeCompilerArgs = listOf(
-            "-Xno-param-assertions",
-            "-Xno-call-assertions",
-            "-Xno-receiver-assertions"
-        )
     }
     buildFeatures {
         buildConfig = true
@@ -102,7 +95,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.4.0")
 
     // Compose
-    implementation("androidx.compose.material3:material3:1.3.2")
+    implementation("androidx.compose.material3:material3:1.5.0-alpha22")
     implementation("androidx.compose.material:material-icons-core:1.7.8")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
     debugImplementation("androidx.compose.ui:ui-tooling:1.4.0")
@@ -117,7 +110,17 @@ dependencies {
 
 // 获取 ADB 路径
 fun getAdbPath(): String {
-    val sdkDir = project.extensions.getByType<com.android.build.gradle.BaseExtension>().sdkDirectory
+    val localProperties = Properties()
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { input ->
+            localProperties.load(input)
+        }
+    }
+    val sdkDir = localProperties.getProperty("sdk.dir")
+        ?: System.getenv("ANDROID_HOME")
+        ?: System.getenv("ANDROID_SDK_ROOT")
+        ?: File(System.getProperty("user.home"), "Library/Android/sdk").absolutePath
     val adbFile = File(sdkDir, "platform-tools/adb")
     return if (adbFile.exists()) adbFile.absolutePath else "adb"
 }
@@ -131,25 +134,11 @@ val adbReverse = tasks.register("adbReverse") {
         val adbPath = getAdbPath()
         println("Using ADB path: $adbPath")
         try {
-            project.exec {
-                commandLine(adbPath, "reverse", "tcp:8788", "tcp:8788")
-                isIgnoreExitValue = true
-            }
-            project.exec {
-                commandLine(adbPath, "reverse", "tcp:1234", "tcp:1234")
-                isIgnoreExitValue = true
-            }
-            project.exec {
-                commandLine(adbPath, "reverse", "tcp:4004", "tcp:4004")
-                isIgnoreExitValue = true
-            }
-            project.exec {
-                commandLine(adbPath, "reverse", "tcp:51337", "tcp:51337")
-                isIgnoreExitValue = true
-            }
-            project.exec {
-                commandLine(adbPath, "reverse", "tcp:51338", "tcp:51338")
-                isIgnoreExitValue = true
+            listOf("8788", "1234", "4004", "51337", "51338").forEach { port ->
+                ProcessBuilder(adbPath, "reverse", "tcp:$port", "tcp:$port")
+                    .inheritIO()
+                    .start()
+                    .waitFor()
             }
             println("ADB reverse successful.")
         } catch (e: Exception) {
