@@ -2,6 +2,7 @@ package com.niki914.nexus.agentic.app.ui.nexus.model
 
 import androidx.lifecycle.viewModelScope
 import com.niki914.nexus.agentic.app.conversation.ConversationFormatter
+import com.niki914.nexus.agentic.app.conversation.ConversationRecord
 import com.niki914.nexus.agentic.app.conversation.ConversationRepo
 import com.niki914.nexus.agentic.chat.LLMController
 import com.niki914.nexus.agentic.chat.LlmErrorCode
@@ -19,7 +20,7 @@ internal interface HomeConversationStore {
     suspend fun lastOpenedConversationId(): String
     suspend fun setLastOpenedConversationId(value: String)
     suspend fun createConversation(firstUserInput: String): String
-    suspend fun getConversation(id: String): com.niki914.nexus.agentic.app.conversation.ConversationRecord?
+    suspend fun getConversation(id: String): ConversationRecord?
     suspend fun saveHistory(conversationId: String, history: List<ChatTurn>)
     suspend fun updateDraft(conversationId: String, draftText: String)
     suspend fun deleteConversation(id: String)
@@ -27,14 +28,16 @@ internal interface HomeConversationStore {
 
 private object DefaultHomeConversationStore : HomeConversationStore {
     override suspend fun lastOpenedConversationId(): String = XRepo.lastOpenedConversationId()
-    override suspend fun setLastOpenedConversationId(value: String) = XRepo.setLastOpenedConversationId(value)
+    override suspend fun setLastOpenedConversationId(value: String) =
+        XRepo.setLastOpenedConversationId(value)
+
     override suspend fun createConversation(firstUserInput: String): String {
         return ConversationRepo.createConversation(firstUserInput)
     }
 
     override suspend fun getConversation(
         id: String,
-    ): com.niki914.nexus.agentic.app.conversation.ConversationRecord? {
+    ): ConversationRecord? {
         return ConversationRepo.getConversation(id)
     }
 
@@ -105,7 +108,8 @@ private object LlmHomeChatRuntime : HomeChatRuntime {
     override fun stream(query: String): Flow<LlmStreamEvent> = LLMController.stream(query)
     override suspend fun resetConversation() = LLMController.resetConversation()
     override suspend fun getHistory(): List<ChatTurn> = LLMController.getHistory()
-    override suspend fun replaceHistory(history: List<ChatTurn>) = LLMController.replaceHistory(history)
+    override suspend fun replaceHistory(history: List<ChatTurn>) =
+        LLMController.replaceHistory(history)
 }
 
 class HomeChatViewModel internal constructor(

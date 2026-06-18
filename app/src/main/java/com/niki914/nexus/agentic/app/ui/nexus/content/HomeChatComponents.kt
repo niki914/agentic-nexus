@@ -19,8 +19,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,6 +54,7 @@ import com.niki914.nexus.cb.BaseTheme
 
 private val ToolSucceededIndicatorColor = Color(0xFF4F8F6B)
 private val ToolFailedIndicatorColor = Color(0xFFB85C5C)
+
 internal data class AssistantErrorUi(
     val titleRes: Int,
     val bodyRes: Int? = null,

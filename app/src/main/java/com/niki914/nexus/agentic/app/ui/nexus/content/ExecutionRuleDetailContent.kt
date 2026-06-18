@@ -19,6 +19,7 @@ import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRulesInlineError
+import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRuleFormState
 import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRulesSettingsEffect
 import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRulesSettingsIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRulesSettingsUiState
@@ -219,7 +220,7 @@ private fun ExecutionRuleDetailContentPreview() {
         ProvideLiquidScreenContentForPreview(topPadding = 0.dp) {
             ExecutionRuleDetailContentBody(
                 uiState = ExecutionRulesSettingsUiState(
-                    formState = com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRuleFormState(
+                    formState = ExecutionRuleFormState(
                         name = "危险删改",
                         enabledMode = RuntimeExecutionRuleEnabledMode.LOCKED_ONLY,
                         patternsInput = """

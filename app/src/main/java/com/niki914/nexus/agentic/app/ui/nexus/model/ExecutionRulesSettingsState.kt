@@ -54,7 +54,9 @@ sealed interface ExecutionRulesSettingsIntent {
     data class StartEdit(val index: Int) : ExecutionRulesSettingsIntent
     data class ItemEnabledChanged(val index: Int, val value: Boolean) : ExecutionRulesSettingsIntent
     data class NameChanged(val value: String) : ExecutionRulesSettingsIntent
-    data class EnabledModeChanged(val value: ExecutionRuleEnabledMode) : ExecutionRulesSettingsIntent
+    data class EnabledModeChanged(val value: ExecutionRuleEnabledMode) :
+        ExecutionRulesSettingsIntent
+
     data class PatternsChanged(val value: String) : ExecutionRulesSettingsIntent
     data object Save : ExecutionRulesSettingsIntent
     data object DeleteCurrent : ExecutionRulesSettingsIntent

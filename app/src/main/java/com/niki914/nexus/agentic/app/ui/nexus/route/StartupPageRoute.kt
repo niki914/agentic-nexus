@@ -103,6 +103,7 @@ internal fun StartupPageRoute(
                     WebSettingsFailureReason.ServerError,
                     WebSettingsFailureReason.UnsupportedVersion,
                     WebSettingsFailureReason.InvalidConfig -> StartupWebSettingsDialog.FetchFailed
+
                     WebSettingsFailureReason.IpcUnreachable -> StartupWebSettingsDialog.NetworkError
                 }
             }
@@ -255,10 +256,11 @@ private fun debugStartupWebSettingsInitialDialog(): StartupWebSettingsDialog? {
     return DEBUG_STARTUP_WEB_SETTINGS_MOCK_CASE?.toDialog()
 }
 
-private fun debugStartupWebSettingsLoader(mockCase: StartupWebSettingsMockCase): WebSettingsLoader = {
-    delay(60_000L)
-    mockCase.toWebSettingsResult()
-}
+private fun debugStartupWebSettingsLoader(mockCase: StartupWebSettingsMockCase): WebSettingsLoader =
+    {
+        delay(60_000L)
+        mockCase.toWebSettingsResult()
+    }
 
 private fun StartupWebSettingsMockCase.toDialog(): StartupWebSettingsDialog {
     return when (this) {
@@ -271,7 +273,11 @@ private fun StartupWebSettingsMockCase.toDialog(): StartupWebSettingsDialog {
 
 private fun StartupWebSettingsMockCase.toWebSettingsResult(): WebSettingsResult {
     return when (this) {
-        StartupWebSettingsMockCase.Beta -> mockWebSettingsSuccess(isBeta = true, isFallbackVersion = false)
+        StartupWebSettingsMockCase.Beta -> mockWebSettingsSuccess(
+            isBeta = true,
+            isFallbackVersion = false
+        )
+
         StartupWebSettingsMockCase.UnsupportedVersion -> mockWebSettingsSuccess(
             isBeta = false,
             isFallbackVersion = true,

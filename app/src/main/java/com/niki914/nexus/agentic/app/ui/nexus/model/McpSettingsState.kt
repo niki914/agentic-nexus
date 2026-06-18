@@ -209,7 +209,7 @@ class McpSettingsViewModel :
             copy(
                 items = updatedItems,
                 formState = if (formState.editingIndex == index) {
-                        formState.copy(enabled = enabled).withCurrentSnapshotAsInitial()
+                    formState.copy(enabled = enabled).withCurrentSnapshotAsInitial()
                 } else {
                     formState
                 },

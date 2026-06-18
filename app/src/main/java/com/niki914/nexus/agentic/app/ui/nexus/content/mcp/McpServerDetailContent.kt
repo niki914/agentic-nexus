@@ -21,6 +21,7 @@ import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.content.EditableSettingsDetailChrome
 import com.niki914.nexus.agentic.app.ui.nexus.content.EditableSettingsDetailFormScaffold
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpInlineError
+import com.niki914.nexus.agentic.app.ui.nexus.model.McpServerFormState
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsEffect
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsUiState
@@ -247,7 +248,7 @@ private fun McpServerDetailContentPreview() {
             McpServerDetailContentBody(
                 uiState = McpSettingsUiState(
                     items = emptyList(),
-                    formState = com.niki914.nexus.agentic.app.ui.nexus.model.McpServerFormState(
+                    formState = McpServerFormState(
                         name = "demo-mcp",
                         url = "https://a.b.c/mcp",
                         enabled = true,

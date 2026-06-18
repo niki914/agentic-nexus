@@ -77,7 +77,9 @@ fun HomePageContent(
     val latestViewModel by rememberUpdatedState(viewModel)
     val latestOnOpenHistory by rememberUpdatedState(onOpenHistory)
     val latestOnOpenSettings by rememberUpdatedState(onOpenSettings)
-    val latestOnConversationSelectionConsumed by rememberUpdatedState(onConversationSelectionConsumed)
+    val latestOnConversationSelectionConsumed by rememberUpdatedState(
+        onConversationSelectionConsumed
+    )
     val latestOnActiveConversationChanged by rememberUpdatedState(onActiveConversationChanged)
     val uiState by viewModel.uiStateFlow.collectAsState()
     val density = LocalDensity.current
@@ -348,34 +350,34 @@ private fun HomePageContentPreview() {
                     input = "继续分析",
                     turns = listOf(
                         HomeChatTurn(
-                        id = 0L,
-                        userText = "帮我检查一下当前工具状态。",
-                        blocks = listOf(
-                            HomeChatBlock.Text("I'll call the available tools first."),
-                            HomeChatBlock.Tool(
-                                HomeToolStatus(
-                                    callId = "tool-1",
-                                    name = "read_session",
-                                    state = HomeToolState.Succeeded,
-                                )
+                            id = 0L,
+                            userText = "帮我检查一下当前工具状态。",
+                            blocks = listOf(
+                                HomeChatBlock.Text("I'll call the available tools first."),
+                                HomeChatBlock.Tool(
+                                    HomeToolStatus(
+                                        callId = "tool-1",
+                                        name = "read_session",
+                                        state = HomeToolState.Succeeded,
+                                    )
+                                ),
+                                HomeChatBlock.Tool(
+                                    HomeToolStatus(
+                                        callId = "tool-2",
+                                        name = "update_config",
+                                        state = HomeToolState.Running,
+                                    )
+                                ),
+                                HomeChatBlock.Tool(
+                                    HomeToolStatus(
+                                        callId = "tool-3",
+                                        name = "sync_mcp",
+                                        state = HomeToolState.Failed,
+                                    )
+                                ),
+                                HomeChatBlock.Error("MCP 工具调用失败，请检查服务配置。"),
+                                HomeChatBlock.Text("I've done the check and summarized the result."),
                             ),
-                            HomeChatBlock.Tool(
-                                HomeToolStatus(
-                                    callId = "tool-2",
-                                    name = "update_config",
-                                    state = HomeToolState.Running,
-                                )
-                            ),
-                            HomeChatBlock.Tool(
-                                HomeToolStatus(
-                                    callId = "tool-3",
-                                    name = "sync_mcp",
-                                    state = HomeToolState.Failed,
-                                )
-                            ),
-                            HomeChatBlock.Error("MCP 工具调用失败，请检查服务配置。"),
-                            HomeChatBlock.Text("I've done the check and summarized the result."),
-                        ),
                         ),
                     ),
                 ),
