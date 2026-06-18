@@ -45,7 +45,7 @@ internal class FakeRuntimeSettingsGateway(
     var nextSaveCustomToolValidation: RuntimeCustomToolValidation? = null
     val discoveredToolWrites: MutableList<RuntimeMcpCacheWrite> = mutableListOf()
 
-    override suspend fun readLlmConfig(): RuntimeLlmConfig = RuntimeLlmConfig()
+    override suspend fun readLlmConfig(agentId: String): RuntimeLlmConfig = RuntimeLlmConfig()
 
     override suspend fun listMcpServers(): List<RuntimeMcpServer> = mcpServers
 

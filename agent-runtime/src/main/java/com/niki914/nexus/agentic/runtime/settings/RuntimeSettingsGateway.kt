@@ -9,7 +9,7 @@ import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool
 
 interface RuntimeSettingsGateway {
-    suspend fun readLlmConfig(): RuntimeLlmConfig
+    suspend fun readLlmConfig(agentId: String = "main"): RuntimeLlmConfig
 
     suspend fun listMcpServers(): List<RuntimeMcpServer>
 

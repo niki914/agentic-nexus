@@ -17,6 +17,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeAgentMemoryMode as AgentMemoryMode
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeAgentProfile as AgentProfile
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmConfig
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
@@ -50,6 +52,48 @@ class XRepoDomainSettingsTest {
         assertEquals("gpt-test", AgentSettingsCodec.parseMainConfig(store.jsonFor(
             StoreDescriptorRegistry.AGENT_MAIN_CONFIG_ID
         )).model)
+    }
+
+    @Test
+    fun agentConfigReadsAndWritesOnlyExistingEnabledAgents() = runTest {
+        val enabledAgent = AgentProfile(
+            id = "agent_a",
+            name = "Agent A",
+            alias = "agent_a",
+            enabled = true,
+            memoryMode = AgentMemoryMode.SharedMain,
+        )
+        val disabledAgent = AgentProfile(
+            id = "agent_b",
+            name = "Agent B",
+            alias = "agent_b",
+            enabled = false,
+            memoryMode = AgentMemoryMode.SharedMain,
+        )
+        val store = FakeDomainSettingsStore(
+            StoreDescriptorRegistry.AGENT_REGISTRY_ID to AgentSettingsCodec.encodeRegistry(
+                listOf(enabledAgent, disabledAgent)
+            ),
+            StoreDescriptorRegistry.AGENT_MAIN_MEMORY_ID to MemorySettingsCodec.encodeMemories(
+                listOf("Fact"),
+                nowMillis = 1L,
+            ),
+        )
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+
+        assertEquals(null, XRepo.agents.saveLlm("agent_a", LlmConfig(model = "model-a")))
+        assertEquals("model-a", XRepo.agents.llm("agent_a").model)
+        assertEquals(listOf("Fact"), XRepo.agents.memoriesFor("agent_a"))
+
+        val missingValidation = XRepo.agents.saveLlm("ghost_agent", LlmConfig(model = "ghost"))
+        assertEquals("id", missingValidation?.field)
+        assertEquals("", XRepo.agents.llm("ghost_agent").model)
+
+        val disabledValidation = XRepo.agents.saveLlm("agent_b", LlmConfig(model = "model-b"))
+        assertEquals("enabled", disabledValidation?.field)
+        assertEquals("", XRepo.agents.llm("agent_b").model)
+        assertEquals(emptyList<String>(), XRepo.agents.memoriesFor("agent_b"))
     }
 
     @Test

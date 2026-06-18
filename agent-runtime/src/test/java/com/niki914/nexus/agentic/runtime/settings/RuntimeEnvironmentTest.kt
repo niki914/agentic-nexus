@@ -69,7 +69,7 @@ private fun createRuntimeBridge(settingsGateway: RuntimeSettingsGateway): Any {
 }
 
 private class FakeRuntimeSettingsGateway : RuntimeSettingsGateway {
-    override suspend fun readLlmConfig(): RuntimeLlmConfig = RuntimeLlmConfig()
+    override suspend fun readLlmConfig(agentId: String): RuntimeLlmConfig = RuntimeLlmConfig()
 
     override suspend fun listMcpServers(): List<RuntimeMcpServer> = emptyList()
 

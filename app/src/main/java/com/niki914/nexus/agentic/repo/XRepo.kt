@@ -8,6 +8,9 @@ import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.nexus.ipc.store.StoreDescriptorRegistry
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeAgentMemoryMode as AgentMemoryMode
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeAgentProfile as AgentProfile
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeAgentValidation as AgentValidation
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeBuiltinToolSetting as BuiltinToolSetting
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool as CustomTool
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation as CustomToolValidation
@@ -29,6 +32,7 @@ object XRepo {
     val web: WebSettingsApi = WebSettingsApi(this)
     val executionRules: ExecutionRulesApi = ExecutionRulesApi(this)
     val takeoverRules: TakeoverRulesApi = TakeoverRulesApi(this)
+    val agents: AgentApi = AgentApi(this)
 
     private val writeMutex = Mutex()
     private var appContext: Context? = null
@@ -126,6 +130,11 @@ object XRepo {
             )
             writeJsonLocked(
                 context,
+                StoreDescriptorRegistry.AGENT_REGISTRY_ID,
+                AgentSettingsCodec.encodeRegistry(listOf(defaultMainAgentProfile(System.currentTimeMillis()))),
+            )
+            writeJsonLocked(
+                context,
                 StoreDescriptorRegistry.TOOLS_CUSTOM_ID,
                 ToolSettingsCodec.encodeCustomTools(listOf(DEFAULT_WECHAT_TOOL)),
             )
@@ -161,7 +170,7 @@ object XRepo {
     }
 
     suspend fun llm(): LlmConfig {
-        return AgentSettingsCodec.parseMainConfig(readJson(StoreDescriptorRegistry.AGENT_MAIN_CONFIG_ID))
+        return agents.llm(StoreDescriptorRegistry.MAIN_AGENT_ID)
     }
 
     suspend fun saveLlmAccess(
@@ -176,11 +185,13 @@ object XRepo {
                 model = model,
                 apiKey = apiKey,
         )
-        writeJson(StoreDescriptorRegistry.AGENT_MAIN_CONFIG_ID, AgentSettingsCodec.encodeMainConfig(updated))
+        saveLlm(updated)
     }
 
     suspend fun saveLlm(config: LlmConfig) {
-        writeJson(StoreDescriptorRegistry.AGENT_MAIN_CONFIG_ID, AgentSettingsCodec.encodeMainConfig(config))
+        agents.saveLlm(StoreDescriptorRegistry.MAIN_AGENT_ID, config)?.let { validation ->
+            throw IllegalArgumentException("${validation.field}: ${validation.message}")
+        }
     }
 
     private val DEFAULT_WECHAT_TOOL = CustomTool(
@@ -188,6 +199,142 @@ object XRepo {
         description = "启动微信",
         command = "am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI",
     )
+
+    private fun defaultMainAgentProfile(nowMillis: Long): AgentProfile {
+        return AgentProfile(
+            id = StoreDescriptorRegistry.MAIN_AGENT_ID,
+            name = "Main",
+            alias = StoreDescriptorRegistry.MAIN_AGENT_ID,
+            enabled = true,
+            order = 0,
+            memoryMode = AgentMemoryMode.SharedMain,
+            createdAt = nowMillis,
+            updatedAt = nowMillis,
+        )
+    }
+}
+
+class AgentApi internal constructor(
+    private val repo: XRepo,
+) {
+    suspend fun list(): List<AgentProfile> {
+        return AgentSettingsCodec.parseRegistry(repo.readJson(StoreDescriptorRegistry.AGENT_REGISTRY_ID))
+    }
+
+    suspend fun get(agentId: String): AgentProfile? {
+        val normalizedId = AgentSettingsCodec.normalizeAgentId(agentId) ?: return null
+        return list().firstOrNull { it.id == normalizedId }
+    }
+
+    suspend fun saveProfile(profile: AgentProfile, overwrite: Boolean = true): AgentValidation? {
+        val normalizedId = AgentSettingsCodec.normalizeAgentId(profile.id)
+            ?: return AgentValidation("id", "Invalid agent id.")
+        val normalizedAlias = AgentSettingsCodec.normalizeAlias(profile.alias)
+            ?: return AgentValidation("alias", "Invalid alias.")
+        val normalizedName = profile.name.trim()
+        if (normalizedName.isBlank()) {
+            return AgentValidation("name", "Required field 'name' is missing.")
+        }
+        if (normalizedId == StoreDescriptorRegistry.MAIN_AGENT_ID && !profile.enabled) {
+            return AgentValidation("enabled", "Main agent cannot be disabled.")
+        }
+
+        val nowMillis = System.currentTimeMillis()
+        val current = list()
+        val existing = current.firstOrNull { it.id == normalizedId }
+        if (!overwrite && existing != null) {
+            return AgentValidation("id", "Already exists in agents.")
+        }
+        if (current.any { it.id != normalizedId && it.alias == normalizedAlias }) {
+            return AgentValidation("alias", "Already exists in agents.")
+        }
+
+        val normalized = profile.copy(
+            id = normalizedId,
+            name = normalizedName,
+            alias = normalizedAlias,
+            createdAt = profile.createdAt.takeIf { it > 0L } ?: existing?.createdAt ?: nowMillis,
+            updatedAt = nowMillis,
+        )
+        val updated = if (existing == null) {
+            current + normalized
+        } else {
+            current.map { if (it.id == normalizedId) normalized else it }
+        }
+        repo.writeJson(StoreDescriptorRegistry.AGENT_REGISTRY_ID, AgentSettingsCodec.encodeRegistry(updated))
+        return null
+    }
+
+    suspend fun setEnabled(agentId: String, enabled: Boolean): AgentValidation? {
+        val normalizedId = AgentSettingsCodec.normalizeAgentId(agentId)
+            ?: return AgentValidation("id", "Invalid agent id.")
+        if (normalizedId == StoreDescriptorRegistry.MAIN_AGENT_ID && !enabled) {
+            return AgentValidation("enabled", "Main agent cannot be disabled.")
+        }
+        val current = list()
+        if (current.none { it.id == normalizedId }) {
+            return AgentValidation("id", "Agent does not exist.")
+        }
+        val nowMillis = System.currentTimeMillis()
+        repo.writeJson(
+            StoreDescriptorRegistry.AGENT_REGISTRY_ID,
+            AgentSettingsCodec.encodeRegistry(
+                current.map { profile ->
+                    if (profile.id == normalizedId) {
+                        profile.copy(enabled = enabled, updatedAt = nowMillis)
+                    } else {
+                        profile
+                    }
+                }
+            ),
+        )
+        return null
+    }
+
+    suspend fun llm(agentId: String = StoreDescriptorRegistry.MAIN_AGENT_ID): LlmConfig {
+        val normalizedId = AgentSettingsCodec.normalizeAgentId(agentId) ?: return LlmConfig()
+        if (normalizedId == StoreDescriptorRegistry.MAIN_AGENT_ID) {
+            return AgentSettingsCodec.parseMainConfig(repo.readJson(StoreDescriptorRegistry.AGENT_MAIN_CONFIG_ID))
+        }
+        if (enabledProfile(normalizedId) == null) {
+            return LlmConfig()
+        }
+        val storeId = StoreDescriptorRegistry.agentConfigStoreId(normalizedId) ?: return LlmConfig()
+        return AgentSettingsCodec.parseConfig(repo.readJson(storeId))
+    }
+
+    suspend fun saveLlm(agentId: String, config: LlmConfig): AgentValidation? {
+        val normalizedId = AgentSettingsCodec.normalizeAgentId(agentId)
+            ?: return AgentValidation("id", "Invalid agent id.")
+        if (normalizedId == StoreDescriptorRegistry.MAIN_AGENT_ID) {
+            repo.writeJson(StoreDescriptorRegistry.AGENT_MAIN_CONFIG_ID, AgentSettingsCodec.encodeMainConfig(config))
+            return null
+        }
+        val profile = get(normalizedId) ?: return AgentValidation("id", "Agent does not exist.")
+        if (!profile.enabled) {
+            return AgentValidation("enabled", "Agent is disabled.")
+        }
+        val storeId = StoreDescriptorRegistry.agentConfigStoreId(normalizedId)
+            ?: return AgentValidation("id", "Invalid agent id.")
+        repo.writeJson(storeId, AgentSettingsCodec.encodeConfig(normalizedId, config))
+        return null
+    }
+
+    suspend fun memoriesFor(agentId: String): List<String> {
+        val normalizedId = AgentSettingsCodec.normalizeAgentId(agentId) ?: return emptyList()
+        if (normalizedId == StoreDescriptorRegistry.MAIN_AGENT_ID) {
+            return repo.memory.list()
+        }
+        return when (enabledProfile(normalizedId)?.memoryMode) {
+            AgentMemoryMode.SharedMain -> repo.memory.list()
+            AgentMemoryMode.Disabled,
+            null -> emptyList()
+        }
+    }
+
+    private suspend fun enabledProfile(agentId: String): AgentProfile? {
+        return get(agentId)?.takeIf { it.enabled }
+    }
 }
 
 class MemoryApi internal constructor(
@@ -715,6 +862,8 @@ internal class LegacyLocalSettingsDomainStore(
         return when (storeId) {
             StoreDescriptorRegistry.AGENT_MAIN_CONFIG_ID ->
                 AgentSettingsCodec.encodeMainConfig(LocalSettingsCodec.parseLlm(settings))
+            StoreDescriptorRegistry.AGENT_REGISTRY_ID ->
+                AgentSettingsCodec.encodeRegistry(listOf(legacyMainAgentProfile()))
             StoreDescriptorRegistry.AGENT_MAIN_MEMORY_ID ->
                 MemorySettingsCodec.encodeMemories(LocalSettingsCodec.parseMemories(settings), System.currentTimeMillis())
             StoreDescriptorRegistry.TOOLS_BUILTIN_ID ->
@@ -729,7 +878,7 @@ internal class LegacyLocalSettingsDomainStore(
                 RuleSettingsCodec.encodeTakeoverRules(LocalSettingsCodec.parseTakeoverRules(settings))
             StoreDescriptorRegistry.APP_STATE_ID ->
                 AppStateSettingsCodec.encode(AppStateSettings(onboardingCompleted = settings.onboardingCompleted))
-            else -> readLegacyMcpCacheJson(settings, storeId)
+            else -> readLegacyAgentConfigJson(settings, storeId) ?: readLegacyMcpCacheJson(settings, storeId)
         }
     }
 
@@ -820,6 +969,17 @@ internal class LegacyLocalSettingsDomainStore(
         )
     }
 
+    private fun readLegacyAgentConfigJson(settings: LocalSettings, storeId: String): String? {
+        val agentId = storeId.removePrefix(StoreDescriptorRegistry.AGENT_CONFIG_PREFIX)
+        if (agentId == storeId) return null
+        if (StoreDescriptorRegistry.agentConfigStoreId(agentId) != storeId) return null
+        return if (agentId == StoreDescriptorRegistry.MAIN_AGENT_ID) {
+            AgentSettingsCodec.encodeMainConfig(LocalSettingsCodec.parseLlm(settings))
+        } else {
+            AgentSettingsCodec.encodeConfig(agentId, LlmConfig())
+        }
+    }
+
     private fun writeLegacyMcpCache(settings: LocalSettings, storeId: String, json: String): LocalSettings {
         val server = serverForCacheStoreId(settings, storeId) ?: return settings
         val tools = McpSettingsCodec.parseCache(json)
@@ -853,6 +1013,19 @@ internal class LegacyLocalSettingsDomainStore(
     }
 
     private companion object {
+        private fun legacyMainAgentProfile(): AgentProfile {
+            return AgentProfile(
+                id = StoreDescriptorRegistry.MAIN_AGENT_ID,
+                name = "Main",
+                alias = StoreDescriptorRegistry.MAIN_AGENT_ID,
+                enabled = true,
+                order = 0,
+                memoryMode = AgentMemoryMode.SharedMain,
+                createdAt = 0L,
+                updatedAt = 0L,
+            )
+        }
+
         private const val ONBOARDING_COMPLETED_KEY = "onboarding_completed"
         private const val EMPTY_RULES_JSON = """{"rules":[]}"""
     }

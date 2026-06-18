@@ -4,6 +4,7 @@ object StoreDescriptorRegistry {
 
     const val WEB_SETTINGS_ID = "web_settings"
     const val LOCAL_SETTINGS_ID = "local_settings"
+    const val AGENT_REGISTRY_ID = "agents.registry"
     const val AGENT_MAIN_CONFIG_ID = "agent.main.config"
     const val AGENT_MAIN_MEMORY_ID = "agent.main.memory"
     const val TOOLS_BUILTIN_ID = "tools.builtin"
@@ -12,14 +13,17 @@ object StoreDescriptorRegistry {
     const val RULES_EXECUTION_ID = "rules.execution"
     const val RULES_TAKEOVER_ID = "rules.takeover"
     const val APP_STATE_ID = "app.state"
+    const val AGENT_CONFIG_PREFIX = "agent.config."
     const val MCP_CACHE_PREFIX = "tools.mcp.cache."
     const val MAIN_AGENT_ID = "main"
 
+    private val safeAgentIdPattern = Regex("[a-z][a-z0-9_-]{1,31}")
     private val safeServerIdPattern = Regex("[a-zA-Z0-9_-]{1,64}")
 
     private val staticDescriptors = listOf(
         StoreDescriptor(WEB_SETTINGS_ID, "settings/hooks.json"),
         StoreDescriptor(LOCAL_SETTINGS_ID, "local_settings.json"),
+        StoreDescriptor(AGENT_REGISTRY_ID, "settings/agents/registry.json", """{"agents":[]}"""),
         StoreDescriptor(AGENT_MAIN_CONFIG_ID, "settings/agents/main/config.json"),
         StoreDescriptor(
             AGENT_MAIN_MEMORY_ID,
@@ -54,8 +58,22 @@ object StoreDescriptorRegistry {
             ?.let { MCP_CACHE_PREFIX + it }
     }
 
+    fun agentConfigStoreId(agentId: String): String? {
+        return agentId.trim().lowercase()
+            .takeIf { safeAgentIdPattern.matches(it) }
+            ?.let { AGENT_CONFIG_PREFIX + it }
+    }
+
     fun resolveDynamic(storeId: String): StoreDescriptor? {
         find(storeId)?.let { return it }
+
+        val agentId = storeId.removePrefix(AGENT_CONFIG_PREFIX)
+        if (agentId != storeId && safeAgentIdPattern.matches(agentId)) {
+            return StoreDescriptor(
+                id = storeId,
+                relativePath = "settings/agents/$agentId/config.json"
+            )
+        }
 
         val serverId = storeId.removePrefix(MCP_CACHE_PREFIX)
         if (serverId == storeId || !safeServerIdPattern.matches(serverId)) return null

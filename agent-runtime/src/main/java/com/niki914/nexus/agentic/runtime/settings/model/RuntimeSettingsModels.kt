@@ -12,6 +12,27 @@ data class RuntimeLlmConfig(
     val takeoverKeywords: List<String> = emptyList(),
 )
 
+enum class RuntimeAgentMemoryMode {
+    Disabled,
+    SharedMain,
+}
+
+data class RuntimeAgentProfile(
+    val id: String,
+    val name: String,
+    val alias: String,
+    val enabled: Boolean = true,
+    val order: Int = 0,
+    val memoryMode: RuntimeAgentMemoryMode = RuntimeAgentMemoryMode.SharedMain,
+    val createdAt: Long = 0L,
+    val updatedAt: Long = 0L,
+)
+
+data class RuntimeAgentValidation(
+    val field: String,
+    val message: String,
+)
+
 data class RuntimeMcpServer(
     val name: String,
     val url: String,
