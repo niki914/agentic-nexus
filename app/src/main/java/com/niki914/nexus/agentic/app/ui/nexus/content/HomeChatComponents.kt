@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -458,7 +459,7 @@ internal fun UsedNToolsPill(
     val containerColor = colorScheme.surfaceVariant.copy(alpha = 0.72f)
     val contentColor = colorScheme.onSurfaceVariant.copy(alpha = 0.82f)
     val shape = G2CapsuleShape()
-    val label = "Used $count Tools"
+    val label = pluralStringResource(R.plurals.ui_home_used_tools, count, count)
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -510,18 +511,18 @@ fun TurnActionRow(
         ) {
             ActionButton(
                 icon = Icons.Default.ContentCopy,
-                contentDescription = "Copy",
+                contentDescription = stringResource(R.string.ui_home_action_copy_content_description),
                 onClick = onCopy,
             )
             if (isAgent) {
                 ActionButton(
                     icon = Icons.Default.Refresh,
-                    contentDescription = "ReGenerate",
+                    contentDescription = stringResource(R.string.ui_home_action_regenerate_content_description),
                     onClick = onReGenerate,
                 )
                 ActionButton(
                     icon = Icons.AutoMirrored.Filled.CallSplit,
-                    contentDescription = "Fork",
+                    contentDescription = stringResource(R.string.ui_home_action_fork_content_description),
                     onClick = onFork,
                 )
             }
