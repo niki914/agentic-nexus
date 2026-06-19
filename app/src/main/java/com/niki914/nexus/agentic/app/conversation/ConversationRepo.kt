@@ -53,6 +53,45 @@ object ConversationRepo {
         return id
     }
 
+    suspend fun forkConversation(
+        sourceId: String,
+        keepTurnCount: Int,
+        now: Long = System.currentTimeMillis(),
+    ): String {
+        val source = dao().getConversation(sourceId)
+            ?: throw IllegalStateException("Source conversation not found: $sourceId")
+
+        val allTurns = dao().listTurns(sourceId)
+        val truncated = allTurns.take(keepTurnCount)
+
+        val decodedTurns = truncated.mapNotNull { turn ->
+            ChatTurnJsonCodec.decode(turn.kind, turn.payloadJson)
+        }
+        val preview = ConversationFormatter.previewFromHistory(decodedTurns)
+
+        val newId = UUID.randomUUID().toString()
+
+        dao().insertConversation(
+            ConversationEntity(
+                id = newId,
+                title = source.title,
+                titleEdited = true,
+                createdAt = now,
+                updatedAt = now,
+                lastMessagePreview = preview,
+                turnCount = truncated.size,
+                draftText = "",
+            ),
+        )
+
+        val newTurns = truncated.mapIndexed { index, turn ->
+            turn.copy(id = 0L, conversationId = newId, turnIndex = index)
+        }
+        dao().insertTurns(newTurns)
+
+        return newId
+    }
+
     suspend fun saveHistory(
         conversationId: String,
         history: List<ChatTurn>,

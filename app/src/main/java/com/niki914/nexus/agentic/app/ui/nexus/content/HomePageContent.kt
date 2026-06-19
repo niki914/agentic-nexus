@@ -37,10 +37,14 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import android.widget.Toast
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -215,6 +219,12 @@ fun HomePageContent(
                 HomeChatIntent.ToggleToolRunExpanded(turnId, runStartIndex)
             )
         },
+        onReGenerate = { id ->
+            viewModel.sendIntent(HomeChatIntent.ReGenerateAt(id))
+        },
+        onFork = { id ->
+            viewModel.sendIntent(HomeChatIntent.ForkAt(id))
+        },
         expandedActionTurnId = uiState.expandedActionTurnId,
         expandedActionSource = uiState.expandedActionSource,
         onToggleActionRow = { turnId, source ->
@@ -236,6 +246,8 @@ private fun HomePageContentBody(
     onStopClick: () -> Unit,
     onComposerFocusChanged: (Boolean) -> Unit,
     onToggleToolRun: (Long, Int) -> Unit,
+    onReGenerate: (Long) -> Unit,
+    onFork: (Long) -> Unit,
     expandedActionTurnId: Long?,
     expandedActionSource: ActionSource?,
     onToggleActionRow: (Long, ActionSource) -> Unit,
@@ -270,6 +282,8 @@ private fun HomePageContentBody(
                     onContentTap = onContentTap,
                     expandedToolRunKeys = uiState.expandedToolRunKeys,
                     onToggleToolRun = onToggleToolRun,
+                    onReGenerate = onReGenerate,
+                    onFork = onFork,
                     expandedActionTurnId = expandedActionTurnId,
                     expandedActionSource = expandedActionSource,
                     onToggleActionRow = onToggleActionRow,
@@ -344,6 +358,8 @@ private fun HomeChatTurnItem(
     onContentTap: () -> Unit,
     expandedToolRunKeys: Set<String>,
     onToggleToolRun: (Long, Int) -> Unit,
+    onReGenerate: (Long) -> Unit,
+    onFork: (Long) -> Unit,
     expandedActionTurnId: Long?,
     expandedActionSource: ActionSource?,
     onToggleActionRow: (Long, ActionSource) -> Unit,
@@ -351,6 +367,9 @@ private fun HomeChatTurnItem(
     modifier: Modifier = Modifier,
 ) {
     val canToggleAction = !isGenerating && turn.blocks.isNotEmpty()
+    @Suppress("DEPRECATION")
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
 
     val isActionExpanded = expandedActionTurnId == turn.id
     val actionSource = expandedActionSource
@@ -383,9 +402,13 @@ private fun HomeChatTurnItem(
         ) {
             TurnActionRow(
                 source = ActionSource.User,
-                onCopy = { /* stub */ },
-                onReGenerate = { /* stub */ },
-                onFork = { /* stub */ },
+                onCopy = {
+                    val text = turn.userText
+                    clipboardManager.setText(AnnotatedString(text))
+                    Toast.makeText(context, R.string.ui_toast_copied, Toast.LENGTH_SHORT).show()
+                },
+                onReGenerate = { onReGenerate(turn.id) },
+                onFork = { onFork(turn.id) },
                 modifier = Modifier.padding(top = 10.dp),
             )
         }
@@ -456,9 +479,15 @@ private fun HomeChatTurnItem(
         ) {
             TurnActionRow(
                 source = ActionSource.Agent,
-                onCopy = { /* stub */ },
-                onReGenerate = { /* stub */ },
-                onFork = { /* stub */ },
+                onCopy = {
+                    val text = turn.blocks
+                        .filterIsInstance<HomeChatBlock.Text>()
+                        .joinToString("\n\n") { it.text }
+                    clipboardManager.setText(AnnotatedString(text))
+                    Toast.makeText(context, R.string.ui_toast_copied, Toast.LENGTH_SHORT).show()
+                },
+                onReGenerate = { onReGenerate(turn.id) },
+                onFork = { onFork(turn.id) },
                 modifier = Modifier.padding(top = 10.dp),
             )
         }
@@ -555,6 +584,8 @@ private fun HomePageContentPreview() {
                 onStopClick = {},
                 onComposerFocusChanged = {},
                 onToggleToolRun = { _, _ -> },
+                onReGenerate = { },
+                onFork = { },
                 expandedActionTurnId = null,
                 expandedActionSource = null,
                 onToggleActionRow = { _, _ -> },
