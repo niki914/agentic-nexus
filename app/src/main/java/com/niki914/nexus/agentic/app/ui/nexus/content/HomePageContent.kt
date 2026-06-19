@@ -20,6 +20,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -285,6 +288,33 @@ private fun HomePageContentBody(
     }
 }
 
+private data class ToolRun(
+    val startIndex: Int,
+    val endIndex: Int, // exclusive
+) {
+    val count: Int get() = endIndex - startIndex
+}
+
+private fun List<HomeChatBlock>.findConsecutiveToolRuns(): List<ToolRun> {
+    val runs = mutableListOf<ToolRun>()
+    var i = 0
+    while (i < size) {
+        if (this[i] is HomeChatBlock.Tool) {
+            val start = i
+            while (i < size && this[i] is HomeChatBlock.Tool) {
+                i++
+            }
+            val count = i - start
+            if (count >= 2) {
+                runs.add(ToolRun(start, i))
+            }
+        } else {
+            i++
+        }
+    }
+    return runs
+}
+
 @Composable
 private fun HomeChatTurnItem(
     turn: HomeChatTurn,
@@ -302,34 +332,85 @@ private fun HomeChatTurnItem(
     ) {
         UserMessageBubble(text = turn.userText)
 
-        turn.blocks.forEach { block ->
-            when (block) {
-                is HomeChatBlock.Text -> {
-                    if (block.text.isNotBlank()) {
-                        AssistantOutputText(
-                            text = block.text,
+        val toolRuns = remember(turn.blocks) {
+            turn.blocks.findConsecutiveToolRuns()
+        }
+        var blockIndex = 0
+        while (blockIndex < turn.blocks.size) {
+            val run = toolRuns.find { it.startIndex == blockIndex }
+            if (run != null) {
+                val tools = turn.blocks.subList(run.startIndex, run.endIndex)
+                    .map { it as HomeChatBlock.Tool }
+                ToolRunItem(
+                    tools = tools,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+                blockIndex = run.endIndex
+            } else {
+                when (val block = turn.blocks[blockIndex]) {
+                    is HomeChatBlock.Text -> {
+                        if (block.text.isNotBlank()) {
+                            AssistantOutputText(
+                                text = block.text,
+                                modifier = Modifier.padding(top = 12.dp),
+                            )
+                        }
+                    }
+
+                    is HomeChatBlock.Tool -> {
+                        ToolStatusPill(
+                            status = block.status,
+                            modifier = Modifier.padding(top = 12.dp),
+                        )
+                    }
+
+                    is HomeChatBlock.Error -> {
+                        AssistantErrorBlock(
+                            message = block.message,
+                            code = block.code,
                             modifier = Modifier.padding(top = 12.dp),
                         )
                     }
                 }
+                blockIndex++
+            }
+        }
+    }
+}
 
-                is HomeChatBlock.Tool -> {
-                    ToolStatusPill(
-                        status = block.status,
-                        modifier = Modifier.padding(top = 12.dp),
-                    )
-                }
+@Composable
+private fun ToolRunItem(
+    tools: List<HomeChatBlock.Tool>,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
 
-                is HomeChatBlock.Error -> {
-                    AssistantErrorBlock(
-                        message = block.message,
-                        code = block.code,
-                        modifier = Modifier.padding(top = 12.dp),
-                    )
+    if (!expanded) {
+        UsedNToolsPill(
+            count = tools.size,
+            firstToolState = tools.first().status.state,
+            onClick = { expanded = true },
+            modifier = modifier,
+        )
+    } else {
+        Column(modifier = modifier) {
+            ToolStatusPill(status = tools[0].status)
+            var showRemaining by remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) { showRemaining = true }
+            AnimatedVisibility(
+                visible = showRemaining,
+                enter = expandVertically() + fadeIn(),
+            ) {
+                Column {
+                    tools.drop(1).forEach { tool ->
+                        ToolStatusPill(
+                            status = tool.status,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
                 }
             }
         }
-
     }
 }
 

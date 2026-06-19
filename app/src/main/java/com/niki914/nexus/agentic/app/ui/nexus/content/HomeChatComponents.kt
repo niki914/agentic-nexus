@@ -52,6 +52,8 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolStatus
 import com.niki914.nexus.agentic.chat.LlmErrorCode
 import com.niki914.nexus.cb.BaseTheme
 
+import androidx.compose.foundation.clickable
+
 private val ToolSucceededIndicatorColor = Color(0xFF4F8F6B)
 private val ToolFailedIndicatorColor = Color(0xFFB85C5C)
 internal data class AssistantErrorUi(
@@ -437,4 +439,52 @@ private fun HomeToolState.label(): String = when (this) {
     HomeToolState.Running -> stringResource(R.string.ui_tool_status_running)
     HomeToolState.Succeeded -> stringResource(R.string.ui_tool_status_success)
     HomeToolState.Failed -> stringResource(R.string.ui_tool_status_failed)
+}
+
+@Composable
+internal fun UsedNToolsPill(
+    count: Int,
+    firstToolState: HomeToolState,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val containerColor = colorScheme.surfaceVariant.copy(alpha = 0.72f)
+    val contentColor = colorScheme.onSurfaceVariant.copy(alpha = 0.82f)
+    val shape = G2CapsuleShape()
+    val label = "Used $count Tools"
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Row(
+                modifier = Modifier
+                    .clip(shape)
+                    .background(containerColor, shape)
+                    .clickable(onClick = onClick)
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                ToolStatusIndicator(
+                    state = firstToolState,
+                    color = contentColor,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = contentColor,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
 }
