@@ -3,7 +3,6 @@ package com.niki914.nexus.agentic.repo
 import android.content.Context
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.shell.ShellCommandSafetyPolicy
-import com.niki914.nexus.agentic.mod.LocalSettings
 import com.niki914.nexus.h.util.ContextProvider
 import com.niki914.nexus.ipc.store.StoreDescriptorRegistry
 import kotlinx.coroutines.sync.Mutex
@@ -50,17 +49,9 @@ object XRepo {
         this.store = store
     }
 
-    internal fun installStoreForTest(store: LocalSettingsStore) {
-        this.store = LegacyLocalSettingsDomainStore(store)
-    }
-
     internal fun resetForTest() {
         appContext = null
         store = XIpcDomainSettingsStore
-    }
-
-    internal fun legacyStoreForTest(): LegacyLocalSettingsDomainStore? {
-        return store as? LegacyLocalSettingsDomainStore
     }
 
     internal suspend fun context(): Context {
@@ -107,13 +98,6 @@ object XRepo {
     suspend fun tryPutDefaultSettings(): Boolean {
         return writeMutex.withLock {
             val context = context()
-            legacyStoreForTest()?.let { legacyStore ->
-                if (legacyStore.onboardingCompleted(context)) {
-                    return@withLock false
-                }
-                legacyStore.writeDefaultSettings(context)
-                return@withLock true
-            }
             val appState = AppStateSettingsCodec.parse(store.readJson(context, StoreDescriptorRegistry.APP_STATE_ID))
             if (appState.onboardingCompleted) {
                 return@withLock false
@@ -615,9 +599,6 @@ class McpApi internal constructor(
     }
 
     suspend fun cachedTools(server: McpServer): List<McpTool> {
-        repo.legacyStoreForTest()?.let { legacyStore ->
-            return legacyStore.cachedTools(repo.context(), server)
-        }
         val storeId = cacheStoreId(server) ?: return emptyList()
         return McpSettingsCodec.parseCache(repo.readJson(storeId))
     }
@@ -627,10 +608,6 @@ class McpApi internal constructor(
         headers: Map<String, String>,
         tools: List<McpTool>,
     ) {
-        repo.legacyStoreForTest()?.let { legacyStore ->
-            legacyStore.saveDiscoveredTools(repo.context(), url, headers, tools)
-            return
-        }
         val server = list().firstOrNull { it.url == url && it.headers == headers } ?: return
         val serverId = McpSettingsCodec.normalizeServerId(server.name) ?: return
         val storeId = StoreDescriptorRegistry.mcpCacheStoreId(serverId) ?: return
@@ -646,10 +623,6 @@ class McpApi internal constructor(
     }
 
     suspend fun clearCache(server: McpServer) {
-        repo.legacyStoreForTest()?.let { legacyStore ->
-            legacyStore.clearCache(repo.context(), server)
-            return
-        }
         val serverId = McpSettingsCodec.normalizeServerId(server.name) ?: return
         val storeId = StoreDescriptorRegistry.mcpCacheStoreId(serverId) ?: return
         repo.writeJson(
@@ -871,182 +844,5 @@ class BuiltinToolApi internal constructor(
     private companion object {
         private const val TERMINAL_TOOL_NAME = "terminal"
         private const val LEGACY_RUN_COMMAND_TOOL_NAME = "run_command"
-    }
-}
-
-internal class LegacyLocalSettingsDomainStore(
-    private val legacy: LocalSettingsStore,
-) : DomainSettingsStore {
-    override suspend fun readJson(context: Context, storeId: String): String {
-        val settings = legacy.read(context)
-        return when (storeId) {
-            StoreDescriptorRegistry.AGENT_MAIN_CONFIG_ID ->
-                AgentSettingsCodec.encodeMainConfig(LocalSettingsCodec.parseLlm(settings))
-            StoreDescriptorRegistry.AGENT_REGISTRY_ID ->
-                AgentSettingsCodec.encodeRegistry(listOf(legacyMainAgentProfile()))
-            StoreDescriptorRegistry.AGENT_MAIN_MEMORY_ID ->
-                MemorySettingsCodec.encodeMemories(LocalSettingsCodec.parseMemories(settings), System.currentTimeMillis())
-            StoreDescriptorRegistry.TOOLS_BUILTIN_ID ->
-                ToolSettingsCodec.encodeBuiltinEnabledForAgents(LocalSettingsCodec.parseBuiltinFlags(settings))
-            StoreDescriptorRegistry.TOOLS_CUSTOM_ID ->
-                ToolSettingsCodec.encodeCustomTools(LocalSettingsCodec.parseCustomTools(settings))
-            StoreDescriptorRegistry.TOOLS_MCP_SERVERS_ID ->
-                McpSettingsCodec.encodeServers(LocalSettingsCodec.parseMcpServers(settings))
-            StoreDescriptorRegistry.RULES_EXECUTION_ID ->
-                readExecutionRulesJson(settings)
-            StoreDescriptorRegistry.RULES_TAKEOVER_ID ->
-                RuleSettingsCodec.encodeTakeoverRules(LocalSettingsCodec.parseTakeoverRules(settings))
-            StoreDescriptorRegistry.APP_STATE_ID ->
-                AppStateSettingsCodec.encode(AppStateSettings(onboardingCompleted = settings.onboardingCompleted))
-            else -> readLegacyAgentConfigJson(settings, storeId) ?: readLegacyMcpCacheJson(settings, storeId)
-        }
-    }
-
-    override suspend fun writeJsonFromOwner(context: Context, storeId: String, json: String): Boolean {
-        val latest = legacy.read(context)
-        val updated = when (storeId) {
-            StoreDescriptorRegistry.AGENT_MAIN_CONFIG_ID ->
-                LocalSettingsCodec.withLlm(latest, AgentSettingsCodec.parseMainConfig(json))
-            StoreDescriptorRegistry.AGENT_MAIN_MEMORY_ID ->
-                LocalSettingsCodec.withMemories(latest, MemorySettingsCodec.parseMemories(json))
-            StoreDescriptorRegistry.TOOLS_BUILTIN_ID ->
-                writeBuiltinFlags(latest, json)
-            StoreDescriptorRegistry.TOOLS_CUSTOM_ID ->
-                LocalSettingsCodec.withCustomTools(latest, ToolSettingsCodec.parseCustomTools(json))
-            StoreDescriptorRegistry.TOOLS_MCP_SERVERS_ID ->
-                LocalSettingsCodec.withMcpServers(latest, McpSettingsCodec.parseServers(json))
-            StoreDescriptorRegistry.RULES_EXECUTION_ID ->
-                LocalSettingsCodec.withExecutionRules(latest, RuleSettingsCodec.parseExecutionRules(json))
-            StoreDescriptorRegistry.RULES_TAKEOVER_ID ->
-                LocalSettingsCodec.withTakeoverRules(latest, RuleSettingsCodec.parseTakeoverRules(json))
-            StoreDescriptorRegistry.APP_STATE_ID ->
-                LocalSettingsCodec.withBoolean(
-                    latest,
-                    ONBOARDING_COMPLETED_KEY,
-                    AppStateSettingsCodec.parse(json).onboardingCompleted,
-                )
-            else -> writeLegacyMcpCache(latest, storeId, json)
-        }
-        legacy.write(context, updated)
-        return true
-    }
-
-    override suspend fun mutateJson(context: Context, storeId: String, path: String, value: Any?): Boolean {
-        return false
-    }
-
-    suspend fun onboardingCompleted(context: Context): Boolean {
-        return legacy.read(context).onboardingCompleted
-    }
-
-    suspend fun writeDefaultSettings(context: Context) {
-        legacy.write(context, LocalSettingsDefaults.applyTo(legacy.read(context)))
-    }
-
-    suspend fun cachedTools(context: Context, server: McpServer): List<McpTool> {
-        return LocalSettingsCodec.parseMcpCache(legacy.read(context), server)
-    }
-
-    suspend fun saveDiscoveredTools(
-        context: Context,
-        url: String,
-        headers: Map<String, String>,
-        tools: List<McpTool>,
-    ) {
-        legacy.write(
-            context,
-            LocalSettingsCodec.withMcpCache(legacy.read(context), url, headers, tools),
-        )
-    }
-
-    suspend fun clearCache(context: Context, server: McpServer) {
-        legacy.write(
-            context,
-            LocalSettingsCodec.withoutMcpCache(legacy.read(context), listOf(server)),
-        )
-    }
-
-    private fun readExecutionRulesJson(settings: LocalSettings): String {
-        if (settings.shellSafetyPolicies == null) {
-            return RuleSettingsCodec.encodeExecutionRules(LocalSettingsDefaults.defaultExecutionRules)
-        }
-        val encoded = RuleSettingsCodec.encodeExecutionRules(LocalSettingsCodec.parseExecutionRules(settings))
-        return if (encoded == EMPTY_RULES_JSON) {
-            """{"rules":[],"_legacy_explicit":true}"""
-        } else {
-            encoded
-        }
-    }
-
-    private fun readLegacyMcpCacheJson(settings: LocalSettings, storeId: String): String {
-        val server = serverForCacheStoreId(settings, storeId) ?: return "{}"
-        val serverId = McpSettingsCodec.normalizeServerId(server.name) ?: return "{}"
-        return McpSettingsCodec.encodeCache(
-            serverId = serverId,
-            fingerprint = serverFingerprint(server),
-            tools = LocalSettingsCodec.parseMcpCache(settings, server),
-            updatedAt = 0L,
-        )
-    }
-
-    private fun readLegacyAgentConfigJson(settings: LocalSettings, storeId: String): String? {
-        val agentId = storeId.removePrefix(StoreDescriptorRegistry.AGENT_CONFIG_PREFIX)
-        if (agentId == storeId) return null
-        if (StoreDescriptorRegistry.agentConfigStoreId(agentId) != storeId) return null
-        return if (agentId == StoreDescriptorRegistry.MAIN_AGENT_ID) {
-            AgentSettingsCodec.encodeMainConfig(LocalSettingsCodec.parseLlm(settings))
-        } else {
-            AgentSettingsCodec.encodeConfig(agentId, LlmConfig())
-        }
-    }
-
-    private fun writeLegacyMcpCache(settings: LocalSettings, storeId: String, json: String): LocalSettings {
-        val server = serverForCacheStoreId(settings, storeId) ?: return settings
-        val tools = McpSettingsCodec.parseCache(json)
-        return if (tools.isEmpty()) {
-            LocalSettingsCodec.withoutMcpCache(settings, listOf(server))
-        } else {
-            LocalSettingsCodec.withMcpCache(settings, server.url, server.headers, tools)
-        }
-    }
-
-    private fun writeBuiltinFlags(settings: LocalSettings, json: String): LocalSettings {
-        return ToolSettingsCodec.parseBuiltinEnabledForAgents(json).entries.fold(settings) { acc, (name, enabled) ->
-            LocalSettingsCodec.withBuiltinFlag(acc, name, enabled)
-        }
-    }
-
-    private fun serverForCacheStoreId(settings: LocalSettings, storeId: String): McpServer? {
-        val serverId = storeId.removePrefix(StoreDescriptorRegistry.MCP_CACHE_PREFIX)
-        if (serverId == storeId) return null
-        return LocalSettingsCodec.parseMcpServers(settings)
-            .firstOrNull { McpSettingsCodec.normalizeServerId(it.name) == serverId }
-    }
-
-    private fun serverFingerprint(server: McpServer): String {
-        val headers = server.headers
-            .mapKeys { (key, _) -> key.lowercase() }
-            .toSortedMap()
-            .entries
-            .joinToString(separator = "&") { (key, value) -> "$key=$value" }
-        return "${server.name}|${server.url}|${server.enabled}|$headers"
-    }
-
-    private companion object {
-        private fun legacyMainAgentProfile(): AgentProfile {
-            return AgentProfile(
-                id = StoreDescriptorRegistry.MAIN_AGENT_ID,
-                name = "Main",
-                alias = StoreDescriptorRegistry.MAIN_AGENT_ID,
-                enabled = true,
-                order = 0,
-                memoryMode = AgentMemoryMode.SharedMain,
-                createdAt = 0L,
-                updatedAt = 0L,
-            )
-        }
-
-        private const val ONBOARDING_COMPLETED_KEY = "onboarding_completed"
-        private const val EMPTY_RULES_JSON = """{"rules":[]}"""
     }
 }

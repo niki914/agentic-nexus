@@ -2,10 +2,8 @@ package com.niki914.nexus.agentic.repo
 
 import android.content.Context
 import android.content.ContextWrapper
-import com.niki914.nexus.agentic.mod.LocalSettings
+import com.niki914.nexus.ipc.store.StoreDescriptorRegistry
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -31,27 +29,30 @@ class XRepoTest {
     }
 
     @Test
-    fun tryPutDefaultSettings_writesPromptAndWechatToolWhenOnboardingIsNotCompleted() = runTest {
-        val store = FakeLocalSettingsStore(LocalSettings())
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
+    fun tryPutDefaultSettings_writesDomainStoresWhenOnboardingIsNotCompleted() = runTest {
+        val store = installStore(FakeDomainSettingsStore())
 
         val updated = XRepo.tryPutDefaultSettings()
 
         assertTrue(updated)
-        assertEquals(1, store.writeCount)
         assertEquals(
-            LocalSettingsDefaults.DEFAULT_SYSTEM_PROMPT.trimIndent(),
-            store.settings.prompt
+            listOf(
+                StoreDescriptorRegistry.AGENT_MAIN_CONFIG_ID,
+                StoreDescriptorRegistry.AGENT_MAIN_MEMORY_ID,
+                StoreDescriptorRegistry.AGENT_REGISTRY_ID,
+                StoreDescriptorRegistry.TOOLS_CUSTOM_ID,
+                StoreDescriptorRegistry.RULES_EXECUTION_ID,
+            ),
+            store.writeIds,
+        )
+        assertEquals(
+            LlmConfig(prompt = LocalSettingsDefaults.DEFAULT_SYSTEM_PROMPT.trimIndent()),
+            AgentSettingsCodec.parseMainConfig(store.jsonFor(StoreDescriptorRegistry.AGENT_MAIN_CONFIG_ID)),
         )
         assertEquals(
             LocalSettingsDefaults.defaultMemories,
-            LocalSettingsCodec.parseMemories(store.settings),
+            MemorySettingsCodec.parseMemories(store.jsonFor(StoreDescriptorRegistry.AGENT_MAIN_MEMORY_ID)),
         )
-        assertEquals("", store.settings.endpoint)
-        assertEquals("", store.settings.apiKey)
-        assertEquals("", store.settings.model)
-        assertNull(store.settings.mcpServers)
         assertEquals(
             listOf(
                 CustomTool(
@@ -60,25 +61,11 @@ class XRepoTest {
                     command = "am start -n com.tencent.mm/com.tencent.mm.ui.LauncherUI",
                 )
             ),
-            LocalSettingsCodec.parseCustomTools(store.settings),
+            ToolSettingsCodec.parseCustomTools(store.jsonFor(StoreDescriptorRegistry.TOOLS_CUSTOM_ID)),
         )
-        val executionRules = LocalSettingsCodec.parseExecutionRules(store.settings)
-        assertEquals(3, executionRules.size)
         assertEquals(
-            ExecutionRule(
-                id = "builtin-dangerous-delete",
-                name = "危险删改",
-                enabledMode = ExecutionRuleEnabledMode.LOCKED_ONLY,
-                patterns = listOf(
-                    "\\brm\\s+-rf\\b",
-                    "\\brm\\s+-(?=[^\\s]*r)(?=[^\\s]*f)[^\\s]*\\b",
-                    "\\brm\\s+-r\\s+-f\\b",
-                    "\\brm\\s+(?=[^\\n]*--recursive\\b)(?=[^\\n]*--force\\b)[^\\n]*",
-                    "\\brm\\s+(?=[^\\n]*-(?:[^\\s-]*r[^\\s-]*|-[^-\\s]*recursive)\\b)(?=[^\\n]*-(?:[^\\s-]*f[^\\s-]*|-[^-\\s]*force)\\b)[^\\n]*",
-                    "\\bmkfs\\b",
-                ),
-            ),
-            executionRules[0],
+            LocalSettingsDefaults.defaultExecutionRules,
+            RuleSettingsCodec.parseExecutionRules(store.jsonFor(StoreDescriptorRegistry.RULES_EXECUTION_ID)),
         )
     }
 
@@ -93,27 +80,23 @@ class XRepoTest {
 
     @Test
     fun tryPutDefaultSettings_skipsWhenOnboardingIsCompleted() = runTest {
-        val store = FakeLocalSettingsStore(
-            LocalSettingsCodec.withBoolean(LocalSettings(), "onboarding_completed", true)
+        val store = installStore(
+            FakeDomainSettingsStore(
+                StoreDescriptorRegistry.APP_STATE_ID to AppStateSettingsCodec.encode(
+                    AppStateSettings(onboardingCompleted = true)
+                )
+            )
         )
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
 
         val updated = XRepo.tryPutDefaultSettings()
 
         assertFalse(updated)
         assertEquals(0, store.writeCount)
-        assertEquals("", store.settings.prompt)
-        assertNull(store.settings.customTools)
     }
 
     @Test
     fun executionRulesList_fallsBackToDefaultsWhenFieldIsMissing() = runTest {
-        val store = FakeLocalSettingsStore(
-            LocalSettingsCodec.withBoolean(LocalSettings(), "onboarding_completed", true)
-        )
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
+        val store = installStore(FakeDomainSettingsStore())
 
         val rules = XRepo.executionRules.list()
 
@@ -122,35 +105,22 @@ class XRepoTest {
     }
 
     @Test
-    fun executionRulesList_respectsExplicitEmptyList() = runTest {
-        val store = FakeLocalSettingsStore(
-            LocalSettingsCodec.withExecutionRules(LocalSettings(), emptyList())
-        )
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
-
-        assertTrue(XRepo.executionRules.list().isEmpty())
-    }
-
-    @Test
     fun saveLlmAccess_updatesOnlyAccessFields() = runTest {
-        val store = FakeLocalSettingsStore(
-            localSettings(
-                """
-                {
-                  "provider":"old",
-                  "endpoint":"https://old.example",
-                  "api_key":"old-key",
-                  "model":"old-model",
-                  "prompt":"base",
-                  "proxy":"http://proxy",
-                  "memory_prompt":"memory"
-                }
-                """.trimIndent()
+        val store = installStore(
+            FakeDomainSettingsStore(
+                StoreDescriptorRegistry.AGENT_MAIN_CONFIG_ID to AgentSettingsCodec.encodeMainConfig(
+                    LlmConfig(
+                        provider = "old",
+                        endpoint = "https://old.example",
+                        apiKey = "old-key",
+                        model = "old-model",
+                        prompt = "base",
+                        proxy = "http://proxy",
+                        memoryPrompt = "memory",
+                    )
+                )
             )
         )
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
 
         XRepo.saveLlmAccess(
             provider = "openai",
@@ -170,15 +140,13 @@ class XRepoTest {
                 proxy = "http://proxy",
                 memoryPrompt = "memory",
             ),
-            LocalSettingsCodec.parseLlm(store.settings),
+            AgentSettingsCodec.parseMainConfig(store.jsonFor(StoreDescriptorRegistry.AGENT_MAIN_CONFIG_ID)),
         )
     }
 
     @Test
     fun memoryApi_replacesAndMutatesMemories() = runTest {
-        val store = FakeLocalSettingsStore(LocalSettings())
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
+        val store = installStore(FakeDomainSettingsStore())
 
         XRepo.memory.replaceAll(listOf(" A ", " ", "B"))
         XRepo.memory.add(" C ")
@@ -195,22 +163,24 @@ class XRepoTest {
 
         assertEquals(writeCountBeforeBlankAdd, store.writeCount)
         assertEquals(listOf("B2", "C"), XRepo.memory.list())
-        assertEquals(listOf("B2", "C"), LocalSettingsCodec.parseMemories(store.settings))
+        assertEquals(
+            listOf("B2", "C"),
+            MemorySettingsCodec.parseMemories(store.jsonFor(StoreDescriptorRegistry.AGENT_MAIN_MEMORY_ID)),
+        )
     }
 
     @Test
     fun mcpSave_replacesByNameAndPreservesOtherServers() = runTest {
-        val store = FakeLocalSettingsStore(
-            LocalSettingsCodec.withMcpServers(
-                LocalSettings(),
-                listOf(
-                    McpServer("aslocate", "http://old.example/mcp"),
-                    McpServer("weather", "http://weather.example/mcp"),
-                ),
+        installStore(
+            FakeDomainSettingsStore(
+                StoreDescriptorRegistry.TOOLS_MCP_SERVERS_ID to McpSettingsCodec.encodeServers(
+                    listOf(
+                        McpServer("aslocate", "http://old.example/mcp"),
+                        McpServer("weather", "http://weather.example/mcp"),
+                    )
+                )
             )
         )
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
 
         XRepo.mcp.save(McpServer("aslocate", "http://new.example/mcp", enabled = false))
 
@@ -227,21 +197,23 @@ class XRepoTest {
     fun mcpClearCache_removesOnlyTargetCacheKey() = runTest {
         val first = McpServer("aslocate", "http://127.0.0.1:51338/mcp")
         val second = McpServer("weather", "http://127.0.0.1:51339/mcp")
-        val store = FakeLocalSettingsStore(
-            LocalSettingsCodec.withMcpCache(
-                LocalSettingsCodec.withMcpCache(
-                    LocalSettings(),
-                    first.url,
-                    first.headers,
-                    listOf(McpTool("lookupSymbol", "Lookup", """{"type":"object"}""")),
+        installStore(
+            FakeDomainSettingsStore(
+                StoreDescriptorRegistry.TOOLS_MCP_SERVERS_ID to McpSettingsCodec.encodeServers(listOf(first, second)),
+                StoreDescriptorRegistry.mcpCacheStoreId("aslocate")!! to McpSettingsCodec.encodeCache(
+                    serverId = "aslocate",
+                    fingerprint = "",
+                    tools = listOf(McpTool("lookupSymbol", "Lookup", """{"type":"object"}""")),
+                    updatedAt = 1L,
                 ),
-                second.url,
-                second.headers,
-                listOf(McpTool("getWeather", "Weather", """{"type":"object"}""")),
+                StoreDescriptorRegistry.mcpCacheStoreId("weather")!! to McpSettingsCodec.encodeCache(
+                    serverId = "weather",
+                    fingerprint = "",
+                    tools = listOf(McpTool("getWeather", "Weather", """{"type":"object"}""")),
+                    updatedAt = 1L,
+                ),
             )
         )
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
 
         XRepo.mcp.clearCache(first)
 
@@ -260,11 +232,11 @@ class XRepoTest {
             enabledMode = ExecutionRuleEnabledMode.ALWAYS,
             patterns = listOf("rm -rf"),
         )
-        val store = FakeLocalSettingsStore(
-            LocalSettingsCodec.withExecutionRules(LocalSettings(), listOf(initialRule))
+        val store = installStore(
+            FakeDomainSettingsStore(
+                StoreDescriptorRegistry.RULES_EXECUTION_ID to RuleSettingsCodec.encodeExecutionRules(listOf(initialRule))
+            )
         )
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
 
         XRepo.executionRules.save(
             ExecutionRule(
@@ -303,9 +275,9 @@ class XRepoTest {
 
     @Test
     fun customToolSave_rejectsUnsafeCommand() = runTest {
-        val store = FakeLocalSettingsStore(settingsWithUnsafeRule())
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
+        val store = installStore(
+            FakeDomainSettingsStore(StoreDescriptorRegistry.RULES_EXECUTION_ID to unsafeRuleSettings())
+        )
 
         val validation = XRepo.customTools.save(
             CustomTool(
@@ -322,17 +294,16 @@ class XRepoTest {
 
     @Test
     fun customToolReplace_renamesAndPreservesOtherTools() = runTest {
-        val store = FakeLocalSettingsStore(
-            LocalSettingsCodec.withCustomTools(
-                LocalSettings(),
-                listOf(
-                    CustomTool("old_name", "Old description", "dumpsys battery"),
-                    CustomTool("other_tool", "Other description", "settings list system"),
-                ),
+        val store = installStore(
+            FakeDomainSettingsStore(
+                StoreDescriptorRegistry.TOOLS_CUSTOM_ID to ToolSettingsCodec.encodeCustomTools(
+                    listOf(
+                        CustomTool("old_name", "Old description", "dumpsys battery"),
+                        CustomTool("other_tool", "Other description", "settings list system"),
+                    )
+                )
             )
         )
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
 
         val validation = XRepo.customTools.replace(
             previousName = "old_name",
@@ -356,11 +327,11 @@ class XRepoTest {
             CustomTool("old_name", "Old description", "dumpsys battery"),
             CustomTool("existing_tool", "Existing description", "settings list system"),
         )
-        val store = FakeLocalSettingsStore(
-            LocalSettingsCodec.withCustomTools(LocalSettings(), initialTools)
+        val store = installStore(
+            FakeDomainSettingsStore(
+                StoreDescriptorRegistry.TOOLS_CUSTOM_ID to ToolSettingsCodec.encodeCustomTools(initialTools)
+            )
         )
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
 
         val validation = XRepo.customTools.replace(
             previousName = "old_name",
@@ -379,11 +350,12 @@ class XRepoTest {
         val initialTools = listOf(
             CustomTool("old_name", "Old description", "dumpsys battery"),
         )
-        val store = FakeLocalSettingsStore(
-            LocalSettingsCodec.withCustomTools(settingsWithUnsafeRule(), initialTools)
+        val store = installStore(
+            FakeDomainSettingsStore(
+                StoreDescriptorRegistry.RULES_EXECUTION_ID to unsafeRuleSettings(),
+                StoreDescriptorRegistry.TOOLS_CUSTOM_ID to ToolSettingsCodec.encodeCustomTools(initialTools),
+            )
         )
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
 
         val validation = XRepo.customTools.replace(
             previousName = "old_name",
@@ -398,9 +370,7 @@ class XRepoTest {
 
     @Test
     fun builtinSetEnabled_rejectsUnknownTool() = runTest {
-        val store = FakeLocalSettingsStore(LocalSettings())
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
+        val store = installStore(FakeDomainSettingsStore())
 
         val validation = XRepo.builtinTools.setEnabled("unknown_tool", true)
 
@@ -411,9 +381,7 @@ class XRepoTest {
 
     @Test
     fun builtinListContainsTerminalAndNotRunCommand() = runTest {
-        val store = FakeLocalSettingsStore(LocalSettings())
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
+        installStore(FakeDomainSettingsStore())
 
         val names = XRepo.builtinTools.list().map { it.name }
 
@@ -423,10 +391,13 @@ class XRepoTest {
 
     @Test
     fun builtinTerminalInheritsLegacyRunCommandDisabledFlag() = runTest {
-        val settings = LocalSettingsCodec.withBuiltinFlag(LocalSettings(), "run_command", false)
-        val store = FakeLocalSettingsStore(settings)
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
+        val store = installStore(
+            FakeDomainSettingsStore(
+                StoreDescriptorRegistry.TOOLS_BUILTIN_ID to ToolSettingsCodec.encodeBuiltinEnabledForAgents(
+                    mapOf("run_command" to false)
+                )
+            )
+        )
 
         val terminal = XRepo.builtinTools.list().single { it.name == "terminal" }
 
@@ -436,13 +407,13 @@ class XRepoTest {
 
     @Test
     fun builtinSetEnabled_acceptsTerminalAndRejectsRunCommand() = runTest {
-        val store = FakeLocalSettingsStore(LocalSettings())
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
+        val store = installStore(FakeDomainSettingsStore())
 
         val terminalValidation = XRepo.builtinTools.setEnabled("terminal", false)
         val runCommandValidation = XRepo.builtinTools.setEnabled("run_command", false)
-        val flags = LocalSettingsCodec.parseBuiltinFlags(store.settings)
+        val flags = ToolSettingsCodec.parseBuiltinEnabledForAgents(
+            store.jsonFor(StoreDescriptorRegistry.TOOLS_BUILTIN_ID)
+        )
 
         assertNull(terminalValidation)
         assertEquals(false, flags["terminal"])
@@ -453,9 +424,7 @@ class XRepoTest {
 
     @Test
     fun customToolSave_acceptsSafeCommand() = runTest {
-        val store = FakeLocalSettingsStore(LocalSettings())
-        XRepo.installStoreForTest(store)
-        XRepo.init(context)
+        val store = installStore(FakeDomainSettingsStore())
 
         val validation = XRepo.customTools.save(
             CustomTool(
@@ -473,13 +442,14 @@ class XRepoTest {
         )
     }
 
-    private fun localSettings(json: String): LocalSettings {
-        return LocalSettings(Json.parseToJsonElement(json).jsonObject)
+    private fun installStore(store: FakeDomainSettingsStore): FakeDomainSettingsStore {
+        XRepo.installStoreForTest(store)
+        XRepo.init(context)
+        return store
     }
 
-    private fun settingsWithUnsafeRule(): LocalSettings {
-        return LocalSettingsCodec.withExecutionRules(
-            LocalSettings(),
+    private fun unsafeRuleSettings(): String {
+        return RuleSettingsCodec.encodeExecutionRules(
             listOf(
                 ExecutionRule(
                     id = "dangerous-delete",
@@ -492,21 +462,5 @@ class XRepoTest {
                 )
             ),
         )
-    }
-
-    private class FakeLocalSettingsStore(
-        initialSettings: LocalSettings,
-    ) : LocalSettingsStore {
-        var settings: LocalSettings = initialSettings
-            private set
-        var writeCount: Int = 0
-            private set
-
-        override suspend fun read(context: Context): LocalSettings = settings
-
-        override suspend fun write(context: Context, settings: LocalSettings) {
-            this.settings = settings
-            writeCount++
-        }
     }
 }

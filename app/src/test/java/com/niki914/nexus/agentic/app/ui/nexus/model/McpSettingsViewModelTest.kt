@@ -3,9 +3,10 @@ package com.niki914.nexus.agentic.app.ui.nexus.model
 import android.content.Context
 import android.content.ContextWrapper
 import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.repo.LocalSettingsStore
+import com.niki914.nexus.agentic.repo.FakeDomainSettingsStore
+import com.niki914.nexus.agentic.repo.McpSettingsCodec
 import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.ipc.store.StoreDescriptorRegistry
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -13,8 +14,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -41,7 +40,7 @@ class McpSettingsViewModelTest {
     @Test
     fun load_readsSavedServersIntoUiState() = runTest {
         installStore(
-            buildLocalSettings(
+            mcpSettings(
                 listOf(
                     McpServer(name = "alpha", url = "http://127.0.0.1:3000/mcp", enabled = true),
                     McpServer(name = "beta", url = "http://127.0.0.1:4000/mcp", enabled = false),
@@ -63,7 +62,7 @@ class McpSettingsViewModelTest {
 
     @Test
     fun save_persistsTrimmedServerAndUpdatesUiState() = runTest {
-        installStore(LocalSettings())
+        installStore()
         val viewModel = McpSettingsViewModel()
 
         viewModel.sendIntent(McpSettingsIntent.Load)
@@ -86,7 +85,7 @@ class McpSettingsViewModelTest {
     @Test
     fun save_rejectsDuplicateName() = runTest {
         installStore(
-            buildLocalSettings(
+            mcpSettings(
                 listOf(McpServer(name = "demo", url = "http://127.0.0.1:1/mcp", enabled = true))
             )
         )
@@ -108,7 +107,7 @@ class McpSettingsViewModelTest {
 
     @Test
     fun save_withBlankName_setsNameErrorAndSkipsPersistence() = runTest {
-        installStore(LocalSettings())
+        installStore()
         val viewModel = McpSettingsViewModel()
 
         viewModel.sendIntent(McpSettingsIntent.Load)
@@ -126,7 +125,7 @@ class McpSettingsViewModelTest {
 
     @Test
     fun save_withBlankName_emitsFocusNameEveryTime() = runTest {
-        installStore(LocalSettings())
+        installStore()
         val viewModel = McpSettingsViewModel()
         val effects = mutableListOf<McpSettingsEffect>()
         val collectJob = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -150,7 +149,7 @@ class McpSettingsViewModelTest {
 
     @Test
     fun save_withInvalidHeadersJson_setsHeadersErrorAndSkipsPersistence() = runTest {
-        installStore(LocalSettings())
+        installStore()
         val viewModel = McpSettingsViewModel()
 
         viewModel.sendIntent(McpSettingsIntent.Load)
@@ -170,7 +169,7 @@ class McpSettingsViewModelTest {
 
     @Test
     fun save_withNonHttpScheme_setsUrlErrorAndSkipsPersistence() = runTest {
-        installStore(LocalSettings())
+        installStore()
         val viewModel = McpSettingsViewModel()
 
         viewModel.sendIntent(McpSettingsIntent.Load)
@@ -189,7 +188,7 @@ class McpSettingsViewModelTest {
 
     @Test
     fun save_withHeaders_persistsHeadersAndEmitsExitDetail() = runTest {
-        installStore(LocalSettings())
+        installStore()
         val viewModel = McpSettingsViewModel()
         val effects = mutableListOf<McpSettingsEffect>()
         val collectJob = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -229,7 +228,7 @@ class McpSettingsViewModelTest {
     @Test
     fun requestDelete_deletesServerAndEmitsExitDetail() = runTest {
         installStore(
-            buildLocalSettings(
+            mcpSettings(
                 listOf(
                     McpServer(
                         name = "demo",
@@ -261,7 +260,7 @@ class McpSettingsViewModelTest {
     @Test
     fun requestDelete_refreshesOtherLoadedMcpSettingsViewModels() = runTest {
         installStore(
-            buildLocalSettings(
+            mcpSettings(
                 listOf(
                     McpServer(
                         name = "demo",
@@ -291,22 +290,18 @@ class McpSettingsViewModelTest {
     @Test
     fun startEdit_formatsHeadersInputAsSortedMultilineJson() = runTest {
         installStore(
-            localSettings(
-                """
-                {
-                  "mcp_servers": [
-                    {
-                      "name": "demo",
-                      "url": "http://127.0.0.1:51338/mcp",
-                      "enabled": true,
-                      "headers": {
-                        "X-Trace-Id": "trace-1",
-                        "Authorization": "Bearer xxx"
-                      }
-                    }
-                  ]
-                }
-                """.trimIndent()
+            mcpSettings(
+                listOf(
+                    McpServer(
+                        name = "demo",
+                        url = "http://127.0.0.1:51338/mcp",
+                        enabled = true,
+                        headers = mapOf(
+                            "X-Trace-Id" to "trace-1",
+                            "Authorization" to "Bearer xxx",
+                        ),
+                    )
+                )
             )
         )
         val viewModel = McpSettingsViewModel()
@@ -329,7 +324,7 @@ class McpSettingsViewModelTest {
 
     @Test
     fun formState_tracksUnsavedChangesForCreateAndRestoredFields() = runTest {
-        installStore(LocalSettings())
+        installStore()
         val viewModel = McpSettingsViewModel()
 
         viewModel.sendIntent(McpSettingsIntent.Load)
@@ -350,22 +345,18 @@ class McpSettingsViewModelTest {
     @Test
     fun formState_comparesValidHeadersByNormalizedMap() = runTest {
         installStore(
-            localSettings(
-                """
-                {
-                  "mcp_servers": [
-                    {
-                      "name": "demo",
-                      "url": "http://127.0.0.1:51338/mcp",
-                      "enabled": true,
-                      "headers": {
-                        "X-Trace-Id": "trace-1",
-                        "Authorization": "Bearer xxx"
-                      }
-                    }
-                  ]
-                }
-                """.trimIndent()
+            mcpSettings(
+                listOf(
+                    McpServer(
+                        name = "demo",
+                        url = "http://127.0.0.1:51338/mcp",
+                        enabled = true,
+                        headers = mapOf(
+                            "X-Trace-Id" to "trace-1",
+                            "Authorization" to "Bearer xxx",
+                        ),
+                    )
+                )
             )
         )
         val viewModel = McpSettingsViewModel()
@@ -396,7 +387,7 @@ class McpSettingsViewModelTest {
     @Test
     fun save_renameFailureDoesNotDeleteExistingServer() = runTest {
         val existing = McpServer(name = "old", url = "http://127.0.0.1:1/mcp", enabled = true)
-        installStore(buildLocalSettings(listOf(existing)), failWrites = true)
+        installStore(mcpSettings(listOf(existing)), failWrites = true)
         val viewModel = McpSettingsViewModel()
 
         viewModel.sendIntent(McpSettingsIntent.Load)
@@ -412,37 +403,14 @@ class McpSettingsViewModelTest {
     }
 
     private fun installStore(
-        initialSettings: LocalSettings,
+        vararg initialJson: Pair<String, String>,
         failWrites: Boolean = false,
     ) {
-        XRepo.installStoreForTest(FakeLocalSettingsStore(initialSettings, failWrites))
+        XRepo.installStoreForTest(FakeDomainSettingsStore(*initialJson, ownerWriteSucceeds = !failWrites))
         XRepo.init(context)
     }
 
-    private fun buildLocalSettings(items: List<McpServer>): LocalSettings {
-        val serversJson = items.joinToString(separator = ",") { server ->
-            """{"name":"${server.name}","url":"${server.url}","enabled":${server.enabled}}"""
-        }
-        return localSettings("""{"mcp_servers":[$serversJson]}""")
-    }
-
-    private fun localSettings(json: String): LocalSettings {
-        return LocalSettings(Json.parseToJsonElement(json).jsonObject)
-    }
-
-    private class FakeLocalSettingsStore(
-        initialSettings: LocalSettings,
-        private val failWrites: Boolean,
-    ) : LocalSettingsStore {
-        private var settings: LocalSettings = initialSettings
-
-        override suspend fun read(context: Context): LocalSettings = settings
-
-        override suspend fun write(context: Context, settings: LocalSettings) {
-            if (failWrites) {
-                error("write failed")
-            }
-            this.settings = settings
-        }
+    private fun mcpSettings(items: List<McpServer>): Pair<String, String> {
+        return StoreDescriptorRegistry.TOOLS_MCP_SERVERS_ID to McpSettingsCodec.encodeServers(items)
     }
 }

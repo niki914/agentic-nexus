@@ -3,10 +3,11 @@ package com.niki914.nexus.agentic.app.ui.nexus.model
 import android.content.Context
 import android.content.ContextWrapper
 import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.repo.LocalSettingsCodec
-import com.niki914.nexus.agentic.repo.LocalSettingsStore
+import com.niki914.nexus.agentic.repo.FakeDomainSettingsStore
+import com.niki914.nexus.agentic.repo.RuleSettingsCodec
+import com.niki914.nexus.agentic.repo.ToolSettingsCodec
 import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.ipc.store.StoreDescriptorRegistry
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -41,7 +42,7 @@ class CustomToolSettingsViewModelTest {
 
     @Test
     fun save_rejectsBlankNameAndFocusesName() = runTest {
-        installStore(LocalSettings())
+        installStore()
         val viewModel = CustomToolSettingsViewModel()
         val effects = collectEffects(viewModel, count = 1)
 
@@ -63,7 +64,7 @@ class CustomToolSettingsViewModelTest {
 
     @Test
     fun save_rejectsBlankDescriptionAndFocusesDescription() = runTest {
-        installStore(LocalSettings())
+        installStore()
         val viewModel = CustomToolSettingsViewModel()
         val effects = collectEffects(viewModel, count = 1)
 
@@ -88,7 +89,7 @@ class CustomToolSettingsViewModelTest {
 
     @Test
     fun save_rejectsBlankCommandAndFocusesCommand() = runTest {
-        installStore(LocalSettings())
+        installStore()
         val viewModel = CustomToolSettingsViewModel()
         val effects = collectEffects(viewModel, count = 1)
 
@@ -110,7 +111,7 @@ class CustomToolSettingsViewModelTest {
 
     @Test
     fun save_createsToolAndExits() = runTest {
-        installStore(LocalSettings())
+        installStore()
         val viewModel = CustomToolSettingsViewModel()
         val effects = collectEffects(viewModel, count = 1)
 
@@ -132,8 +133,7 @@ class CustomToolSettingsViewModelTest {
     @Test
     fun save_renamesToolAndExits() = runTest {
         installStore(
-            LocalSettingsCodec.withCustomTools(
-                LocalSettings(),
+            StoreDescriptorRegistry.TOOLS_CUSTOM_ID to ToolSettingsCodec.encodeCustomTools(
                 listOf(
                     CustomTool("old_name", "Old description", "dumpsys battery"),
                     CustomTool("other_tool", "Other description", "settings list system"),
@@ -167,8 +167,7 @@ class CustomToolSettingsViewModelTest {
     @Test
     fun save_mapsUnsafeCommandToCommandError() = runTest {
         installStore(
-            LocalSettingsCodec.withExecutionRules(
-                LocalSettings(),
+            StoreDescriptorRegistry.RULES_EXECUTION_ID to RuleSettingsCodec.encodeExecutionRules(
                 listOf(
                     ExecutionRule(
                         id = "dangerous-delete",
@@ -200,8 +199,7 @@ class CustomToolSettingsViewModelTest {
     @Test
     fun deleteCurrent_removesToolAndExits() = runTest {
         installStore(
-            LocalSettingsCodec.withCustomTools(
-                LocalSettings(),
+            StoreDescriptorRegistry.TOOLS_CUSTOM_ID to ToolSettingsCodec.encodeCustomTools(
                 listOf(CustomTool("battery_status", "Show battery state", "dumpsys battery")),
             )
         )
@@ -222,7 +220,7 @@ class CustomToolSettingsViewModelTest {
 
     @Test
     fun formState_tracksUnsavedChangesForCreateAndRestoredTrimmedFields() = runTest {
-        installStore(LocalSettings())
+        installStore()
         val viewModel = CustomToolSettingsViewModel()
 
         viewModel.sendIntent(CustomToolSettingsIntent.Load)
@@ -243,8 +241,7 @@ class CustomToolSettingsViewModelTest {
     @Test
     fun formState_tracksUnsavedChangesForEditedEnabledAndRestoredValue() = runTest {
         installStore(
-            LocalSettingsCodec.withCustomTools(
-                LocalSettings(),
+            StoreDescriptorRegistry.TOOLS_CUSTOM_ID to ToolSettingsCodec.encodeCustomTools(
                 listOf(CustomTool("battery_status", "Show battery state", "dumpsys battery")),
             )
         )
@@ -265,8 +262,8 @@ class CustomToolSettingsViewModelTest {
         assertFalse(viewModel.uiStateFlow.value.formState.hasUnsavedChanges)
     }
 
-    private fun installStore(initialSettings: LocalSettings) {
-        XRepo.installStoreForTest(FakeLocalSettingsStore(initialSettings))
+    private fun installStore(vararg initialJson: Pair<String, String>) {
+        XRepo.installStoreForTest(FakeDomainSettingsStore(*initialJson))
         XRepo.init(context)
     }
 
@@ -292,15 +289,5 @@ class CustomToolSettingsViewModelTest {
         sendIntent(CustomToolSettingsIntent.DescriptionChanged(description))
         sendIntent(CustomToolSettingsIntent.CommandChanged(command))
         sendIntent(CustomToolSettingsIntent.Save)
-    }
-
-    private class FakeLocalSettingsStore(
-        private var settings: LocalSettings,
-    ) : LocalSettingsStore {
-        override suspend fun read(context: Context): LocalSettings = settings
-
-        override suspend fun write(context: Context, settings: LocalSettings) {
-            this.settings = settings
-        }
     }
 }

@@ -3,11 +3,11 @@ package com.niki914.nexus.agentic.app.ui.nexus.model
 import android.content.Context
 import android.content.ContextWrapper
 import com.niki914.nexus.agentic.app.R
-import com.niki914.nexus.agentic.mod.LocalSettings
-import com.niki914.nexus.agentic.repo.LocalSettingsCodec
+import com.niki914.nexus.agentic.repo.FakeDomainSettingsStore
 import com.niki914.nexus.agentic.repo.LocalSettingsDefaults
-import com.niki914.nexus.agentic.repo.LocalSettingsStore
+import com.niki914.nexus.agentic.repo.RuleSettingsCodec
 import com.niki914.nexus.agentic.repo.XRepo
+import com.niki914.nexus.ipc.store.StoreDescriptorRegistry
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -40,7 +40,7 @@ class ExecutionRulesSettingsViewModelTest {
 
     @Test
     fun load_readsRealRules() = runTest {
-        installStore(settingsWith(sampleRule()))
+        installStore(rulesSettings(sampleRule()))
         val viewModel = ExecutionRulesSettingsViewModel()
 
         viewModel.sendIntent(ExecutionRulesSettingsIntent.Load)
@@ -54,7 +54,7 @@ class ExecutionRulesSettingsViewModelTest {
 
     @Test
     fun itemEnabledChanged_updatesEnabledMode() = runTest {
-        installStore(settingsWith(sampleRule()))
+        installStore(rulesSettings(sampleRule()))
         val viewModel = ExecutionRulesSettingsViewModel()
 
         viewModel.sendIntent(ExecutionRulesSettingsIntent.Load)
@@ -68,7 +68,7 @@ class ExecutionRulesSettingsViewModelTest {
 
     @Test
     fun save_createsRuleAndExits() = runTest {
-        installStore(LocalSettings())
+        installStore(rulesSettings(LocalSettingsDefaults.defaultExecutionRules))
         val viewModel = ExecutionRulesSettingsViewModel()
         val effects = collectEffects(viewModel, count = 1)
 
@@ -89,7 +89,7 @@ class ExecutionRulesSettingsViewModelTest {
 
     @Test
     fun save_invalidFields_setsFieldErrorsAndFocusesFirstInvalidField() = runTest {
-        installStore(LocalSettings())
+        installStore()
         val viewModel = ExecutionRulesSettingsViewModel()
         val effects = collectEffects(viewModel, count = 2)
 
@@ -119,7 +119,7 @@ class ExecutionRulesSettingsViewModelTest {
 
     @Test
     fun save_editsExistingRuleAndRequestDeleteRemovesIt() = runTest {
-        installStore(settingsWith(sampleRule()))
+        installStore(rulesSettings(sampleRule()))
         val viewModel = ExecutionRulesSettingsViewModel()
         val effects = collectEffects(viewModel, count = 2)
 
@@ -152,13 +152,17 @@ class ExecutionRulesSettingsViewModelTest {
         )
     }
 
-    private fun installStore(initialSettings: LocalSettings) {
-        XRepo.installStoreForTest(FakeLocalSettingsStore(initialSettings))
+    private fun installStore(vararg initialJson: Pair<String, String>) {
+        XRepo.installStoreForTest(FakeDomainSettingsStore(*initialJson))
         XRepo.init(context)
     }
 
-    private fun settingsWith(vararg rules: ExecutionRule): LocalSettings {
-        return LocalSettingsCodec.withExecutionRules(LocalSettings(), rules.toList())
+    private fun rulesSettings(vararg rules: ExecutionRule): Pair<String, String> {
+        return StoreDescriptorRegistry.RULES_EXECUTION_ID to RuleSettingsCodec.encodeExecutionRules(rules.toList())
+    }
+
+    private fun rulesSettings(rules: List<ExecutionRule>): Pair<String, String> {
+        return StoreDescriptorRegistry.RULES_EXECUTION_ID to RuleSettingsCodec.encodeExecutionRules(rules)
     }
 
     private fun sampleRule(): ExecutionRule {
@@ -179,15 +183,5 @@ class ExecutionRulesSettingsViewModelTest {
             viewModel.uiEffect.take(count).toList(effects)
         }
         return effects
-    }
-
-    private class FakeLocalSettingsStore(
-        private var settings: LocalSettings,
-    ) : LocalSettingsStore {
-        override suspend fun read(context: Context): LocalSettings = settings
-
-        override suspend fun write(context: Context, settings: LocalSettings) {
-            this.settings = settings
-        }
     }
 }
