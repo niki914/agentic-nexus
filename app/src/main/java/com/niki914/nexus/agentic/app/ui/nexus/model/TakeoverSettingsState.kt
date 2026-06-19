@@ -50,12 +50,17 @@ data class TakeoverRuleFormSnapshot(
 val TakeoverRuleFormState.hasUnsavedChanges: Boolean
     get() = initialSnapshot?.let { it != toSnapshot() } ?: false
 
+data class TakeoverDeleteConfirmationState(
+    val value: String,
+)
+
 data class TakeoverSettingsUiState(
     val items: List<TakeoverRuleItem> = emptyList(),
     val formState: TakeoverRuleFormState = TakeoverRuleFormState(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val inlineError: TakeoverInlineError? = null,
+    val deleteConfirmation: TakeoverDeleteConfirmationState? = null,
 )
 
 sealed interface TakeoverSettingsIntent {
@@ -68,7 +73,9 @@ sealed interface TakeoverSettingsIntent {
     data class EnabledChanged(val value: Boolean) : TakeoverSettingsIntent
     data class PatternsChanged(val value: String) : TakeoverSettingsIntent
     data object Save : TakeoverSettingsIntent
-    data object DeleteCurrent : TakeoverSettingsIntent
+    data object RequestDelete : TakeoverSettingsIntent
+    data object DismissDeleteConfirmation : TakeoverSettingsIntent
+    data object ConfirmDelete : TakeoverSettingsIntent
 }
 
 sealed interface TakeoverInlineError {
@@ -145,7 +152,11 @@ class TakeoverSettingsViewModel :
             }
 
             TakeoverSettingsIntent.Save -> save()
-            TakeoverSettingsIntent.DeleteCurrent -> deleteCurrent()
+            TakeoverSettingsIntent.RequestDelete -> requestDelete()
+            TakeoverSettingsIntent.DismissDeleteConfirmation -> updateState {
+                copy(deleteConfirmation = null)
+            }
+            TakeoverSettingsIntent.ConfirmDelete -> confirmDelete()
         }
     }
 
@@ -336,6 +347,23 @@ class TakeoverSettingsViewModel :
                 )
             }
         }
+    }
+
+    private fun requestDelete() {
+        val editingIndex = currentState.formState.editingIndex ?: return
+        val value = currentState.items.getOrNull(editingIndex)?.name ?: return
+        updateState {
+            copy(
+                deleteConfirmation = TakeoverDeleteConfirmationState(value = value),
+                inlineError = null,
+            )
+        }
+    }
+
+    private suspend fun confirmDelete() {
+        val confirmation = currentState.deleteConfirmation ?: return
+        updateState { copy(deleteConfirmation = null) }
+        deleteCurrent()
     }
 
     private suspend fun deleteCurrent() {

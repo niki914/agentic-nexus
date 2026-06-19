@@ -118,7 +118,7 @@ class ExecutionRulesSettingsViewModelTest {
     }
 
     @Test
-    fun save_editsExistingRuleAndDeleteCurrentRemovesIt() = runTest {
+    fun save_editsExistingRuleAndRequestDeleteRemovesIt() = runTest {
         installStore(settingsWith(sampleRule()))
         val viewModel = ExecutionRulesSettingsViewModel()
         val effects = collectEffects(viewModel, count = 2)
@@ -138,7 +138,8 @@ class ExecutionRulesSettingsViewModelTest {
         assertEquals(ExecutionRuleEnabledMode.ALWAYS, updated.enabledMode)
         assertEquals(listOf("pm uninstall"), updated.patterns)
 
-        viewModel.sendIntent(ExecutionRulesSettingsIntent.DeleteCurrent)
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.RequestDelete)
+        viewModel.sendIntent(ExecutionRulesSettingsIntent.ConfirmDelete)
         advanceUntilIdle()
 
         assertTrue(XRepo.executionRules.list().isEmpty())

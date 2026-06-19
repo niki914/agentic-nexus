@@ -13,6 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
+import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
@@ -20,6 +21,7 @@ import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.content.EditableSettingsDetailChrome
 import com.niki914.nexus.agentic.app.ui.nexus.content.EditableSettingsDetailFormScaffold
+import com.niki914.nexus.agentic.app.ui.nexus.model.McpDeleteConfirmationState
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpInlineError
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsEffect
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpSettingsIntent
@@ -43,9 +45,15 @@ fun McpServerDetailContent(
             uiState.formState.hasUnsavedChanges
         },
         onDelete = {
-            viewModel.sendIntent(McpSettingsIntent.DeleteCurrent)
+            viewModel.sendIntent(McpSettingsIntent.RequestDelete)
         },
         onDiscardChanges = onBack,
+        hasDeleteConfirmation = {
+            uiState.deleteConfirmation != null
+        },
+        onDismissDeleteConfirmation = {
+            viewModel.sendIntent(McpSettingsIntent.DismissDeleteConfirmation)
+        },
     ) {
         McpServerDetailContentBody(
             uiState = uiState,
@@ -67,6 +75,16 @@ fun McpServerDetailContent(
             },
             onSave = {
                 viewModel.sendIntent(McpSettingsIntent.Save)
+            },
+        )
+
+        McpDeleteConfirmationDialog(
+            state = uiState.deleteConfirmation,
+            onDismissRequest = {
+                viewModel.sendIntent(McpSettingsIntent.DismissDeleteConfirmation)
+            },
+            onConfirmClick = {
+                viewModel.sendIntent(McpSettingsIntent.ConfirmDelete)
             },
         )
     }
@@ -267,4 +285,22 @@ private fun McpServerDetailContentPreview() {
             )
         }
     }
+}
+
+@Composable
+private fun McpDeleteConfirmationDialog(
+    state: McpDeleteConfirmationState?,
+    onDismissRequest: () -> Unit,
+    onConfirmClick: () -> Unit,
+) {
+    ConfirmationLiquidDialog(
+        visible = state != null,
+        onDismissRequest = onDismissRequest,
+        title = stringResource(R.string.mcp_delete_dialog_title),
+        text = stringResource(R.string.mcp_delete_dialog_text, state?.value.orEmpty()),
+        negativeButtonText = stringResource(R.string.delete_dialog_cancel),
+        positiveButtonText = stringResource(R.string.delete_dialog_confirm),
+        onNegativeClick = onDismissRequest,
+        onPositiveClick = onConfirmClick,
+    )
 }

@@ -12,6 +12,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
@@ -19,6 +20,7 @@ import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsSegmentedSelector
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.model.TakeoverDeleteConfirmationState
 import com.niki914.nexus.agentic.app.ui.nexus.model.TakeoverRuleFormState
 import com.niki914.nexus.agentic.app.ui.nexus.model.TakeoverInlineError
 import com.niki914.nexus.agentic.app.ui.nexus.model.TakeoverSettingsEffect
@@ -44,9 +46,15 @@ fun TakeoverRuleDetailContent(
             uiState.formState.hasUnsavedChanges
         },
         onDelete = {
-            viewModel.sendIntent(TakeoverSettingsIntent.DeleteCurrent)
+            viewModel.sendIntent(TakeoverSettingsIntent.RequestDelete)
         },
         onDiscardChanges = onBack,
+        hasDeleteConfirmation = {
+            uiState.deleteConfirmation != null
+        },
+        onDismissDeleteConfirmation = {
+            viewModel.sendIntent(TakeoverSettingsIntent.DismissDeleteConfirmation)
+        },
     ) {
         TakeoverRuleDetailContentBody(
             uiState = uiState,
@@ -68,6 +76,16 @@ fun TakeoverRuleDetailContent(
             },
             onSave = {
                 viewModel.sendIntent(TakeoverSettingsIntent.Save)
+            },
+        )
+
+        TakeoverDeleteConfirmationDialog(
+            state = uiState.deleteConfirmation,
+            onDismissRequest = {
+                viewModel.sendIntent(TakeoverSettingsIntent.DismissDeleteConfirmation)
+            },
+            onConfirmClick = {
+                viewModel.sendIntent(TakeoverSettingsIntent.ConfirmDelete)
             },
         )
     }
@@ -291,4 +309,22 @@ private fun TakeoverRuleDetailRegexContentPreview() {
             )
         }
     }
+}
+
+@Composable
+private fun TakeoverDeleteConfirmationDialog(
+    state: TakeoverDeleteConfirmationState?,
+    onDismissRequest: () -> Unit,
+    onConfirmClick: () -> Unit,
+) {
+    ConfirmationLiquidDialog(
+        visible = state != null,
+        onDismissRequest = onDismissRequest,
+        title = stringResource(R.string.takeover_delete_dialog_title),
+        text = stringResource(R.string.takeover_delete_dialog_text, state?.value.orEmpty()),
+        negativeButtonText = stringResource(R.string.delete_dialog_cancel),
+        positiveButtonText = stringResource(R.string.delete_dialog_confirm),
+        onNegativeClick = onDismissRequest,
+        onPositiveClick = onConfirmClick,
+    )
 }

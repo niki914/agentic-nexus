@@ -227,7 +227,7 @@ class McpSettingsViewModelTest {
     }
 
     @Test
-    fun deleteCurrent_deletesServerAndEmitsExitDetail() = runTest {
+    fun requestDelete_deletesServerAndEmitsExitDetail() = runTest {
         installStore(
             buildLocalSettings(
                 listOf(
@@ -249,7 +249,8 @@ class McpSettingsViewModelTest {
         advanceUntilIdle()
         viewModel.sendIntent(McpSettingsIntent.StartEdit(0))
         advanceUntilIdle()
-        viewModel.sendIntent(McpSettingsIntent.DeleteCurrent)
+        viewModel.sendIntent(McpSettingsIntent.RequestDelete)
+        viewModel.sendIntent(McpSettingsIntent.ConfirmDelete)
         advanceUntilIdle()
 
         assertTrue(XRepo.mcp.list().isEmpty())
@@ -258,7 +259,7 @@ class McpSettingsViewModelTest {
     }
 
     @Test
-    fun deleteCurrent_refreshesOtherLoadedMcpSettingsViewModels() = runTest {
+    fun requestDelete_refreshesOtherLoadedMcpSettingsViewModels() = runTest {
         installStore(
             buildLocalSettings(
                 listOf(
@@ -279,7 +280,8 @@ class McpSettingsViewModelTest {
         assertEquals(1, listViewModel.uiStateFlow.value.items.size)
 
         detailViewModel.sendIntent(McpSettingsIntent.StartEdit(0))
-        detailViewModel.sendIntent(McpSettingsIntent.DeleteCurrent)
+        detailViewModel.sendIntent(McpSettingsIntent.RequestDelete)
+        detailViewModel.sendIntent(McpSettingsIntent.ConfirmDelete)
         advanceUntilIdle()
 
         assertTrue(XRepo.mcp.list().isEmpty())

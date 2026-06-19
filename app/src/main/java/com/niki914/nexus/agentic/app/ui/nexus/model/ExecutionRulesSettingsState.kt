@@ -40,12 +40,17 @@ data class ExecutionRuleFormSnapshot(
 val ExecutionRuleFormState.hasUnsavedChanges: Boolean
     get() = initialSnapshot?.let { it != toSnapshot() } ?: false
 
+data class ExecutionRuleDeleteConfirmationState(
+    val value: String,
+)
+
 data class ExecutionRulesSettingsUiState(
     val items: List<ExecutionRuleItem> = emptyList(),
     val formState: ExecutionRuleFormState = ExecutionRuleFormState(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val inlineError: ExecutionRulesInlineError? = null,
+    val deleteConfirmation: ExecutionRuleDeleteConfirmationState? = null,
 )
 
 sealed interface ExecutionRulesSettingsIntent {
@@ -57,7 +62,9 @@ sealed interface ExecutionRulesSettingsIntent {
     data class EnabledModeChanged(val value: ExecutionRuleEnabledMode) : ExecutionRulesSettingsIntent
     data class PatternsChanged(val value: String) : ExecutionRulesSettingsIntent
     data object Save : ExecutionRulesSettingsIntent
-    data object DeleteCurrent : ExecutionRulesSettingsIntent
+    data object RequestDelete : ExecutionRulesSettingsIntent
+    data object DismissDeleteConfirmation : ExecutionRulesSettingsIntent
+    data object ConfirmDelete : ExecutionRulesSettingsIntent
 }
 
 sealed interface ExecutionRulesInlineError {
@@ -127,7 +134,11 @@ class ExecutionRulesSettingsViewModel :
             }
 
             ExecutionRulesSettingsIntent.Save -> save()
-            ExecutionRulesSettingsIntent.DeleteCurrent -> deleteCurrent()
+            ExecutionRulesSettingsIntent.RequestDelete -> requestDelete()
+            ExecutionRulesSettingsIntent.DismissDeleteConfirmation -> updateState {
+                copy(deleteConfirmation = null)
+            }
+            ExecutionRulesSettingsIntent.ConfirmDelete -> confirmDelete()
         }
     }
 
@@ -326,6 +337,23 @@ class ExecutionRulesSettingsViewModel :
                 )
             }
         }
+    }
+
+    private fun requestDelete() {
+        val editingIndex = currentState.formState.editingIndex ?: return
+        val value = currentState.items.getOrNull(editingIndex)?.name ?: return
+        updateState {
+            copy(
+                deleteConfirmation = ExecutionRuleDeleteConfirmationState(value = value),
+                inlineError = null,
+            )
+        }
+    }
+
+    private suspend fun confirmDelete() {
+        val confirmation = currentState.deleteConfirmation ?: return
+        updateState { copy(deleteConfirmation = null) }
+        deleteCurrent()
     }
 
     private suspend fun deleteCurrent() {

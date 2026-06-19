@@ -142,6 +142,8 @@
     <string name="memory_delete_dialog_text">确定要删除这条记忆吗？\n\n%1$s</string>
     <string name="memory_delete_dialog_confirm">删除</string>
     <string name="memory_delete_dialog_cancel">取消</string>
+    <string name="delete_dialog_confirm">删除</string>
+    <string name="delete_dialog_cancel">取消</string>
     <string name="memory_error_load_failed">读取记忆失败：%1$s</string>
     <string name="memory_error_save_failed">保存记忆失败：%1$s</string>
     <string name="memory_error_delete_failed">删除记忆失败：%1$s</string>
@@ -151,6 +153,8 @@
     <string name="execution_rules_empty_action_hint">点击右上方，添加第一条执行规则。</string>
     <string name="execution_rules_loading">正在读取执行规则…</string>
     <string name="execution_rules_editor_title_create">新增执行规则</string>
+    <string name="execution_rules_delete_dialog_title">删除执行规则</string>
+    <string name="execution_rules_delete_dialog_text">确定要删除执行规则「%1$s」吗？此操作不可撤销。</string>
     <string name="execution_rules_editor_description">添加执行规则，以提高命令执行的安全性。除了脚本以外，应用所有的命令执行都会受策略管控。</string>
     <string name="execution_rules_field_name">策略名称</string>
     <string name="execution_rules_field_name_hint">例如：危险删改</string>
@@ -191,6 +195,8 @@
     <string name="takeover_error_save_failed_generic">保存接管规则失败</string>
     <string name="takeover_error_save_failed">保存接管规则失败：%1$s</string>
     <string name="takeover_error_delete_failed_generic">删除接管规则失败</string>
+    <string name="takeover_delete_dialog_title">删除接管规则</string>
+    <string name="takeover_delete_dialog_text">确定要删除接管规则「%1$s」吗？此操作不可撤销。</string>
     <string name="takeover_error_delete_failed">删除接管规则失败：%1$s</string>
     <string name="takeover_save_failed">保存失败：%1$s</string>
 
@@ -224,6 +230,8 @@
     <string name="custom_tool_error_command_unsafe">命令被安全策略拦截，请调整后重试</string>
     <string name="custom_tool_error_load_failed">读取自定义工具失败：%1$s</string>
     <string name="custom_tool_error_save_failed">保存自定义工具失败：%1$s</string>
+    <string name="custom_tool_delete_dialog_title">删除自定义工具</string>
+    <string name="custom_tool_delete_dialog_text">确定要删除工具「%1$s」吗？此操作不可撤销。</string>
     <string name="custom_tool_error_delete_failed">删除自定义工具失败：%1$s</string>
     <string name="custom_tool_save_failed">保存失败：%1$s</string>
 
@@ -247,5 +255,7 @@
     <string name="mcp_error_headers_invalid_json">请求头不是合法 JSON</string>
     <string name="mcp_error_headers_not_object">请求头必须是 JSON 对象</string>
     <string name="mcp_error_headers_empty_key">请求头名称不能为空</string>
+    <string name="mcp_delete_dialog_title">删除 MCP 服务器</string>
+    <string name="mcp_delete_dialog_text">确定要删除 MCP 服务器「%1$s」吗？此操作不可撤销。</string>
     <string name="mcp_error_headers_non_string">请求头的值必须是字符串</string>
 </resources>
