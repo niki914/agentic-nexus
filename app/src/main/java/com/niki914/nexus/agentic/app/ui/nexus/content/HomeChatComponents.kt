@@ -451,7 +451,6 @@ private fun HomeToolState.label(): String = when (this) {
 @Composable
 internal fun UsedNToolsPill(
     count: Int,
-    firstToolState: HomeToolState,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -478,11 +477,6 @@ internal fun UsedNToolsPill(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
             ) {
-                ToolStatusIndicator(
-                    state = firstToolState,
-                    color = contentColor,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelLarge,

@@ -509,7 +509,6 @@ private fun ToolRunItem(
     if (!expanded) {
         UsedNToolsPill(
             count = tools.size,
-            firstToolState = tools.first().status.state,
             onClick = onToggle,
             modifier = modifier,
         )
