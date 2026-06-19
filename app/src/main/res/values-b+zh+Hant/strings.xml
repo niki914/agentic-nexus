@@ -55,6 +55,7 @@
     <string name="ui_tool_status_failed">失敗</string>
     <string name="ui_home_send_content_description">傳送訊息</string>
     <string name="ui_home_stop_content_description">停止生成</string>
+    <string name="ui_toast_copied">已複製</string>
     <string name="ui_home_error_generic_title">目前無法繼續</string>
     <string name="ui_home_error_retry_body">請稍後再試。</string>
     <string name="ui_home_error_config_required_title">設定尚未完成</string>
@@ -141,6 +142,8 @@
     <string name="memory_delete_dialog_text">確定要刪除這條記憶嗎？\n\n%1$s</string>
     <string name="memory_delete_dialog_confirm">刪除</string>
     <string name="memory_delete_dialog_cancel">取消</string>
+    <string name="delete_dialog_confirm">刪除</string>
+    <string name="delete_dialog_cancel">取消</string>
     <string name="memory_error_load_failed">讀取記憶失敗：%1$s</string>
     <string name="memory_error_save_failed">儲存記憶失敗：%1$s</string>
     <string name="memory_error_delete_failed">刪除記憶失敗：%1$s</string>
@@ -150,6 +153,8 @@
     <string name="execution_rules_empty_action_hint">點擊右上角以新增第一條規則草稿。</string>
     <string name="execution_rules_loading">正在讀取執行規則…</string>
     <string name="execution_rules_editor_title_create">新增執行規則</string>
+    <string name="execution_rules_delete_dialog_title">刪除執行規則</string>
+    <string name="execution_rules_delete_dialog_text">確定要刪除執行規則「%1$s」嗎？此操作不可撤銷。</string>
     <string name="execution_rules_editor_description">設定 Shell 與工具的執行規則。現時此編輯頁只用來管理規則草稿，尚未連接到實際攔截流程。</string>
     <string name="execution_rules_field_name">規則名稱</string>
     <string name="execution_rules_field_name_hint">例如：高風險刪除指令</string>
@@ -165,6 +170,7 @@
     <string name="execution_rules_save_action">儲存規則</string>
 
     <!-- Takeover Module -->
+    <string name="takeover_default_responder">預設模型</string>
     <string name="takeover_page_description">按順序檢查規則，命中後決定由誰回應。</string>
     <string name="takeover_empty_action_hint">點擊右上角以新增第一條接管規則。</string>
     <string name="takeover_loading">正在讀取接管規則…</string>
@@ -190,6 +196,8 @@
     <string name="takeover_error_save_failed_generic">儲存接管規則失敗</string>
     <string name="takeover_error_save_failed">儲存接管規則失敗：%1$s</string>
     <string name="takeover_error_delete_failed_generic">刪除接管規則失敗</string>
+    <string name="takeover_delete_dialog_title">刪除接管規則</string>
+    <string name="takeover_delete_dialog_text">確定要刪除接管規則「%1$s」嗎？此操作不可撤銷。</string>
     <string name="takeover_error_delete_failed">刪除接管規則失敗：%1$s</string>
     <string name="takeover_save_failed">儲存失敗：%1$s</string>
 
@@ -223,6 +231,8 @@
     <string name="custom_tool_error_command_unsafe">命令已被安全策略攔截，請調整後再試</string>
     <string name="custom_tool_error_load_failed">讀取自訂工具失敗：%1$s</string>
     <string name="custom_tool_error_save_failed">儲存自訂工具失敗：%1$s</string>
+    <string name="custom_tool_delete_dialog_title">刪除自訂工具</string>
+    <string name="custom_tool_delete_dialog_text">確定要刪除工具「%1$s」嗎？此操作不可撤銷。</string>
     <string name="custom_tool_error_delete_failed">刪除自訂工具失敗：%1$s</string>
     <string name="custom_tool_save_failed">儲存失敗：%1$s</string>
 
@@ -246,5 +256,7 @@
     <string name="mcp_error_headers_invalid_json">請求標頭不是有效的 JSON</string>
     <string name="mcp_error_headers_not_object">請求標頭必須是 JSON 物件</string>
     <string name="mcp_error_headers_empty_key">請求標頭名稱不能為空</string>
+    <string name="mcp_delete_dialog_title">刪除 MCP 伺服器</string>
+    <string name="mcp_delete_dialog_text">確定要刪除 MCP 伺服器「%1$s」嗎？此操作不可撤銷。</string>
     <string name="mcp_error_headers_non_string">請求標頭的值必須為字串</string>
 </resources>

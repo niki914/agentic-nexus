@@ -46,12 +46,17 @@ data class McpServerFormSnapshot(
 val McpServerFormState.hasUnsavedChanges: Boolean
     get() = initialSnapshot?.let { it != toSnapshot() } ?: false
 
+data class McpDeleteConfirmationState(
+    val value: String,
+)
+
 data class McpSettingsUiState(
     val items: List<McpServerItem> = emptyList(),
     val formState: McpServerFormState = McpServerFormState(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val inlineError: McpInlineError? = null,
+    val deleteConfirmation: McpDeleteConfirmationState? = null,
 )
 
 sealed interface McpSettingsIntent {
@@ -64,7 +69,9 @@ sealed interface McpSettingsIntent {
     data class HeadersChanged(val value: String) : McpSettingsIntent
     data class EnabledChanged(val value: Boolean) : McpSettingsIntent
     data object Save : McpSettingsIntent
-    data object DeleteCurrent : McpSettingsIntent
+    data object RequestDelete : McpSettingsIntent
+    data object DismissDeleteConfirmation : McpSettingsIntent
+    data object ConfirmDelete : McpSettingsIntent
 }
 
 sealed interface McpInlineError {
@@ -132,7 +139,11 @@ class McpSettingsViewModel :
             }
 
             McpSettingsIntent.Save -> save()
-            McpSettingsIntent.DeleteCurrent -> deleteCurrent()
+            McpSettingsIntent.RequestDelete -> requestDelete()
+            McpSettingsIntent.DismissDeleteConfirmation -> updateState {
+                copy(deleteConfirmation = null)
+            }
+            McpSettingsIntent.ConfirmDelete -> confirmDelete()
         }
     }
 
@@ -350,6 +361,23 @@ class McpSettingsViewModel :
                 )
             }
         }
+    }
+
+    private fun requestDelete() {
+        val editingIndex = currentState.formState.editingIndex ?: return
+        val value = currentState.items.getOrNull(editingIndex)?.name ?: return
+        updateState {
+            copy(
+                deleteConfirmation = McpDeleteConfirmationState(value = value),
+                inlineError = null,
+            )
+        }
+    }
+
+    private suspend fun confirmDelete() {
+        val confirmation = currentState.deleteConfirmation ?: return
+        updateState { copy(deleteConfirmation = null) }
+        deleteCurrent()
     }
 
     private suspend fun deleteCurrent() {

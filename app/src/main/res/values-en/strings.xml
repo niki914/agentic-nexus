@@ -55,6 +55,7 @@
     <string name="ui_tool_status_failed">Failed</string>
     <string name="ui_home_send_content_description">Send message</string>
     <string name="ui_home_stop_content_description">Stop generating</string>
+    <string name="ui_toast_copied">Copied</string>
     <string name="ui_home_error_generic_title">Cannot continue right now</string>
     <string name="ui_home_error_retry_body">Please try again later.</string>
     <string name="ui_home_error_config_required_title">Configuration is incomplete</string>
@@ -141,6 +142,8 @@
     <string name="memory_delete_dialog_text">Are you sure you want to delete this memory?\n\n%1$s</string>
     <string name="memory_delete_dialog_confirm">Delete</string>
     <string name="memory_delete_dialog_cancel">Cancel</string>
+    <string name="delete_dialog_confirm">Delete</string>
+    <string name="delete_dialog_cancel">Cancel</string>
     <string name="memory_error_load_failed">Failed to load memories: %1$s</string>
     <string name="memory_error_save_failed">Failed to save memory: %1$s</string>
     <string name="memory_error_delete_failed">Failed to delete memory: %1$s</string>
@@ -150,6 +153,8 @@
     <string name="execution_rules_empty_action_hint">Tap the top right to add your first draft rule.</string>
     <string name="execution_rules_loading">Loading execution rules...</string>
     <string name="execution_rules_editor_title_create">New Execution Rule</string>
+    <string name="execution_rules_delete_dialog_title">Delete Execution Rule</string>
+    <string name="execution_rules_delete_dialog_text">Are you sure you want to delete the execution rule \"%1$s\"? This action cannot be undone.</string>
     <string name="execution_rules_editor_description">Set up rules for Shell and tool execution. For now, this editor lets you manage rule drafts in the UI and is not yet wired into the actual interception flow.</string>
     <string name="execution_rules_field_name">Rule Name</string>
     <string name="execution_rules_field_name_hint">For example: Dangerous delete commands</string>
@@ -165,6 +170,7 @@
     <string name="execution_rules_save_action">Save Rule</string>
 
     <!-- Takeover Module -->
+    <string name="takeover_default_responder">Default Responder</string>
     <string name="takeover_page_description">Check rules in order and choose who should respond.</string>
     <string name="takeover_empty_action_hint">Tap the top right to add your first takeover rule.</string>
     <string name="takeover_loading">Loading takeover rules...</string>
@@ -190,6 +196,8 @@
     <string name="takeover_error_save_failed_generic">Failed to save takeover rules</string>
     <string name="takeover_error_save_failed">Failed to save takeover rules: %1$s</string>
     <string name="takeover_error_delete_failed_generic">Failed to delete takeover rules</string>
+    <string name="takeover_delete_dialog_title">Delete Takeover Rule</string>
+    <string name="takeover_delete_dialog_text">Are you sure you want to delete the takeover rule \"%1$s\"? This action cannot be undone.</string>
     <string name="takeover_error_delete_failed">Failed to delete takeover rules: %1$s</string>
     <string name="takeover_save_failed">Failed to save: %1$s</string>
 
@@ -223,6 +231,8 @@
     <string name="custom_tool_error_command_unsafe">This command was blocked by the safety policy. Please adjust it and try again</string>
     <string name="custom_tool_error_load_failed">Failed to load custom tools: %1$s</string>
     <string name="custom_tool_error_save_failed">Failed to save custom tools: %1$s</string>
+    <string name="custom_tool_delete_dialog_title">Delete Custom Tool</string>
+    <string name="custom_tool_delete_dialog_text">Are you sure you want to delete the tool \"%1$s\"? This action cannot be undone.</string>
     <string name="custom_tool_error_delete_failed">Failed to delete custom tools: %1$s</string>
     <string name="custom_tool_save_failed">Failed to save: %1$s</string>
 
@@ -246,5 +256,7 @@
     <string name="mcp_error_headers_invalid_json">Headers are not valid JSON</string>
     <string name="mcp_error_headers_not_object">Headers must be a JSON object</string>
     <string name="mcp_error_headers_empty_key">Header names cannot be empty</string>
+    <string name="mcp_delete_dialog_title">Delete MCP Server</string>
+    <string name="mcp_delete_dialog_text">Are you sure you want to delete the MCP server \"%1$s\"? This action cannot be undone.</string>
     <string name="mcp_error_headers_non_string">Header values must be strings</string>
 </resources>

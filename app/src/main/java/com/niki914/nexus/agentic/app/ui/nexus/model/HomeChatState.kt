@@ -24,6 +24,7 @@ internal interface HomeConversationStore {
     suspend fun saveHistory(conversationId: String, history: List<ChatTurn>)
     suspend fun updateDraft(conversationId: String, draftText: String)
     suspend fun deleteConversation(id: String)
+    suspend fun forkConversation(sourceId: String, keepTurnCount: Int): String
 }
 
 private object DefaultHomeConversationStore : HomeConversationStore {
@@ -52,7 +53,13 @@ private object DefaultHomeConversationStore : HomeConversationStore {
     override suspend fun deleteConversation(id: String) {
         ConversationRepo.deleteConversation(id)
     }
+
+    override suspend fun forkConversation(sourceId: String, keepTurnCount: Int): String {
+        return ConversationRepo.forkConversation(sourceId, keepTurnCount)
+    }
 }
+
+enum class ActionSource { User, Agent }
 
 enum class HomeToolState {
     Running,
@@ -86,6 +93,9 @@ data class HomeChatUiState(
     val streamEventCount: Int = 0,
     val currentConversationId: String? = null,
     val currentConversationTitle: String? = null,
+    val expandedToolRunKeys: Set<String> = emptySet(),
+    val expandedActionTurnId: Long? = null,
+    val expandedActionSource: ActionSource? = null,
 )
 
 sealed interface HomeChatIntent {
@@ -95,6 +105,10 @@ sealed interface HomeChatIntent {
     data object NewConversation : HomeChatIntent
     data class LoadConversation(val id: String) : HomeChatIntent
     data class DeleteConversation(val id: String) : HomeChatIntent
+    data class ToggleToolRunExpanded(val turnId: Long, val runStartIndex: Int) : HomeChatIntent
+    data class ToggleActionRow(val turnId: Long, val source: ActionSource) : HomeChatIntent
+    data class ReGenerateAt(val turnId: Long) : HomeChatIntent
+    data class ForkAt(val turnId: Long) : HomeChatIntent
 }
 
 internal interface HomeChatRuntime {
@@ -138,6 +152,36 @@ class HomeChatViewModel internal constructor(
             HomeChatIntent.NewConversation -> startNewConversation()
             is HomeChatIntent.LoadConversation -> loadConversation(intent.id)
             is HomeChatIntent.DeleteConversation -> deleteConversationNow(intent.id)
+            is HomeChatIntent.ToggleToolRunExpanded -> toggleToolRunExpanded(
+                intent.turnId, intent.runStartIndex,
+            )
+            is HomeChatIntent.ToggleActionRow -> toggleActionRow(
+                intent.turnId, intent.source,
+            )
+            is HomeChatIntent.ReGenerateAt -> reGenerateAt(intent.turnId)
+            is HomeChatIntent.ForkAt -> forkAt(intent.turnId)
+        }
+    }
+
+    private fun toggleToolRunExpanded(turnId: Long, runStartIndex: Int) {
+        val key = "${turnId}_${runStartIndex}"
+        updateState {
+            copy(
+                expandedToolRunKeys = if (key in expandedToolRunKeys) {
+                    expandedToolRunKeys - key
+                } else {
+                    expandedToolRunKeys + key
+                },
+            )
+        }
+    }
+
+    private fun toggleActionRow(turnId: Long, source: ActionSource) {
+        updateState {
+            if (expandedActionTurnId == turnId && expandedActionSource == source) {
+                return@updateState this
+            }
+            copy(expandedActionTurnId = turnId, expandedActionSource = source)
         }
     }
 
@@ -290,6 +334,9 @@ class HomeChatViewModel internal constructor(
                         streamEventCount = 0,
                         currentConversationId = conversationId,
                         currentConversationTitle = restoredTitle,
+                        expandedToolRunKeys = emptySet(),
+                        expandedActionTurnId = null,
+                        expandedActionSource = null,
                     )
                 }
             } catch (throwable: Throwable) {
@@ -331,8 +378,81 @@ class HomeChatViewModel internal constructor(
                 streamEventCount = 0,
                 currentConversationId = id,
                 currentConversationTitle = restoredTitle,
+                expandedToolRunKeys = emptySet(),
+                expandedActionTurnId = null,
+                expandedActionSource = null,
             )
         }
+    }
+
+    private fun findUserTurnIndex(history: List<ChatTurn>, targetTurnId: Long): Int {
+        var userCount = 0L
+        for ((index, turn) in history.withIndex()) {
+            if (turn is ChatTurn.User) {
+                if (userCount == targetTurnId) return index
+                userCount++
+            }
+        }
+        return -1
+    }
+
+    private fun findNextUserIndex(history: List<ChatTurn>, startIndex: Int): Int? {
+        for (index in startIndex until history.size) {
+            if (history[index] is ChatTurn.User) return index
+        }
+        return null
+    }
+
+    private suspend fun reGenerateAt(turnId: Long) {
+        if (currentState.isGenerating) return
+        val currentId = currentConversationId ?: return
+        streamJob?.cancel()
+        streamJob = null
+        val history = runtime.getHistory()
+        val userIndex = findUserTurnIndex(history, turnId)
+        if (userIndex < 0) return
+        val userTurn = history[userIndex] as? ChatTurn.User ?: return
+        val userText = userTurn.content
+        val newConvId = conversations.forkConversation(currentId, userIndex)
+        loadConversation(newConvId)
+        val newTurnId = nextTurnId++
+        updateState {
+            copy(
+                turns = turns + HomeChatTurn(id = newTurnId, userText = userText),
+                isGenerating = true,
+                lastEventName = null,
+                streamEventCount = 0,
+                expandedActionTurnId = null,
+                expandedActionSource = null,
+            )
+        }
+        streamJob = viewModelScope.launch {
+            try {
+                collectLlmStream(turnId = newTurnId, query = userText)
+            } catch (throwable: Throwable) {
+                if (throwable is CancellationException) throw throwable
+                throwable.message?.let { message ->
+                    applyError(turnId = newTurnId, message = message, code = null)
+                }
+            } finally {
+                if (streamJob == currentCoroutineContext()[Job]) {
+                    streamJob = null
+                    updateState { copy(isGenerating = false) }
+                }
+            }
+        }
+    }
+
+    private suspend fun forkAt(turnId: Long) {
+        if (currentState.isGenerating) return
+        val currentId = currentConversationId ?: return
+        val history = runtime.getHistory()
+        val userIndex = findUserTurnIndex(history, turnId)
+        if (userIndex < 0) return
+        val nextUserIndex = findNextUserIndex(history, userIndex + 1)
+        val endIndex = if (nextUserIndex != null) nextUserIndex - 1 else history.lastIndex
+        val newConvId = conversations.forkConversation(currentId, endIndex + 1)
+        loadConversation(newConvId)
     }
 
     internal suspend fun deleteConversationNow(id: String) {

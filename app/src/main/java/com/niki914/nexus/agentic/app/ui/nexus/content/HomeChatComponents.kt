@@ -52,6 +52,14 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.HomeToolStatus
 import com.niki914.nexus.agentic.chat.LlmErrorCode
 import com.niki914.nexus.cb.BaseTheme
 
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.automirrored.filled.CallSplit
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.niki914.nexus.agentic.app.ui.infra.shape.G2CardShape
+import com.niki914.nexus.agentic.app.ui.nexus.model.ActionSource
+
 private val ToolSucceededIndicatorColor = Color(0xFF4F8F6B)
 private val ToolFailedIndicatorColor = Color(0xFFB85C5C)
 
@@ -438,4 +446,119 @@ private fun HomeToolState.label(): String = when (this) {
     HomeToolState.Running -> stringResource(R.string.ui_tool_status_running)
     HomeToolState.Succeeded -> stringResource(R.string.ui_tool_status_success)
     HomeToolState.Failed -> stringResource(R.string.ui_tool_status_failed)
+}
+
+@Composable
+internal fun UsedNToolsPill(
+    count: Int,
+    firstToolState: HomeToolState,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val containerColor = colorScheme.surfaceVariant.copy(alpha = 0.72f)
+    val contentColor = colorScheme.onSurfaceVariant.copy(alpha = 0.82f)
+    val shape = G2CapsuleShape()
+    val label = "Used $count Tools"
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Row(
+                modifier = Modifier
+                    .clip(shape)
+                    .background(containerColor, shape)
+                    .clickable(onClick = onClick)
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                ToolStatusIndicator(
+                    state = firstToolState,
+                    color = contentColor,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = contentColor,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun TurnActionRow(
+    source: ActionSource,
+    onCopy: () -> Unit,
+    onReGenerate: () -> Unit,
+    onFork: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val isAgent = source == ActionSource.Agent
+
+    Box(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = if (isAgent) Alignment.CenterStart else Alignment.CenterEnd,
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ActionButton(
+                icon = Icons.Default.ContentCopy,
+                contentDescription = "Copy",
+                onClick = onCopy,
+            )
+            if (isAgent) {
+                ActionButton(
+                    icon = Icons.Default.Refresh,
+                    contentDescription = "ReGenerate",
+                    onClick = onReGenerate,
+                )
+                ActionButton(
+                    icon = Icons.AutoMirrored.Filled.CallSplit,
+                    contentDescription = "Fork",
+                    onClick = onFork,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActionButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val containerColor = colorScheme.surfaceVariant.copy(alpha = 0.72f)
+    val contentColor = colorScheme.onSurfaceVariant.copy(alpha = 0.82f)
+    val shape = G2CardShape(14.dp)
+
+    Box(
+        modifier = Modifier
+            .size(38.dp)
+            .clip(shape)
+            .background(containerColor, shape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(20.dp),
+            tint = contentColor,
+        )
+    }
 }

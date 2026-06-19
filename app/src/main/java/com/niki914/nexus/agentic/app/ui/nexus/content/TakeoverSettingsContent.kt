@@ -21,6 +21,7 @@ import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingsSegmentedSelector
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleListItemCard
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
@@ -64,6 +65,9 @@ fun TakeoverSettingsContent(
         onItemEnabledChanged = { index, enabled ->
             viewModel.sendIntent(TakeoverSettingsIntent.ItemEnabledChanged(index, enabled))
         },
+        onDefaultTargetChanged = { target ->
+            viewModel.sendIntent(TakeoverSettingsIntent.DefaultTargetChanged(target))
+        },
     )
 }
 
@@ -72,6 +76,7 @@ private fun TakeoverSettingsContentBody(
     uiState: TakeoverSettingsUiState,
     onOpenRuleDetail: (ruleId: String?, ruleName: String, ruleIndex: Int, isCreating: Boolean) -> Unit,
     onItemEnabledChanged: (index: Int, enabled: Boolean) -> Unit = { _, _ -> },
+    onDefaultTargetChanged: (TakeoverTarget) -> Unit = {},
 ) {
     val pageDescription = when {
         uiState.isLoading || uiState.items.isNotEmpty() -> {
@@ -87,6 +92,18 @@ private fun TakeoverSettingsContentBody(
         takeoverInlineErrorText(uiState.inlineError)?.let { message ->
             SettingsGroupCard {
                 TakeoverListMessage(text = message)
+            }
+        }
+        if (!uiState.isLoading) {
+            SettingsGroupCard {
+                SettingsSegmentedSelector(
+                    title = stringResource(R.string.takeover_default_responder),
+                    options = TakeoverTarget.entries,
+                    selected = uiState.defaultTarget,
+                    label = { target -> target.label() },
+                    enabled = !uiState.isSaving,
+                    onSelected = onDefaultTargetChanged,
+                )
             }
         }
         if (uiState.isLoading) {
@@ -190,6 +207,7 @@ private fun TakeoverSettingsContentPreview() {
                             enabled = false,
                         ),
                     ),
+                    defaultTarget = TakeoverTarget.Nexus,
                 ),
                 onOpenRuleDetail = { _, _, _, _ -> },
             )

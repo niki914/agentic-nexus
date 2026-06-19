@@ -8,17 +8,17 @@ data class TakeoverDecision(
     val target: RuntimeTakeoverTarget,
     val matchedRuleId: String? = null,
     val matchedRuleName: String? = null,
-) {
-    companion object {
-        val Default: TakeoverDecision = TakeoverDecision(RuntimeTakeoverTarget.NEXUS)
-    }
-}
+)
 
 object TakeoverResolver {
-    fun resolve(query: String, rules: List<RuntimeTakeoverRule>): TakeoverDecision {
+    fun resolve(
+        query: String,
+        rules: List<RuntimeTakeoverRule>,
+        defaultTarget: RuntimeTakeoverTarget,
+    ): TakeoverDecision {
         val matchedRule = rules.firstOrNull { rule ->
             rule.enabled && TextPatternMatcher.matchesAny(query, rule.patterns)
-        } ?: return TakeoverDecision.Default
+        } ?: return TakeoverDecision(defaultTarget)
 
         return TakeoverDecision(
             target = matchedRule.target,

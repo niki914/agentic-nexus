@@ -50,12 +50,18 @@ data class TakeoverRuleFormSnapshot(
 val TakeoverRuleFormState.hasUnsavedChanges: Boolean
     get() = initialSnapshot?.let { it != toSnapshot() } ?: false
 
+data class TakeoverDeleteConfirmationState(
+    val value: String,
+)
+
 data class TakeoverSettingsUiState(
     val items: List<TakeoverRuleItem> = emptyList(),
+    val defaultTarget: TakeoverTarget = TakeoverTarget.Nexus,
     val formState: TakeoverRuleFormState = TakeoverRuleFormState(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val inlineError: TakeoverInlineError? = null,
+    val deleteConfirmation: TakeoverDeleteConfirmationState? = null,
 )
 
 sealed interface TakeoverSettingsIntent {
@@ -68,7 +74,10 @@ sealed interface TakeoverSettingsIntent {
     data class EnabledChanged(val value: Boolean) : TakeoverSettingsIntent
     data class PatternsChanged(val value: String) : TakeoverSettingsIntent
     data object Save : TakeoverSettingsIntent
-    data object DeleteCurrent : TakeoverSettingsIntent
+    data object RequestDelete : TakeoverSettingsIntent
+    data object DismissDeleteConfirmation : TakeoverSettingsIntent
+    data object ConfirmDelete : TakeoverSettingsIntent
+    data class DefaultTargetChanged(val value: TakeoverTarget) : TakeoverSettingsIntent
 }
 
 sealed interface TakeoverInlineError {
@@ -145,7 +154,12 @@ class TakeoverSettingsViewModel :
             }
 
             TakeoverSettingsIntent.Save -> save()
-            TakeoverSettingsIntent.DeleteCurrent -> deleteCurrent()
+            is TakeoverSettingsIntent.DefaultTargetChanged -> setDefaultTarget(intent.value)
+            TakeoverSettingsIntent.RequestDelete -> requestDelete()
+            TakeoverSettingsIntent.DismissDeleteConfirmation -> updateState {
+                copy(deleteConfirmation = null)
+            }
+            TakeoverSettingsIntent.ConfirmDelete -> confirmDelete()
         }
     }
 
@@ -153,9 +167,11 @@ class TakeoverSettingsViewModel :
         updateState { copy(isLoading = true) }
         try {
             val loadedItems = XRepo.takeoverRules.list().map { it.toItem() }
+            val defaultTarget = XRepo.takeoverRules.getDefaultTarget().toUiTarget()
             updateState {
                 copy(
                     items = loadedItems,
+                    defaultTarget = defaultTarget,
                     isLoading = false,
                     inlineError = null,
                 )
@@ -338,6 +354,23 @@ class TakeoverSettingsViewModel :
         }
     }
 
+    private fun requestDelete() {
+        val editingIndex = currentState.formState.editingIndex ?: return
+        val value = currentState.items.getOrNull(editingIndex)?.name ?: return
+        updateState {
+            copy(
+                deleteConfirmation = TakeoverDeleteConfirmationState(value = value),
+                inlineError = null,
+            )
+        }
+    }
+
+    private suspend fun confirmDelete() {
+        val confirmation = currentState.deleteConfirmation ?: return
+        updateState { copy(deleteConfirmation = null) }
+        deleteCurrent()
+    }
+
     private suspend fun deleteCurrent() {
         val currentId = currentState.formState.id ?: return
         val editingIndex = currentState.formState.editingIndex
@@ -365,6 +398,25 @@ class TakeoverSettingsViewModel :
                 copy(
                     isSaving = false,
                     inlineError = TakeoverInlineError.DeleteFailed(throwable.message),
+                )
+            }
+        }
+    }
+
+    private suspend fun setDefaultTarget(target: TakeoverTarget) {
+        val previousTarget = currentState.defaultTarget
+        updateState { copy(defaultTarget = target, inlineError = null, isSaving = true) }
+        try {
+            XRepo.takeoverRules.setDefaultTarget(target.toRuntime())
+            updateState { copy(isSaving = false) }
+            notifySettingsChanged()
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            updateState {
+                copy(
+                    defaultTarget = previousTarget,
+                    isSaving = false,
+                    inlineError = TakeoverInlineError.SaveFailed(throwable.message),
                 )
             }
         }

@@ -42,12 +42,17 @@ data class CustomToolFormSnapshot(
 val CustomToolFormState.hasUnsavedChanges: Boolean
     get() = initialSnapshot?.let { it != toSnapshot() } ?: false
 
+data class CustomToolDeleteConfirmationState(
+    val value: String,
+)
+
 data class CustomToolSettingsUiState(
     val items: List<CustomToolItem> = emptyList(),
     val formState: CustomToolFormState = CustomToolFormState(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val inlineError: CustomToolInlineError? = null,
+    val deleteConfirmation: CustomToolDeleteConfirmationState? = null,
 )
 
 sealed interface CustomToolSettingsIntent {
@@ -60,7 +65,9 @@ sealed interface CustomToolSettingsIntent {
     data class CommandChanged(val value: String) : CustomToolSettingsIntent
     data class EnabledChanged(val value: Boolean) : CustomToolSettingsIntent
     data object Save : CustomToolSettingsIntent
-    data object DeleteCurrent : CustomToolSettingsIntent
+    data object RequestDelete : CustomToolSettingsIntent
+    data object DismissDeleteConfirmation : CustomToolSettingsIntent
+    data object ConfirmDelete : CustomToolSettingsIntent
 }
 
 sealed interface CustomToolInlineError {
@@ -142,7 +149,11 @@ class CustomToolSettingsViewModel :
             }
 
             CustomToolSettingsIntent.Save -> save()
-            CustomToolSettingsIntent.DeleteCurrent -> deleteCurrent()
+            CustomToolSettingsIntent.RequestDelete -> requestDelete()
+            CustomToolSettingsIntent.DismissDeleteConfirmation -> updateState {
+                copy(deleteConfirmation = null)
+            }
+            CustomToolSettingsIntent.ConfirmDelete -> confirmDelete()
         }
     }
 
@@ -316,6 +327,23 @@ class CustomToolSettingsViewModel :
                 )
             }
         }
+    }
+
+    private fun requestDelete() {
+        val editingIndex = currentState.formState.editingIndex ?: return
+        val value = currentState.items.getOrNull(editingIndex)?.name ?: return
+        updateState {
+            copy(
+                deleteConfirmation = CustomToolDeleteConfirmationState(value = value),
+                inlineError = null,
+            )
+        }
+    }
+
+    private suspend fun confirmDelete() {
+        val confirmation = currentState.deleteConfirmation ?: return
+        updateState { copy(deleteConfirmation = null) }
+        deleteCurrent()
     }
 
     private suspend fun deleteCurrent() {

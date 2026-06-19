@@ -12,12 +12,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsSegmentedSelector
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRuleDeleteConfirmationState
 import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRulesInlineError
 import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRuleFormState
 import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRulesSettingsEffect
@@ -46,7 +48,13 @@ fun ExecutionRuleDetailContent(
         },
         onDiscardChanges = onBack,
         onDelete = {
-            viewModel.sendIntent(ExecutionRulesSettingsIntent.DeleteCurrent)
+            viewModel.sendIntent(ExecutionRulesSettingsIntent.RequestDelete)
+        },
+        hasDeleteConfirmation = {
+            uiState.deleteConfirmation != null
+        },
+        onDismissDeleteConfirmation = {
+            viewModel.sendIntent(ExecutionRulesSettingsIntent.DismissDeleteConfirmation)
         },
     ) {
         ExecutionRuleDetailContentBody(
@@ -66,6 +74,16 @@ fun ExecutionRuleDetailContent(
             },
             onSave = {
                 viewModel.sendIntent(ExecutionRulesSettingsIntent.Save)
+            },
+        )
+
+        ExecutionRuleDeleteConfirmationDialog(
+            state = uiState.deleteConfirmation,
+            onDismissRequest = {
+                viewModel.sendIntent(ExecutionRulesSettingsIntent.DismissDeleteConfirmation)
+            },
+            onConfirmClick = {
+                viewModel.sendIntent(ExecutionRulesSettingsIntent.ConfirmDelete)
             },
         )
     }
@@ -241,4 +259,22 @@ private fun ExecutionRuleDetailContentPreview() {
             )
         }
     }
+}
+
+@Composable
+private fun ExecutionRuleDeleteConfirmationDialog(
+    state: ExecutionRuleDeleteConfirmationState?,
+    onDismissRequest: () -> Unit,
+    onConfirmClick: () -> Unit,
+) {
+    ConfirmationLiquidDialog(
+        visible = state != null,
+        onDismissRequest = onDismissRequest,
+        title = stringResource(R.string.execution_rules_delete_dialog_title),
+        text = stringResource(R.string.execution_rules_delete_dialog_text, state?.value.orEmpty()),
+        negativeButtonText = stringResource(R.string.delete_dialog_cancel),
+        positiveButtonText = stringResource(R.string.delete_dialog_confirm),
+        onNegativeClick = onDismissRequest,
+        onPositiveClick = onConfirmClick,
+    )
 }

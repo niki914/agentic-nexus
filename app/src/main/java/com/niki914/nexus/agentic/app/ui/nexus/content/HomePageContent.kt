@@ -20,6 +20,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -34,10 +37,14 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import android.widget.Toast
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -50,6 +57,7 @@ import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeMenuItem
 import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
+import com.niki914.nexus.agentic.app.ui.nexus.model.ActionSource
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatBlock
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatTurn
@@ -199,6 +207,7 @@ fun HomePageContent(
             viewModel.sendIntent(HomeChatIntent.InputChanged(value))
         },
         onSendClick = {
+            dismissInputFocus()
             shouldFollowBottom = true
             viewModel.sendIntent(HomeChatIntent.Send)
         },
@@ -207,6 +216,24 @@ fun HomePageContent(
         },
         onComposerFocusChanged = { focused ->
             isComposerFocused = focused
+        },
+        onToggleToolRun = { turnId, runStartIndex ->
+            viewModel.sendIntent(
+                HomeChatIntent.ToggleToolRunExpanded(turnId, runStartIndex)
+            )
+        },
+        onReGenerate = { id ->
+            viewModel.sendIntent(HomeChatIntent.ReGenerateAt(id))
+        },
+        onFork = { id ->
+            viewModel.sendIntent(HomeChatIntent.ForkAt(id))
+        },
+        expandedActionTurnId = uiState.expandedActionTurnId,
+        expandedActionSource = uiState.expandedActionSource,
+        onToggleActionRow = { turnId, source ->
+            viewModel.sendIntent(
+                HomeChatIntent.ToggleActionRow(turnId, source)
+            )
         },
     )
 }
@@ -221,6 +248,12 @@ private fun HomePageContentBody(
     onSendClick: () -> Unit,
     onStopClick: () -> Unit,
     onComposerFocusChanged: (Boolean) -> Unit,
+    onToggleToolRun: (Long, Int) -> Unit,
+    onReGenerate: (Long) -> Unit,
+    onFork: (Long) -> Unit,
+    expandedActionTurnId: Long?,
+    expandedActionSource: ActionSource?,
+    onToggleActionRow: (Long, ActionSource) -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -250,6 +283,14 @@ private fun HomePageContentBody(
                 HomeChatTurnItem(
                     turn = turn,
                     onContentTap = onContentTap,
+                    expandedToolRunKeys = uiState.expandedToolRunKeys,
+                    onToggleToolRun = onToggleToolRun,
+                    onReGenerate = onReGenerate,
+                    onFork = onFork,
+                    expandedActionTurnId = expandedActionTurnId,
+                    expandedActionSource = expandedActionSource,
+                    onToggleActionRow = onToggleActionRow,
+                    isGenerating = uiState.isGenerating,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 18.dp),
@@ -287,51 +328,210 @@ private fun HomePageContentBody(
     }
 }
 
+private data class ToolRun(
+    val startIndex: Int,
+    val endIndex: Int, // exclusive
+) {
+    val count: Int get() = endIndex - startIndex
+}
+
+private fun List<HomeChatBlock>.findConsecutiveToolRuns(): List<ToolRun> {
+    val runs = mutableListOf<ToolRun>()
+    var i = 0
+    while (i < size) {
+        if (this[i] is HomeChatBlock.Tool) {
+            val start = i
+            while (i < size && this[i] is HomeChatBlock.Tool) {
+                i++
+            }
+            val count = i - start
+            if (count >= 2) {
+                runs.add(ToolRun(start, i))
+            }
+        } else {
+            i++
+        }
+    }
+    return runs
+}
+
 @Composable
 private fun HomeChatTurnItem(
     turn: HomeChatTurn,
     onContentTap: () -> Unit,
+    expandedToolRunKeys: Set<String>,
+    onToggleToolRun: (Long, Int) -> Unit,
+    onReGenerate: (Long) -> Unit,
+    onFork: (Long) -> Unit,
+    expandedActionTurnId: Long?,
+    expandedActionSource: ActionSource?,
+    onToggleActionRow: (Long, ActionSource) -> Unit,
+    isGenerating: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
+    val canToggleAction = !isGenerating && turn.blocks.isNotEmpty()
+    @Suppress("DEPRECATION")
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
 
-    Column(
-        modifier = modifier.clickable(
-            interactionSource = interactionSource,
-            indication = null,
-            onClick = onContentTap,
-        ),
-    ) {
-        UserMessageBubble(text = turn.userText)
+    val isActionExpanded = expandedActionTurnId == turn.id
+    val actionSource = expandedActionSource
+    var showActionRow by remember { mutableStateOf(false) }
+    LaunchedEffect(isActionExpanded) {
+        showActionRow = isActionExpanded
+    }
 
-        turn.blocks.forEach { block ->
-            when (block) {
-                is HomeChatBlock.Text -> {
-                    if (block.text.isNotBlank()) {
-                        AssistantOutputText(
-                            text = block.text,
+    Column(modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {
+                        onContentTap()
+                        if (canToggleAction) {
+                            onToggleActionRow(turn.id, ActionSource.User)
+                        }
+                    },
+                ),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            UserMessageBubble(text = turn.userText)
+        }
+
+        AnimatedVisibility(
+            visible = showActionRow && actionSource == ActionSource.User,
+            enter = expandVertically() + fadeIn(),
+        ) {
+            TurnActionRow(
+                source = ActionSource.User,
+                onCopy = {
+                    val text = turn.userText
+                    clipboardManager.setText(AnnotatedString(text))
+                    Toast.makeText(context, R.string.ui_toast_copied, Toast.LENGTH_SHORT).show()
+                },
+                onReGenerate = { onReGenerate(turn.id) },
+                onFork = { onFork(turn.id) },
+                modifier = Modifier.padding(top = 10.dp),
+            )
+        }
+
+        val toolRuns = remember(turn.blocks) {
+            turn.blocks.findConsecutiveToolRuns()
+        }
+        var blockIndex = 0
+        while (blockIndex < turn.blocks.size) {
+            val run = toolRuns.find { it.startIndex == blockIndex }
+            if (run != null) {
+                val tools = turn.blocks.subList(run.startIndex, run.endIndex)
+                    .map { it as HomeChatBlock.Tool }
+                ToolRunItem(
+                    tools = tools,
+                    expanded = "${turn.id}_${run.startIndex}" in expandedToolRunKeys,
+                    onToggle = { onToggleToolRun(turn.id, run.startIndex) },
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+                blockIndex = run.endIndex
+            } else {
+                when (val block = turn.blocks[blockIndex]) {
+                    is HomeChatBlock.Text -> {
+                        if (block.text.isNotBlank()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null,
+                                        onClick = {
+                                            onContentTap()
+                                            if (canToggleAction) {
+                                                onToggleActionRow(turn.id, ActionSource.Agent)
+                                            }
+                                        },
+                                    ),
+                            ) {
+                                AssistantOutputText(
+                                    text = block.text,
+                                    modifier = Modifier.padding(top = 12.dp),
+                                )
+                            }
+                        }
+                    }
+
+                    is HomeChatBlock.Tool -> {
+                        ToolStatusPill(
+                            status = block.status,
+                            modifier = Modifier.padding(top = 12.dp),
+                        )
+                    }
+
+                    is HomeChatBlock.Error -> {
+                        AssistantErrorBlock(
+                            message = block.message,
+                            code = block.code,
                             modifier = Modifier.padding(top = 12.dp),
                         )
                     }
                 }
-
-                is HomeChatBlock.Tool -> {
-                    ToolStatusPill(
-                        status = block.status,
-                        modifier = Modifier.padding(top = 12.dp),
-                    )
-                }
-
-                is HomeChatBlock.Error -> {
-                    AssistantErrorBlock(
-                        message = block.message,
-                        code = block.code,
-                        modifier = Modifier.padding(top = 12.dp),
-                    )
-                }
+                blockIndex++
             }
         }
 
+        AnimatedVisibility(
+            visible = showActionRow && actionSource == ActionSource.Agent,
+            enter = expandVertically() + fadeIn(),
+        ) {
+            TurnActionRow(
+                source = ActionSource.Agent,
+                onCopy = {
+                    val text = turn.blocks
+                        .filterIsInstance<HomeChatBlock.Text>()
+                        .joinToString("\n\n") { it.text }
+                    clipboardManager.setText(AnnotatedString(text))
+                    Toast.makeText(context, R.string.ui_toast_copied, Toast.LENGTH_SHORT).show()
+                },
+                onReGenerate = { onReGenerate(turn.id) },
+                onFork = { onFork(turn.id) },
+                modifier = Modifier.padding(top = 10.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ToolRunItem(
+    tools: List<HomeChatBlock.Tool>,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (!expanded) {
+        UsedNToolsPill(
+            count = tools.size,
+            firstToolState = tools.first().status.state,
+            onClick = onToggle,
+            modifier = modifier,
+        )
+    } else {
+        Column(modifier = modifier) {
+            ToolStatusPill(status = tools[0].status)
+            var showRemaining by remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) { showRemaining = true }
+            AnimatedVisibility(
+                visible = showRemaining,
+                enter = expandVertically() + fadeIn(),
+            ) {
+                Column {
+                    tools.drop(1).forEach { tool ->
+                        ToolStatusPill(
+                            status = tool.status,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -388,6 +588,12 @@ private fun HomePageContentPreview() {
                 onSendClick = {},
                 onStopClick = {},
                 onComposerFocusChanged = {},
+                onToggleToolRun = { _, _ -> },
+                onReGenerate = { },
+                onFork = { },
+                expandedActionTurnId = null,
+                expandedActionSource = null,
+                onToggleActionRow = { _, _ -> },
             )
         }
     }

@@ -26,11 +26,15 @@ fun EditableSettingsDetailChrome(
     hasUnsavedChanges: () -> Boolean,
     onDiscardChanges: () -> Unit,
     onDelete: (() -> Unit)? = null,
+    hasDeleteConfirmation: () -> Boolean = { false },
+    onDismissDeleteConfirmation: () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     val latestHasUnsavedChanges by rememberUpdatedState(hasUnsavedChanges)
     val latestOnDelete by rememberUpdatedState(onDelete)
     val latestOnDiscardChanges by rememberUpdatedState(onDiscardChanges)
+    val latestHasDeleteConfirmation by rememberUpdatedState(hasDeleteConfirmation)
+    val latestOnDismissDeleteConfirmation by rememberUpdatedState(onDismissDeleteConfirmation)
     var showUnsavedChangesDialog by rememberSaveable { mutableStateOf(false) }
 
     val pageChromeContribution = remember(isCreating) {
@@ -47,10 +51,14 @@ fun EditableSettingsDetailChrome(
             },
             backHandler = PageBackHandler(
                 shouldConsumeBack = {
-                    latestHasUnsavedChanges()
+                    latestHasUnsavedChanges() || latestHasDeleteConfirmation()
                 },
                 onConsumeBack = {
-                    showUnsavedChangesDialog = true
+                    if (latestHasDeleteConfirmation()) {
+                        latestOnDismissDeleteConfirmation()
+                    } else {
+                        showUnsavedChangesDialog = true
+                    }
                 },
             ),
         )

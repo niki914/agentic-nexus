@@ -9,11 +9,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.model.CustomToolDeleteConfirmationState
 import com.niki914.nexus.agentic.app.ui.nexus.model.CustomToolInlineError
 import com.niki914.nexus.agentic.app.ui.nexus.model.CustomToolSettingsEffect
 import com.niki914.nexus.agentic.app.ui.nexus.model.CustomToolSettingsIntent
@@ -39,9 +41,15 @@ fun CustomToolDetailContent(
             uiState.formState.hasUnsavedChanges
         },
         onDelete = {
-            viewModel.sendIntent(CustomToolSettingsIntent.DeleteCurrent)
+            viewModel.sendIntent(CustomToolSettingsIntent.RequestDelete)
         },
         onDiscardChanges = onBack,
+        hasDeleteConfirmation = {
+            uiState.deleteConfirmation != null
+        },
+        onDismissDeleteConfirmation = {
+            viewModel.sendIntent(CustomToolSettingsIntent.DismissDeleteConfirmation)
+        },
     ) {
         CustomToolDetailContentBody(
             uiState = uiState,
@@ -63,6 +71,16 @@ fun CustomToolDetailContent(
             },
             onSave = {
                 viewModel.sendIntent(CustomToolSettingsIntent.Save)
+            },
+        )
+
+        CustomToolDeleteConfirmationDialog(
+            state = uiState.deleteConfirmation,
+            onDismissRequest = {
+                viewModel.sendIntent(CustomToolSettingsIntent.DismissDeleteConfirmation)
+            },
+            onConfirmClick = {
+                viewModel.sendIntent(CustomToolSettingsIntent.ConfirmDelete)
             },
         )
     }
@@ -253,4 +271,22 @@ private fun customToolInlineErrorText(error: CustomToolInlineError?): String? {
             error.message,
         )
     }
+}
+
+@Composable
+private fun CustomToolDeleteConfirmationDialog(
+    state: CustomToolDeleteConfirmationState?,
+    onDismissRequest: () -> Unit,
+    onConfirmClick: () -> Unit,
+) {
+    ConfirmationLiquidDialog(
+        visible = state != null,
+        onDismissRequest = onDismissRequest,
+        title = stringResource(R.string.custom_tool_delete_dialog_title),
+        text = stringResource(R.string.custom_tool_delete_dialog_text, state?.value.orEmpty()),
+        negativeButtonText = stringResource(R.string.delete_dialog_cancel),
+        positiveButtonText = stringResource(R.string.delete_dialog_confirm),
+        onNegativeClick = onDismissRequest,
+        onPositiveClick = onConfirmClick,
+    )
 }

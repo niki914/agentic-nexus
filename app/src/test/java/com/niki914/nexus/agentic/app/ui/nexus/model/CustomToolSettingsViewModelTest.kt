@@ -211,7 +211,8 @@ class CustomToolSettingsViewModelTest {
         viewModel.sendIntent(CustomToolSettingsIntent.Load)
         advanceUntilIdle()
         viewModel.sendIntent(CustomToolSettingsIntent.StartEdit(0))
-        viewModel.sendIntent(CustomToolSettingsIntent.DeleteCurrent)
+        viewModel.sendIntent(CustomToolSettingsIntent.RequestDelete)
+        viewModel.sendIntent(CustomToolSettingsIntent.ConfirmDelete)
         advanceUntilIdle()
 
         assertTrue(XRepo.customTools.list().isEmpty())

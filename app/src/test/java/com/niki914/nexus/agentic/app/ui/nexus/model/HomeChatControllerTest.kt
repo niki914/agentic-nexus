@@ -504,6 +504,23 @@ private class FakeHomeConversationStore : HomeConversationStore {
         records.remove(id)
     }
 
+    override suspend fun forkConversation(sourceId: String, keepTurnCount: Int): String {
+        val source = records[sourceId] ?: throw IllegalStateException("Source conversation not found: $sourceId")
+        val newId = "conversation-${nextId++}"
+        val truncated = source.history.take(keepTurnCount)
+        records[newId] = ConversationRecord(
+            summary = source.summary.copy(
+                id = newId,
+                titleEdited = true,
+                lastMessagePreview = ConversationFormatter.previewFromHistory(truncated),
+                turnCount = truncated.size,
+            ),
+            draftText = "",
+            history = truncated,
+        )
+        return newId
+    }
+
     fun listConversations(): List<ConversationSummary> {
         return records.values.map { it.summary }.sortedByDescending { it.updatedAt }
     }
