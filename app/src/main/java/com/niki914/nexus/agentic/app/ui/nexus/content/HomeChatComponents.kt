@@ -53,6 +53,12 @@ import com.niki914.nexus.agentic.chat.LlmErrorCode
 import com.niki914.nexus.cb.BaseTheme
 
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.automirrored.filled.CallSplit
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.niki914.nexus.agentic.app.ui.infra.shape.G2CardShape
+import com.niki914.nexus.agentic.app.ui.nexus.model.ActionSource
 
 private val ToolSucceededIndicatorColor = Color(0xFF4F8F6B)
 private val ToolFailedIndicatorColor = Color(0xFFB85C5C)
@@ -486,5 +492,72 @@ internal fun UsedNToolsPill(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun TurnActionRow(
+    source: ActionSource,
+    onCopy: () -> Unit,
+    onReGenerate: () -> Unit,
+    onFork: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val isAgent = source == ActionSource.Agent
+
+    Box(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = if (isAgent) Alignment.CenterStart else Alignment.CenterEnd,
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ActionButton(
+                icon = Icons.Default.ContentCopy,
+                contentDescription = "Copy",
+                onClick = onCopy,
+            )
+            if (isAgent) {
+                ActionButton(
+                    icon = Icons.Default.Refresh,
+                    contentDescription = "ReGenerate",
+                    onClick = onReGenerate,
+                )
+                ActionButton(
+                    icon = Icons.AutoMirrored.Filled.CallSplit,
+                    contentDescription = "Fork",
+                    onClick = onFork,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActionButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val containerColor = colorScheme.surfaceVariant.copy(alpha = 0.72f)
+    val contentColor = colorScheme.onSurfaceVariant.copy(alpha = 0.82f)
+    val shape = G2CardShape(14.dp)
+
+    Box(
+        modifier = Modifier
+            .size(38.dp)
+            .clip(shape)
+            .background(containerColor, shape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(20.dp),
+            tint = contentColor,
+        )
     }
 }

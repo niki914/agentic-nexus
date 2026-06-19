@@ -51,6 +51,8 @@ private object DefaultHomeConversationStore : HomeConversationStore {
     }
 }
 
+enum class ActionSource { User, Agent }
+
 enum class HomeToolState {
     Running,
     Succeeded,
@@ -84,6 +86,8 @@ data class HomeChatUiState(
     val currentConversationId: String? = null,
     val currentConversationTitle: String? = null,
     val expandedToolRunKeys: Set<String> = emptySet(),
+    val expandedActionTurnId: Long? = null,
+    val expandedActionSource: ActionSource? = null,
 )
 
 sealed interface HomeChatIntent {
@@ -94,6 +98,7 @@ sealed interface HomeChatIntent {
     data class LoadConversation(val id: String) : HomeChatIntent
     data class DeleteConversation(val id: String) : HomeChatIntent
     data class ToggleToolRunExpanded(val turnId: Long, val runStartIndex: Int) : HomeChatIntent
+    data class ToggleActionRow(val turnId: Long, val source: ActionSource) : HomeChatIntent
 }
 
 internal interface HomeChatRuntime {
@@ -139,6 +144,9 @@ class HomeChatViewModel internal constructor(
             is HomeChatIntent.ToggleToolRunExpanded -> toggleToolRunExpanded(
                 intent.turnId, intent.runStartIndex,
             )
+            is HomeChatIntent.ToggleActionRow -> toggleActionRow(
+                intent.turnId, intent.source,
+            )
         }
     }
 
@@ -152,6 +160,15 @@ class HomeChatViewModel internal constructor(
                     expandedToolRunKeys + key
                 },
             )
+        }
+    }
+
+    private fun toggleActionRow(turnId: Long, source: ActionSource) {
+        updateState {
+            if (expandedActionTurnId == turnId && expandedActionSource == source) {
+                return@updateState this
+            }
+            copy(expandedActionTurnId = turnId, expandedActionSource = source)
         }
     }
 
@@ -305,6 +322,8 @@ class HomeChatViewModel internal constructor(
                         currentConversationId = conversationId,
                         currentConversationTitle = restoredTitle,
                         expandedToolRunKeys = emptySet(),
+                        expandedActionTurnId = null,
+                        expandedActionSource = null,
                     )
                 }
             } catch (throwable: Throwable) {
@@ -347,6 +366,8 @@ class HomeChatViewModel internal constructor(
                 currentConversationId = id,
                 currentConversationTitle = restoredTitle,
                 expandedToolRunKeys = emptySet(),
+                expandedActionTurnId = null,
+                expandedActionSource = null,
             )
         }
     }

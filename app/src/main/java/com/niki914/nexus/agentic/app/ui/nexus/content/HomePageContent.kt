@@ -53,6 +53,7 @@ import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeMenuItem
 import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
+import com.niki914.nexus.agentic.app.ui.nexus.model.ActionSource
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatBlock
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.HomeChatTurn
@@ -214,6 +215,13 @@ fun HomePageContent(
                 HomeChatIntent.ToggleToolRunExpanded(turnId, runStartIndex)
             )
         },
+        expandedActionTurnId = uiState.expandedActionTurnId,
+        expandedActionSource = uiState.expandedActionSource,
+        onToggleActionRow = { turnId, source ->
+            viewModel.sendIntent(
+                HomeChatIntent.ToggleActionRow(turnId, source)
+            )
+        },
     )
 }
 
@@ -228,6 +236,9 @@ private fun HomePageContentBody(
     onStopClick: () -> Unit,
     onComposerFocusChanged: (Boolean) -> Unit,
     onToggleToolRun: (Long, Int) -> Unit,
+    expandedActionTurnId: Long?,
+    expandedActionSource: ActionSource?,
+    onToggleActionRow: (Long, ActionSource) -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -259,6 +270,10 @@ private fun HomePageContentBody(
                     onContentTap = onContentTap,
                     expandedToolRunKeys = uiState.expandedToolRunKeys,
                     onToggleToolRun = onToggleToolRun,
+                    expandedActionTurnId = expandedActionTurnId,
+                    expandedActionSource = expandedActionSource,
+                    onToggleActionRow = onToggleActionRow,
+                    isGenerating = uiState.isGenerating,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 18.dp),
@@ -329,18 +344,51 @@ private fun HomeChatTurnItem(
     onContentTap: () -> Unit,
     expandedToolRunKeys: Set<String>,
     onToggleToolRun: (Long, Int) -> Unit,
+    expandedActionTurnId: Long?,
+    expandedActionSource: ActionSource?,
+    onToggleActionRow: (Long, ActionSource) -> Unit,
+    isGenerating: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
+    val canToggleAction = !isGenerating && turn.blocks.isNotEmpty()
 
-    Column(
-        modifier = modifier.clickable(
-            interactionSource = interactionSource,
-            indication = null,
-            onClick = onContentTap,
-        ),
-    ) {
-        UserMessageBubble(text = turn.userText)
+    val isActionExpanded = expandedActionTurnId == turn.id
+    val actionSource = expandedActionSource
+    var showActionRow by remember { mutableStateOf(false) }
+    LaunchedEffect(isActionExpanded) {
+        showActionRow = isActionExpanded
+    }
+
+    Column(modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {
+                        if (canToggleAction) {
+                            onToggleActionRow(turn.id, ActionSource.User)
+                        }
+                    },
+                ),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            UserMessageBubble(text = turn.userText)
+        }
+
+        AnimatedVisibility(
+            visible = showActionRow && actionSource == ActionSource.User,
+            enter = expandVertically() + fadeIn(),
+        ) {
+            TurnActionRow(
+                source = ActionSource.User,
+                onCopy = { /* stub */ },
+                onReGenerate = { /* stub */ },
+                onFork = { /* stub */ },
+                modifier = Modifier.padding(top = 10.dp),
+            )
+        }
 
         val toolRuns = remember(turn.blocks) {
             turn.blocks.findConsecutiveToolRuns()
@@ -362,10 +410,24 @@ private fun HomeChatTurnItem(
                 when (val block = turn.blocks[blockIndex]) {
                     is HomeChatBlock.Text -> {
                         if (block.text.isNotBlank()) {
-                            AssistantOutputText(
-                                text = block.text,
-                                modifier = Modifier.padding(top = 12.dp),
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null,
+                                        onClick = {
+                                            if (canToggleAction) {
+                                                onToggleActionRow(turn.id, ActionSource.Agent)
+                                            }
+                                        },
+                                    ),
+                            ) {
+                                AssistantOutputText(
+                                    text = block.text,
+                                    modifier = Modifier.padding(top = 12.dp),
+                                )
+                            }
                         }
                     }
 
@@ -386,6 +448,19 @@ private fun HomeChatTurnItem(
                 }
                 blockIndex++
             }
+        }
+
+        AnimatedVisibility(
+            visible = showActionRow && actionSource == ActionSource.Agent,
+            enter = expandVertically() + fadeIn(),
+        ) {
+            TurnActionRow(
+                source = ActionSource.Agent,
+                onCopy = { /* stub */ },
+                onReGenerate = { /* stub */ },
+                onFork = { /* stub */ },
+                modifier = Modifier.padding(top = 10.dp),
+            )
         }
     }
 }
@@ -480,6 +555,9 @@ private fun HomePageContentPreview() {
                 onStopClick = {},
                 onComposerFocusChanged = {},
                 onToggleToolRun = { _, _ -> },
+                expandedActionTurnId = null,
+                expandedActionSource = null,
+                onToggleActionRow = { _, _ -> },
             )
         }
     }
