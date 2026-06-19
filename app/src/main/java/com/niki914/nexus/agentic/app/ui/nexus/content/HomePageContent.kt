@@ -209,6 +209,11 @@ fun HomePageContent(
         onComposerFocusChanged = { focused ->
             isComposerFocused = focused
         },
+        onToggleToolRun = { turnId, runStartIndex ->
+            viewModel.sendIntent(
+                HomeChatIntent.ToggleToolRunExpanded(turnId, runStartIndex)
+            )
+        },
     )
 }
 
@@ -222,6 +227,7 @@ private fun HomePageContentBody(
     onSendClick: () -> Unit,
     onStopClick: () -> Unit,
     onComposerFocusChanged: (Boolean) -> Unit,
+    onToggleToolRun: (Long, Int) -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -251,6 +257,8 @@ private fun HomePageContentBody(
                 HomeChatTurnItem(
                     turn = turn,
                     onContentTap = onContentTap,
+                    expandedToolRunKeys = uiState.expandedToolRunKeys,
+                    onToggleToolRun = onToggleToolRun,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 18.dp),
@@ -319,6 +327,8 @@ private fun List<HomeChatBlock>.findConsecutiveToolRuns(): List<ToolRun> {
 private fun HomeChatTurnItem(
     turn: HomeChatTurn,
     onContentTap: () -> Unit,
+    expandedToolRunKeys: Set<String>,
+    onToggleToolRun: (Long, Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -343,6 +353,8 @@ private fun HomeChatTurnItem(
                     .map { it as HomeChatBlock.Tool }
                 ToolRunItem(
                     tools = tools,
+                    expanded = "${turn.id}_${run.startIndex}" in expandedToolRunKeys,
+                    onToggle = { onToggleToolRun(turn.id, run.startIndex) },
                     modifier = Modifier.padding(top = 12.dp),
                 )
                 blockIndex = run.endIndex
@@ -381,15 +393,15 @@ private fun HomeChatTurnItem(
 @Composable
 private fun ToolRunItem(
     tools: List<HomeChatBlock.Tool>,
+    expanded: Boolean,
+    onToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
     if (!expanded) {
         UsedNToolsPill(
             count = tools.size,
             firstToolState = tools.first().status.state,
-            onClick = { expanded = true },
+            onClick = onToggle,
             modifier = modifier,
         )
     } else {
@@ -467,6 +479,7 @@ private fun HomePageContentPreview() {
                 onSendClick = {},
                 onStopClick = {},
                 onComposerFocusChanged = {},
+                onToggleToolRun = { _, _ -> },
             )
         }
     }

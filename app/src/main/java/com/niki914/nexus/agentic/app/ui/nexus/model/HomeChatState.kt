@@ -83,6 +83,7 @@ data class HomeChatUiState(
     val streamEventCount: Int = 0,
     val currentConversationId: String? = null,
     val currentConversationTitle: String? = null,
+    val expandedToolRunKeys: Set<String> = emptySet(),
 )
 
 sealed interface HomeChatIntent {
@@ -92,6 +93,7 @@ sealed interface HomeChatIntent {
     data object NewConversation : HomeChatIntent
     data class LoadConversation(val id: String) : HomeChatIntent
     data class DeleteConversation(val id: String) : HomeChatIntent
+    data class ToggleToolRunExpanded(val turnId: Long, val runStartIndex: Int) : HomeChatIntent
 }
 
 internal interface HomeChatRuntime {
@@ -134,6 +136,22 @@ class HomeChatViewModel internal constructor(
             HomeChatIntent.NewConversation -> startNewConversation()
             is HomeChatIntent.LoadConversation -> loadConversation(intent.id)
             is HomeChatIntent.DeleteConversation -> deleteConversationNow(intent.id)
+            is HomeChatIntent.ToggleToolRunExpanded -> toggleToolRunExpanded(
+                intent.turnId, intent.runStartIndex,
+            )
+        }
+    }
+
+    private fun toggleToolRunExpanded(turnId: Long, runStartIndex: Int) {
+        val key = "${turnId}_${runStartIndex}"
+        updateState {
+            copy(
+                expandedToolRunKeys = if (key in expandedToolRunKeys) {
+                    expandedToolRunKeys - key
+                } else {
+                    expandedToolRunKeys + key
+                },
+            )
         }
     }
 
@@ -286,6 +304,7 @@ class HomeChatViewModel internal constructor(
                         streamEventCount = 0,
                         currentConversationId = conversationId,
                         currentConversationTitle = restoredTitle,
+                        expandedToolRunKeys = emptySet(),
                     )
                 }
             } catch (throwable: Throwable) {
@@ -327,6 +346,7 @@ class HomeChatViewModel internal constructor(
                 streamEventCount = 0,
                 currentConversationId = id,
                 currentConversationTitle = restoredTitle,
+                expandedToolRunKeys = emptySet(),
             )
         }
     }
