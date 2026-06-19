@@ -56,6 +56,7 @@ data class TakeoverDeleteConfirmationState(
 
 data class TakeoverSettingsUiState(
     val items: List<TakeoverRuleItem> = emptyList(),
+    val defaultTarget: TakeoverTarget = TakeoverTarget.Nexus,
     val formState: TakeoverRuleFormState = TakeoverRuleFormState(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
@@ -76,6 +77,7 @@ sealed interface TakeoverSettingsIntent {
     data object RequestDelete : TakeoverSettingsIntent
     data object DismissDeleteConfirmation : TakeoverSettingsIntent
     data object ConfirmDelete : TakeoverSettingsIntent
+    data class DefaultTargetChanged(val value: TakeoverTarget) : TakeoverSettingsIntent
 }
 
 sealed interface TakeoverInlineError {
@@ -152,6 +154,7 @@ class TakeoverSettingsViewModel :
             }
 
             TakeoverSettingsIntent.Save -> save()
+            is TakeoverSettingsIntent.DefaultTargetChanged -> setDefaultTarget(intent.value)
             TakeoverSettingsIntent.RequestDelete -> requestDelete()
             TakeoverSettingsIntent.DismissDeleteConfirmation -> updateState {
                 copy(deleteConfirmation = null)
@@ -164,9 +167,11 @@ class TakeoverSettingsViewModel :
         updateState { copy(isLoading = true) }
         try {
             val loadedItems = XRepo.takeoverRules.list().map { it.toItem() }
+            val defaultTarget = XRepo.takeoverRules.getDefaultTarget().toUiTarget()
             updateState {
                 copy(
                     items = loadedItems,
+                    defaultTarget = defaultTarget,
                     isLoading = false,
                     inlineError = null,
                 )
@@ -393,6 +398,25 @@ class TakeoverSettingsViewModel :
                 copy(
                     isSaving = false,
                     inlineError = TakeoverInlineError.DeleteFailed(throwable.message),
+                )
+            }
+        }
+    }
+
+    private suspend fun setDefaultTarget(target: TakeoverTarget) {
+        val previousTarget = currentState.defaultTarget
+        updateState { copy(defaultTarget = target, inlineError = null, isSaving = true) }
+        try {
+            XRepo.takeoverRules.setDefaultTarget(target.toRuntime())
+            updateState { copy(isSaving = false) }
+            notifySettingsChanged()
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            updateState {
+                copy(
+                    defaultTarget = previousTarget,
+                    isSaving = false,
+                    inlineError = TakeoverInlineError.SaveFailed(throwable.message),
                 )
             }
         }

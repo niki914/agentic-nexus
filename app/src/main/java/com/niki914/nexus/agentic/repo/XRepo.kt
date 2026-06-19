@@ -17,6 +17,8 @@ import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmC
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer as McpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool as McpTool
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeTakeoverRule as TakeoverRule
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeTakeoverSettings as TakeoverSettings
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeTakeoverTarget
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeTakeoverRuleValidation as TakeoverRuleValidation
 import com.niki914.nexus.agentic.runtime.settings.model.TAKEOVER_FIELD_NAME
 import com.niki914.nexus.agentic.runtime.settings.model.TAKEOVER_FIELD_PATTERNS
@@ -338,9 +340,23 @@ class TakeoverRulesApi internal constructor(
         return list().firstOrNull { it.id == id }
     }
 
+    suspend fun getDefaultTarget(): RuntimeTakeoverTarget {
+        return RuleSettingsCodec.parseTakeoverSettings(
+            repo.readJson(StoreDescriptorRegistry.RULES_TAKEOVER_ID)
+        ).defaultTarget
+    }
+
+    suspend fun setDefaultTarget(target: RuntimeTakeoverTarget) {
+        repo.updateJson(StoreDescriptorRegistry.RULES_TAKEOVER_ID) { json ->
+            val settings = RuleSettingsCodec.parseTakeoverSettings(json)
+            RuleSettingsCodec.encodeTakeoverSettings(settings.copy(defaultTarget = target))
+        }
+    }
+
     suspend fun replace(previousId: String?, rule: TakeoverRule) {
         repo.updateJson(StoreDescriptorRegistry.RULES_TAKEOVER_ID) { json ->
-            val rules = RuleSettingsCodec.parseTakeoverRules(json)
+            val settings = RuleSettingsCodec.parseTakeoverSettings(json)
+            val rules = settings.rules
             val withoutPrevious = if (previousId != null && previousId != rule.id) {
                 rules.filterNot { it.id == previousId }
             } else {
@@ -351,24 +367,28 @@ class TakeoverRulesApi internal constructor(
             } else {
                 withoutPrevious + rule
             }
-            RuleSettingsCodec.encodeTakeoverRules(updated)
+            RuleSettingsCodec.encodeTakeoverSettings(settings.copy(rules = updated))
         }
     }
 
     suspend fun delete(id: String) {
         repo.updateJson(StoreDescriptorRegistry.RULES_TAKEOVER_ID) { json ->
-            RuleSettingsCodec.encodeTakeoverRules(
-                RuleSettingsCodec.parseTakeoverRules(json).filterNot { it.id == id },
+            val settings = RuleSettingsCodec.parseTakeoverSettings(json)
+            RuleSettingsCodec.encodeTakeoverSettings(
+                settings.copy(rules = settings.rules.filterNot { it.id == id })
             )
         }
     }
 
     suspend fun setEnabled(id: String, enabled: Boolean) {
         repo.updateJson(StoreDescriptorRegistry.RULES_TAKEOVER_ID) { json ->
-            RuleSettingsCodec.encodeTakeoverRules(
-                RuleSettingsCodec.parseTakeoverRules(json).map { rule ->
-                    if (rule.id == id) rule.copy(enabled = enabled) else rule
-                },
+            val settings = RuleSettingsCodec.parseTakeoverSettings(json)
+            RuleSettingsCodec.encodeTakeoverSettings(
+                settings.copy(
+                    rules = settings.rules.map { rule ->
+                        if (rule.id == id) rule.copy(enabled = enabled) else rule
+                    }
+                )
             )
         }
     }

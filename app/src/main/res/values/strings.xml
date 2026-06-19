@@ -170,6 +170,7 @@
     <string name="execution_rules_save_action">保存策略</string>
 
     <!-- Takeover Module -->
+    <string name="takeover_default_responder">默认模型</string>
     <string name="takeover_page_description">按顺序检查规则，命中后决定由谁响应。</string>
     <string name="takeover_empty_action_hint">点击右上方，添加第一条接管规则。</string>
     <string name="takeover_loading">正在读取接管规则…</string>

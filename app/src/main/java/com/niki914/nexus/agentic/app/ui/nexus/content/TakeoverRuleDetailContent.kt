@@ -213,7 +213,7 @@ private fun takeoverFieldErrorText(errorResId: Int?): String? {
 }
 
 @Composable
-private fun TakeoverTarget.label(): String {
+internal fun TakeoverTarget.label(): String {
     return when (this) {
         TakeoverTarget.NativeAssistant -> stringResource(R.string.takeover_target_native_assistant)
         TakeoverTarget.Nexus -> stringResource(R.string.takeover_target_nexus)

@@ -170,6 +170,7 @@
     <string name="execution_rules_save_action">Save Rule</string>
 
     <!-- Takeover Module -->
+    <string name="takeover_default_responder">Default Responder</string>
     <string name="takeover_page_description">Check rules in order and choose who should respond.</string>
     <string name="takeover_empty_action_hint">Tap the top right to add your first takeover rule.</string>
     <string name="takeover_loading">Loading takeover rules...</string>

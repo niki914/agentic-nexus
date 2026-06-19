@@ -102,7 +102,8 @@ abstract class AbstractAssistantHook(protected val scope: CoroutineScope) : Hook
 
     protected open suspend fun resolveTakeover(query: String): TakeoverDecision {
         val rules = XRepo.takeoverRules.list()
-        return TakeoverResolver.resolve(query, rules)
+        val defaultTarget = XRepo.takeoverRules.getDefaultTarget()
+        return TakeoverResolver.resolve(query, rules, defaultTarget)
     }
 
     private fun TurnMode.eventName(): String = when (this) {

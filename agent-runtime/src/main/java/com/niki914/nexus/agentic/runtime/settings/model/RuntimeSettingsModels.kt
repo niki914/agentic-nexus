@@ -64,6 +64,11 @@ data class RuntimeTakeoverRule(
     val patterns: List<String>,
 )
 
+data class RuntimeTakeoverSettings(
+    val defaultTarget: RuntimeTakeoverTarget = RuntimeTakeoverTarget.NEXUS,
+    val rules: List<RuntimeTakeoverRule> = emptyList(),
+)
+
 const val TAKEOVER_FIELD_NAME: String = "name"
 const val TAKEOVER_FIELD_PATTERNS: String = "patterns"
 
