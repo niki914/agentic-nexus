@@ -205,6 +205,7 @@ fun HomePageContent(
             viewModel.sendIntent(HomeChatIntent.InputChanged(value))
         },
         onSendClick = {
+            dismissInputFocus()
             shouldFollowBottom = true
             viewModel.sendIntent(HomeChatIntent.Send)
         },
@@ -386,6 +387,7 @@ private fun HomeChatTurnItem(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                     onClick = {
+                        onContentTap()
                         if (canToggleAction) {
                             onToggleActionRow(turn.id, ActionSource.User)
                         }
@@ -440,6 +442,7 @@ private fun HomeChatTurnItem(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = null,
                                         onClick = {
+                                            onContentTap()
                                             if (canToggleAction) {
                                                 onToggleActionRow(turn.id, ActionSource.Agent)
                                             }
