@@ -114,6 +114,7 @@ sealed interface HomeChatIntent {
 internal interface HomeChatRuntime {
     fun stream(query: String): Flow<LlmStreamEvent>
     suspend fun resetConversation()
+    suspend fun stopCurrentRound(keepCurrentTurn: Boolean = false)
     suspend fun getHistory(): List<ChatTurn>
     suspend fun replaceHistory(history: List<ChatTurn>)
 }
@@ -121,6 +122,8 @@ internal interface HomeChatRuntime {
 private object LlmHomeChatRuntime : HomeChatRuntime {
     override fun stream(query: String): Flow<LlmStreamEvent> = LLMController.stream(query)
     override suspend fun resetConversation() = LLMController.resetConversation()
+    override suspend fun stopCurrentRound(keepCurrentTurn: Boolean) =
+        LLMController.stopCurrentRound(keepCurrentTurn)
     override suspend fun getHistory(): List<ChatTurn> = LLMController.getHistory()
     override suspend fun replaceHistory(history: List<ChatTurn>) =
         LLMController.replaceHistory(history)
@@ -230,11 +233,9 @@ class HomeChatViewModel internal constructor(
         }
     }
 
-    private fun stopGenerating() {
+    private suspend fun stopGenerating() {
         if (!currentState.isGenerating) return
-        streamJob?.cancel()
-        streamJob = null
-        updateState { copy(isGenerating = false) }
+        runtime.stopCurrentRound(keepCurrentTurn = true)
     }
 
     private fun startNewConversation() {
