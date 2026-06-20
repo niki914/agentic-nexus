@@ -4,6 +4,7 @@ import com.niki914.nexus.agentic.mod.HookLocalSettings
 import com.niki914.nexus.agentic.mod.XService
 import com.niki914.nexus.agentic.mod.feat.hyper.XiaoaiChatHook
 import com.niki914.nexus.agentic.mod.feat.oppo.BreenoChatHook
+import com.niki914.nexus.agentic.repo.WebSettingsFailureReason
 import com.niki914.nexus.agentic.repo.WebSettingsResult
 import com.niki914.nexus.agentic.repo.XRepo
 import com.niki914.nexus.agentic.runtime.createAppRuntimeBridge
@@ -44,13 +45,33 @@ class Entrance : IXposed() {
             HookLocalSettings.update(ctx)
             val webSettingsResult = XRepo.web.await()
             val targetPkg = params.packageName
+            val isFallbackVersion =
+                webSettingsResult is WebSettingsResult.Success && webSettingsResult.isFallbackVersion
+            val isNetworkError =
+                webSettingsResult is WebSettingsResult.RequestFailed &&
+                    webSettingsResult.reason == WebSettingsFailureReason.NetworkUnavailable
+            val isNoSupportedVersion =
+                isFallbackVersion || (
+                    webSettingsResult is WebSettingsResult.RequestFailed &&
+                        webSettingsResult.reason == WebSettingsFailureReason.ServerError
+                    )
 
-            if (webSettingsResult is WebSettingsResult.Success && webSettingsResult.isFallbackVersion) {
-                XService.postNotification(
-                    title = "Nexus 版本未支持",
-                    content = "当前版本 ${webSettingsResult.requestedVersionCode} 未适配。已选择默认版本，可能出现兼容性问题",
-                    uri = null,
-                )
+            when {
+                isNetworkError -> {
+                    XService.postNotification(
+                        title = "网络异常",
+                        content = "网络异常，请在检查网络后重试",
+                        uri = null,
+                    )
+                }
+
+                isNoSupportedVersion -> {
+                    XService.postNotification(
+                        title = "版本未支持",
+                        content = "当前版本未支持，请提交 issue 反馈",
+                        uri = null,
+                    )
+                }
             }
 
             val configObj = webSettingsResult.configOrNull()
