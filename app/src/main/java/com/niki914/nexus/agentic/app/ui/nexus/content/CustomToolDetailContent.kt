@@ -10,7 +10,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
@@ -141,8 +140,7 @@ private fun CustomToolDetailContentBody(
     ) { fieldController ->
         CustomToolIdentitySettingsBlock(
             uiState = uiState,
-            expandedField = fieldController.expandedField,
-            onExpandedFieldChange = fieldController.onExpandedFieldChange,
+            fieldController = fieldController,
             onNameChange = onNameChange,
             onDescriptionChange = onDescriptionChange,
             onEnabledChange = {
@@ -153,8 +151,7 @@ private fun CustomToolDetailContentBody(
 
         CustomToolCommandSettingsBlock(
             uiState = uiState,
-            expandedField = fieldController.expandedField,
-            onExpandedFieldChange = fieldController.onExpandedFieldChange,
+            fieldController = fieldController,
             onCommandChange = onCommandChange,
         )
     }
@@ -169,14 +166,15 @@ private enum class CustomToolEditableField {
 @Composable
 private fun CustomToolIdentitySettingsBlock(
     uiState: CustomToolSettingsUiState,
-    expandedField: CustomToolEditableField?,
-    onExpandedFieldChange: (CustomToolEditableField?) -> Unit,
+    fieldController: EditableDetailFieldController<CustomToolEditableField>,
     onNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
     onEnabledChange: (Boolean) -> Unit,
 ) {
     SettingsGroupCard {
-        SettingExpandableTextItem(
+        SettingControlledExpandableTextItem(
+            field = CustomToolEditableField.Name,
+            controller = fieldController,
             title = stringResource(R.string.custom_tool_field_name),
             value = uiState.formState.name,
             onValueChange = onNameChange,
@@ -185,15 +183,11 @@ private fun CustomToolIdentitySettingsBlock(
             enabled = !uiState.isSaving,
             minLines = 1,
             maxLines = 1,
-            expanded = expandedField == CustomToolEditableField.Name,
-            onExpandedChange = { isExpanded ->
-                onExpandedFieldChange(
-                    if (isExpanded) CustomToolEditableField.Name else null,
-                )
-            },
         )
         SettingsItemDivider()
-        SettingExpandableTextItem(
+        SettingControlledExpandableTextItem(
+            field = CustomToolEditableField.Description,
+            controller = fieldController,
             title = stringResource(R.string.custom_tool_field_description),
             value = uiState.formState.description,
             onValueChange = onDescriptionChange,
@@ -202,12 +196,6 @@ private fun CustomToolIdentitySettingsBlock(
             enabled = !uiState.isSaving,
             minLines = 3,
             maxLines = 8,
-            expanded = expandedField == CustomToolEditableField.Description,
-            onExpandedChange = { isExpanded ->
-                onExpandedFieldChange(
-                    if (isExpanded) CustomToolEditableField.Description else null,
-                )
-            },
         )
         SettingsItemDivider()
         SettingToggleItem(
@@ -222,12 +210,13 @@ private fun CustomToolIdentitySettingsBlock(
 @Composable
 private fun CustomToolCommandSettingsBlock(
     uiState: CustomToolSettingsUiState,
-    expandedField: CustomToolEditableField?,
-    onExpandedFieldChange: (CustomToolEditableField?) -> Unit,
+    fieldController: EditableDetailFieldController<CustomToolEditableField>,
     onCommandChange: (String) -> Unit,
 ) {
     SettingsGroupCard {
-        SettingExpandableTextItem(
+        SettingControlledExpandableTextItem(
+            field = CustomToolEditableField.Command,
+            controller = fieldController,
             title = stringResource(R.string.custom_tool_field_command),
             value = uiState.formState.command,
             onValueChange = onCommandChange,
@@ -237,12 +226,6 @@ private fun CustomToolCommandSettingsBlock(
             enabled = !uiState.isSaving,
             minLines = 3,
             maxLines = 10,
-            expanded = expandedField == CustomToolEditableField.Command,
-            onExpandedChange = { isExpanded ->
-                onExpandedFieldChange(
-                    if (isExpanded) CustomToolEditableField.Command else null,
-                )
-            },
         )
     }
 }

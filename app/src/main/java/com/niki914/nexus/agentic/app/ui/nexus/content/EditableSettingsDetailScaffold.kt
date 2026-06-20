@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
+import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsDetailFormScaffold
 import com.niki914.nexus.agentic.app.ui.nexus.PageBackHandler
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
@@ -120,6 +121,43 @@ data class EditableDetailFieldController<Field>(
     val onExpandedFieldChange: (Field?) -> Unit,
     val clearActiveField: () -> Unit,
 )
+
+@Composable
+fun <Field : Enum<Field>> SettingControlledExpandableTextItem(
+    field: Field,
+    controller: EditableDetailFieldController<Field>,
+    title: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    description: String? = null,
+    enabled: Boolean = true,
+    minLines: Int = 1,
+    maxLines: Int = 1,
+    secretVisible: Boolean = false,
+    onToggleSecretVisibility: (() -> Unit)? = null,
+    toggleSecretVisibleContentDescription: String? = null,
+    toggleSecretHiddenContentDescription: String? = null,
+) {
+    SettingExpandableTextItem(
+        title = title,
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = placeholder,
+        description = description,
+        enabled = enabled,
+        expanded = controller.expandedField == field,
+        minLines = minLines,
+        maxLines = maxLines,
+        secretVisible = secretVisible,
+        onToggleSecretVisibility = onToggleSecretVisibility,
+        toggleSecretVisibleContentDescription = toggleSecretVisibleContentDescription,
+        toggleSecretHiddenContentDescription = toggleSecretHiddenContentDescription,
+        onExpandedChange = { expanded ->
+            controller.onExpandedFieldChange(if (expanded) field else null)
+        },
+    )
+}
 
 @Composable
 fun <Field : Enum<Field>> EditableSettingsDetailFormScaffold(

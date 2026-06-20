@@ -10,10 +10,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsPageSpec
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsRowAction
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsRowSpec
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsSectionLayout
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsSectionSpec
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsSpecPageContent
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.BuiltinToolSettingsIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.BuiltinToolSettingsUiState
@@ -31,10 +33,10 @@ fun BuiltinToolsSettingsContent() {
 
     BuiltinToolsSettingsContentBody(
         uiState = uiState,
-        onItemEnabledChange = { item, checked ->
+        onItemEnabledChange = { name, checked ->
             viewModel.sendIntent(
                 BuiltinToolSettingsIntent.ItemEnabledChanged(
-                    name = item.name,
+                    name = name,
                     value = checked,
                 )
             )
@@ -45,30 +47,45 @@ fun BuiltinToolsSettingsContent() {
 @Composable
 private fun BuiltinToolsSettingsContentBody(
     uiState: BuiltinToolSettingsUiState,
-    onItemEnabledChange: (BuiltinToolSettingItem, Boolean) -> Unit,
+    onItemEnabledChange: (String, Boolean) -> Unit,
 ) {
-    SettingsListPageContent(
-        description = builtinToolDescription(uiState),
-    ) {
-        if (!uiState.isLoading && uiState.items.isNotEmpty()) {
-            SettingsGroupCard {
-                uiState.items.forEachIndexed { index, item ->
-                    SettingToggleItem(
+    SettingsSpecPageContent(
+        spec = builtinToolsSettingsSpec(uiState),
+        onAction = { action ->
+            when (action) {
+                is SettingsRowAction.ToggleChanged -> onItemEnabledChange(action.id, action.checked)
+                is SettingsRowAction.Click -> Unit
+                is SettingsRowAction.Navigate -> Unit
+            }
+        },
+    )
+}
+
+@Composable
+private fun builtinToolsSettingsSpec(uiState: BuiltinToolSettingsUiState): SettingsPageSpec {
+    val sections = if (!uiState.isLoading && uiState.items.isNotEmpty()) {
+        listOf(
+            SettingsSectionSpec(
+                layout = SettingsSectionLayout.GroupedCard,
+                rows = uiState.items.map { item ->
+                    SettingsRowSpec.Toggle(
+                        id = item.name,
                         title = item.name,
-                        description = item.description,
+                        summary = item.description,
                         checked = item.enabled,
                         enabled = !uiState.isSaving,
-                        onCheckedChange = { checked ->
-                            onItemEnabledChange(item, checked)
-                        },
                     )
-                    if (index != uiState.items.lastIndex) {
-                        SettingsItemDivider()
-                    }
-                }
-            }
-        }
+                },
+            )
+        )
+    } else {
+        emptyList()
     }
+
+    return SettingsPageSpec(
+        description = builtinToolDescription(uiState),
+        sections = sections,
+    )
 }
 
 @Composable
