@@ -50,22 +50,22 @@
 
 - **Breeno**
   - `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/subhooks/ResetConversationSignalHook.kt`
-  - `installFloatScreenDetachHooks()` 组合浮窗 detach 与页面 resume 做退出判定。
+  - `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt` 的 `installFloatScreenDetachHooks()` 组合浮窗 detach 与页面 resume 做退出判定。
 
 - **XiaoAi**
-  - `installFloatScreenDetachHooks()` 组合浮窗 detach 与页面 resume 做退出判定。
+  - `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt` 的 `installFloatScreenDetachHooks()` 组合浮窗 detach 与页面 resume 做退出判定。
   - 当前没有独立的 `ConversationJournal` 或额外 turn store 文件。
 
 ## 关键源码
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/`
 
-- `ConversationTurnState.kt`
-- `ActiveTurnStore.kt`
-- `TurnMode.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/ConversationTurnState.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/ActiveTurnStore.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/TurnMode.kt`
 
 ### `app/src/main/java/com/niki914/nexus/agentic/mod/feat/`
 
-- `AbstractAssistantHook.kt`
-- `oppo/BreenoChatHook.kt`
-- `hyper/XiaoaiChatHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/AbstractAssistantHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`

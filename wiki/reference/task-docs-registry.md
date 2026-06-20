@@ -34,4 +34,4 @@
     - `PromptComposer.kt`
     - `SessionToolBinder.kt`
     - `ToolManager.kt`
-    - `mcp/McpDiscoveryCacheStore.kt`
+    - `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStore.kt`

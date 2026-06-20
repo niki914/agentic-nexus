@@ -68,21 +68,21 @@ XiaoAi 走**响应目标捕获 + Instruction 分片注入**：
 
 ### `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/`
 
-- `BreenoChatHook.kt`
-- `BreenoConfigProvider.kt`
-- `BreenoFeedbackAssembler.kt`
-- `subhooks/BlockNativeCardHook.kt`
-- `subhooks/CaptureInputHook.kt`
-- `subhooks/ResetConversationSignalHook.kt`
-- `subhooks/SuppressCleanupHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoConfigProvider.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoFeedbackAssembler.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/subhooks/BlockNativeCardHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/subhooks/CaptureInputHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/subhooks/ResetConversationSignalHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/subhooks/SuppressCleanupHook.kt`
 
 ### `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/`
 
-- `XiaoaiChatHook.kt`
-- `XiaoaiConfigProvider.kt`
-- `XiaoaiRenderSession.kt`
-- `subhooks/BlockNativeInstructionByWhitelistHook.kt`
-- `subhooks/BlockNativeTtsPlaybackHook.kt`
-- `subhooks/CaptureInputHook.kt`
-- `subhooks/CaptureResponseTargetHook.kt`
-- `subhooks/RenderTextStreamCardHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiConfigProvider.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiRenderSession.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/subhooks/BlockNativeInstructionByWhitelistHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/subhooks/BlockNativeTtsPlaybackHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/subhooks/CaptureInputHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/subhooks/CaptureResponseTargetHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/subhooks/RenderTextStreamCardHook.kt`

@@ -1,63 +1,68 @@
 # Boot Sequence
 
-本文档描述从 Xposed 入口到宿主主 Hook 安装完成的启动链路，以及 Hook 安装后每轮 query 的分流前置条件。
+本文档描述从 Xposed 入口到宿主主 Hook 安装完成的当前启动链路，以及每轮 query 进入 LLM 前的分流前置。
 
 ## 启动时序
 
 1. **入口匹配**
-   - `app/src/main/java/a0/a0/a0/a0/a0/a0/Entrance.kt` 通过 `getTarget()` 返回 `Target.filter(*XValues.appList.toTypedArray())`，只监听受支持宿主包名。
+   - `app/src/main/java/a0/a0/a0/a0/a0/a0/Entrance.kt` 的 `getTarget()` 返回 `Target.filter(*XValues.appList.toTypedArray())`，只监听受支持宿主包名。
 
 2. **基础 Hook 装载**
-   - `Entrance.onLoad()` 先用 `HookSideLoader.load(scope, ContextHook(), params)` 装载 `h/src/main/java/com/niki914/nexus/h/util/ContextHook.kt`。
-   - 入口里仍保留 `ActivityHook` 与 `FloatWindowHook` 的注释代码，但当前未启用，不属于实际启动链。
+   - `Entrance.onLoad()` 先调用 `HookSideLoader.load(scope, ContextHook(), params)` 装载 `ContextHook`。
+   - 同文件里保留了 `ActivityHook` 和 `FloatWindowHook` 的注释代码，但当前未参与实际启动链。
 
-3. **上下文与设置初始化**
+3. **上下文与运行时桥接安装**
    - `h/src/main/java/com/niki914/nexus/h/util/ContextProvider.kt` 的 `ContextProvider.await()` 等待宿主 `Context` 就绪。
-   - `app/src/main/java/com/niki914/nexus/agentic/repo/XRepo.kt` 的 `XRepo.init(ctx)` 初始化进程内 repo 上下文。
-   - `app/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeEnvironment.kt` 通过 `RuntimeEnvironment.install(createAppRuntimeBridge())` 安装 runtime settings gateway。
+   - `app/src/main/java/com/niki914/nexus/agentic/repo/XRepo.kt` 的 `XRepo.init(ctx)` 初始化 repo 上下文。
+   - `app/src/main/java/com/niki914/nexus/agentic/runtime/AppRuntimeBridge.kt` 的 `createAppRuntimeBridge()` 组装 `RuntimeBridge(settings = XRepoRuntimeGateway(), host = IpcRuntimeHostGateway())`。
+   - `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeEnvironment.kt` 通过 `RuntimeEnvironment.install(...)` 挂载这套 bridge；`RuntimeEnvironment` 实际位于 `agent-runtime` 模块，不在 `app` 模块。
    - `app/src/main/java/com/niki914/nexus/agentic/mod/HookLocalSettings.kt` 的 `HookLocalSettings.update(ctx)` 刷新宿主进程本地设置缓存。
 
-4. **WEB_SETTINGS 获取与 fallback 通知**
-   - `app/src/main/java/com/niki914/nexus/agentic/repo/WebSettingsApi.kt` 的 `XRepo.web.await()` 先读 IPC 缓存；缓存不可用时再请求远端配置。
-   - 若目标版本没有精确配置，`WebSettingsApi` 会按 `versions.json` 选择最近版本并返回 `isFallbackVersion = true` 的成功结果。
-   - `Entrance.onLoad()` 在拿到 fallback 成功结果后，会调用 `app/src/main/java/com/niki914/nexus/agentic/mod/XService.kt` 的 `XService.postNotification(...)` 发出“版本未支持，已选择默认版本”的提示；通知实际经由 `XIpcBridge.postNotification(...)` 下发。
-   - 只有 `webSettingsResult.configOrNull()` 非空时，才会继续进入宿主路由；配置缺失时不会安装业务 Hook。
+4. **远端配置获取与 fallback 通知**
+   - `app/src/main/java/com/niki914/nexus/agentic/repo/WebSettingsApi.kt` 的 `XRepo.web.await()` 先读 `web_settings` store；缓存不可用时再请求远端配置。
+   - 命中最近版本回退时，`WebSettingsResult.Success.isFallbackVersion` 为 `true`。
+   - `Entrance.onLoad()` 在 fallback 成功后调用 `app/src/main/java/com/niki914/nexus/agentic/mod/XService.kt` 的 `XService.postNotification(...)` 发出版本兼容提示。
+   - 只有 `webSettingsResult.configOrNull()` 非空时才继续宿主路由；配置缺失时不会安装业务 Hook。
 
 5. **宿主路由**
-   - `Entrance.onSettingsFetched()` 用 `HostApp.fromPackageName(params.packageName)` 判断当前宿主。
+   - `Entrance.onSettingsFetched()` 通过 `HostApp.fromPackageName(params.packageName)` 判断当前宿主。
    - 只有 `targetPkg == params.packageName` 时才继续安装，避免把别的宿主配置挂到当前进程。
    - `HostApp.Breeno` 路由到 `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt`。
    - `HostApp.XiaoAi` 路由到 `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`。
-   - 未命中时直接返回，不安装业务 Hook。
 
-6. **Runtime 安装**
-   - `h/src/main/java/com/niki914/nexus/h/core/runtime/RuntimeBootstrap.kt` 的 `RuntimeBootstrap.installIfNeeded()` 为当前宿主进程安装单例 `Runtime`。
-   - `Runtime` 当前只挂载命中的主业务 Hook；主 Hook 再在 `onHook()` 里继续安装 session / response / input subhook。
+6. **宿主进程 Runtime 安装**
+   - `h/src/main/java/com/niki914/nexus/h/core/runtime/RuntimeBootstrap.kt` 的 `installIfNeeded()` 为当前宿主进程安装单例 `Runtime`。
+   - 当前 `Runtime` 只挂载命中的主业务 Hook；具体的 session、response、input subhook 在该主 Hook 的 `onHook()` 内继续安装。
 
 ## 每轮 query 的分流前置
 
 - `app/src/main/java/com/niki914/nexus/agentic/mod/feat/AbstractAssistantHook.kt` 是 Breeno 与 XiaoAi 共用的运行期入口。
-- 宿主输入先由各自的 `CaptureInputHook` 捕获，再回调到 `handleCapturedQuery(roomId, query)`。
-- `handleCapturedQuery(...)` 会先读取 `XRepo.takeoverRules.list()`，再交给 `TakeoverResolver.resolve(...)` 生成当前轮次的 takeover 决策。
-- 决策结果会先写入 `ActiveTurnStore`：
-  - `TurnMode.NativeTakeover`：调用 `LLMController.stopCurrentRound(keepCurrentTurn = false)` 后直接返回，后续保留宿主原生回答路径，不进入 Nexus 渲染注入。
-  - `TurnMode.InjectedLLM`：才会继续调用 `dispatchQueryToLLM(...)`，后续渲染注入链路才有机会生效。
+- 宿主输入由各自的 `CaptureInputHook` 捕获后回调 `handleCapturedQuery(roomId, query)`。
+- `handleCapturedQuery(...)` 会先调用 `XRepo.takeoverRules.list()` 与 `XRepo.takeoverRules.getDefaultTarget()`，再交给 `TakeoverResolver.resolve(...)` 生成当前轮次决策。
+- 决策结果先写入 `ActiveTurnStore` 与 `XEvent` 上下文，再按 `TurnMode` 分流：
+  - `TurnMode.NativeTakeover`：调用 `LLMController.stopCurrentRound(keepCurrentTurn = false)` 后返回，保留宿主原生回答链路。
+  - `TurnMode.InjectedLLM`：继续调用 `dispatchQueryToLLM(...)`，后续才进入 Nexus 渲染注入链路。
 
 ## 关键源码
 
 ### `app/src/main/java/`
 
-- `a0/a0/a0/a0/a0/a0/Entrance.kt`
-- `com/niki914/nexus/agentic/mod/HookLocalSettings.kt`
-- `com/niki914/nexus/agentic/mod/XService.kt`
-- `com/niki914/nexus/agentic/mod/feat/AbstractAssistantHook.kt`
-- `com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`
-- `com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt`
-- `com/niki914/nexus/agentic/repo/WebSettingsApi.kt`
-- `com/niki914/nexus/agentic/repo/XRepo.kt`
+- `app/src/main/java/a0/a0/a0/a0/a0/a0/Entrance.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/HookLocalSettings.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/XService.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/AbstractAssistantHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/repo/WebSettingsApi.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/repo/XRepo.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/runtime/AppRuntimeBridge.kt`
+
+### `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/`
+
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeEnvironment.kt`
 
 ### `h/src/main/java/com/niki914/nexus/h/`
 
-- `core/runtime/RuntimeBootstrap.kt`
-- `util/ContextHook.kt`
-- `util/ContextProvider.kt`
+- `h/src/main/java/com/niki914/nexus/h/core/runtime/RuntimeBootstrap.kt`
+- `h/src/main/java/com/niki914/nexus/h/util/ContextHook.kt`
+- `h/src/main/java/com/niki914/nexus/h/util/ContextProvider.kt`

@@ -16,42 +16,42 @@
 
 ### overview/ — 项目总览与当前状态
 
-| 文件 | 层级 | 预期内容 |
-| --- | --- | --- |
-| `overview/project-overview.md` | Stable | 项目定位、模块结构、宿主矩阵、关键入口、主要目录 |
-| `overview/current-status.md` | In Progress | 当前已落地能力、半落地能力、纯提案能力、近期 TODO |
+| 文件 | 层级 | 源码依据 | 预期内容 |
+| --- | --- | --- | --- |
+| `overview/project-overview.md` | Stable | `settings.gradle.kts`, `app/build.gradle.kts`, `app/src/main/AndroidManifest.xml` | 项目定位、模块结构、宿主矩阵、关键入口、主要目录 |
+| `overview/current-status.md` | In Progress | `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolRegistry.kt`, `ipc/src/main/java/com/niki914/nexus/ipc/store/StoreDescriptorRegistry.kt`, `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/NexusPages.kt` | 当前能力分层、半落地链路、保留提案与未核实项 |
 
 ### architecture/ — 核心机制与链路
 
-| 文件 | 层级 | 预期内容 |
-| --- | --- | --- |
-| `architecture/boot-sequence.md` | Stable | Xposed 入口、Context 捕获、宿主路由、Hook 安装顺序 |
-| `architecture/turn-state.md` | Stable | 会话状态、turnId、takeover 语义、session reset |
-| `architecture/render-pipeline.md` | Stable | Breeno 与 XiaoAi 的响应注入模型与差异 |
-| `architecture/config-resolution.md` | Stable | 本地配置、远程配置、IPC、server 回退逻辑 |
-| `architecture/llm-runtime.md` | In Progress | `LLMController`、Prompt、Tool、MCP、流式事件运行时 |
+| 文件 | 层级 | 源码依据 | 预期内容 |
+| --- | --- | --- | --- |
+| `architecture/boot-sequence.md` | Stable | `app/src/main/java/a0/a0/a0/a0/a0/a0/Entrance.kt`, `app/src/main/java/com/niki914/nexus/agentic/app/App.kt`, `agent-runtime/src/main/java/com/niki914/nexus/agentic/runtime/settings/RuntimeEnvironment.kt` | Xposed 入口、Context 捕获、宿主路由、Hook 安装顺序 |
+| `architecture/turn-state.md` | Stable | `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/ActiveTurnStore.kt`, `app/src/main/java/com/niki914/nexus/agentic/mod/feat/AbstractAssistantHook.kt` | 会话状态、turnId、takeover 语义、session reset |
+| `architecture/render-pipeline.md` | Stable | `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt`, `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt` | Breeno 与 XiaoAi 的响应注入模型与差异 |
+| `architecture/config-resolution.md` | Stable | `app/src/main/java/com/niki914/nexus/agentic/repo/XRepo.kt`, `app/src/main/java/com/niki914/nexus/agentic/repo/XRepoRuntimeGateway.kt`, `ipc/src/main/java/com/niki914/nexus/ipc/store/XIpcStoreRepository.kt` | 本地配置、远程配置、IPC、server 回退逻辑 |
+| `architecture/llm-runtime.md` | In Progress | `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/LLMController.kt`, `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolManager.kt`, `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolRegistry.kt` | LLM 控制器、Prompt、Tool、MCP 与流式事件运行时 |
 
 ### domains/ — 业务专项导航
 
-| 文件 | 层级 | 预期内容 |
-| --- | --- | --- |
-| `domains/breeno/index.md` | Stable | Breeno 侧业务心智、关键 Hook、源码入口、调试关注点 |
-| `domains/xiaoai/index.md` | Stable | XiaoAi 侧业务心智、关键 Hook、源码入口、调试关注点 |
-| `domains/ui-shell/index.md` | In Progress | UI Shell、onboarding、settings tree、导航状态机、PRD 来源 |
+| 文件 | 层级 | 源码依据 | 预期内容 |
+| --- | --- | --- | --- |
+| `domains/breeno/index.md` | Stable | `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt`, `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoFeedbackAssembler.kt` | Breeno 侧业务心智、关键 Hook、源码入口、调试关注点 |
+| `domains/xiaoai/index.md` | Stable | `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`, `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiRenderSession.kt` | XiaoAi 侧业务心智、关键 Hook、源码入口、调试关注点 |
+| `domains/ui-shell/index.md` | In Progress | `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/NexusApp.kt`, `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/nav/NexusPage.kt`, `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/NexusPages.kt` | UI Shell、onboarding、settings tree 与导航状态机 |
 
 ### reference/ — 高频索引与注册表
 
-| 文件 | 层级 | 预期内容 |
-| --- | --- | --- |
-| `reference/source-map.md` | Stable | 关键类、目录、文件入口的相对路径地图 |
-| `reference/task-docs-registry.md` | Stable | 仓库根目录任务文档与参考文档的注册表，并给出源码核对入口 |
+| 文件 | 层级 | 源码依据 | 预期内容 |
+| --- | --- | --- | --- |
+| `reference/source-map.md` | Stable | `.wiki_generator/source_inventory.md`, `settings.gradle.kts`, `app/src/main/AndroidManifest.xml` | 关键类、目录、文件入口的相对路径地图 |
+| `reference/task-docs-registry.md` | Stable | `settings.gradle.kts`, `app/build.gradle.kts`, `agent-runtime/build.gradle.kts` | 仓库根目录任务文档与参考文档的注册表，并给出源码核对入口 |
 
 ### repo root docs — 仓库根目录参考文档
 
-| 文件 | 层级 | 预期内容 |
-| --- | --- | --- |
-| `SESSION.md` | Reference | S3ss10n 库、LLM 与 MCP 网络请求相关记录 |
-| `apple-liquid-glass-philosophy.md` | Reference | Liquid Glass 视觉原则与组件设计参考 |
+| 文件 | 层级 | 源码依据 | 预期内容 |
+| --- | --- | --- | --- |
+| `SESSION.md` | Unverified | `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/LLMController.kt`, `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolManager.kt` | S3ss10n 库、LLM 与 MCP 网络请求的背景记录，使用前需回到源码核对 |
+| `apple-liquid-glass-philosophy.md` | Proposal | `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/NexusApp.kt`, `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/nav/NexusPage.kt` | Liquid Glass 视觉原则与组件设计参考，属于界面方向说明 |
 
 ## 检索建议
 

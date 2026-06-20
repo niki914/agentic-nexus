@@ -51,7 +51,7 @@ XiaoAi 侧同样先做 takeover 分流，再决定是否进入 Nexus 注入：
 ## 边界与注意点
 
 - 当前源码里没有单独的 `BlockNativeTextStreamHook` 或 `BlockNativeTtsStreamHook`；原生阻断已经收敛为 `Instruction` 白名单拦截加 TTS 播放拦截。
-- `targetReady.await()` 仍带有死等风险 TODO；目标捕获失败时不会自动降级到其他注入路径。
+- `targetReady.await()` 依赖 `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/subhooks/CaptureResponseTargetHook.kt` 先完成目标捕获；当前源码没有超时或降级分支，目标捕获失败时不会自动切到其他注入路径。
 - `RenderTextStreamCardHook` 只维护一个活跃 `XiaoaiRenderSession`，session reset 时会被显式清空。
 - `XiaoaiChatHook.onSessionReset()` 会同时重置 `LLMController`、清掉响应目标、重建 `targetReady` 并清空渲染 session。
 - `XiaoaiChatHook.renderStreamCard()` 遇到非活跃 injected turn 会直接返回。
@@ -60,7 +60,7 @@ XiaoAi 侧同样先做 takeover 分流，再决定是否进入 Nexus 注入：
 
 ### `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/`
 
-- `XiaoaiChatHook.kt`
-- `XiaoaiConfigProvider.kt`
-- `XiaoaiRenderSession.kt`
-- `subhooks/`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiConfigProvider.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiRenderSession.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/subhooks/`

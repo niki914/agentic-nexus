@@ -1,31 +1,39 @@
 # Config Resolution
 
-本文件描述当前源码里的配置来源、runtime settings 网关、IPC 边界与落盘方式。
+本文件基于 `ipc/src/main/java/com/niki914/nexus/ipc/store/StoreDescriptorRegistry.kt`、`app/src/main/java/com/niki914/nexus/agentic/repo/XRepoRuntimeGateway.kt` 与 `ipc/src/main/java/com/niki914/nexus/ipc/store/ConfigPersistence.kt`，描述当前源码里的配置来源、runtime settings 网关、IPC 边界与落盘方式。
 
 ## 配置分层
 
-当前实现已经不是单一 `web_settings.json` / `local_settings.json` 双文件模型。
+`ipc/src/main/java/com/niki914/nexus/ipc/store/StoreDescriptorRegistry.kt` 对应的当前实现已经不是单一 web_settings.json / local_settings.json 双文件模型。
 
-- `web_settings`：宿主版本相关的远端配置缓存，默认落到 `settings/hooks.json`。
-- `local_settings`：仍保留的兼容 store，当前落到 `local_settings.json`。
-- agent/runtime 配置：已经拆到 `settings/*` 目录下的多 store，由 `ipc/src/main/java/com/niki914/nexus/ipc/store/StoreDescriptorRegistry.kt` 统一注册。
+- `web_settings`：宿主版本相关的远端配置缓存，默认落到 settings/hooks.json。
+- `local_settings`：仍保留的兼容 store，当前落到 local_settings.json。
+- agent/runtime 配置：已经拆到 settings/ 目录下的多 store，由 `ipc/src/main/java/com/niki914/nexus/ipc/store/StoreDescriptorRegistry.kt` 统一注册。
 
 静态 store 注册如下：
 
-| Store ID | 相对路径 |
+| Store ID | 运行时相对路径 |
 | --- | --- |
-| `web_settings` | `settings/hooks.json` |
-| `local_settings` | `local_settings.json` |
-| `agent.main.config` | `settings/agents/main/config.json` |
-| `agent.main.memory` | `settings/agents/main/memory.json` |
-| `tools.builtin` | `settings/tools/builtin_tools.json` |
-| `tools.custom` | `settings/tools/custom_tools.json` |
-| `tools.mcp.servers` | `settings/tools/mcp/servers.json` |
-| `rules.execution` | `settings/rules/execution_rules.json` |
-| `rules.takeover` | `settings/rules/takeover_rules.json` |
-| `app.state` | `settings/app_state.json` |
+| `web_settings` | settings/hooks.json |
+| `local_settings` | local_settings.json |
+| `agents.registry` | settings/agents/registry.json |
+| `agent.main.config` | settings/agents/main/config.json |
+| `agent.main.memory` | settings/agents/main/memory.json |
+| `tools.builtin` | settings/tools/builtin_tools.json |
+| `tools.custom` | settings/tools/custom_tools.json |
+| `tools.mcp.servers` | settings/tools/mcp/servers.json |
+| `rules.execution` | settings/rules/execution_rules.json |
+| `rules.takeover` | settings/rules/takeover_rules.json |
+| `app.state` | settings/app_state.json |
 
-动态 MCP cache store 通过 `StoreDescriptorRegistry.mcpCacheStoreId(serverId)` 生成，实际文件路径为 `settings/tools/mcp/cache/<serverId>.json`。
+动态 store 由 `StoreDescriptorRegistry.resolveDynamic(storeId)` 按前缀生成：
+
+| Store ID 模式 | 运行时相对路径模式 | 生成条件 |
+| --- | --- | --- |
+| `agent.config.<agentId>` | settings/agents/ 目录下按 agentId 命名的 config.json | `agentId` 符合安全命名规则 |
+| `tools.mcp.cache.<serverId>` | settings/tools/mcp/cache/ 目录下按 serverId 命名的 JSON 文件 | `serverId` 符合安全命名规则 |
+
+`XRepo.tryPutDefaultSettings()` 在 onboarding 未完成时会初始化 `agent.main.config`、`agent.main.memory`、`agents.registry`、`tools.custom` 和 `rules.execution`。其中 `agents.registry` 会写入默认的 `main` agent profile。
 
 ## 主 App 初始化链路
 
@@ -47,7 +55,10 @@
 
 `app/src/main/java/com/niki914/nexus/agentic/repo/XRepoRuntimeGateway.kt` 是 runtime 到仓库的适配层：
 
-- `readLlmConfig()` 读取 `agent.main.config` 并合并 `agent.main.memory`。
+- `readLlmConfig(agentId)` 通过 `repo.agents.llm(agentId)` 读取 agent 配置，再通过 `repo.agents.memoriesFor(agentId)` 合并 memory。
+- `agentId == "main"` 时读取 `agent.main.config`。
+- 非 `main` agent 走动态 store `agent.config.<agentId>`；若 profile 不存在或未启用，则回退为空配置。
+- 非 `main` agent 的 memory 当前不单独落盘；只有 profile 的 `memoryMode == SharedMain` 时才复用 `agent.main.memory`。
 - `listBuiltinToolSettings()`、`listCustomTools()`、`listMcpServers()`、`listCachedTools(server)`、`listExecutionRules()` 全部走 `XRepo` 对应 API。
 - `saveDiscoveredTools()`、`setBuiltinToolEnabled()`、`saveCustomTool()` 等写操作也回到 `XRepo`。
 
@@ -89,65 +100,61 @@
 - `writeJson()`：要求写入内容是 JSON object，再调用 `ConfigPersistence.writeJson()`。
 - `mutateJson()`：基于 `IpcJsonMutator` 做局部路径更新后再落盘。
 
-`ipc/src/main/java/com/niki914/nexus/ipc/store/ConfigPersistence.kt` 把 store 写到 `filesDir/<relativePath>`，通过 `AtomicFile` 保证原子写入。
+`ipc/src/main/java/com/niki914/nexus/ipc/store/ConfigPersistence.kt` 把 store 写到 filesDir 下的相对路径目标，通过 `AtomicFile` 保证原子写入。
 
 ## Web Settings 回退
 
-当前仓库里同时存在客户端回退逻辑和本地测试服务实现：
+`app/src/main/java/com/niki914/nexus/agentic/repo/WebSettingsApi.kt`、`app/src/main/java/com/niki914/nexus/agentic/repo/WebSettingsModels.kt` 与 `server/server.py` 共同定义了当前仓库里的客户端回退逻辑和本地测试服务实现：
 
 - 客户端位于 `app/src/main/java/com/niki914/nexus/agentic/repo/WebSettingsApi.kt`。
 - 本地测试服务位于 `server/server.py`。
 
-当前客户端行为：
+当前客户端行为如下：
 
-1. 先请求 `https://gitee.com/niki914/nexus-res/raw/main/<packageName>/<versionCode>/config.json`。
-2. 若精确版本 404，则请求 `https://gitee.com/niki914/nexus-res/raw/main/<packageName>/versions.json`。
+1. 先请求 https://gitee.com/niki914/nexus-res/raw/main/{packageName}/{versionCode}/config.json。
+2. 若精确版本 404，则请求 https://gitee.com/niki914/nexus-res/raw/main/{packageName}/versions.json。
 3. 通过 `app/src/main/java/com/niki914/nexus/agentic/repo/WebSettingsModels.kt` 中的 `WebSettingsVersionFallback.nearestVersionCode()` 选择距离最近的版本；距离相同优先较低版本。
 4. 成功结果回写 `web_settings` store，并带上 `requested_version_code` 与 `resolved_version_code`。
 
-本地 `server/server.py` 的规则与客户端约定一致：优先命中 `/<packageName>/<versionCode>/config.json`，未命中时在同包名目录下选择数值距离最近的版本目录回退。
+本地 `server/server.py` 的规则与客户端约定一致：优先命中按包名和 versionCode 组织的 config.json，未命中时在同包名目录下选择数值距离最近的版本目录回退。
 
 ## 关键源码
 
 ### `app/src/main/java/com/niki914/nexus/agentic/app/`
 
-- `App.kt`
-- `MainActivity.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/app/App.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/app/MainActivity.kt`
 
 ### `app/src/main/java/com/niki914/nexus/agentic/repo/`
 
-- `XRepo.kt`
-- `XRepoRuntimeGateway.kt`
-- `DomainSettingsStore.kt`
-- `WebSettingsApi.kt`
-- `WebSettingsModels.kt`
-- `AgentSettingsCodec.kt`
-- `MemorySettingsCodec.kt`
-- `ToolSettingsCodec.kt`
-- `McpSettingsCodec.kt`
-- `RuleSettingsCodec.kt`
-- `AppStateSettingsCodec.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/repo/XRepo.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/repo/XRepoRuntimeGateway.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/repo/DomainSettingsStore.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/repo/WebSettingsApi.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/repo/WebSettingsModels.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/repo/AgentSettingsCodec.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/repo/MemorySettingsCodec.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/repo/ToolSettingsCodec.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/repo/McpSettingsCodec.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/repo/RuleSettingsCodec.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/repo/AppStateSettingsCodec.kt`
 
 ### `app/src/main/java/com/niki914/nexus/agentic/runtime/`
 
-- `AppRuntimeBridge.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/runtime/AppRuntimeBridge.kt`
 
 ### `app/src/main/java/com/niki914/nexus/agentic/mod/`
 
-- `HookLocalSettings.kt`
-- `XService.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/HookLocalSettings.kt`
+- `app/src/main/java/com/niki914/nexus/agentic/mod/XService.kt`
 
 ### `ipc/src/main/java/com/niki914/nexus/ipc/`
 
-- `XIpcBridge.kt`
-- `XRes.kt`
-- `cp/SettingsContentProvider.kt`
-- `cp/XProviderDispatcher.kt`
-- `store/StoreDescriptor.kt`
-- `store/StoreDescriptorRegistry.kt`
-- `store/XIpcStoreRepository.kt`
-- `store/ConfigPersistence.kt`
-
-### `server/`
-
-- `server.py`
+- `ipc/src/main/java/com/niki914/nexus/ipc/XIpcBridge.kt`
+- `ipc/src/main/java/com/niki914/nexus/ipc/XRes.kt`
+- `ipc/src/main/java/com/niki914/nexus/ipc/cp/SettingsContentProvider.kt`
+- `ipc/src/main/java/com/niki914/nexus/ipc/cp/XProviderDispatcher.kt`
+- `ipc/src/main/java/com/niki914/nexus/ipc/store/StoreDescriptor.kt`
+- `ipc/src/main/java/com/niki914/nexus/ipc/store/StoreDescriptorRegistry.kt`
+- `ipc/src/main/java/com/niki914/nexus/ipc/store/XIpcStoreRepository.kt`
+- `ipc/src/main/java/com/niki914/nexus/ipc/store/ConfigPersistence.kt`

@@ -12,8 +12,8 @@
 2. `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolManager.kt` 把 builtin、custom、MCP 配置解析成 `ResolvedTools`；这里不拼 prompt。
 3. `LLMController` 先构造不含运行时 prompt 的 `ResolvedLlmConfig`，再按 provider 复用或重建 `Session`。
 4. 第一次 `applyRuntimeConfig()` 通过 `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/SessionToolBinder.kt` 先绑定 builtin、custom 和 MCP cached tools。
-5. 当存在启用中的 MCP server，且 session 首次创建或 MCP 指纹变化时，调用 `Session.refreshMcpTools()`；`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStore.kt` 再经 `RuntimeEnvironment.awaitSettingsGateway().saveDiscoveredTools()` 把发现结果写回 cache store。
-6. `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/PromptComposer.kt` 在拿到 `Session.getMcpDiscoverySnapshot()` 之后拼接最终 prompt。当前 section 只有 `Agent Memory`、`Tool Context`、`Additional instructions` 三类；MCP 发现状态写进 `<mcp_servers>` 块，不再维护旧的 `runtime_*` prompt 区块。
+5. 当存在已解析的 MCP server，且 session 首次创建或 MCP 指纹变化时，调用 `Session.refreshMcpTools()`；`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStore.kt` 再经 `RuntimeEnvironment.awaitSettingsGateway().saveDiscoveredTools()` 把发现结果写回对应的 MCP cache store。
+6. `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/PromptComposer.kt` 在拿到 `Session.getMcpDiscoverySnapshot()` 后拼接最终 prompt。当前 prompt section 只有 `Agent Memory`、`Tool Context`、`Additional instructions`；MCP 状态写进 `<mcp_servers>` 块。
 7. 第二次 `applyRuntimeConfig()` 把最终 `systemPrompt` 与同一组 `ResolvedTools` 写回 session，并更新 `runtimeState`。
 
 `refreshFromHookContext()` 只是 `refresh()` 的别名，没有单独的 Hook 分支逻辑。
@@ -33,52 +33,53 @@
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/`
 
-- `LLMController.kt`：runtime 总入口；持有单例 `Session`、最近一次 `LlmRuntimeSnapshot`、MCP refresh 指纹和 stream 主链。
-- `LlmModels.kt`：`ResolvedLlmConfig`、`ResolvedTools`、`LocalTool`、`McpServerDefinition` 等运行时模型。
-- `LlmStreamEvent.kt`：对宿主暴露的统一流式事件模型。
-- `ConversationTurnState.kt`
-- `ActiveTurnStore.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/LLMController.kt`：runtime 总入口；持有单例 `Session`、最近一次 `LlmRuntimeSnapshot`、MCP refresh 指纹和 stream 主链。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/LlmModels.kt`：`ResolvedLlmConfig`、`ResolvedTools`、`LocalTool`、`McpServerDefinition` 等运行时模型。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/LlmStreamEvent.kt`：对宿主暴露的统一流式事件模型。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/ConversationTurnState.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/ActiveTurnStore.kt`
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/`
 
-- `PromptComposer.kt`：拼接 memory、tool context、附加指令；MCP 发现状态只影响 `<mcp_servers>` 内容。
-- `ToolManager.kt`：把 builtin settings、custom tools、MCP servers 和 cached tools 解析成 `ResolvedTools`。
-- `SessionToolBinder.kt`：把 builtin、custom、MCP server 定义写入 `SessionConfig.Builder`。
-- `ToolCallDispatcher.kt`：运行时分发 builtin 与 custom local tool 调用。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/PromptComposer.kt`：拼接 memory、tool context、附加指令；MCP 发现状态只影响 `<mcp_servers>` 内容。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolManager.kt`：把 builtin settings、custom tools、MCP servers 和 cached tools 解析成 `ResolvedTools`。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/SessionToolBinder.kt`：把 builtin、custom、MCP server 定义写入 `SessionConfig.Builder`。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolCallDispatcher.kt`：运行时分发 builtin 与 custom local tool 调用。
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/`
 
-- `BuiltinToolRegistry.kt`：当前默认注册 `create_custom_tool`、`launch_app`、`memorize`、`notify`、`open_uri`、`read_custom_tool`、`terminal`、`ssh_terminal`、`search_apps`。
-- `BuiltinToolExecutor.kt`：builtin 执行入口。
-- `BuiltinToolSettingsManager.kt`：通过 `RuntimeEnvironment.awaitSettingsGateway()` 读写 builtin 开关。
-- `impl/TerminalBuiltin.kt`：Android 终端 builtin；raw JSON 协议，支持 `open`、`open_and_exec`、`exec`、`read_async_result`、`close`。
-- `impl/SshTerminalBuiltin.kt`：交互式 SSH 终端 builtin；支持 `open`、`send_line`、`write`、`interrupt`、`read`、`close`。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolRegistry.kt`：当前默认注册 `create_custom_tool`、`launch_app`、`memorize`、`notify`、`open_uri`、`read_custom_tool`、`terminal`、`ssh_terminal`、`search_apps`。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolExecutor.kt`：builtin 执行入口。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolSettingsManager.kt`：通过 `RuntimeEnvironment.awaitSettingsGateway()` 读写 builtin 开关。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/TerminalBuiltin.kt`：Android 终端 builtin；raw JSON 协议，支持 `open`、`open_and_exec`、`exec`、`read_async_result`、`close`。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/SshTerminalBuiltin.kt`：交互式 SSH 终端 builtin；支持 `open`、`send_line`、`write`、`interrupt`、`read`、`close`。
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/`
 
-- `CustomToolManager.kt`：custom tool 的校验、保存、删除、启停。
-- `CustomToolExecutor.kt`：通过 `TerminalSessionPool.executeCustomCommand()` 执行固定命令；不会把 tool call 入参展开进命令模板。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/CustomToolManager.kt`：custom tool 的校验、保存、删除、启停。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/CustomToolExecutor.kt`：通过 `TerminalSessionPool.executeCustomCommand()` 执行固定命令；不会把 tool call 入参展开进命令模板。
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/`
 
-- `McpDiscoveryCacheStore.kt`：把 discovered tools 回写到 runtime settings gateway 对应的 MCP cache store。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStore.kt`：把 discovered tools 回写到 runtime settings gateway 对应的 MCP cache store。
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/shell/`
 
-- `ShellCommandSafetyPolicy.kt`：命令安全策略。
-- `TerminalSessionPool.kt`：当前终端入口；负责 Android shell session、SSH session、异步执行、交互输出缓存和 session 关闭。
-- `TerminalToolResponse.kt`：terminal/ssh_terminal 的 JSON 响应格式。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/shell/ShellCommandSafetyPolicy.kt`：命令安全策略。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/shell/TerminalSessionPool.kt`：当前终端入口；负责 Android shell session、SSH session、异步执行、交互输出缓存和 session 关闭。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/shell/TerminalToolResponse.kt`：terminal/ssh_terminal 的 JSON 响应格式。
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/`
 
-- `LlmStreamEventMapper.kt`：`SessionEvent` 到 `LlmStreamEvent` 的映射。
-- `LocalToolResultClassifier.kt`：根据 local tool result 判定 tool 调用失败。
-- `ToolEventFormatter.kt`：tool 事件文案格式化。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/LlmStreamEventMapper.kt`：`SessionEvent` 到 `LlmStreamEvent` 的映射。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/LocalToolResultClassifier.kt`：根据 local tool result 判定 tool 调用失败。
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/ToolEventFormatter.kt`：tool 事件文案格式化。
 
 ## 能力状态
 
 ### Builtin
 
+- 源码依据：`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolRegistry.kt`、`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolExecutor.kt`、`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolSettingsManager.kt`、`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/TerminalBuiltin.kt`、`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/SshTerminalBuiltin.kt`。
 - 已实现：注册表、运行期开关读取、builtin 执行分发。
 - 当前默认 builtin：`create_custom_tool`、`launch_app`、`memorize`、`notify`、`open_uri`、`read_custom_tool`、`terminal`、`ssh_terminal`、`search_apps`。
 - 边界：`terminal` 运行在 Android terminal session，不是桌面 shell；`ssh_terminal` 是交互式 SSH 终端，不支持 `exec` 或 `open_and_exec`。
@@ -86,16 +87,19 @@
 
 ### Custom
 
+- 源码依据：`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/CustomToolManager.kt`、`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/CustomToolExecutor.kt`。
 - 已实现：名称校验、保留名校验、命令安全校验、保存、删除、启停、执行。
 - 边界：执行的始终是配置中的固定 `command`；tool call 入参不会拼进命令模板。
 
 ### MCP
 
+- 源码依据：`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolManager.kt`、`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/SessionToolBinder.kt`、`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStore.kt`。
 - 已实现：HTTP MCP server 绑定、tools discovery、discovered tools 本地缓存写回、按 server 指纹控制 refresh。
 - 边界：当前 `McpServerDefinition` 只有 `Http`；源码里未见 stdio 或本地进程 transport。
 
 ### Stream
 
+- 源码依据：`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/LlmStreamEventMapper.kt`、`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/LocalToolResultClassifier.kt`、`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/ToolEventFormatter.kt`。
 - 已实现：`RoundStarted`、`TextDelta`、`ToolRunning`、`ToolSucceeded`、`ToolFailed`、`Error`、`Completed` 映射。
 - 边界：`LlmStreamEvent` 自身只提供结构化状态；展示文本格式化仍在宿主层。
 
@@ -103,29 +107,44 @@
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/`
 
-- `LLMController.kt`
-- `LlmModels.kt`
-- `LlmStreamEvent.kt`
-- `ConversationTurnState.kt`
-- `ActiveTurnStore.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/LLMController.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/LlmModels.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/LlmStreamEvent.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/ConversationTurnState.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/ActiveTurnStore.kt`
 
 ### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/`
 
-- `PromptComposer.kt`
-- `ToolManager.kt`
-- `SessionToolBinder.kt`
-- `ToolCallDispatcher.kt`
-- `buildin/BuiltinToolRegistry.kt`
-- `buildin/BuiltinToolExecutor.kt`
-- `buildin/BuiltinToolSettingsManager.kt`
-- `buildin/impl/TerminalBuiltin.kt`
-- `buildin/impl/SshTerminalBuiltin.kt`
-- `custom/CustomToolManager.kt`
-- `custom/CustomToolExecutor.kt`
-- `mcp/McpDiscoveryCacheStore.kt`
-- `shell/ShellCommandSafetyPolicy.kt`
-- `shell/TerminalSessionPool.kt`
-- `shell/TerminalToolResponse.kt`
-- `stream/LlmStreamEventMapper.kt`
-- `stream/LocalToolResultClassifier.kt`
-- `stream/ToolEventFormatter.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/PromptComposer.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolManager.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/SessionToolBinder.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/ToolCallDispatcher.kt`
+
+### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/`
+
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolRegistry.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolExecutor.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/BuiltinToolSettingsManager.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/TerminalBuiltin.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/SshTerminalBuiltin.kt`
+
+### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/`
+
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/CustomToolManager.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/custom/CustomToolExecutor.kt`
+
+### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/`
+
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/mcp/McpDiscoveryCacheStore.kt`
+
+### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/shell/`
+
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/shell/ShellCommandSafetyPolicy.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/shell/TerminalSessionPool.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/shell/TerminalToolResponse.kt`
+
+### `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/`
+
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/LlmStreamEventMapper.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/LocalToolResultClassifier.kt`
+- `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/stream/ToolEventFormatter.kt`
