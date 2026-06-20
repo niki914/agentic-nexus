@@ -201,12 +201,12 @@ private fun previewAboutSettingsUiState(): AboutSettingsUiState {
             AboutSettingsItemUiState(
                 id = AboutSettingsItemId.FeatureFeedback,
                 titleRes = R.string.ui_settings_about_feedback_feature,
-                uri = "https://github.com/niki914/nexus/issues/new",
+                uri = "https://github.com/niki914/agentic-nexus/issues/new",
             ),
             AboutSettingsItemUiState(
                 id = AboutSettingsItemId.BugFeedback,
                 titleRes = R.string.ui_settings_about_feedback_bug,
-                uri = "https://github.com/niki914/nexus/issues/new",
+                uri = "https://github.com/niki914/agentic-nexus/issues/new",
             ),
         )
     )

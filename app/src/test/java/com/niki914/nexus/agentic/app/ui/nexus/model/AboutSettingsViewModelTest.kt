@@ -39,7 +39,7 @@ class AboutSettingsViewModelTest {
         advanceUntilIdle()
 
         val uri = (effectDeferred.await() as AboutSettingsEffect.OpenUri).uri
-        assertTrue(uri.startsWith("https://github.com/niki914/nexus/issues/new?"))
+        assertTrue(uri.startsWith("https://github.com/niki914/agentic-nexus/issues/new?"))
         assertTrue(uri.contains("title=%5BFEATURE%5D%20"))
         assertTrue(uri.contains("body="))
         assertFalse(uri.contains("## 功能建议"))
@@ -55,7 +55,7 @@ class AboutSettingsViewModelTest {
         advanceUntilIdle()
 
         val uri = (effectDeferred.await() as AboutSettingsEffect.OpenUri).uri
-        assertTrue(uri.startsWith("https://github.com/niki914/nexus/issues/new?"))
+        assertTrue(uri.startsWith("https://github.com/niki914/agentic-nexus/issues/new?"))
         assertTrue(uri.contains("title=%5BBUG%5D%20"))
         assertTrue(uri.contains("body="))
         assertFalse(uri.contains("## 问题描述"))

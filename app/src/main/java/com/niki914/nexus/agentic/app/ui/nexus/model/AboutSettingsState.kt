@@ -109,7 +109,7 @@ private fun encodeUriQueryValue(value: String): String {
         .replace("+", "%20")
 }
 
-private const val ISSUES_NEW_URI = "https://github.com/niki914/nexus/issues/new"
+private const val ISSUES_NEW_URI = "https://github.com/niki914/agentic-nexus/issues/new"
 
 private const val FEATURE_FEEDBACK_TITLE = "[FEATURE] "
 private const val FEATURE_FEEDBACK_BODY = """## 功能建议
