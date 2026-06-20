@@ -1,7 +1,5 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -20,9 +18,13 @@ import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsSegmentedSelector
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsToggleListItemCard
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsPageSpec
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsRowAction
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsRowSpec
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsSectionLayout
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsSectionSpec
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsSpecPageContent
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
 import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
@@ -33,6 +35,8 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.TakeoverSettingsUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.TakeoverSettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.TakeoverTarget
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
+
+private const val TAKEOVER_RULE_ROW_ID_PREFIX = "takeover.rule."
 
 @Composable
 fun TakeoverSettingsContent(
@@ -85,51 +89,98 @@ private fun TakeoverSettingsContentBody(
 
         else -> stringResource(R.string.takeover_empty_action_hint)
     }
+    val loadingText = stringResource(R.string.takeover_loading)
 
-    SettingsListPageContent(
-        description = pageDescription,
-    ) {
-        takeoverInlineErrorText(uiState.inlineError)?.let { message ->
-            SettingsGroupCard {
-                TakeoverListMessage(text = message)
+    SettingsSpecPageContent(
+        spec = takeoverRulesSettingsSpec(
+            uiState = uiState,
+            pageDescription = pageDescription,
+            loadingText = loadingText,
+        ),
+        contentBeforeSections = {
+            takeoverInlineErrorText(uiState.inlineError)?.let { message ->
+                SettingsGroupCard {
+                    TakeoverListMessage(text = message)
+                }
             }
-        }
-        if (!uiState.isLoading) {
-            SettingsGroupCard {
-                SettingsSegmentedSelector(
-                    title = stringResource(R.string.takeover_default_responder),
-                    options = TakeoverTarget.entries,
-                    selected = uiState.defaultTarget,
-                    label = { target -> target.label() },
-                    enabled = !uiState.isSaving,
-                    onSelected = onDefaultTargetChanged,
-                )
-            }
-        }
-        if (uiState.isLoading) {
-            SettingsGroupCard {
-                TakeoverListMessage(text = stringResource(R.string.takeover_loading))
-            }
-        } else if (uiState.items.isNotEmpty()) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                uiState.items.forEachIndexed { index, item ->
-                    SettingsToggleListItemCard(
-                        title = item.name,
-                        checked = item.enabled,
+            if (!uiState.isLoading) {
+                SettingsGroupCard {
+                    SettingsSegmentedSelector(
+                        title = stringResource(R.string.takeover_default_responder),
+                        options = TakeoverTarget.entries,
+                        selected = uiState.defaultTarget,
+                        label = { target -> target.label() },
                         enabled = !uiState.isSaving,
-                        onCheckedChange = { checked ->
-                            onItemEnabledChanged(index, checked)
-                        },
-                        onClick = {
-                            onOpenRuleDetail(item.id, item.name, index, false)
-                        },
+                        onSelected = onDefaultTargetChanged,
                     )
                 }
             }
-        }
+        },
+        onAction = { action ->
+            when (action) {
+                is SettingsRowAction.Navigate -> {
+                    val index = takeoverRuleIndexFromRowId(action.id) ?: return@SettingsSpecPageContent
+                    val item = uiState.items.getOrNull(index) ?: return@SettingsSpecPageContent
+                    onOpenRuleDetail(item.id, item.name, index, false)
+                }
+
+                is SettingsRowAction.ToggleChanged -> {
+                    val index = takeoverRuleIndexFromRowId(action.id) ?: return@SettingsSpecPageContent
+                    onItemEnabledChanged(index, action.checked)
+                }
+
+                is SettingsRowAction.Click -> Unit
+            }
+        },
+    )
+}
+
+private fun takeoverRulesSettingsSpec(
+    uiState: TakeoverSettingsUiState,
+    pageDescription: String,
+    loadingText: String,
+): SettingsPageSpec {
+    val sections = when {
+        uiState.isLoading -> listOf(
+            SettingsSectionSpec(
+                layout = SettingsSectionLayout.GroupedCard,
+                rows = listOf(
+                    SettingsRowSpec.Message(
+                        title = loadingText,
+                        verticalPadding = 12.dp,
+                    )
+                ),
+            )
+        )
+
+        uiState.items.isNotEmpty() -> listOf(
+            SettingsSectionSpec(
+                layout = SettingsSectionLayout.CardList,
+                rows = uiState.items.mapIndexed { index, item ->
+                    SettingsRowSpec.ToggleNavigation(
+                        id = takeoverRuleRowId(index),
+                        title = item.name,
+                        checked = item.enabled,
+                        enabled = !uiState.isSaving,
+                    )
+                },
+            )
+        )
+
+        else -> emptyList()
     }
+
+    return SettingsPageSpec(
+        description = pageDescription,
+        sections = sections,
+    )
+}
+
+private fun takeoverRuleRowId(index: Int): String = "$TAKEOVER_RULE_ROW_ID_PREFIX$index"
+
+private fun takeoverRuleIndexFromRowId(id: String): Int? {
+    if (!id.startsWith(TAKEOVER_RULE_ROW_ID_PREFIX)) return null
+    return id.removePrefix(TAKEOVER_RULE_ROW_ID_PREFIX).toIntOrNull()
 }
 
 @Composable

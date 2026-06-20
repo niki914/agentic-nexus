@@ -14,13 +14,14 @@ import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
+import com.niki914.nexus.agentic.app.ui.nexus.content.EditableDetailFieldController
 import com.niki914.nexus.agentic.app.ui.nexus.content.EditableSettingsDetailChrome
 import com.niki914.nexus.agentic.app.ui.nexus.content.EditableSettingsDetailFormScaffold
+import com.niki914.nexus.agentic.app.ui.nexus.content.SettingControlledExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpDeleteConfirmationState
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpInlineError
 import com.niki914.nexus.agentic.app.ui.nexus.model.McpServerFormState
@@ -138,8 +139,7 @@ private fun McpServerDetailContentBody(
     ) { fieldController ->
         McpIdentitySettingsBlock(
             uiState = uiState,
-            expandedField = fieldController.expandedField,
-            onExpandedFieldChange = fieldController.onExpandedFieldChange,
+            fieldController = fieldController,
             onNameChange = onNameChange,
             onEnabledChange = {
                 fieldController.clearActiveField()
@@ -149,8 +149,7 @@ private fun McpServerDetailContentBody(
 
         McpConnectionSettingsBlock(
             uiState = uiState,
-            expandedField = fieldController.expandedField,
-            onExpandedFieldChange = fieldController.onExpandedFieldChange,
+            fieldController = fieldController,
             onUrlChange = onUrlChange,
             onHeadersChange = onHeadersChange,
         )
@@ -166,13 +165,14 @@ private enum class McpEditableField {
 @Composable
 private fun McpIdentitySettingsBlock(
     uiState: McpSettingsUiState,
-    expandedField: McpEditableField?,
-    onExpandedFieldChange: (McpEditableField?) -> Unit,
+    fieldController: EditableDetailFieldController<McpEditableField>,
     onNameChange: (String) -> Unit,
     onEnabledChange: (Boolean) -> Unit,
 ) {
     SettingsGroupCard {
-        SettingExpandableTextItem(
+        SettingControlledExpandableTextItem(
+            field = McpEditableField.Name,
+            controller = fieldController,
             title = stringResource(R.string.mcp_field_name),
             value = uiState.formState.name,
             onValueChange = onNameChange,
@@ -181,12 +181,6 @@ private fun McpIdentitySettingsBlock(
             enabled = !uiState.isSaving,
             minLines = 1,
             maxLines = 1,
-            expanded = expandedField == McpEditableField.Name,
-            onExpandedChange = { isExpanded ->
-                onExpandedFieldChange(
-                    if (isExpanded) McpEditableField.Name else null,
-                )
-            },
         )
         SettingsItemDivider()
         SettingToggleItem(
@@ -201,13 +195,14 @@ private fun McpIdentitySettingsBlock(
 @Composable
 private fun McpConnectionSettingsBlock(
     uiState: McpSettingsUiState,
-    expandedField: McpEditableField?,
-    onExpandedFieldChange: (McpEditableField?) -> Unit,
+    fieldController: EditableDetailFieldController<McpEditableField>,
     onUrlChange: (String) -> Unit,
     onHeadersChange: (String) -> Unit,
 ) {
     SettingsGroupCard {
-        SettingExpandableTextItem(
+        SettingControlledExpandableTextItem(
+            field = McpEditableField.Url,
+            controller = fieldController,
             title = stringResource(R.string.mcp_field_url),
             value = uiState.formState.url,
             onValueChange = onUrlChange,
@@ -216,15 +211,11 @@ private fun McpConnectionSettingsBlock(
             enabled = !uiState.isSaving,
             minLines = 1,
             maxLines = 1,
-            expanded = expandedField == McpEditableField.Url,
-            onExpandedChange = { isExpanded ->
-                onExpandedFieldChange(
-                    if (isExpanded) McpEditableField.Url else null,
-                )
-            },
         )
         SettingsItemDivider()
-        SettingExpandableTextItem(
+        SettingControlledExpandableTextItem(
+            field = McpEditableField.Headers,
+            controller = fieldController,
             title = stringResource(R.string.mcp_field_headers),
             value = uiState.formState.headersInput,
             onValueChange = onHeadersChange,
@@ -233,12 +224,6 @@ private fun McpConnectionSettingsBlock(
             enabled = !uiState.isSaving,
             minLines = 4,
             maxLines = 10,
-            expanded = expandedField == McpEditableField.Headers,
-            onExpandedChange = { isExpanded ->
-                onExpandedFieldChange(
-                    if (isExpanded) McpEditableField.Headers else null,
-                )
-            },
         )
     }
 }

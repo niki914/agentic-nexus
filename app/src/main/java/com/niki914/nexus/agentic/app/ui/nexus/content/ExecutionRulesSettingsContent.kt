@@ -1,27 +1,25 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListItem
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingsListPageContent
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsPageSpec
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsRowAction
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsRowSpec
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsSectionLayout
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsSectionSpec
+import com.niki914.nexus.agentic.app.ui.infra.component.settings.SettingsSpecPageContent
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
 import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
@@ -31,6 +29,8 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRulesSettingsUiStat
 import com.niki914.nexus.agentic.app.ui.nexus.model.ExecutionRulesSettingsViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRuleEnabledMode
+
+private const val EXECUTION_RULE_ROW_ID_PREFIX = "execution.rule."
 
 @Composable
 fun ExecutionRulesSettingsContent(
@@ -76,43 +76,74 @@ private fun ExecutionRulesSettingsContentBody(
 
         else -> stringResource(R.string.execution_rules_empty_action_hint)
     }
+    val loadingText = stringResource(R.string.execution_rules_loading)
 
-    SettingsListPageContent(
-        description = pageDescription,
-    ) {
-        if (uiState.isLoading) {
-            SettingsGroupCard {
-                ExecutionRulesListMessage(text = stringResource(R.string.execution_rules_loading))
-            }
-        } else if (uiState.items.isNotEmpty()) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                uiState.items.forEachIndexed { index, item ->
-                    SettingsGroupCard {
-                        SettingsListItem(
-                            title = item.name,
-                            enabled = !uiState.isSaving,
-                            showChevron = true,
-                            onClick = {
-                                onOpenRuleDetail(item.name, index, false)
-                            },
-                        )
-                    }
+    SettingsSpecPageContent(
+        spec = executionRulesSettingsSpec(
+            uiState = uiState,
+            pageDescription = pageDescription,
+            loadingText = loadingText,
+        ),
+        onAction = { action ->
+            when (action) {
+                is SettingsRowAction.Navigate -> {
+                    val index = executionRuleIndexFromRowId(action.id) ?: return@SettingsSpecPageContent
+                    val item = uiState.items.getOrNull(index) ?: return@SettingsSpecPageContent
+                    onOpenRuleDetail(item.name, index, false)
                 }
+
+                is SettingsRowAction.Click,
+                is SettingsRowAction.ToggleChanged -> Unit
             }
-        }
-    }
+        },
+    )
 }
 
-@Composable
-private fun ExecutionRulesListMessage(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+private fun executionRulesSettingsSpec(
+    uiState: ExecutionRulesSettingsUiState,
+    pageDescription: String,
+    loadingText: String,
+): SettingsPageSpec {
+    val sections = when {
+        uiState.isLoading -> listOf(
+            SettingsSectionSpec(
+                layout = SettingsSectionLayout.GroupedCard,
+                rows = listOf(
+                    SettingsRowSpec.Message(
+                        title = loadingText,
+                        verticalPadding = 12.dp,
+                    )
+                ),
+            )
+        )
+
+        uiState.items.isNotEmpty() -> listOf(
+            SettingsSectionSpec(
+                layout = SettingsSectionLayout.CardList,
+                rows = uiState.items.mapIndexed { index, item ->
+                    SettingsRowSpec.Navigation(
+                        id = executionRuleRowId(index),
+                        title = item.name,
+                        enabled = !uiState.isSaving,
+                    )
+                },
+            )
+        )
+
+        else -> emptyList()
+    }
+
+    return SettingsPageSpec(
+        description = pageDescription,
+        sections = sections,
     )
+}
+
+private fun executionRuleRowId(index: Int): String = "$EXECUTION_RULE_ROW_ID_PREFIX$index"
+
+private fun executionRuleIndexFromRowId(id: String): Int? {
+    if (!id.startsWith(EXECUTION_RULE_ROW_ID_PREFIX)) return null
+    return id.removePrefix(EXECUTION_RULE_ROW_ID_PREFIX).toIntOrNull()
 }
 
 @Preview(showBackground = true, widthDp = 420, heightDp = 900)

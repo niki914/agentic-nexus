@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.dp
 import com.niki914.nexus.agentic.app.R
 import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
-import com.niki914.nexus.agentic.app.ui.infra.component.SettingExpandableTextItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingToggleItem
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsGroupCard
 import com.niki914.nexus.agentic.app.ui.infra.component.SettingsItemDivider
@@ -142,7 +141,9 @@ private fun TakeoverRuleDetailContentBody(
         actionEnabled = !uiState.isSaving,
     ) { fieldController ->
         SettingsGroupCard {
-            SettingExpandableTextItem(
+            SettingControlledExpandableTextItem(
+                field = TakeoverEditableField.Name,
+                controller = fieldController,
                 title = stringResource(R.string.takeover_field_name),
                 value = uiState.formState.name,
                 onValueChange = onNameChange,
@@ -151,12 +152,6 @@ private fun TakeoverRuleDetailContentBody(
                 enabled = !uiState.isSaving,
                 minLines = 1,
                 maxLines = 1,
-                expanded = fieldController.expandedField == TakeoverEditableField.Name,
-                onExpandedChange = { isExpanded ->
-                    fieldController.onExpandedFieldChange(
-                        if (isExpanded) TakeoverEditableField.Name else null,
-                    )
-                },
             )
             SettingsItemDivider()
             SettingToggleItem(
@@ -185,7 +180,9 @@ private fun TakeoverRuleDetailContentBody(
         }
 
         SettingsGroupCard {
-            SettingExpandableTextItem(
+            SettingControlledExpandableTextItem(
+                field = TakeoverEditableField.Patterns,
+                controller = fieldController,
                 title = stringResource(R.string.takeover_field_patterns),
                 value = uiState.formState.patternsInput,
                 onValueChange = onPatternsInputChange,
@@ -196,12 +193,6 @@ private fun TakeoverRuleDetailContentBody(
                 enabled = !uiState.isSaving,
                 minLines = 4,
                 maxLines = 8,
-                expanded = fieldController.expandedField == TakeoverEditableField.Patterns,
-                onExpandedChange = { isExpanded ->
-                    fieldController.onExpandedFieldChange(
-                        if (isExpanded) TakeoverEditableField.Patterns else null,
-                    )
-                },
             )
         }
     }
