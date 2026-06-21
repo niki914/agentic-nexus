@@ -19,7 +19,6 @@ import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.ProvideLiquidScreenContentForPreview
 import com.niki914.nexus.agentic.app.ui.nexus.content.StartupPageContent
 import com.niki914.nexus.agentic.app.ui.nexus.model.StartupAssistantUi
-import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.ProviderPickPage
 import com.niki914.nexus.agentic.mod.WebSettings
@@ -69,18 +68,9 @@ internal fun StartupPageRoute(
         }
     }
 
-    fun nextPage(): NexusPage {
-        return when (startupAssistantUi) {
-            StartupAssistantUi.Breeno,
-            StartupAssistantUi.XiaoAi -> ProviderPickPage
-
-            StartupAssistantUi.ChatOnly -> HomePage
-        }
-    }
-
     fun enterNextPage() {
         webSettingsDialog = null
-        onPush(nextPage())
+        onPush(ProviderPickPage)
     }
 
     fun handleWebSettingsResult(result: WebSettingsResult) {
