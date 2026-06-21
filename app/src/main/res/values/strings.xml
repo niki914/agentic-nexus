@@ -126,6 +126,11 @@
     <!-- Settings Configure Page -->
     <string name="ui_settings_configure_description">调整模型接入、提示词与代理配置。</string>
     <string name="ui_settings_configure_save">保存配置</string>
+    <string name="ui_settings_configure_switch_provider">重新选择提供商</string>
+    <string name="save_before_provider_pick_dialog_title">保存当前修改？</string>
+    <string name="save_before_provider_pick_dialog_text">重新选择提供商前，需要先保存当前模型配置。</string>
+    <string name="save_before_provider_pick_dialog_save">保存</string>
+    <string name="save_before_provider_pick_dialog_cancel">取消</string>
     <string name="ui_settings_configure_prompt_label">提示词</string>
     <string name="ui_settings_configure_prompt_placeholder">你的助手应该怎么做？</string>
     <string name="ui_settings_configure_proxy_label">代理</string>

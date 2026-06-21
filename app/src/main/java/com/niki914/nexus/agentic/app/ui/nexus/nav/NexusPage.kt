@@ -51,11 +51,31 @@ data object ProviderPickPage : NexusPage {
     override val rightAction: TopBarActionSpec? = null
 }
 
+data object SettingsProviderPickPage : NexusPage {
+    override val routeKey: String = "settings-provider-pick"
+    override val titleSpec: PageTitleSpec = ResTitle(R.string.ui_onboard_provider_pick_title)
+    override val leftAction: TopBarActionSpec =
+        TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
+    override val rightAction: TopBarActionSpec? = null
+}
+
 data class ConfigurePage(
     val providerId: String? = null,
     val explicitTitleSpec: PageTitleSpec? = null,
 ) : NexusPage {
     override val routeKey: String = if (providerId == null) "configure" else "configure:$providerId"
+    override val titleSpec: PageTitleSpec =
+        explicitTitleSpec ?: ResTitle(R.string.ui_onboard_configure_title)
+    override val leftAction: TopBarActionSpec =
+        TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
+    override val rightAction: TopBarActionSpec? = null
+}
+
+data class SettingsConfigurePage(
+    val providerId: String,
+    val explicitTitleSpec: PageTitleSpec? = null,
+) : NexusPage {
+    override val routeKey: String = "settings-configure:$providerId"
     override val titleSpec: PageTitleSpec =
         explicitTitleSpec ?: ResTitle(R.string.ui_onboard_configure_title)
     override val leftAction: TopBarActionSpec =

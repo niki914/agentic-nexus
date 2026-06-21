@@ -11,6 +11,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.ExecutionRuleDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusSettingsGroup
+import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsProviderPickPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TakeoverRuleDetailPage
 
 @Composable
@@ -29,6 +30,9 @@ fun SettingsDetailPageContent(
     if (group == NexusSettingsGroup.ModelConfig) {
         ModelConfigSettingsContent(
             onBack = onBack,
+            onOpenProviderPick = {
+                onPush(SettingsProviderPickPage)
+            },
         )
         return
     }

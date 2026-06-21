@@ -11,6 +11,7 @@ import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig as LlmC
 enum class ConfigureScene {
     Onboarding,
     Settings,
+    SettingsProviderSwitch,
 }
 
 data class ConfigureUiState(
@@ -43,7 +44,7 @@ data class ConfigureSnapshot(
 )
 
 val ConfigureUiState.hasUnsavedChanges: Boolean
-    get() = scene == ConfigureScene.Settings &&
+    get() = (scene == ConfigureScene.Settings || scene == ConfigureScene.SettingsProviderSwitch) &&
             initialSettingsSnapshot?.let { it != toSettingsSnapshot() } == true
 
 sealed interface ConfigureInlineError {
@@ -130,7 +131,11 @@ class ConfigureViewModel internal constructor(
             val llmConfig = dependencies.loadLlmConfig()
             when (scene) {
                 ConfigureScene.Onboarding -> initializeOnboarding(llmConfig, initialProviderId)
-                ConfigureScene.Settings -> initializeSettings(llmConfig)
+                ConfigureScene.Settings -> initializeSettings(llmConfig, initialProviderId)
+                ConfigureScene.SettingsProviderSwitch -> initializeSettingsProviderSwitch(
+                    llmConfig,
+                    initialProviderId,
+                )
             }
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
@@ -195,8 +200,11 @@ class ConfigureViewModel internal constructor(
         }
     }
 
-    private fun initializeSettings(llmConfig: LlmConfig) {
-        val providerSpec = ProviderSpecs.find(llmConfig.provider.takeIf { it.isNotBlank() })
+    private fun initializeSettings(llmConfig: LlmConfig, initialProviderId: String?) {
+        val providerSpec = ProviderSpecs.find(
+            initialProviderId?.takeIf { it.isNotBlank() }
+                ?: llmConfig.provider.takeIf { it.isNotBlank() },
+        )
         val endpointInput = llmConfig.endpoint.trim().ifBlank {
             providerSpec.officialEndpoint
         }
@@ -212,6 +220,46 @@ class ConfigureViewModel internal constructor(
                 lastCustomEndpointInput = endpointInput,
                 modelInput = modelInput,
                 apiKeyInput = llmConfig.apiKey,
+                apiKeyVisible = false,
+                endpointErrorResId = null,
+                modelErrorResId = null,
+                apiKeyErrorResId = null,
+                promptInput = llmConfig.prompt,
+                proxyInput = llmConfig.proxy,
+                proxyErrorResId = null,
+                isSaving = false,
+                inlineError = null,
+            ).withCurrentSettingsSnapshotAsInitial()
+        }
+    }
+
+    private fun initializeSettingsProviderSwitch(llmConfig: LlmConfig, initialProviderId: String?) {
+        val savedProviderId = llmConfig.provider.takeIf { it.isNotBlank() }
+        val providerSpec = ProviderSpecs.find(
+            initialProviderId?.takeIf { it.isNotBlank() } ?: savedProviderId,
+        )
+        val shouldReuseSavedValues = savedProviderId == providerSpec.id
+        val savedEndpoint = if (shouldReuseSavedValues) llmConfig.endpoint.trim() else ""
+        val endpointOverrideEnabled = savedEndpoint.isNotBlank() &&
+                savedEndpoint != providerSpec.officialEndpoint
+        val endpointInput = if (endpointOverrideEnabled) {
+            savedEndpoint
+        } else {
+            providerSpec.officialEndpoint
+        }
+        updateState {
+            copy(
+                scene = ConfigureScene.SettingsProviderSwitch,
+                providerSpec = providerSpec,
+                endpointOverrideEnabled = endpointOverrideEnabled,
+                endpointInput = endpointInput,
+                lastCustomEndpointInput = endpointInput,
+                modelInput = if (shouldReuseSavedValues) {
+                    llmConfig.model.trim().ifBlank { providerSpec.exampleModelId }
+                } else {
+                    providerSpec.exampleModelId
+                },
+                apiKeyInput = if (shouldReuseSavedValues) llmConfig.apiKey else "",
                 apiKeyVisible = false,
                 endpointErrorResId = null,
                 modelErrorResId = null,
@@ -363,7 +411,8 @@ class ConfigureViewModel internal constructor(
         }
         when (currentState.scene) {
             ConfigureScene.Onboarding -> saveOnboarding()
-            ConfigureScene.Settings -> saveSettings()
+            ConfigureScene.Settings,
+            ConfigureScene.SettingsProviderSwitch -> saveSettings()
         }
     }
 
@@ -458,7 +507,7 @@ class ConfigureViewModel internal constructor(
 }
 
 private fun ConfigureUiState.resolvedEndpoint(): String {
-    return if (scene == ConfigureScene.Settings || endpointOverrideEnabled) {
+    return if (scene == ConfigureScene.Settings || scene == ConfigureScene.SettingsProviderSwitch || endpointOverrideEnabled) {
         endpointInput.trim().ifBlank { providerSpec.officialEndpoint }
     } else {
         providerSpec.officialEndpoint

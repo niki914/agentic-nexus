@@ -43,12 +43,15 @@ fun ConfigurePageContent(
     val actionText = stringResource(
         when (uiState.scene) {
             ConfigureScene.Onboarding -> R.string.ui_onboard_configure_next
-            ConfigureScene.Settings -> R.string.ui_settings_configure_save
+            ConfigureScene.Settings,
+            ConfigureScene.SettingsProviderSwitch -> R.string.ui_settings_configure_save
         },
     )
     val description = stringResource(
         when (uiState.scene) {
-            ConfigureScene.Onboarding -> R.string.ui_onboard_configure_description
+            ConfigureScene.Onboarding,
+            ConfigureScene.SettingsProviderSwitch -> R.string.ui_onboard_configure_description
+
             ConfigureScene.Settings -> R.string.ui_settings_configure_description
         },
     )

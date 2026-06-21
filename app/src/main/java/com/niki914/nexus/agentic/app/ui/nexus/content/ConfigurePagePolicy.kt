@@ -24,7 +24,9 @@ internal fun configurePagePolicy(
     providerSpec: ProviderSpec,
 ): ConfigurePagePolicy {
     return when (scene) {
-        ConfigureScene.Onboarding -> onboardingConfigurePolicy(providerSpec)
+        ConfigureScene.Onboarding,
+        ConfigureScene.SettingsProviderSwitch -> onboardingConfigurePolicy(providerSpec)
+
         ConfigureScene.Settings -> ConfigurePagePolicy(
             showEndpointSection = true,
             showEndpointOverrideToggle = false,

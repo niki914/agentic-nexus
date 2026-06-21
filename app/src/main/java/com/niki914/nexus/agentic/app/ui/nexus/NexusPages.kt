@@ -12,8 +12,10 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.HomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.ProviderPickPage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsConfigurePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsHomePage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsProviderPickPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.StartupPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TakeoverRuleDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.route.ConfigurePageRoute
@@ -24,8 +26,10 @@ import com.niki914.nexus.agentic.app.ui.nexus.route.ExecutionRuleDetailRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.HomePageRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.McpServerDetailRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.ProviderPickPageRoute
+import com.niki914.nexus.agentic.app.ui.nexus.route.SettingsConfigurePageRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.SettingsDetailPageRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.SettingsHomePageRoute
+import com.niki914.nexus.agentic.app.ui.nexus.route.SettingsProviderPickPageRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.StartupPageRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.TakeoverRuleDetailRoute
 
@@ -56,9 +60,21 @@ fun NexusPageContent(
             onPush = onPush,
         )
 
+        SettingsProviderPickPage -> SettingsProviderPickPageRoute(
+            onPush = onPush,
+        )
+
         is ConfigurePage -> ConfigurePageRoute(
             page = page,
             onPush = onPush,
+        )
+
+        is SettingsConfigurePage -> SettingsConfigurePageRoute(
+            page = page,
+            onBack = onPop,
+            onResetToSettingsHome = {
+                onResetTo(SettingsHomePage)
+            },
         )
 
         DonePage -> DonePageRoute(

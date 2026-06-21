@@ -127,6 +127,11 @@
     <!-- Settings Configure Page -->
     <string name="ui_settings_configure_description">Configure model access, prompts, and proxy settings.</string>
     <string name="ui_settings_configure_save">Save Configuration</string>
+    <string name="ui_settings_configure_switch_provider">Choose Provider Again</string>
+    <string name="save_before_provider_pick_dialog_title">Save current changes?</string>
+    <string name="save_before_provider_pick_dialog_text">Save the current model configuration before choosing another provider.</string>
+    <string name="save_before_provider_pick_dialog_save">Save</string>
+    <string name="save_before_provider_pick_dialog_cancel">Cancel</string>
     <string name="ui_settings_configure_prompt_label">Prompt</string>
     <string name="ui_settings_configure_prompt_placeholder">What should your assistant do?</string>
     <string name="ui_settings_configure_proxy_label">Proxy</string>

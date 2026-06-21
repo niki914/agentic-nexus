@@ -1,5 +1,7 @@
 package com.niki914.nexus.agentic.app.ui.nexus.content
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -7,16 +9,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
+import com.niki914.nexus.agentic.app.R
+import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
 import com.niki914.nexus.agentic.app.ui.infra.nav.pageViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureEffect
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureScene
 import com.niki914.nexus.agentic.app.ui.nexus.model.ConfigureViewModel
 import com.niki914.nexus.agentic.app.ui.nexus.model.hasUnsavedChanges
+import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
 
 @Composable
 fun ModelConfigSettingsContent(
     onBack: () -> Unit,
+    onOpenProviderPick: () -> Unit,
 ) {
     val viewModel = pageViewModel<ConfigureViewModel>(
         key = "settings-configure",
@@ -25,6 +32,12 @@ fun ModelConfigSettingsContent(
     var pendingFocusField by rememberSaveable {
         mutableStateOf<ConfigureEditableField?>(null)
     }
+    var showSaveBeforeProviderPickDialog by rememberSaveable {
+        mutableStateOf(false)
+    }
+    var openProviderPickAfterSave by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.sendIntent(ConfigureIntent.Initialize(scene = ConfigureScene.Settings))
@@ -32,25 +45,39 @@ fun ModelConfigSettingsContent(
     LaunchedEffect(viewModel) {
         viewModel.uiEffect.collect { effect ->
             when (effect) {
-                ConfigureEffect.SettingsSaveSucceeded -> onBack()
+                ConfigureEffect.SettingsSaveSucceeded -> {
+                    if (openProviderPickAfterSave) {
+                        openProviderPickAfterSave = false
+                        onOpenProviderPick()
+                    } else {
+                        onBack()
+                    }
+                }
+
                 ConfigureEffect.FocusModel -> {
+                    openProviderPickAfterSave = false
                     pendingFocusField = ConfigureEditableField.Model
                 }
 
                 ConfigureEffect.FocusApiKey -> {
+                    openProviderPickAfterSave = false
                     pendingFocusField = ConfigureEditableField.ApiKey
                 }
 
                 ConfigureEffect.FocusEndpoint -> {
+                    openProviderPickAfterSave = false
                     pendingFocusField = ConfigureEditableField.Endpoint
                 }
 
                 ConfigureEffect.FocusProxy -> {
+                    openProviderPickAfterSave = false
                     pendingFocusField = ConfigureEditableField.Proxy
                 }
 
-                ConfigureEffect.OnboardingSaveSucceeded,
-                is ConfigureEffect.SaveFailed -> Unit
+                ConfigureEffect.OnboardingSaveSucceeded -> Unit
+                is ConfigureEffect.SaveFailed -> {
+                    openProviderPickAfterSave = false
+                }
             }
         }
     }
@@ -61,6 +88,17 @@ fun ModelConfigSettingsContent(
             uiState.scene == ConfigureScene.Settings && uiState.hasUnsavedChanges
         },
         onDiscardChanges = onBack,
+        rightAction = TopBarActionSpec(
+            icon = Icons.Default.Refresh,
+            contentDescription = stringResource(R.string.ui_settings_configure_switch_provider),
+            onClick = {
+                if (uiState.hasUnsavedChanges) {
+                    showSaveBeforeProviderPickDialog = true
+                } else {
+                    onOpenProviderPick()
+                }
+            },
+        ),
     ) {
         ConfigurePageContent(
             uiState = uiState,
@@ -92,4 +130,23 @@ fun ModelConfigSettingsContent(
             },
         )
     }
+
+    ConfirmationLiquidDialog(
+        visible = showSaveBeforeProviderPickDialog,
+        onDismissRequest = {
+            showSaveBeforeProviderPickDialog = false
+        },
+        title = stringResource(R.string.save_before_provider_pick_dialog_title),
+        text = stringResource(R.string.save_before_provider_pick_dialog_text),
+        negativeButtonText = stringResource(R.string.save_before_provider_pick_dialog_cancel),
+        positiveButtonText = stringResource(R.string.save_before_provider_pick_dialog_save),
+        onNegativeClick = {
+            showSaveBeforeProviderPickDialog = false
+        },
+        onPositiveClick = {
+            showSaveBeforeProviderPickDialog = false
+            openProviderPickAfterSave = true
+            viewModel.sendIntent(ConfigureIntent.Save)
+        },
+    )
 }

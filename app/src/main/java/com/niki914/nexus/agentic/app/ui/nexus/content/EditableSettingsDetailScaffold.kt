@@ -27,29 +27,40 @@ fun EditableSettingsDetailChrome(
     hasUnsavedChanges: () -> Boolean,
     onDiscardChanges: () -> Unit,
     onDelete: (() -> Unit)? = null,
+    rightAction: TopBarActionSpec? = null,
     hasDeleteConfirmation: () -> Boolean = { false },
     onDismissDeleteConfirmation: () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     val latestHasUnsavedChanges by rememberUpdatedState(hasUnsavedChanges)
     val latestOnDelete by rememberUpdatedState(onDelete)
+    val latestRightAction by rememberUpdatedState(rightAction)
     val latestOnDiscardChanges by rememberUpdatedState(onDiscardChanges)
     val latestHasDeleteConfirmation by rememberUpdatedState(hasDeleteConfirmation)
     val latestOnDismissDeleteConfirmation by rememberUpdatedState(onDismissDeleteConfirmation)
     var showUnsavedChangesDialog by rememberSaveable { mutableStateOf(false) }
 
-    val pageChromeContribution = remember(isCreating) {
+    val pageChromeContribution = remember(
+        isCreating,
+        onDelete != null,
+        rightAction?.icon,
+        rightAction?.contentDescription,
+    ) {
         PageChromeContribution(
-            rightAction = if (isCreating || onDelete == null) {
-                null
-            } else {
-                TopBarActionSpec(
-                    icon = Icons.Default.Delete,
-                    onClick = {
-                        latestOnDelete?.invoke()
-                    },
-                )
-            },
+            rightAction = rightAction?.copy(
+                onClick = {
+                    latestRightAction?.onClick?.invoke()
+                },
+            ) ?: if (isCreating || onDelete == null) {
+                    null
+                } else {
+                    TopBarActionSpec(
+                        icon = Icons.Default.Delete,
+                        onClick = {
+                            latestOnDelete?.invoke()
+                        },
+                    )
+                },
             backHandler = PageBackHandler(
                 shouldConsumeBack = {
                     latestHasUnsavedChanges() || latestHasDeleteConfirmation()

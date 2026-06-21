@@ -236,6 +236,9 @@ class HomeChatViewModel internal constructor(
     private suspend fun stopGenerating() {
         if (!currentState.isGenerating) return
         runtime.stopCurrentRound(keepCurrentTurn = true)
+        streamJob?.cancel()
+        streamJob = null
+        updateState { copy(isGenerating = false) }
     }
 
     private fun startNewConversation() {
