@@ -35,8 +35,8 @@
 
 | 文件 | 层级 | 源码依据 | 预期内容 |
 | --- | --- | --- | --- |
-| `domains/breeno/index.md` | Stable | `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt`, `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoFeedbackAssembler.kt` | Breeno 侧业务心智、关键 Hook、源码入口、调试关注点 |
-| `domains/xiaoai/index.md` | Stable | `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`, `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiRenderSession.kt` | XiaoAi 侧业务心智、关键 Hook、源码入口、调试关注点 |
+| `domains/coloros-breeno.md` | Stable | `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoChatHook.kt`, `app/src/main/java/com/niki914/nexus/agentic/mod/feat/oppo/BreenoFeedbackAssembler.kt` | Breeno 的注入链路、卡片劫持与全量刷新渲染机制 |
+| `domains/hyperos-xiaoai.md` | Stable | `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiChatHook.kt`, `app/src/main/java/com/niki914/nexus/agentic/mod/feat/hyper/XiaoaiRenderSession.kt` | XiaoAi 的输入捕获、指令白名单拦截与流式分片注入机制 |
 | `domains/ui-shell/index.md` | In Progress | `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/NexusApp.kt`, `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/nav/NexusPage.kt`, `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/NexusPages.kt` | UI Shell、onboarding、settings tree 与导航状态机 |
 
 ### reference/ — 高频索引与注册表
@@ -61,8 +61,8 @@
 | 现在项目做到哪、哪些能力还没正式落地 | `overview/current-status.md` -> `reference/source-map.md` |
 | Xposed 启动、宿主匹配、Hook 安装顺序 | `architecture/boot-sequence.md` -> `reference/source-map.md` |
 | 会话状态、takeover、turnId、reset | `architecture/turn-state.md` |
-| Breeno 响应注入、卡片刷新、相关子 Hook | `domains/breeno/index.md` -> `architecture/render-pipeline.md` |
-| XiaoAi 响应目标捕获、文本流/TTS 拦截、分片注入 | `domains/xiaoai/index.md` -> `architecture/render-pipeline.md` |
+| Breeno 响应注入、卡片刷新、相关子 Hook | `domains/coloros-breeno.md` -> `architecture/render-pipeline.md` |
+| XiaoAi 响应目标捕获、文本流/TTS 拦截、分片注入 | `domains/hyperos-xiaoai.md` -> `architecture/render-pipeline.md` |
 | 配置来源、IPC、server、版本回退 | `architecture/config-resolution.md` -> `reference/source-map.md` |
 | LLMController、Prompt、Tool、MCP、事件流 | `architecture/llm-runtime.md` -> `overview/current-status.md` |
 | S3ss10n 库、LLM 及 MCP 网络请求 | `SESSION.md` |

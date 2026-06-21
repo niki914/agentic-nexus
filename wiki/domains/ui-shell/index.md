@@ -16,8 +16,8 @@ UI Shell 当前分成两层：
 - `NexusApp` 持有导航栈、根返回逻辑、会话选中状态和 page chrome host。
 - `NexusPages` 按 `NexusPage` 分发到 route 层。
 - 首页左上动作会进入 `ConversationHistoryPage`，右上菜单提供“新建会话”和“设置”。
-- `ConversationHistoryPage` 已接通 `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/nav/NexusPage.kt`、`app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/route/ConversationHistoryPageRoute.kt` 和 `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/ConversationHistoryPageContent.kt` 这条完整链路。
-- 设置树首页通过 `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/SettingsHomePageContent.kt` 生成分组入口，`app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/SettingsDetailPageContent.kt` 为当前可见分组逐个分发内容页；未在前置分支中单独展开的可见分组会走到该函数末尾的兜底分支，当前实际展示的是一页占位标题和说明文案。
+- `ConversationHistoryPage` 已接通页面路由与内容展示。但其选中/删除操作并不是页面自闭环的，而是由 `NexusApp` 持有 `activeConversationId`，并将操作结果回调给主页 `HomeChatViewModel`，由其驱动底层的 `replaceHistory` 与 `resetConversation`。
+- 设置树首页通过 `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/SettingsHomePageContent.kt` 生成分组入口。进入详情页时，`SettingsDetailPageContent` 受到 `SettingsViewModel` 的 `visibleGroups` 门控：只有在可见分组内的枚举才会真正分发到对应的内容页，否则直接被拦截。
 
 ## 页面与路由
 
@@ -58,22 +58,21 @@ UI Shell 当前分成两层：
 - `ConfigurePageContent.kt`、`DonePageContent.kt`：onboarding 配置页与完成页。
 - `EditableSettingsDetailScaffold.kt`：设置详情共用壳，处理未保存返回和删除按钮 chrome。
 
-## ConversationHistory 链路
+## ConversationHistory 链路与状态桥
+
+历史页不是一个自闭环的孤立页面，其状态流转强依赖与 `HomeChatViewModel` 的状态桥接：
 
 - 页面定义：`app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/nav/NexusPage.kt`
 - 入口动作：`app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/HomePageContent.kt`
-- 首页路由转发：`app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/route/HomePageRoute.kt`
-- 页面分发：`app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/NexusPages.kt`
-- 路由逻辑：`app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/route/ConversationHistoryPageRoute.kt`
+- 首页路由与回调桥：`app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/route/HomePageRoute.kt`
+- 全局状态持有：`app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/NexusApp.kt`（持有 `activeConversationId` 与删除回调）
 - 页面内容：`app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/ConversationHistoryPageContent.kt`
 
 这个链路当前已经覆盖：
 
-- 从首页左上角进入历史页
-- 加载 `ConversationRepo.listConversations()`
-- 选中会话后返回首页并切换当前会话
-- 删除当前会话或其他历史会话
-- 空态、加载态、错误态和删除失败提示
+- 从首页左上角进入历史页，加载 `ConversationRepo.listConversations()`。
+- 选中会话后：`NexusApp` 将事件送回 `HomePageRoute`，由 `HomeChatState` 从 Repo 取出历史并 `replaceHistory()` 回灌给 `LLMController`。
+- 删除会话：如果是当前会话被删，`HomeChatState` 会清空当前指针并重置 LLM 运行时；否则只删 Repo。
 
 ## Shell 与通用基建
 

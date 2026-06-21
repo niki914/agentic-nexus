@@ -19,7 +19,17 @@
 
 - `app/src/main/java/com/niki914/nexus/agentic/repo/AgentSettingsCodec.kt` 与 `app/src/main/java/com/niki914/nexus/agentic/repo/XRepo.kt` 已实现 agent profile 的解析、默认 `main` agent 补全、`list/get/saveProfile/setEnabled`、以及按 `agentId` 读写 LLM 配置。
 - `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/nav/NexusPage.kt`、`app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/NexusPages.kt`、`app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/route/HomePageRoute.kt` 证明 `ConversationHistoryPage` 已接入页面枚举、路由分发和 Home 入口。
-- `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/route/ConversationHistoryPageRoute.kt` 会加载会话列表、处理选中、删除当前或历史会话；`app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/ConversationHistoryPageContent.kt` 已实现 loading / empty / error / list / delete-confirmation；`app/src/main/java/com/niki914/nexus/agentic/app/conversation/ConversationRepo.kt` 已提供 `listConversations()`、`getConversation()`、`deleteConversation()` 等持久化能力。
+- `app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/route/ConversationHistoryPageRoute.kt` 会加载会话列表、处理选中、删除当前或历史会话；`app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/content/ConversationHistoryPageContent.kt` 已实现 loading / empty / error / list / delete-confirmation。
+- 会话持久化的当前能力边界：
+  - `ConversationRepo` 的 `saveHistory()` 每次都是**全量替换** `conversation_turn` 表，不是增量 append。
+  - 草稿态（`draftText`）在输入变化时实时写回 Repo，与正式的消息历史持久化分离。
+  - 当前会话指针（`last_opened_conversation_id`）没有存在 Room，而是存在 `app.state` JSON（由 `AppStateSettingsCodec.kt` 负责）。
+
+### 宿主接管与注入链路
+
+- **Breeno** (`ColorOS`)：已在 `BreenoChatHook.kt` 实现了完整的拦截流。通过 `BlockNativeCardHook` 阻断原生卡片，通过 `CaptureInputHook` 截获 `dataCenterInstance`，然后利用反射生成伪造卡片并执行**全量刷新**更新。
+- **XiaoAi** (`HyperOS`)：已在 `XiaoaiChatHook.kt` 实现了基于流式分片的注入。利用 `CaptureResponseTargetHook` 捕获渲染目标并使用 `CompletableDeferred` 处理并发时序，配合白名单指令拦截与 TTS 拦截子 Hook，通过 `RenderTextStreamCardHook` 实现打字机式注入。
+- 通用接管逻辑 `TakeoverResolver` 已接入上述两个宿主的输入管线。
 
 ## In Progress
 
@@ -35,4 +45,4 @@
 
 ## Unverified
 
-- 宿主注入主链、Breeno / XiaoAi 渲染细节、设置页覆盖范围、MCP transport 细节，本轮没有为这次修文重新逐项回到源码核验，因此这里不再沿用旧页面中的笼统“已实现”表述。
+- 设置页覆盖范围、MCP transport 细节，本轮没有为这次修文重新逐项回到源码核验。

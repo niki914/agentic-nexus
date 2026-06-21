@@ -4,6 +4,32 @@
 
 ## 运行时主链
 
+### Runtime Bridge
+
+`LLMController` 依赖 `RuntimeEnvironment.awaitSettingsGateway()` 获取配置，这条桥接链路在 App 启动时建立：
+
+1. `app/src/main/java/com/niki914/nexus/agentic/app/App.kt` 在 `onCreate` 时初始化 `AppRuntimeBridge`。
+2. `AppRuntimeBridge` 将 `XRepoRuntimeGateway` 注入到 `RuntimeEnvironment` 中。
+3. 运行时所有的 `readLlmConfig()`、`listMcpServers()` 等操作，最终都由 `XRepoRuntimeGateway` 代理给 `XRepo`。
+
+### 会话历史闭环 (History)
+
+`LLMController` 本身只持有运行时 `Session`，真正的历史落盘和恢复由 UI 层 `HomeChatViewModel` 驱动：
+
+1. **新建会话**：首次发送消息前，`HomeChatState` 才会触发 `createConversation()` 建表记录。
+2. **恢复/切换历史**：启动或在历史页选中记录时，从 `ConversationRepo` 读取历史，通过 `LLMController.replaceHistory()` 回灌进运行时 `Session`。
+3. **完成落盘**：`LLMController.stream()` 触发 `LlmStreamEvent.Completed` 后，`HomeChatState` 才会通过 `LLMController.getHistory()` 拉取全量 turn，并调用 `ConversationRepo.saveHistory()` 全量替换落库。
+
+### 记忆闭环 (Memory)
+
+Prompt 中的 `Agent Memory` 来源于 `agent.main.memory` Store，其写入与消费链路如下：
+
+1. **写入侧**：
+   - 用户手动在设置页写入：`app/src/main/java/com/niki914/nexus/agentic/app/ui/nexus/model/MemorySettingsState.kt`。
+   - Agent 运行时通过工具写入：`agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/agentic/buildin/impl/MemorizeBuiltin.kt`。
+2. **持久化侧**：统一写入 `agent.main.memory` Store，并由 `MemorySettingsCodec` 持久化到 JSON。
+3. **消费侧**：`XRepoRuntimeGateway` 从 Store 读取并注入到 `RuntimeLlmConfig.memories` 中，最终由 `PromptComposer` 拼接入 Prompt。
+
 ### Refresh
 
 `agent-runtime/src/main/java/com/niki914/nexus/agentic/chat/LLMController.kt` 中的 `refresh()` 当前顺序如下：
