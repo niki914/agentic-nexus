@@ -30,7 +30,7 @@ class LLMControllerRefreshSkillTest {
 
         assertEquals(1, gateway.listEnabledSkillsCallCount)
         assertTrue(snapshot.prompt.finalSystemPrompt.contains("<available_skills>"))
-        assertTrue(snapshot.prompt.finalSystemPrompt.contains("- skill-a: Skill A - Description A"))
+        assertTrue(snapshot.prompt.finalSystemPrompt.contains("<id>skill-a</id>"))
     }
 
     @Test

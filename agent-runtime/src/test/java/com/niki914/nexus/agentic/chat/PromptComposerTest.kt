@@ -74,12 +74,12 @@ class PromptComposerTest {
         )
         assertTrue(
             result.finalSystemPrompt.contains(
-                "- skill-a: Skill A - Description A [path: /skills/skill-a/SKILL.md]"
+                "  <skill>\n    <id>skill-a</id>\n    <name>Skill A</name>\n    <description>Description A</description>\n    <path>/skills/skill-a/SKILL.md</path>\n  </skill>"
             )
         )
         assertTrue(
             result.finalSystemPrompt.contains(
-                "Skills are on-demand instruction sets."
+                "- Scan <available_skills>."
             )
         )
     }
@@ -97,11 +97,7 @@ class PromptComposerTest {
         )
 
         val prompt = result.finalSystemPrompt
-        val first = prompt.indexOf("- group-a/skill-a: Group Skill - Group description [path: /skills/group-a/skill-a/SKILL.md]")
-        val second = prompt.indexOf("- skill-b: Skill B - Description B [path: /skills/skill-b/SKILL.md]")
-        assertTrue(first >= 0)
-        assertTrue(second >= 0)
-        assertTrue(first < second)
+        assertTrue(prompt.indexOf("<id>group-a/skill-a</id>") < prompt.indexOf("<id>skill-b</id>"))
     }
 
     @Test
@@ -120,7 +116,7 @@ class PromptComposerTest {
             )
         )
 
-        assertTrue(result.finalSystemPrompt.contains("- skill-a: Skill A - Description A [path: /skills/skill-a/SKILL.md]"))
+        assertTrue(result.finalSystemPrompt.contains("<id>skill-a</id>"))
         assertFalse(result.finalSystemPrompt.contains(loadedSkillContent))
     }
 

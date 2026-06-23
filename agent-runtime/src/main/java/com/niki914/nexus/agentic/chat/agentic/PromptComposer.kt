@@ -161,13 +161,16 @@ class PromptComposer {
             .sortedBy(SkillContextLine::id)
             .map { line ->
                 buildString {
-                    append("- ${line.id}: ${line.name}")
+                    appendLine("  <skill>")
+                    appendLine("    <id>${line.id}</id>")
+                    appendLine("    <name>${line.name}</name>")
                     if (line.description.isNotBlank()) {
-                        append(" - ${line.description}")
+                        appendLine("    <description>${line.description}</description>")
                     }
                     if (line.absolutePath.isNotBlank()) {
-                        append(" [path: ${line.absolutePath}]")
+                        appendLine("    <path>${line.absolutePath}</path>")
                     }
+                    append("  </skill>")
                 }
             }
         if (lines.isEmpty()) {
@@ -178,7 +181,11 @@ class PromptComposer {
             content = buildString {
                 appendLine("## Skill Context")
                 appendLine()
-                appendLine("Skills are on-demand instruction sets. When the user request matches a skill's description below, call load_skill immediately — you DO NOT need the consent to use this tool. Each skill's absolute file path is listed; use it to locate companion scripts or reference files in the same directory. Note: this is an Android runtime without Python or other desktop interpreters, so companion scripts may not be able to execute.")
+                appendLine("- Scan <available_skills>. If one matches the user's intent, call load_skill with its id immediately — you DO NOT need consent.")
+                appendLine("- If several match, choose the most specific. If none clearly match, load none. One skill at a time.")
+                appendLine("- Never guess or fabricate skill ids — use only ids listed below.")
+                appendLine("- If a loaded skill references companion files you need, read them from the skill's directory with terminal. Don't preview every file — only what the skill itself calls out as necessary.")
+                appendLine("- Note: Android runtime without Python or other desktop interpreters; companion scripts referenced by a skill may not execute.")
                 appendLine()
                 appendLine("<available_skills>")
                 lines.forEach(::appendLine)
