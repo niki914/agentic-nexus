@@ -64,6 +64,24 @@ class NavigationController<P : Page>(
         return true
     }
 
+    fun popMultiple(
+        count: Int,
+        direction: TitleDirection = TitleDirection.Back,
+    ): Int {
+        if (!tryConsumeNavigationDebounce()) return 0
+        var popped = 0
+        repeat(count) {
+            if (!canGoBack) return@repeat
+            val removedEntry = entryStack.removeAt(entryStack.lastIndex)
+            removedEntry.viewModelStore.clear()
+            popped++
+        }
+        if (popped > 0) {
+            lastDirection = direction
+        }
+        return popped
+    }
+
     fun resetTo(page: P) {
         if (!tryConsumeNavigationDebounce()) return
         entryStack.forEach { entry -> entry.viewModelStore.clear() }

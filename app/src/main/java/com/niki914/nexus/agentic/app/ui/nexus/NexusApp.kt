@@ -305,6 +305,7 @@ fun NexusApp(
                             onPush = ::push,
                             onPushFromLeft = ::pushFromLeft,
                             onPop = { navigator.pop() },
+                            onPopMultiple = { navigator.popMultiple(it) },
                             onPopToRight = ::popToRight,
                             onResetTo = ::resetTo,
                             selectedConversationId = selectedConversationId,

@@ -238,28 +238,16 @@ class ConfigureViewModel internal constructor(
         val providerSpec = ProviderSpecs.find(
             initialProviderId?.takeIf { it.isNotBlank() } ?: savedProviderId,
         )
-        val shouldReuseSavedValues = savedProviderId == providerSpec.id
-        val savedEndpoint = if (shouldReuseSavedValues) llmConfig.endpoint.trim() else ""
-        val endpointOverrideEnabled = savedEndpoint.isNotBlank() &&
-                savedEndpoint != providerSpec.officialEndpoint
-        val endpointInput = if (endpointOverrideEnabled) {
-            savedEndpoint
-        } else {
-            providerSpec.officialEndpoint
-        }
+        val keepApiKey = savedProviderId == providerSpec.id
         updateState {
             copy(
                 scene = ConfigureScene.SettingsProviderSwitch,
                 providerSpec = providerSpec,
-                endpointOverrideEnabled = endpointOverrideEnabled,
-                endpointInput = endpointInput,
-                lastCustomEndpointInput = endpointInput,
-                modelInput = if (shouldReuseSavedValues) {
-                    llmConfig.model.trim().ifBlank { providerSpec.exampleModelId }
-                } else {
-                    providerSpec.exampleModelId
-                },
-                apiKeyInput = if (shouldReuseSavedValues) llmConfig.apiKey else "",
+                endpointOverrideEnabled = false,
+                endpointInput = providerSpec.officialEndpoint,
+                lastCustomEndpointInput = providerSpec.officialEndpoint,
+                modelInput = providerSpec.exampleModelId,
+                apiKeyInput = if (keepApiKey) llmConfig.apiKey else "",
                 apiKeyVisible = false,
                 endpointErrorResId = null,
                 modelErrorResId = null,

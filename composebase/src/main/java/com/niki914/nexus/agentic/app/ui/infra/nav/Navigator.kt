@@ -20,6 +20,13 @@ class Navigator<P : Page> internal constructor(
         return controller.pop(direction)
     }
 
+    fun popMultiple(
+        count: Int,
+        direction: TitleDirection = TitleDirection.Back,
+    ): Int {
+        return controller.popMultiple(count, direction)
+    }
+
     fun resetTo(page: P) {
         controller.resetTo(page)
     }

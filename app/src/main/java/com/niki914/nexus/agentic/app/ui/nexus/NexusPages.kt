@@ -42,6 +42,7 @@ fun NexusPageContent(
     onPush: (NexusPage) -> Unit,
     onPushFromLeft: (NexusPage) -> Unit,
     onPop: () -> Unit,
+    onPopMultiple: (Int) -> Unit,
     onPopToRight: () -> Unit,
     onResetTo: (NexusPage) -> Unit,
     selectedConversationId: String?,
@@ -75,7 +76,7 @@ fun NexusPageContent(
             page = page,
             onBack = onPop,
             onResetToSettingsHome = {
-                onResetTo(SettingsHomePage)
+                onPopMultiple(2)
             },
         )
 
