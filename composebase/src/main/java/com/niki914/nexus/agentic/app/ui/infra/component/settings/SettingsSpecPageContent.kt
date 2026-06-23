@@ -140,6 +140,7 @@ private fun SettingsRowContent(
             }
             SettingsToggleListItemCard(
                 title = row.title,
+                summary = row.summary,
                 checked = row.checked,
                 enabled = row.enabled,
                 onCheckedChange = { checked ->

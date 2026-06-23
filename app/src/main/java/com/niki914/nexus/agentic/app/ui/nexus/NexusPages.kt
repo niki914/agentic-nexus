@@ -16,6 +16,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsConfigurePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsHomePage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsProviderPickPage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.SkillDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.StartupPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TakeoverRuleDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.route.ConfigurePageRoute
@@ -30,6 +31,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.route.SettingsConfigurePageRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.SettingsDetailPageRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.SettingsHomePageRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.SettingsProviderPickPageRoute
+import com.niki914.nexus.agentic.app.ui.nexus.route.SkillDetailRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.StartupPageRoute
 import com.niki914.nexus.agentic.app.ui.nexus.route.TakeoverRuleDetailRoute
 
@@ -126,6 +128,11 @@ fun NexusPageContent(
         )
 
         is CustomToolDetailPage -> CustomToolDetailRoute(
+            page = page,
+            onBack = onPop,
+        )
+
+        is SkillDetailPage -> SkillDetailRoute(
             page = page,
             onBack = onPop,
         )

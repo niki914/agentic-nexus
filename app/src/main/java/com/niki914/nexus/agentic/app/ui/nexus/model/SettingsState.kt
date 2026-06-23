@@ -62,6 +62,7 @@ private fun settingsSections(): List<SettingsSectionDefinition> {
             titleRes = R.string.ui_settings_section_capabilities,
             groups = listOf(
                 NexusSettingsGroup.BuiltinTools,
+                NexusSettingsGroup.Skills,
                 NexusSettingsGroup.CustomShellTools,
                 NexusSettingsGroup.Mcp,
                 NexusSettingsGroup.Takeover,

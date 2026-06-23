@@ -23,6 +23,11 @@ enum class NexusSettingsGroup(
         summaryRes = R.string.ui_settings_builtin_tools_summary,
         routeSuffix = "builtin-tools",
     ),
+    Skills(
+        titleRes = R.string.ui_settings_skills,
+        summaryRes = R.string.ui_settings_skills_summary,
+        routeSuffix = "skills",
+    ),
     CustomShellTools(
         titleRes = R.string.ui_settings_custom_shell_tools,
         summaryRes = R.string.ui_settings_custom_shell_tools_summary,

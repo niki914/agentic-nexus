@@ -1,6 +1,7 @@
 package com.niki914.nexus.agentic.app.ui.infra.component
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +19,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsToggleListItemCard(
     title: String,
+    summary: String? = null,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -30,6 +32,7 @@ fun SettingsToggleListItemCard(
     ) {
         SettingsToggleListItemRow(
             title = title,
+            summary = summary,
             checked = checked,
             onCheckedChange = onCheckedChange,
             enabled = enabled,
@@ -41,6 +44,7 @@ fun SettingsToggleListItemCard(
 @Composable
 private fun SettingsToggleListItemRow(
     title: String,
+    summary: String?,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     enabled: Boolean,
@@ -59,13 +63,26 @@ private fun SettingsToggleListItemRow(
             contentPadding = PaddingValues(start = 16.dp, top = 14.dp, end = 0.dp, bottom = 14.dp),
             onClick = onClick,
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (!summary.isNullOrBlank()) {
+                    Text(
+                        text = summary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
 
         LiquidToggle(

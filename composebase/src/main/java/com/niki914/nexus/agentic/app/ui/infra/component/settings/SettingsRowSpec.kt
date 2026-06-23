@@ -35,6 +35,7 @@ sealed interface SettingsRowSpec {
     data class ToggleNavigation(
         override val id: String,
         override val title: String,
+        val summary: String? = null,
         val checked: Boolean,
         override val enabled: Boolean = true,
     ) : SettingsRowSpec

@@ -12,6 +12,7 @@ import com.niki914.nexus.agentic.app.ui.nexus.nav.McpServerDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.NexusSettingsGroup
 import com.niki914.nexus.agentic.app.ui.nexus.nav.SettingsProviderPickPage
+import com.niki914.nexus.agentic.app.ui.nexus.nav.SkillDetailPage
 import com.niki914.nexus.agentic.app.ui.nexus.nav.TakeoverRuleDetailPage
 
 @Composable
@@ -39,6 +40,15 @@ fun SettingsDetailPageContent(
 
     if (group == NexusSettingsGroup.BuiltinTools) {
         BuiltinToolsSettingsContent()
+        return
+    }
+
+    if (group == NexusSettingsGroup.Skills) {
+        SkillsSettingsContent(
+            onOpenSkillDetail = { id, title ->
+                onPush(SkillDetailPage(id, title))
+            },
+        )
         return
     }
 

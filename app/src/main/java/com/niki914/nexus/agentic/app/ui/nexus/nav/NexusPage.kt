@@ -177,3 +177,14 @@ data class CustomToolDetailPage(
     override val rightAction: TopBarActionSpec? =
         if (isCreating) null else TopBarActionSpec(Icons.Default.Delete)
 }
+
+data class SkillDetailPage(
+    val skillId: String,
+    val skillTitle: String,
+) : NexusPage {
+    override val routeKey: String = "skill-detail:$skillId"
+    override val titleSpec: PageTitleSpec = TextTitle(skillTitle)
+    override val leftAction: TopBarActionSpec =
+        TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
+    override val rightAction: TopBarActionSpec? = TopBarActionSpec(Icons.Default.Delete)
+}

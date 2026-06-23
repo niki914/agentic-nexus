@@ -25,6 +25,7 @@ class SettingsViewModelTest {
         assertEquals(
             listOf(
                 NexusSettingsGroup.BuiltinTools,
+                NexusSettingsGroup.Skills,
                 NexusSettingsGroup.CustomShellTools,
                 NexusSettingsGroup.Takeover,
                 NexusSettingsGroup.ExecutionRules,
@@ -41,6 +42,7 @@ class SettingsViewModelTest {
         assertTrue(state.isGroupVisible(NexusSettingsGroup.ModelConfig))
         assertTrue(state.isGroupVisible(NexusSettingsGroup.Memory))
         assertTrue(state.isGroupVisible(NexusSettingsGroup.BuiltinTools))
+        assertTrue(state.isGroupVisible(NexusSettingsGroup.Skills))
         assertTrue(state.isGroupVisible(NexusSettingsGroup.CustomShellTools))
         assertTrue(state.isGroupVisible(NexusSettingsGroup.Mcp))
         assertTrue(state.isGroupVisible(NexusSettingsGroup.Takeover))
