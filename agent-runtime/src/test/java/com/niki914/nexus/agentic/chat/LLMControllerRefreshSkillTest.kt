@@ -86,6 +86,7 @@ class LLMControllerRefreshSkillTest {
             description = description,
             relativePath = "skills/$id/SKILL.md",
             absolutePath = "/private/skills/$id/SKILL.md",
+            absoluteDir = "/private/skills/$id",
             enabled = true,
         )
     }

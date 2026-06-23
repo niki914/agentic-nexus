@@ -74,7 +74,7 @@ class PromptComposerTest {
         )
         assertTrue(
             result.finalSystemPrompt.contains(
-                "  <skill>\n    <id>skill-a</id>\n    <name>Skill A</name>\n    <description>Description A</description>\n    <path>/skills/skill-a/SKILL.md</path>\n  </skill>"
+                "  <skill>\n    <id>skill-a</id>\n    <name>Skill A</name>\n    <description>Description A</description>\n    <dir>/skills/skill-a</dir>\n  </skill>"
             )
         )
         assertTrue(
@@ -276,6 +276,7 @@ class PromptComposerTest {
             description = description,
             relativePath = "$id/SKILL.md",
             absolutePath = "/skills/$id/SKILL.md",
+            absoluteDir = "/skills/$id",
             enabled = true,
         )
     }

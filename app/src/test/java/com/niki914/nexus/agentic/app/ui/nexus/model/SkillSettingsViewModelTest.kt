@@ -361,6 +361,7 @@ class SkillSettingsViewModelTest {
                 description = description,
                 relativePath = relativePath,
                 absolutePath = "/tmp/$relativePath",
+                absoluteDir = "/tmp/skill",
                 enabled = enabled,
             )
         }
@@ -379,6 +380,7 @@ class SkillSettingsViewModelTest {
                 description = description,
                 relativePath = relativePath,
                 absolutePath = "/tmp/$relativePath",
+                absoluteDir = "/tmp/skill",
                 content = content,
                 enabled = enabled,
             )

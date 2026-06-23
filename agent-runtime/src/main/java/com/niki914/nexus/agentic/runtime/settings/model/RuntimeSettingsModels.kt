@@ -39,6 +39,7 @@ data class RuntimeSkillMetadata(
     val description: String,
     val relativePath: String,
     val absolutePath: String,
+    val absoluteDir: String,
     val enabled: Boolean,
 )
 
@@ -48,6 +49,7 @@ data class RuntimeLoadedSkill(
     val description: String,
     val relativePath: String,
     val absolutePath: String,
+    val absoluteDir: String,
     val content: String,
     val enabled: Boolean,
 )

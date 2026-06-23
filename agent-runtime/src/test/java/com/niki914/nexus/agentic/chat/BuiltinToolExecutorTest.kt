@@ -96,6 +96,7 @@ class BuiltinToolExecutorTest {
                         description = "Description A",
                         relativePath = "skills/skill-a/SKILL.md",
                         absolutePath = "/private/skills/skill-a/SKILL.md",
+                        absoluteDir = "/private/skills/skill-a",
                         content = "# Skill A",
                         enabled = true,
                     )

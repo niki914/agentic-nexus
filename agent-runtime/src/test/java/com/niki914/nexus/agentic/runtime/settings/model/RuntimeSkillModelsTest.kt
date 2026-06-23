@@ -12,6 +12,7 @@ class RuntimeSkillModelsTest {
             description = "Does one thing.",
             relativePath = "group-a/skill-a/SKILL.md",
             absolutePath = "/tmp/skills/group-a/skill-a/SKILL.md",
+            absoluteDir = "/tmp/skills/group-a/skill-a",
             enabled = true,
         )
 
@@ -20,6 +21,7 @@ class RuntimeSkillModelsTest {
         assertEquals("Does one thing.", metadata.description)
         assertEquals("group-a/skill-a/SKILL.md", metadata.relativePath)
         assertEquals("/tmp/skills/group-a/skill-a/SKILL.md", metadata.absolutePath)
+        assertEquals("/tmp/skills/group-a/skill-a", metadata.absoluteDir)
         assertEquals(true, metadata.enabled)
     }
 
@@ -31,6 +33,7 @@ class RuntimeSkillModelsTest {
             description = "",
             relativePath = "skill-a/SKILL.md",
             absolutePath = "/tmp/skills/skill-a/SKILL.md",
+            absoluteDir = "/tmp/skills/skill-a",
             content = "# Skill A",
             enabled = false,
         )
@@ -40,6 +43,7 @@ class RuntimeSkillModelsTest {
         assertEquals("", loaded.description)
         assertEquals("skill-a/SKILL.md", loaded.relativePath)
         assertEquals("/tmp/skills/skill-a/SKILL.md", loaded.absolutePath)
+        assertEquals("/tmp/skills/skill-a", loaded.absoluteDir)
         assertEquals("# Skill A", loaded.content)
         assertEquals(false, loaded.enabled)
     }

@@ -155,7 +155,8 @@ class PromptComposer {
                     val name = skill.name.trim().ifBlank { id }
                     val description = skill.description.trim()
                     val absolutePath = skill.absolutePath.trim()
-                    SkillContextLine(id, name, description, absolutePath)
+                    val absoluteDir = skill.absoluteDir.trim()
+                    SkillContextLine(id, name, description, absolutePath, absoluteDir)
                 }
             }
             .sortedBy(SkillContextLine::id)
@@ -167,8 +168,8 @@ class PromptComposer {
                     if (line.description.isNotBlank()) {
                         appendLine("    <description>${line.description}</description>")
                     }
-                    if (line.absolutePath.isNotBlank()) {
-                        appendLine("    <path>${line.absolutePath}</path>")
+                    if (line.absoluteDir.isNotBlank()) {
+                        appendLine("    <dir>${line.absoluteDir}</dir>")
                     }
                     append("  </skill>")
                 }
@@ -214,5 +215,6 @@ class PromptComposer {
         val name: String,
         val description: String,
         val absolutePath: String,
+        val absoluteDir: String,
     )
 }

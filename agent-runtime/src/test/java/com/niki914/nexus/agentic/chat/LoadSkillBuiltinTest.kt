@@ -137,6 +137,7 @@ class LoadSkillBuiltinTest {
             description = "Description A",
             relativePath = "$id/SKILL.md",
             absolutePath = "/private/$id/SKILL.md",
+            absoluteDir = "/private/$id",
             content = "Skill content A",
             enabled = enabled,
         )

@@ -33,6 +33,7 @@ class SkillFileRepository(
             description = metadata.description,
             relativePath = resolved.relativePath,
             absolutePath = resolved.skillFile.canonicalPath,
+            absoluteDir = resolved.skillDir.canonicalPath,
             content = content,
             enabled = stateStore.isEnabled(resolved.id),
         )
@@ -69,6 +70,7 @@ class SkillFileRepository(
             description = metadata.description,
             relativePath = resolved.relativePath,
             absolutePath = resolved.skillFile.canonicalPath,
+            absoluteDir = resolved.skillDir.canonicalPath,
             enabled = stateStore.isEnabled(resolved.id),
         )
     }
