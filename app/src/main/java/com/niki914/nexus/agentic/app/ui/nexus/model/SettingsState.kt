@@ -59,12 +59,17 @@ private fun settingsSections(): List<SettingsSectionDefinition> {
             ),
         ),
         SettingsSectionDefinition(
-            titleRes = R.string.ui_settings_section_capabilities,
+            titleRes = R.string.ui_settings_section_tools,
             groups = listOf(
                 NexusSettingsGroup.BuiltinTools,
                 NexusSettingsGroup.Skills,
                 NexusSettingsGroup.CustomShellTools,
                 NexusSettingsGroup.Mcp,
+            ),
+        ),
+        SettingsSectionDefinition(
+            titleRes = R.string.ui_settings_section_rules,
+            groups = listOf(
                 NexusSettingsGroup.Takeover,
                 NexusSettingsGroup.ExecutionRules,
             ),

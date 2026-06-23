@@ -17,7 +17,7 @@ class SettingsViewModelTest {
             )
         )
 
-        assertEquals(2, state.sections.size)
+        assertEquals(3, state.sections.size)
         assertEquals(
             listOf(NexusSettingsGroup.ModelConfig),
             state.sections[0].groups,
@@ -27,10 +27,15 @@ class SettingsViewModelTest {
                 NexusSettingsGroup.BuiltinTools,
                 NexusSettingsGroup.Skills,
                 NexusSettingsGroup.CustomShellTools,
+            ),
+            state.sections[1].groups,
+        )
+        assertEquals(
+            listOf(
                 NexusSettingsGroup.Takeover,
                 NexusSettingsGroup.ExecutionRules,
             ),
-            state.sections[1].groups,
+            state.sections[2].groups,
         )
     }
 

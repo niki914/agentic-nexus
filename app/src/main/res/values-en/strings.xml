@@ -87,7 +87,8 @@
 
     <!-- Settings Home Sections -->
     <string name="ui_settings_section_model">Model</string>
-    <string name="ui_settings_section_capabilities">Capabilities</string>
+    <string name="ui_settings_section_tools">Tools</string>
+    <string name="ui_settings_section_rules">Rules</string>
     <string name="ui_settings_section_app">App</string>
 
     <!-- Settings Home Items -->

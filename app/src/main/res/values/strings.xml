@@ -86,7 +86,8 @@
 
     <!-- Settings Home Sections -->
     <string name="ui_settings_section_model">模型</string>
-    <string name="ui_settings_section_capabilities">能力支持</string>
+    <string name="ui_settings_section_tools">工具</string>
+    <string name="ui_settings_section_rules">规则</string>
     <string name="ui_settings_section_app">应用</string>
 
     <!-- Settings Home Items -->
