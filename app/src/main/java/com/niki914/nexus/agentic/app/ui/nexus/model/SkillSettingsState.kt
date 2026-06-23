@@ -6,6 +6,8 @@ import kotlinx.coroutines.CancellationException
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLoadedSkill as LoadedSkill
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeSkillMetadata as SkillMetadata
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeSkillValidation as SkillValidation
+import java.io.File
+import com.niki914.nexus.agentic.repo.SkillImportResult
 
 interface SkillRepositoryProvider {
     suspend fun listAll(): List<SkillMetadata>
@@ -13,6 +15,7 @@ interface SkillRepositoryProvider {
     suspend fun saveContent(id: String, content: String): SkillValidation?
     suspend fun setEnabled(id: String, enabled: Boolean): SkillValidation?
     suspend fun delete(id: String): SkillValidation?
+    suspend fun importSkill(sourceDir: File, overwrite: Boolean = false): SkillImportResult
 }
 
 class XRepoSkillRepositoryProvider : SkillRepositoryProvider {
@@ -29,6 +32,9 @@ class XRepoSkillRepositoryProvider : SkillRepositoryProvider {
     }
 
     override suspend fun delete(id: String): SkillValidation? = XRepo.skills.delete(id)
+
+    override suspend fun importSkill(sourceDir: File, overwrite: Boolean): SkillImportResult =
+        XRepo.skills.importSkill(sourceDir, overwrite)
 }
 
 data class SkillListItem(
@@ -53,12 +59,19 @@ data class SkillDeleteConfirmationState(
     val title: String,
 )
 
+data class ImportConflictState(
+    val sourceDir: File,
+    val skillName: String,
+)
+
 data class SkillSettingsUiState(
     val items: List<SkillListItem> = emptyList(),
     val formState: SkillDetailFormState = SkillDetailFormState(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
+    val isImporting: Boolean = false,
     val inlineError: SkillInlineError? = null,
+    val importConflict: ImportConflictState? = null,
     val deleteConfirmation: SkillDeleteConfirmationState? = null,
 )
 
@@ -77,10 +90,15 @@ sealed interface SkillSettingsIntent {
     data object RequestDelete : SkillSettingsIntent
     data object DismissDeleteConfirmation : SkillSettingsIntent
     data object ConfirmDelete : SkillSettingsIntent
+    data class Import(val sourceDir: File) : SkillSettingsIntent
+    data object ConfirmImport : SkillSettingsIntent
+    data object DismissImportConflict : SkillSettingsIntent
 }
 
 sealed interface SkillSettingsEffect {
     data object ExitDetail : SkillSettingsEffect
+    data object ShowNoSkillFileToast : SkillSettingsEffect
+    data class ShowImportErrorToast(val message: String) : SkillSettingsEffect
 }
 
 class SkillSettingsViewModel(
@@ -114,6 +132,11 @@ class SkillSettingsViewModel(
             }
 
             SkillSettingsIntent.ConfirmDelete -> confirmDelete()
+            is SkillSettingsIntent.Import -> importSkill(intent.sourceDir)
+            SkillSettingsIntent.ConfirmImport -> confirmImport()
+            SkillSettingsIntent.DismissImportConflict -> updateState {
+                copy(importConflict = null)
+            }
         }
     }
 
@@ -344,6 +367,59 @@ class SkillSettingsViewModel(
                     ),
                 )
             }
+        }
+    }
+
+    private suspend fun importSkill(sourceDir: File) {
+        updateState { copy(isImporting = true, inlineError = null) }
+        try {
+            when (val result = provider.importSkill(sourceDir, false)) {
+                is SkillImportResult.Success -> {
+                    updateState { copy(isImporting = false) }
+                    load()
+                }
+                is SkillImportResult.NoSkillFile -> {
+                    updateState { copy(isImporting = false) }
+                    sendEffect(SkillSettingsEffect.ShowNoSkillFileToast)
+                }
+                is SkillImportResult.Conflict -> {
+                    updateState {
+                        copy(
+                            isImporting = false,
+                            importConflict = ImportConflictState(sourceDir, result.targetName),
+                        )
+                    }
+                }
+                is SkillImportResult.Error -> {
+                    updateState { copy(isImporting = false) }
+                    sendEffect(SkillSettingsEffect.ShowImportErrorToast(result.message))
+                }
+            }
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            updateState { copy(isImporting = false) }
+            sendEffect(SkillSettingsEffect.ShowImportErrorToast(throwable.message ?: "导入 Skill 失败"))
+        }
+    }
+
+    private suspend fun confirmImport() {
+        val conflict = currentState.importConflict ?: return
+        updateState { copy(isImporting = true, importConflict = null, inlineError = null) }
+        try {
+            when (val result = provider.importSkill(conflict.sourceDir, true)) {
+                is SkillImportResult.Success -> {
+                    updateState { copy(isImporting = false) }
+                    load()
+                }
+                else -> {
+                    updateState { copy(isImporting = false) }
+                    sendEffect(SkillSettingsEffect.ShowImportErrorToast("导入 Skill 失败"))
+                }
+            }
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            updateState { copy(isImporting = false) }
+            sendEffect(SkillSettingsEffect.ShowImportErrorToast(throwable.message ?: "导入 Skill 失败"))
         }
     }
 

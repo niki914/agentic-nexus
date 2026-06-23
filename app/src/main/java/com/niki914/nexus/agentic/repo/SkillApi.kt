@@ -3,6 +3,8 @@ package com.niki914.nexus.agentic.repo
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLoadedSkill
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeSkillMetadata
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeSkillValidation
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class SkillApi internal constructor(
@@ -30,6 +32,12 @@ class SkillApi internal constructor(
 
     suspend fun delete(id: String): RuntimeSkillValidation? {
         return repository().delete(id)
+    }
+
+    suspend fun importSkill(sourceDir: File, overwrite: Boolean = false): SkillImportResult {
+        return withContext(Dispatchers.IO) {
+            repository().importSkill(sourceDir, overwrite)
+        }
     }
 
     private suspend fun repository(): SkillFileRepository {

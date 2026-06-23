@@ -5,6 +5,13 @@ import com.niki914.nexus.agentic.runtime.settings.model.RuntimeSkillMetadata
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeSkillValidation
 import java.io.File
 
+sealed class SkillImportResult {
+    object Success : SkillImportResult()
+    object NoSkillFile : SkillImportResult()
+    data class Conflict(val targetName: String) : SkillImportResult()
+    data class Error(val message: String) : SkillImportResult()
+}
+
 class SkillFileRepository(
     private val skillsRoot: File,
 ) {
@@ -59,6 +66,37 @@ class SkillFileRepository(
         stateStore.remove(resolved.id)
         cleanEmptySkillDirs(resolved.skillDir)
         return null
+    }
+
+    fun importSkill(sourceDir: File, overwrite: Boolean = false): SkillImportResult {
+        val skillFile = File(sourceDir, SkillPathResolver.SKILL_FILE_NAME)
+        if (!skillFile.isFile) return SkillImportResult.NoSkillFile
+
+        val targetName = sourceDir.name
+        if (targetName.isBlank() || targetName.contains("/") || targetName.contains("\\") || targetName == "." || targetName == "..") {
+            return SkillImportResult.Error("Invalid directory name: $targetName")
+        }
+
+        val targetDir = File(skillsRoot, targetName)
+        if (targetDir.exists() && !overwrite) {
+            return SkillImportResult.Conflict(targetName)
+        }
+        if (targetDir.exists() && overwrite) {
+            targetDir.deleteRecursively()
+        }
+
+        return try {
+            val copied = sourceDir.copyRecursively(targetDir, overwrite = true)
+            if (!copied || !File(targetDir, SkillPathResolver.SKILL_FILE_NAME).isFile) {
+                targetDir.deleteRecursively()
+                SkillImportResult.Error("Copy failed: unable to read source directory")
+            } else {
+                SkillImportResult.Success
+            }
+        } catch (e: Exception) {
+            if (targetDir.exists()) targetDir.deleteRecursively()
+            SkillImportResult.Error(e.message ?: "Copy failed")
+        }
     }
 
     private fun metadataFor(resolved: SkillPathResolution.Resolved): RuntimeSkillMetadata {

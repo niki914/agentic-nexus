@@ -9,12 +9,16 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import com.niki914.nexus.agentic.repo.SkillImportResult
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLoadedSkill as LoadedSkill
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeSkillMetadata as SkillMetadata
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeSkillValidation as SkillValidation
+import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SkillSettingsViewModelTest {
@@ -293,6 +297,150 @@ class SkillSettingsViewModelTest {
         assertTrue(effects.isEmpty())
     }
 
+    @Test
+    fun import_success_refreshesList() = runTest {
+        val existingItem = skillMetadata("existing", "Existing")
+        val provider = FakeSkillRepositoryProvider(
+            listResult = listOf(existingItem),
+            importResults = mutableListOf(SkillImportResult.Success),
+        )
+        val viewModel = SkillSettingsViewModel(provider)
+
+        viewModel.sendIntent(SkillSettingsIntent.Import(File("/fake/source")))
+        advanceUntilIdle()
+
+        val state = viewModel.uiStateFlow.value
+        assertFalse(state.isImporting)
+        assertNull(state.importConflict)
+        assertEquals(1, state.items.size)
+        assertEquals(1, provider.importCalls.size)
+        assertEquals(File("/fake/source"), provider.importCalls.first().first)
+        assertFalse(provider.importCalls.first().second) // overwrite = false
+    }
+
+    @Test
+    fun import_noSkillFile_showsToast() = runTest {
+        val provider = FakeSkillRepositoryProvider(
+            importResults = mutableListOf(SkillImportResult.NoSkillFile),
+        )
+        val viewModel = SkillSettingsViewModel(provider)
+        val effects = collectEffects(viewModel, count = 1)
+
+        viewModel.sendIntent(SkillSettingsIntent.Import(File("/fake/source")))
+        advanceUntilIdle()
+
+        val state = viewModel.uiStateFlow.value
+        assertFalse(state.isImporting)
+        assertEquals(1, effects.size)
+        assertTrue(effects.first() is SkillSettingsEffect.ShowNoSkillFileToast)
+    }
+
+    @Test
+    fun import_conflict_setsState() = runTest {
+        val provider = FakeSkillRepositoryProvider(
+            importResults = mutableListOf(SkillImportResult.Conflict("my-skill")),
+        )
+        val viewModel = SkillSettingsViewModel(provider)
+
+        advanceUntilIdle()
+        viewModel.sendIntent(SkillSettingsIntent.Import(File("/fake/source")))
+        advanceUntilIdle()
+
+        val state = viewModel.uiStateFlow.value
+        assertFalse(state.isImporting)
+        assertNotNull(state.importConflict)
+        assertEquals("my-skill", state.importConflict!!.skillName)
+        assertEquals(File("/fake/source"), state.importConflict!!.sourceDir)
+    }
+
+    @Test
+    fun import_conflict_thenConfirmImport_overwritesAndRefreshes() = runTest {
+        val existingItem = skillMetadata("my-skill", "My Skill")
+        val provider = FakeSkillRepositoryProvider(
+            listResult = listOf(existingItem),
+            importResults = mutableListOf(
+                SkillImportResult.Conflict("my-skill"),
+                SkillImportResult.Success,
+            ),
+        )
+        val viewModel = SkillSettingsViewModel(provider)
+        advanceUntilIdle()
+
+        // First call triggers conflict
+        viewModel.sendIntent(SkillSettingsIntent.Import(File("/fake/source")))
+        advanceUntilIdle()
+        assertNotNull(viewModel.uiStateFlow.value.importConflict)
+
+        // Confirm overwrite → should get Success + load() refresh
+        viewModel.sendIntent(SkillSettingsIntent.ConfirmImport)
+        advanceUntilIdle()
+
+        val state = viewModel.uiStateFlow.value
+        assertFalse(state.isImporting)
+        assertNull(state.importConflict)
+        // Second call was overwrite=true
+        assertEquals(2, provider.importCalls.size)
+        assertTrue(provider.importCalls.last().second)
+        // List was refreshed (load() called via importSkill → load)
+        assertEquals(1, state.items.size)
+        assertEquals("my-skill", state.items.first().id)
+    }
+
+    @Test
+    fun import_conflict_thenDismiss_clearsState() = runTest {
+        val provider = FakeSkillRepositoryProvider(
+            importResults = mutableListOf(SkillImportResult.Conflict("my-skill")),
+        )
+        val viewModel = SkillSettingsViewModel(provider)
+        advanceUntilIdle()
+
+        viewModel.sendIntent(SkillSettingsIntent.Import(File("/fake/source")))
+        advanceUntilIdle()
+        assertNotNull(viewModel.uiStateFlow.value.importConflict)
+
+        viewModel.sendIntent(SkillSettingsIntent.DismissImportConflict)
+        advanceUntilIdle()
+        assertNull(viewModel.uiStateFlow.value.importConflict)
+    }
+
+    @Test
+    fun import_error_showsErrorToast() = runTest {
+        val provider = FakeSkillRepositoryProvider(
+            importResults = mutableListOf(SkillImportResult.Error("disk full")),
+        )
+        val viewModel = SkillSettingsViewModel(provider)
+        val effects = collectEffects(viewModel, count = 1)
+
+        viewModel.sendIntent(SkillSettingsIntent.Import(File("/fake/source")))
+        advanceUntilIdle()
+
+        val state = viewModel.uiStateFlow.value
+        assertFalse(state.isImporting)
+        assertEquals(1, effects.size)
+        val effect = effects.first()
+        assertTrue(effect is SkillSettingsEffect.ShowImportErrorToast)
+        assertEquals("disk full", (effect as SkillSettingsEffect.ShowImportErrorToast).message)
+    }
+
+    @Test
+    fun import_throwable_showsErrorToast() = runTest {
+        val provider = FakeSkillRepositoryProvider(
+            importThrowable = IllegalStateException("boom"),
+        )
+        val viewModel = SkillSettingsViewModel(provider)
+        val effects = collectEffects(viewModel, count = 1)
+
+        viewModel.sendIntent(SkillSettingsIntent.Import(File("/fake/source")))
+        advanceUntilIdle()
+
+        val state = viewModel.uiStateFlow.value
+        assertFalse(state.isImporting)
+        assertEquals(1, effects.size)
+        val effect = effects.first()
+        assertTrue(effect is SkillSettingsEffect.ShowImportErrorToast)
+        assertEquals("boom", (effect as SkillSettingsEffect.ShowImportErrorToast).message)
+    }
+
     private fun kotlinx.coroutines.test.TestScope.collectEffects(
         viewModel: SkillSettingsViewModel,
         count: Int,
@@ -314,10 +462,13 @@ class SkillSettingsViewModelTest {
         private val saveThrowable: Throwable? = null,
         private val deleteValidation: SkillValidation? = null,
         private val deleteThrowable: Throwable? = null,
+        private val importResults: MutableList<SkillImportResult> = mutableListOf(SkillImportResult.Success),
+        private val importThrowable: Throwable? = null,
     ) : SkillRepositoryProvider {
         val toggleCalls = mutableListOf<Pair<String, Boolean>>()
         val saveCalls = mutableListOf<Pair<String, String>>()
         val deleteCalls = mutableListOf<String>()
+        val importCalls = mutableListOf<Pair<File, Boolean>>()
 
         override suspend fun listAll(): List<SkillMetadata> {
             listThrowable?.let { throw it }
@@ -344,6 +495,12 @@ class SkillSettingsViewModelTest {
             deleteThrowable?.let { throw it }
             deleteCalls += id
             return deleteValidation
+        }
+
+        override suspend fun importSkill(sourceDir: File, overwrite: Boolean): SkillImportResult {
+            importThrowable?.let { throw it }
+            importCalls += sourceDir to overwrite
+            return if (importResults.size > 1) importResults.removeAt(0) else importResults.first()
         }
     }
 

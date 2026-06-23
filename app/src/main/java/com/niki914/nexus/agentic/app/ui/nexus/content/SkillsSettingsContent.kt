@@ -22,6 +22,23 @@ import com.niki914.nexus.agentic.app.ui.nexus.model.SkillListItem
 import com.niki914.nexus.agentic.app.ui.nexus.model.SkillSettingsIntent
 import com.niki914.nexus.agentic.app.ui.nexus.model.SkillSettingsUiState
 import com.niki914.nexus.agentic.app.ui.nexus.model.SkillSettingsViewModel
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import androidx.documentfile.provider.DocumentFile
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import com.niki914.nexus.agentic.app.ui.infra.ConfirmationLiquidDialog
+import com.niki914.nexus.agentic.app.ui.nexus.PageChromeContribution
+import com.niki914.nexus.agentic.app.ui.nexus.RegisterPageChrome
+import com.niki914.nexus.agentic.app.ui.nexus.model.SkillSettingsEffect
+import com.niki914.nexus.agentic.app.ui.nexus.nav.TopBarActionSpec
+import java.io.File
 
 @Composable
 fun SkillsSettingsContent(
@@ -29,9 +46,70 @@ fun SkillsSettingsContent(
 ) {
     val viewModel = pageViewModel<SkillSettingsViewModel>()
     val uiState by viewModel.uiStateFlow.collectAsState()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.sendIntent(SkillSettingsIntent.Load)
+
+        viewModel.uiEffect.collect { effect ->
+            when (effect) {
+                SkillSettingsEffect.ShowNoSkillFileToast ->
+                    Toast.makeText(context, R.string.skill_import_no_skill_file, Toast.LENGTH_SHORT).show()
+                is SkillSettingsEffect.ShowImportErrorToast ->
+                    Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
+                else -> {}
+            }
+        }
+    }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            val sourceName = DocumentFile.fromTreeUri(context, uri)?.name
+                ?.takeIf { it.isNotBlank() }
+                ?: "imported_skill"
+            val tempDir = File(context.cacheDir, sourceName)
+            if (tempDir.exists()) tempDir.deleteRecursively()
+            if (copyDocumentTree(context, uri, tempDir)) {
+                viewModel.sendIntent(SkillSettingsIntent.Import(tempDir))
+            } else {
+                tempDir.deleteRecursively()
+                Toast.makeText(context, R.string.skill_import_resolve_failed, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    val importLabel = stringResource(R.string.skill_import_button)
+    val pageChromeContribution = remember(importLabel) {
+        PageChromeContribution(
+            rightAction = TopBarActionSpec(
+                icon = Icons.Default.Add,
+                onClick = { launcher.launch(null) },
+                contentDescription = importLabel,
+            ),
+        )
+    }
+    RegisterPageChrome(pageChromeContribution)
+
+    val conflict = uiState.importConflict
+    if (conflict != null) {
+        ConfirmationLiquidDialog(
+            visible = true,
+            onDismissRequest = {
+                viewModel.sendIntent(SkillSettingsIntent.DismissImportConflict)
+                conflict.sourceDir.deleteRecursively()
+            },
+            title = stringResource(R.string.skill_import_conflict_title),
+            text = stringResource(R.string.skill_import_conflict_text, conflict.skillName),
+            positiveButtonText = stringResource(R.string.skill_import_overwrite),
+            negativeButtonText = stringResource(R.string.skill_import_cancel),
+            onPositiveClick = { viewModel.sendIntent(SkillSettingsIntent.ConfirmImport) },
+            onNegativeClick = {
+                viewModel.sendIntent(SkillSettingsIntent.DismissImportConflict)
+                conflict.sourceDir.deleteRecursively()
+            },
+        )
     }
 
     SkillsSettingsContentBody(
@@ -184,6 +262,45 @@ private fun SkillsSettingsContentLoadedPreview() {
                 onOpenSkillDetail = { _, _ -> },
                 onEnabledChange = { _, _ -> },
             )
+        }
+    }
+}
+
+private fun copyDocumentTree(context: Context, treeUri: Uri, targetDir: File): Boolean {
+    try {
+        context.contentResolver.takePersistableUriPermission(
+            treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+        )
+    } catch (_: SecurityException) {
+        // Permission may already be held
+    }
+
+    val rootDoc = DocumentFile.fromTreeUri(context, treeUri) ?: return false
+    return try {
+        copyDocumentRecursive(context, rootDoc, targetDir)
+    } catch (_: Exception) {
+        false
+    }
+}
+
+private fun copyDocumentRecursive(context: Context, source: DocumentFile, target: File): Boolean {
+    if (source.isDirectory) {
+        if (!target.exists() && !target.mkdirs()) return false
+        var ok = true
+        for (child in source.listFiles()) {
+            val childName = child.name ?: continue
+            ok = copyDocumentRecursive(context, child, File(target, childName)) && ok
+        }
+        return ok
+    } else {
+        return try {
+            val input = context.contentResolver.openInputStream(source.uri) ?: return false
+            input.use { inputStream ->
+                target.outputStream().use { output -> inputStream.copyTo(output) }
+            }
+            true
+        } catch (_: Exception) {
+            false
         }
     }
 }

@@ -109,6 +109,14 @@
     <string name="skill_delete_dialog_title">删除 Skill</string>
     <string name="skill_delete_dialog_text">确定要删除 Skill「%1$s」吗？此操作不可撤销。</string>
     <string name="skill_error_delete_failed">删除 Skill 失败：%1$s</string>
+    <string name="skill_import_button">导入 Skill</string>
+    <string name="skill_import_no_skill_file">所选文件夹中未找到 SKILL.md，无法导入</string>
+    <string name="skill_import_conflict_title">同名 Skill 已存在</string>
+    <string name="skill_import_conflict_text">Skill「%1$s」已存在，是否覆盖？</string>
+    <string name="skill_import_overwrite">覆盖</string>
+    <string name="skill_import_cancel">取消</string>
+    <string name="skill_import_resolve_failed">无法访问所选文件夹</string>
+    <string name="skill_import_error">导入失败</string>
     <string name="ui_settings_custom_shell_tools">定制化 Shell 工具</string>
     <string name="ui_settings_custom_shell_tools_summary">封装常用命令为 Agent 可用的工具</string>
     <string name="ui_settings_mcp">MCP</string>

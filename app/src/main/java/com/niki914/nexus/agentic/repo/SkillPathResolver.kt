@@ -123,8 +123,8 @@ class SkillPathResolver(
         return RuntimeSkillValidation("id", "Invalid skill id.")
     }
 
-    private companion object {
+    companion object {
         const val SKILL_FILE_NAME = "SKILL.md"
-        const val STATUS_FILE_NAME = "status.json"
+        private const val STATUS_FILE_NAME = "status.json"
     }
 }

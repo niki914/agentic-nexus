@@ -91,6 +91,7 @@ fun SkillDetailContent(
         viewModel.uiEffect.collect { effect ->
             when (effect) {
                 SkillSettingsEffect.ExitDetail -> onBack()
+                else -> {}
             }
         }
     }
