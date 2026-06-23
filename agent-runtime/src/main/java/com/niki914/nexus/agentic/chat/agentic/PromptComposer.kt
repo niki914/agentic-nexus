@@ -154,15 +154,20 @@ class PromptComposer {
                 } else {
                     val name = skill.name.trim().ifBlank { id }
                     val description = skill.description.trim()
-                    SkillContextLine(id, name, description)
+                    val absolutePath = skill.absolutePath.trim()
+                    SkillContextLine(id, name, description, absolutePath)
                 }
             }
             .sortedBy(SkillContextLine::id)
             .map { line ->
-                if (line.description.isBlank()) {
-                    "- ${line.id}: ${line.name}"
-                } else {
-                    "- ${line.id}: ${line.name} - ${line.description}"
+                buildString {
+                    append("- ${line.id}: ${line.name}")
+                    if (line.description.isNotBlank()) {
+                        append(" - ${line.description}")
+                    }
+                    if (line.absolutePath.isNotBlank()) {
+                        append(" [path: ${line.absolutePath}]")
+                    }
                 }
             }
         if (lines.isEmpty()) {
@@ -172,6 +177,8 @@ class PromptComposer {
             title = "Skill Context",
             content = buildString {
                 appendLine("## Skill Context")
+                appendLine()
+                appendLine("Skills are on-demand instruction sets. When the user request matches a skill's description below, call load_skill immediately — you DO NOT need the consent to use this tool. Each skill's absolute file path is listed; use it to locate companion scripts or reference files in the same directory. Note: this is an Android runtime without Python or other desktop interpreters, so companion scripts may not be able to execute.")
                 appendLine()
                 appendLine("<available_skills>")
                 lines.forEach(::appendLine)
@@ -199,5 +206,6 @@ class PromptComposer {
         val id: String,
         val name: String,
         val description: String,
+        val absolutePath: String,
     )
 }

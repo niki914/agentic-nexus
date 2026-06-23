@@ -70,8 +70,16 @@ class PromptComposerTest {
         )
 
         assertTrue(
+            result.finalSystemPrompt.contains("## Skill Context")
+        )
+        assertTrue(
             result.finalSystemPrompt.contains(
-                "## Skill Context\n\n<available_skills>\n- skill-a: Skill A - Description A\n</available_skills>"
+                "- skill-a: Skill A - Description A [path: /skills/skill-a/SKILL.md]"
+            )
+        )
+        assertTrue(
+            result.finalSystemPrompt.contains(
+                "Skills are on-demand instruction sets."
             )
         )
     }
@@ -89,12 +97,11 @@ class PromptComposerTest {
         )
 
         val prompt = result.finalSystemPrompt
-        assertTrue(prompt.indexOf("- group-a/skill-a: Group Skill - Group description") >= 0)
-        assertTrue(prompt.indexOf("- skill-b: Skill B - Description B") >= 0)
-        assertTrue(
-            prompt.indexOf("- group-a/skill-a: Group Skill - Group description") <
-                prompt.indexOf("- skill-b: Skill B - Description B")
-        )
+        val first = prompt.indexOf("- group-a/skill-a: Group Skill - Group description [path: /skills/group-a/skill-a/SKILL.md]")
+        val second = prompt.indexOf("- skill-b: Skill B - Description B [path: /skills/skill-b/SKILL.md]")
+        assertTrue(first >= 0)
+        assertTrue(second >= 0)
+        assertTrue(first < second)
     }
 
     @Test
@@ -113,7 +120,7 @@ class PromptComposerTest {
             )
         )
 
-        assertTrue(result.finalSystemPrompt.contains("- skill-a: Skill A - Description A"))
+        assertTrue(result.finalSystemPrompt.contains("- skill-a: Skill A - Description A [path: /skills/skill-a/SKILL.md]"))
         assertFalse(result.finalSystemPrompt.contains(loadedSkillContent))
     }
 
