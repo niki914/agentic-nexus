@@ -34,6 +34,7 @@ object XRepo {
     val executionRules: ExecutionRulesApi = ExecutionRulesApi(this)
     val takeoverRules: TakeoverRulesApi = TakeoverRulesApi(this)
     val agents: AgentApi = AgentApi(this)
+    val skills: SkillApi = SkillApi(this)
 
     private val writeMutex = Mutex()
     private var appContext: Context? = null

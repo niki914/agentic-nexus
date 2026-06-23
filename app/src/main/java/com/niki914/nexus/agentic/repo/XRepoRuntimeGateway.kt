@@ -6,8 +6,10 @@ import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRule
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLoadedSkill
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeSkillMetadata
 
 class XRepoRuntimeGateway(
     private val repo: XRepo = XRepo,
@@ -19,6 +21,14 @@ class XRepoRuntimeGateway(
     }
 
     override suspend fun listMcpServers(): List<RuntimeMcpServer> = repo.mcp.list()
+
+    override suspend fun listEnabledSkills(): List<RuntimeSkillMetadata> {
+        return repo.skills.listEnabled()
+    }
+
+    override suspend fun loadSkill(id: String): RuntimeLoadedSkill? {
+        return repo.skills.getDetail(id)
+    }
 
     override suspend fun listCachedTools(server: RuntimeMcpServer): List<RuntimeMcpTool> {
         return repo.mcp.cachedTools(server)

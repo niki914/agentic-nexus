@@ -5,8 +5,10 @@ import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRule
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLoadedSkill
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeSkillMetadata
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -70,6 +72,10 @@ private fun createRuntimeBridge(settingsGateway: RuntimeSettingsGateway): Any {
 
 private class FakeRuntimeSettingsGateway : RuntimeSettingsGateway {
     override suspend fun readLlmConfig(agentId: String): RuntimeLlmConfig = RuntimeLlmConfig()
+
+    override suspend fun listEnabledSkills(): List<RuntimeSkillMetadata> = emptyList()
+
+    override suspend fun loadSkill(id: String): RuntimeLoadedSkill? = null
 
     override suspend fun listMcpServers(): List<RuntimeMcpServer> = emptyList()
 

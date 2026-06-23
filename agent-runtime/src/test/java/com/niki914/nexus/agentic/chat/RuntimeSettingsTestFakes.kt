@@ -9,8 +9,10 @@ import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomTool
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeCustomToolValidation
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeExecutionRule
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLoadedSkill
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpServer
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeMcpTool
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeSkillMetadata
 
 internal fun installRuntimeSettingsGatewayForTest(
     gateway: FakeRuntimeSettingsGateway = FakeRuntimeSettingsGateway(),
@@ -29,6 +31,8 @@ internal class FakeRuntimeSettingsGateway(
     builtinTools: List<RuntimeBuiltinToolSetting> = defaultBuiltinToolSettings(),
     memories: List<String> = emptyList(),
     executionRules: List<RuntimeExecutionRule> = emptyList(),
+    private val enabledSkills: List<RuntimeSkillMetadata> = emptyList(),
+    private val loadedSkills: Map<String, RuntimeLoadedSkill> = emptyMap(),
     private val mcpServers: List<RuntimeMcpServer> = emptyList(),
 ) : RuntimeSettingsGateway {
     var customTools: MutableList<RuntimeCustomTool> = customTools.toMutableList()
@@ -46,6 +50,10 @@ internal class FakeRuntimeSettingsGateway(
     val discoveredToolWrites: MutableList<RuntimeMcpCacheWrite> = mutableListOf()
 
     override suspend fun readLlmConfig(agentId: String): RuntimeLlmConfig = RuntimeLlmConfig()
+
+    override suspend fun listEnabledSkills(): List<RuntimeSkillMetadata> = enabledSkills
+
+    override suspend fun loadSkill(id: String): RuntimeLoadedSkill? = loadedSkills[id]
 
     override suspend fun listMcpServers(): List<RuntimeMcpServer> = mcpServers
 

@@ -33,6 +33,30 @@ data class RuntimeAgentValidation(
     val message: String,
 )
 
+data class RuntimeSkillMetadata(
+    val id: String,
+    val name: String,
+    val description: String,
+    val relativePath: String,
+    val absolutePath: String,
+    val enabled: Boolean,
+)
+
+data class RuntimeLoadedSkill(
+    val id: String,
+    val name: String,
+    val description: String,
+    val relativePath: String,
+    val absolutePath: String,
+    val content: String,
+    val enabled: Boolean,
+)
+
+data class RuntimeSkillValidation(
+    val field: String,
+    val message: String,
+)
+
 data class RuntimeMcpServer(
     val name: String,
     val url: String,

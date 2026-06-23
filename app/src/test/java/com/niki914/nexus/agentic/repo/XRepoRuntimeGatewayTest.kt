@@ -6,6 +6,7 @@ import java.io.File
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -49,5 +50,46 @@ class XRepoRuntimeGatewayTest {
 
         assertEquals("openai", config.provider)
         assertEquals(listOf("Fact 1", "Fact 2"), config.memories)
+    }
+
+    @Test
+    fun skillMethods_proxyEnabledListAndDetailFromXRepoSkills() = runTest {
+        XRepo.installStoreForTest(FakeDomainSettingsStore())
+        XRepo.init(context)
+        writeSkill("skill-a", skillContent(name = "Skill A", description = "Enabled skill"))
+        writeSkill("skill-b", skillContent(name = "Skill B", description = "Disabled skill"))
+        XRepo.skills.setEnabled("skill-b", false)
+
+        val gateway = XRepoRuntimeGateway(XRepo)
+        val enabledSkills = gateway.listEnabledSkills()
+        val loadedSkill = gateway.loadSkill("skill-a")
+
+        assertEquals(listOf("skill-a"), enabledSkills.map { it.id })
+        assertEquals("Skill A", enabledSkills.single().name)
+        assertEquals("Enabled skill", loadedSkill?.description)
+        assertEquals("skill-a", loadedSkill?.id)
+        assertEquals(skillContent(name = "Skill A", description = "Enabled skill"), loadedSkill?.content)
+        assertNull(gateway.loadSkill("missing"))
+    }
+
+    private fun writeSkill(id: String, content: String): File {
+        val file = File(context.filesDir, "skills/$id/SKILL.md")
+        file.parentFile?.mkdirs()
+        file.writeText(content)
+        return file
+    }
+
+    private fun skillContent(
+        name: String,
+        description: String,
+    ): String {
+        return """
+            ---
+            name: $name
+            description: $description
+            ---
+
+            Body for $name
+        """.trimIndent()
     }
 }
