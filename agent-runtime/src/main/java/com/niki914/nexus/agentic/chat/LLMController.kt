@@ -52,6 +52,7 @@ object LLMController {
         val mcpServers = gateway.listMcpServers()
         val customTools = gateway.listCustomTools()
         val builtinSettings = gateway.listBuiltinToolSettings()
+        val enabledSkills = gateway.listEnabledSkills()
         val resolvedTools = toolManager.resolve(
             customTools = customTools,
             mcpServers = mcpServers,
@@ -106,6 +107,7 @@ object LLMController {
                 memoryItems = buildMemoryItems(llmConfig),
                 tools = resolvedTools,
                 mcpDiscoverySnapshot = mcpSnapshot,
+                enabledSkills = enabledSkills,
             )
         )
         val finalConfig = configWithoutRuntimePrompt.copy(finalSystemPrompt = prompt.finalSystemPrompt)

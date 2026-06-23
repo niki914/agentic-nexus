@@ -2,6 +2,7 @@ package com.niki914.nexus.agentic.chat.agentic
 
 import com.niki914.nexus.agentic.chat.McpServerDefinition
 import com.niki914.nexus.agentic.chat.ResolvedTools
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeSkillMetadata
 import com.niki914.s3ss10n.McpDiscoverySnapshot
 import com.niki914.s3ss10n.McpDiscoveryState
 import com.niki914.s3ss10n.McpServerDiscoverySnapshot
@@ -21,6 +22,7 @@ data class PromptComposerInput(
     val memoryItems: List<String> = emptyList(),
     val tools: ResolvedTools = ResolvedTools(),
     val mcpDiscoverySnapshot: McpDiscoverySnapshot? = null,
+    val enabledSkills: List<RuntimeSkillMetadata> = emptyList(),
 )
 
 class PromptComposer {
@@ -29,6 +31,7 @@ class PromptComposer {
         val sections = listOfNotNull(
             renderMemorySection(input.memoryItems),
             renderToolContextSection(input.tools, input.mcpDiscoverySnapshot),
+            renderSkillContextSection(input.enabledSkills),
             renderAdditionalInstructions(input.additionalInstructions),
         )
 
@@ -142,6 +145,41 @@ class PromptComposer {
                 "${server.serverName}: idle"
         }
 
+    private fun renderSkillContextSection(skills: List<RuntimeSkillMetadata>): PromptSection? {
+        val lines = skills
+            .mapNotNull { skill ->
+                val id = skill.id.trim()
+                if (id.isBlank()) {
+                    null
+                } else {
+                    val name = skill.name.trim().ifBlank { id }
+                    val description = skill.description.trim()
+                    SkillContextLine(id, name, description)
+                }
+            }
+            .sortedBy(SkillContextLine::id)
+            .map { line ->
+                if (line.description.isBlank()) {
+                    "- ${line.id}: ${line.name}"
+                } else {
+                    "- ${line.id}: ${line.name} - ${line.description}"
+                }
+            }
+        if (lines.isEmpty()) {
+            return null
+        }
+        return PromptSection(
+            title = "Skill Context",
+            content = buildString {
+                appendLine("## Skill Context")
+                appendLine()
+                appendLine("<available_skills>")
+                lines.forEach(::appendLine)
+                append("</available_skills>")
+            },
+        )
+    }
+
     private fun renderAdditionalInstructions(text: String): PromptSection? {
         val normalizedText = text.trim()
         if (normalizedText.isEmpty()) {
@@ -156,4 +194,10 @@ class PromptComposer {
             },
         )
     }
+
+    private data class SkillContextLine(
+        val id: String,
+        val name: String,
+        val description: String,
+    )
 }

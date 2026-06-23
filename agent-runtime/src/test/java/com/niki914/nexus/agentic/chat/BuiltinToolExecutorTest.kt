@@ -8,6 +8,8 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRegistry
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.chat.agentic.buildin.RawJsonBuiltinTool
+import com.niki914.nexus.agentic.chat.agentic.buildin.impl.LoadSkillBuiltin
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLoadedSkill
 import com.niki914.s3ss10n.LocalToolConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
@@ -81,6 +83,35 @@ class BuiltinToolExecutorTest {
         val json = Json.parseToJsonElement(resultJson).jsonObject
         assertEquals("0", json["exit_code"]!!.jsonPrimitive.content)
         assertEquals("/", json["stdout"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun execute_loadSkillBuiltin_usesBuiltinToolPath() = runTest {
+        installRuntimeSettingsGatewayForTest(
+            FakeRuntimeSettingsGateway(
+                loadedSkills = mapOf(
+                    "skill-a" to RuntimeLoadedSkill(
+                        id = "skill-a",
+                        name = "Skill A",
+                        description = "Description A",
+                        relativePath = "skills/skill-a/SKILL.md",
+                        absolutePath = "/private/skills/skill-a/SKILL.md",
+                        content = "# Skill A",
+                        enabled = true,
+                    )
+                )
+            )
+        )
+        val executor = BuiltinToolExecutor(BuiltinToolRegistry(listOf(LoadSkillBuiltin())))
+
+        val resultJson = executor.execute("load_skill", """{"id":"skill-a"}""")
+
+        val json = Json.parseToJsonElement(resultJson).jsonObject
+        assertEquals("OK", json["code"]!!.jsonPrimitive.content)
+        val data = json["data"]!!.jsonObject
+        assertEquals("Skill A", data["skill_name"]!!.jsonPrimitive.content)
+        assertEquals("skills/skill-a/SKILL.md", data["skill_path"]!!.jsonPrimitive.content)
+        assertEquals("# Skill A", data["skill_content"]!!.jsonPrimitive.content)
     }
 
     @Test(expected = CancellationException::class)

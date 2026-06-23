@@ -27,6 +27,7 @@ internal fun installRuntimeSettingsGatewayForTest(
 }
 
 internal class FakeRuntimeSettingsGateway(
+    private val llmConfig: RuntimeLlmConfig = RuntimeLlmConfig(),
     customTools: List<RuntimeCustomTool> = emptyList(),
     builtinTools: List<RuntimeBuiltinToolSetting> = defaultBuiltinToolSettings(),
     memories: List<String> = emptyList(),
@@ -47,13 +48,27 @@ internal class FakeRuntimeSettingsGateway(
         private set
     var failOnWriteNumber: Int? = null
     var nextSaveCustomToolValidation: RuntimeCustomToolValidation? = null
+    var listEnabledSkillsCallCount: Int = 0
+        private set
+    var loadSkillCallCount: Int = 0
+        private set
+    var failListEnabledSkills: Throwable? = null
+    var failLoadSkill: Throwable? = null
     val discoveredToolWrites: MutableList<RuntimeMcpCacheWrite> = mutableListOf()
 
-    override suspend fun readLlmConfig(agentId: String): RuntimeLlmConfig = RuntimeLlmConfig()
+    override suspend fun readLlmConfig(agentId: String): RuntimeLlmConfig = llmConfig
 
-    override suspend fun listEnabledSkills(): List<RuntimeSkillMetadata> = enabledSkills
+    override suspend fun listEnabledSkills(): List<RuntimeSkillMetadata> {
+        listEnabledSkillsCallCount++
+        failListEnabledSkills?.let { throw it }
+        return enabledSkills
+    }
 
-    override suspend fun loadSkill(id: String): RuntimeLoadedSkill? = loadedSkills[id]
+    override suspend fun loadSkill(id: String): RuntimeLoadedSkill? {
+        loadSkillCallCount++
+        failLoadSkill?.let { throw it }
+        return loadedSkills[id]
+    }
 
     override suspend fun listMcpServers(): List<RuntimeMcpServer> = mcpServers
 

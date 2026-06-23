@@ -6,6 +6,7 @@ import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinTool
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.nexus.agentic.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.nexus.agentic.runtime.settings.model.RuntimeLlmConfig
+import com.niki914.nexus.agentic.runtime.settings.model.RuntimeSkillMetadata
 import com.niki914.s3ss10n.LocalToolConfig
 import com.niki914.s3ss10n.McpDiscoverySnapshot
 import com.niki914.s3ss10n.McpDiscoveryState
@@ -42,6 +43,78 @@ class PromptComposerTest {
         )
 
         assertFalse(result.finalSystemPrompt.contains("## Tool Context"))
+    }
+
+    @Test
+    fun compose_omitsSkillContextWhenNoEnabledSkills() {
+        val result = PromptComposer().compose(
+            PromptComposerInput(
+                additionalInstructions = "base",
+                enabledSkills = emptyList(),
+            )
+        )
+
+        assertFalse(result.finalSystemPrompt.contains("## Skill Context"))
+        assertFalse(result.finalSystemPrompt.contains("<available_skills>"))
+    }
+
+    @Test
+    fun compose_rendersOneEnabledSkill() {
+        val result = PromptComposer().compose(
+            PromptComposerInput(
+                additionalInstructions = "",
+                enabledSkills = listOf(
+                    skill(id = "skill-a", name = "Skill A", description = "Description A")
+                ),
+            )
+        )
+
+        assertTrue(
+            result.finalSystemPrompt.contains(
+                "## Skill Context\n\n<available_skills>\n- skill-a: Skill A - Description A\n</available_skills>"
+            )
+        )
+    }
+
+    @Test
+    fun compose_rendersEnabledSkillsSortedById() {
+        val result = PromptComposer().compose(
+            PromptComposerInput(
+                additionalInstructions = "",
+                enabledSkills = listOf(
+                    skill(id = "skill-b", name = "Skill B", description = "Description B"),
+                    skill(id = "group-a/skill-a", name = "Group Skill", description = "Group description"),
+                ),
+            )
+        )
+
+        val prompt = result.finalSystemPrompt
+        assertTrue(prompt.indexOf("- group-a/skill-a: Group Skill - Group description") >= 0)
+        assertTrue(prompt.indexOf("- skill-b: Skill B - Description B") >= 0)
+        assertTrue(
+            prompt.indexOf("- group-a/skill-a: Group Skill - Group description") <
+                prompt.indexOf("- skill-b: Skill B - Description B")
+        )
+    }
+
+    @Test
+    fun compose_doesNotRenderSkillContent() {
+        val loadedSkillContent = "DO_NOT_RENDER_SKILL_CONTENT"
+        val result = PromptComposer().compose(
+            PromptComposerInput(
+                additionalInstructions = "",
+                enabledSkills = listOf(
+                    skill(
+                        id = "skill-a",
+                        name = "Skill A",
+                        description = "Description A",
+                    )
+                ),
+            )
+        )
+
+        assertTrue(result.finalSystemPrompt.contains("- skill-a: Skill A - Description A"))
+        assertFalse(result.finalSystemPrompt.contains(loadedSkillContent))
     }
 
     @Test
@@ -187,6 +260,21 @@ class PromptComposerTest {
         method.isAccessible = true
         @Suppress("UNCHECKED_CAST")
         return method.invoke(LLMController, config) as List<String>
+    }
+
+    private fun skill(
+        id: String,
+        name: String,
+        description: String,
+    ): RuntimeSkillMetadata {
+        return RuntimeSkillMetadata(
+            id = id,
+            name = name,
+            description = description,
+            relativePath = "$id/SKILL.md",
+            absolutePath = "/skills/$id/SKILL.md",
+            enabled = true,
+        )
     }
 
     private fun mcpServer(name: String, cachedToolName: String): McpServerDefinition.Http {
