@@ -1,14 +1,6 @@
 ### IDE / OS
 .DS_Store
-.idea/*
-!.idea/.gitignore
-!.idea/AndroidProjectSystem.xml
-!.idea/migrations.xml
-!.idea/misc.xml
-!.idea/vcs.xml
-!.idea/runConfigurations.xml
-!.idea/runConfigurations/
-!.idea/runConfigurations/*.xml
+.idea/
 *.iml
 *.ipr
 *.iws
@@ -58,5 +50,7 @@ pnpm-debug.log*
 libterm
 s3ss10n
 
-/server/server.pid
+### Release signing (keystore stays local, never committed)
+packing/
+
 /.as-run/app.run.xml
