@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pointer Preview — Bezier Tangent = Heading</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body { background: #000; font-family: system-ui, sans-serif; }
+  canvas { display: block; }
+  #hint {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.45); font-size: 14px; pointer-events: none;
+    user-select: none; text-align: center; line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hint">Click to place pointer — then click waypoints<br>Heading always = curve tangent (no in-place rotation)</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const hint = document.getElementById('hint');
+
+let W, H;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ---- Constants ----
+const LANDING_HEADING = -Math.PI * 3 / 4; // top-left
+const MAX_SPEED = 600;    // px/s
+const MIN_SPEED = 50;     // px/s floor
+const ACCEL_FRAC = 0.20;   // fraction of path for accel
+const DECEL_FRAC = 0.25;  // fraction of path for decel
+
+// ---- State ----
+let ptr = { x: 0, y: 0, heading: LANDING_HEADING };
+let initialized = false;
+let waypoints = [];
+let currentCurve = null;   // {p0,p1,p2,p3,arcLen,path2d}
+let curveT = 0;
+let curveStartTs = 0;
+let curveDuration = 0;     // total duration for this curve
+let done = true;           // idle, waiting for next waypoint
+
+// ---- Bezier math ----
+function bPoint(p0,p1,p2,p3,t) {
+  const u = 1-t;
+  return {
+    x: u*u*u*p0.x + 3*u*u*t*p1.x + 3*u*t*t*p2.x + t*t*t*p3.x,
+    y: u*u*u*p0.y + 3*u*u*t*p1.y + 3*u*t*t*p2.y + t*t*t*p3.y,
+  };
+}
+function bTangent(p0,p1,p2,p3,t) {
+  const u = 1-t;
+  return {
+    x: 3*u*u*(p1.x-p0.x) + 6*u*t*(p2.x-p1.x) + 3*t*t*(p3.x-p2.x),
+    y: 3*u*u*(p1.y-p0.y) + 6*u*t*(p2.y-p1.y) + 3*t*t*(p3.y-p2.y),
+  };
+}
+function approxArcLen(p0,p1,p2,p3,steps) {
+  let len = 0, prev = p0;
+  for (let i=1; i<=steps; i++) {
+    const pt = bPoint(p0,p1,p2,p3,i/steps);
+    len += Math.sqrt((pt.x-prev.x)**2+(pt.y-prev.y)**2);
+    prev = pt;
+  }
+  return len;
+}
+// Build Path2D for drawing the curve preview
+function buildPath2D(p0,p1,p2,p3) {
+  const path = new Path2D();
+  path.moveTo(p0.x, p0.y);
+  for (let t=0.02; t<=1.02; t+=0.02) {
+    const pt = bPoint(p0,p1,p2,p3,Math.min(t,1));
+    path.lineTo(pt.x, pt.y);
+  }
+  return path;
+}
+
+// ---- Build Bezier: both boundary tangents = top-left ----
+function buildCurve(from, to) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  if (dist < 2) return null;
+
+  const topLeft = { x: Math.cos(LANDING_HEADING), y: Math.sin(LANDING_HEADING) };
+  // Small control distances → gentle curves, no looping
+  // Control distances set to ~pointer length (38px) minimum
+  // so turning radius is visible, not near-instant.
+  const k0 = Math.max(dist * 0.18, 38);  // start: at least pointer-length
+  const k1 = Math.max(dist * 0.28, 50);  // end: slightly more for visible approach
+
+  const p0 = { x: from.x, y: from.y };
+  const p1 = { x: from.x + topLeft.x * k0, y: from.y + topLeft.y * k0 };
+  const p2 = { x: to.x - topLeft.x * k1, y: to.y - topLeft.y * k1 };
+  const p3 = { x: to.x, y: to.y };
+
+  // topLeft = (-0.707, -0.707), so:
+  // p1 = from + (-0.7, -0.7)*k0 → p1 is top-left of from
+  // p2 = to - (-0.7, -0.7)*k1 = to + (0.7, 0.7)*k1 → p2 is bottom-right of to
+  // This means the curve approaches "to" from the bottom-right, going top-left.
+
+  const arcLen = approxArcLen(p0,p1,p2,p3,80);
+  const path2d = buildPath2D(p0,p1,p2,p3);
+
+  return { p0, p1, p2, p3, arcLen, path2d };
+}
+
+// ---- Speed profile: slow→fast→slow ----
+function speedAtT(t) {
+  if (t < ACCEL_FRAC) {
+    const p = t / ACCEL_FRAC;
+    return MIN_SPEED + (MAX_SPEED - MIN_SPEED) * (p * p);
+  } else if (t < 1 - DECEL_FRAC) {
+    return MAX_SPEED;
+  } else {
+    const p = (t - (1 - DECEL_FRAC)) / DECEL_FRAC;
+    return MIN_SPEED + (MAX_SPEED - MIN_SPEED) * ((1-p) * (1-p));
+  }
+}
+
+// ---- Start next curve ----
+function startNext() {
+  if (waypoints.length === 0) { done = true; return; }
+  const target = waypoints[0];
+  const curve = buildCurve({x:ptr.x, y:ptr.y}, target);
+  if (!curve) {
+    ptr.x = target.x; ptr.y = target.y;
+    ptr.heading = LANDING_HEADING;
+    waypoints.shift();
+    startNext();
+    return;
+  }
+  currentCurve = curve;
+  curveT = 0;
+  curveDuration = curve.arcLen / (MAX_SPEED * 0.55); // ~55% avg speed
+  curveStartTs = performance.now();
+  done = false;
+}
+
+// ---- Simulation ----
+function simulate(now) {
+  if (done) {
+    if (waypoints.length > 0) startNext();
+    return;
+  }
+
+  const elapsed = (now - curveStartTs) / 1000; // seconds
+  let targetT;
+
+  // Map elapsed time to curve parameter t using the speed profile
+  // We need to solve: elapsed = integral_0^t (arcLen / speedAtT(u)) du / arcLen
+  // Approximate by stepping
+  let accum = 0;
+  targetT = 0;
+  const steps = 200;
+  for (let i = 1; i <= steps; i++) {
+    const t1 = (i - 1) / steps;
+    const t2 = i / steps;
+    const avgSpeed = (speedAtT(t1) + speedAtT(t2)) / 2;
+    const segTime = (currentCurve.arcLen / steps) / avgSpeed;
+    if (accum + segTime >= elapsed) {
+      // Interpolate within this segment
+      const remaining = elapsed - accum;
+      const frac = segTime > 0 ? remaining / segTime : 0;
+      targetT = t1 + (t2 - t1) * frac;
+      break;
+    }
+    accum += segTime;
+    targetT = t2;
+  }
+
+  if (targetT >= 0.999) {
+    // Arrived at waypoint
+    targetT = 1;
+    const endPt = currentCurve.p3;
+    ptr.x = endPt.x;
+    ptr.y = endPt.y;
+    ptr.heading = LANDING_HEADING; // tangent at t=1 = top-left
+    waypoints.shift();
+    currentCurve = null;
+    done = true;
+    hint.style.display = 'block';
+    return;
+  }
+
+  curveT = targetT;
+  const pt = bPoint(currentCurve.p0, currentCurve.p1, currentCurve.p2, currentCurve.p3, curveT);
+  const tan = bTangent(currentCurve.p0, currentCurve.p1, currentCurve.p2, currentCurve.p3, curveT);
+  ptr.x = pt.x;
+  ptr.y = pt.y;
+  ptr.heading = Math.atan2(tan.y, tan.x);
+}
+
+// ---- Draw pointer ----
+function drawPointer(alpha) {
+  if (alpha <= 0) return;
+  const S = 38;
+  const tipAngle = 35 * Math.PI / 180;
+  const halfBase = Math.tan(tipAngle / 2) * S;
+  const tailX = -S * 0.45, tipX = S * 0.55;
+
+  ctx.save();
+  ctx.translate(ptr.x, ptr.y);
+  ctx.rotate(ptr.heading);
+  ctx.globalAlpha = alpha;
+
+  const tri = new Path2D();
+  tri.moveTo(tipX, 0);
+  tri.lineTo(tailX, -halfBase);
+  tri.lineTo(tailX, halfBase);
+  tri.closePath();
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,255,255,0.55)'; ctx.shadowBlur = 20;
+  ctx.strokeStyle = 'rgba(255,255,255,0.30)'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+  ctx.stroke(tri); ctx.stroke(tri);
+  ctx.restore();
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,255,255,0.75)'; ctx.shadowBlur = 9;
+  ctx.strokeStyle = 'rgba(220,220,220,0.65)'; ctx.lineWidth = 2.4; ctx.lineJoin = 'round';
+  ctx.stroke(tri);
+  ctx.restore();
+
+  ctx.strokeStyle = 'rgba(240,240,240,0.88)'; ctx.lineWidth = 1.1; ctx.lineJoin = 'round';
+  ctx.stroke(tri);
+  ctx.fillStyle = 'rgba(30,30,30,0.72)'; ctx.fill(tri);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.beginPath(); ctx.arc(tipX,0,1.8,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+// ---- Draw curve preview ----
+function drawCurvePreview() {
+  if (!currentCurve) return;
+  ctx.save();
+  ctx.globalAlpha = 0.25;
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4,6]);
+  ctx.stroke(currentCurve.path2d);
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+// ---- Waypoints ----
+function drawWaypoints() {
+  for (const wp of waypoints) {
+    ctx.save(); ctx.globalAlpha = 0.4;
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(wp.x,wp.y,5,0,Math.PI*2); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ---- Trail ----
+const trail = [];
+function updateTrail() {
+  if (!done) trail.push({x:ptr.x, y:ptr.y, life:1});
+  for (const p of trail) p.life -= 0.04;
+  while (trail.length>0 && trail[0].life<=0) trail.shift();
+  while (trail.length>60) trail.shift();
+}
+function drawTrail() {
+  for (const p of trail) {
+    ctx.save(); ctx.globalAlpha = p.life*0.22;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(p.x,p.y,2*p.life,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ---- HUD ----
+function drawHud() {
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.font = '12px system-ui, monospace';
+  const hdgDeg = Math.round(ptr.heading*180/Math.PI);
+  const st = done ? 'idle' : `moving t=${(curveT*100).toFixed(0)}%`;
+  ctx.fillText(`heading: ${hdgDeg}° | ${st} | waypoints: ${waypoints.length}`, 16, 28);
+  ctx.restore();
+}
+
+// ---- Loop ----
+function tick(ts) {
+  if (initialized) {
+    simulate(ts);
+    updateTrail();
+  }
+  ctx.clearRect(0,0,W,H);
+  drawTrail();
+  drawCurvePreview();
+  drawWaypoints();
+  if (initialized) drawPointer(done ? 0.7 : 1.0);
+  drawHud();
+  requestAnimationFrame(tick);
+}
+
+// ---- Click ----
+canvas.addEventListener('click', (e) => {
+  const pt = { x: e.clientX, y: e.clientY };
+  if (!initialized) {
+    ptr.x = pt.x; ptr.y = pt.y;
+    ptr.heading = LANDING_HEADING;
+    initialized = true;
+    hint.textContent = 'Pointer placed ↖ — click to add waypoints';
+  } else {
+    waypoints.push(pt);
+    hint.style.display = 'none';
+    if (done) startNext();
+  }
+});
+
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
