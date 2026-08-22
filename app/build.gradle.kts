@@ -79,9 +79,9 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // Room
-    implementation("androidx.room:room-runtime:2.7.2")
-    implementation("androidx.room:room-ktx:2.7.2")
-    ksp("androidx.room:room-compiler:2.7.2")
+    implementation("androidx.room:room-runtime:2.8.4")
+    implementation("androidx.room:room-ktx:2.8.4")
+    ksp("androidx.room:room-compiler:2.8.4")
 
     // Android root
     compileOnly("de.robv.android.xposed:api:82")
@@ -92,22 +92,22 @@ dependencies {
 
     // Material & AndroidX
     implementation("com.google.android.material:material:1.12.0")
-    implementation("androidx.annotation:annotation:1.9.1")
-    implementation("androidx.activity:activity-compose:1.4.0")
-    implementation("androidx.documentfile:documentfile:1.0.1")
+    implementation("androidx.annotation:annotation:1.10.0")
+    implementation("androidx.activity:activity-compose:1.13.0")
+    implementation("androidx.documentfile:documentfile:1.1.0")
 
     // Compose
-    implementation("androidx.compose.material3:material3:1.5.0-alpha22")
+    implementation("androidx.compose.material3:material3:1.5.0-alpha23")
     implementation("androidx.compose.material:material-icons-core:1.7.8")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
-    debugImplementation("androidx.compose.ui:ui-tooling:1.4.0")
-    implementation("androidx.compose.ui:ui-tooling-preview-android:1.8.3")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.11.4")
+    implementation("androidx.compose.ui:ui-tooling-preview-android:1.11.4")
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
-    testImplementation("androidx.room:room-testing:2.7.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation("androidx.room:room-testing:2.8.4")
     testImplementation("org.robolectric:robolectric:4.13")
-    testImplementation("androidx.test:core:1.6.1")
+    testImplementation("androidx.test:core:1.7.0")
 }
 
 // 获取 ADB 路径
