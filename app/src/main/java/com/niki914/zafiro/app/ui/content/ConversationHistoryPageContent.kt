@@ -4,6 +4,7 @@ import android.text.format.DateUtils
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -24,9 +25,14 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxState
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -74,6 +81,7 @@ internal data class ConversationHistoryUiState(
     val deleteErrorMessage: String? = null,
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ConversationHistoryPageContent(
     uiState: ConversationHistoryUiState,
@@ -113,6 +121,12 @@ internal fun ConversationHistoryPageContent(
             onConversationClick = onConversationClick,
             onConversationLongClick = { conversation ->
                 sheetConversation = conversation
+            },
+            onConversationSwipeRename = { conversation ->
+                renamingConversation = conversation
+            },
+            onConversationSwipeDelete = { conversation ->
+                deleteConfirmation = conversation
             },
             modifier = modifier,
         )
@@ -211,6 +225,7 @@ internal fun ConversationHistoryPageContent(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ConversationHistoryListContent(
     conversations: List<ConversationSummary>,
@@ -218,6 +233,8 @@ private fun ConversationHistoryListContent(
     deleteErrorMessage: String?,
     onConversationClick: (String) -> Unit,
     onConversationLongClick: (ConversationSummary) -> Unit,
+    onConversationSwipeRename: (ConversationSummary) -> Unit,
+    onConversationSwipeDelete: (ConversationSummary) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val deleteErrorPrefix = deleteErrorMessage?.let {
@@ -264,14 +281,39 @@ private fun ConversationHistoryListContent(
             if (expanded) {
                 section.conversations.forEach { conversation ->
                     item(key = conversation.id, contentType = "conversation") {
-                        ConversationHistoryItem(
-                            conversation = conversation,
-                            activeConversationId = activeConversationId,
-                            currentTimeMillis = currentTimeMillis,
-                            onClick = { onConversationClick(conversation.id) },
-                            onLongClick = { onConversationLongClick(conversation) },
-                            modifier = Modifier.fillMaxWidth(),
+                        // ponytail: swipe threshold & spring spec use M3 defaults; upgrade to custom positionalThreshold if needed.
+                        val dismissState = rememberSwipeToDismissBoxState(
+                            confirmValueChange = { targetValue ->
+                                when (targetValue) {
+                                    SwipeToDismissBoxValue.StartToEnd -> {
+                                        onConversationSwipeRename(conversation)
+                                        false
+                                    }
+                                    SwipeToDismissBoxValue.EndToStart -> {
+                                        onConversationSwipeDelete(conversation)
+                                        false
+                                    }
+                                    SwipeToDismissBoxValue.Settled -> false
+                                }
+                            }
                         )
+
+                        SwipeToDismissBox(
+                            state = dismissState,
+                            backgroundContent = {
+                                SwipeBackground(dismissState = dismissState)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            ConversationHistoryItem(
+                                conversation = conversation,
+                                activeConversationId = activeConversationId,
+                                currentTimeMillis = currentTimeMillis,
+                                onClick = { onConversationClick(conversation.id) },
+                                onLongClick = { onConversationLongClick(conversation) },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     }
                 }
             }
@@ -281,6 +323,48 @@ private fun ConversationHistoryListContent(
             item {
                 ConversationHistoryInlineErrorText(error = deleteErrorPrefix)
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeBackground(
+    dismissState: SwipeToDismissBoxState,
+    modifier: Modifier = Modifier,
+) {
+    val direction = dismissState.dismissDirection
+    val alignment = when (direction) {
+        SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+        SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
+        SwipeToDismissBoxValue.Settled -> Alignment.Center
+    }
+    val icon = when (direction) {
+        SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Edit
+        SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
+        SwipeToDismissBoxValue.Settled -> null
+    }
+    val tint = when (direction) {
+        SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.primary
+        SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.error
+        SwipeToDismissBoxValue.Settled -> Color.Transparent
+    }
+    val cardShape = remember { G2CardShape(20.dp) }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .clip(cardShape)
+            .background(tint.copy(alpha = 0.16f))
+            .padding(horizontal = 20.dp),
+        contentAlignment = alignment,
+    ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = tint,
+            )
         }
     }
 }
@@ -322,7 +406,10 @@ private fun ConversationHistoryItem(
         highlightPulseDurationMillis = 500,
         minHeight = 0.dp,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(cardShape)
+            .background(MaterialTheme.colorScheme.surface),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
