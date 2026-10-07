@@ -14,6 +14,7 @@ import com.niki914.zafiro.app.ui.nav.SavedConfigDetailPage
 import com.niki914.zafiro.app.ui.nav.SettingsProviderPickPage
 import com.niki914.zafiro.app.ui.nav.SkillDetailPage
 import com.niki914.zafiro.app.ui.nav.TakeoverRuleDetailPage
+import com.niki914.zafiro.app.ui.nav.TextActionDetailPage
 import com.niki914.zafiro.app.ui.nav.ZafiroPage
 import com.niki914.zafiro.app.ui.nav.ZafiroSettingsGroup
 
@@ -68,6 +69,15 @@ fun SettingsDetailPageContent(
         McpSettingsContent(
             onOpenServerDetail = { name, index, isCreating ->
                 onPush(McpServerDetailPage(name, index, isCreating))
+            },
+        )
+        return
+    }
+
+    if (group == ZafiroSettingsGroup.TextActions) {
+        TextActionsSettingsContent(
+            onOpenActionDetail = { actionId, actionName, index, isCreating ->
+                onPush(TextActionDetailPage(actionId, actionName, index, isCreating))
             },
         )
         return

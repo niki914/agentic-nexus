@@ -146,6 +146,8 @@
     <string name="ui_settings_takeover_summary">Configurar qué entradas procesa el asistente nativo o Zafiro</string>
     <string name="ui_settings_execution_rules">Reglas de ejecución</string>
     <string name="ui_settings_execution_rules_summary">Configurar la política de seguridad para comandos Shell</string>
+    <string name="ui_settings_text_actions">Acciones de texto</string>
+    <string name="ui_settings_text_actions_summary">Consulta a Zafiro con prompts predefinidos desde el menú de selección de texto</string>
     <string name="ui_settings_storage">Almacenamiento</string>
     <string name="ui_settings_storage_summary">Borrar cachés y archivos descargados</string>
     <string name="ui_settings_about">Acerca de</string>
@@ -476,4 +478,27 @@
     <string name="agent_resident_action_stop">Detener</string>
     <string name="agent_resident_action_approve">Permitir</string>
     <string name="agent_resident_action_decline">Rechazar</string>
+    <!-- 文本处理动作 -->
+    <string name="text_actions_page_description">Mantén pulsado el texto seleccionado en otras apps para consultar a Zafiro desde el menú. El texto se adjunta como cita antes de tu prompt.</string>
+    <string name="text_actions_empty_action_hint">Toca la esquina superior derecha para añadir tu primera acción de texto.</string>
+    <string name="text_actions_loading">Cargando acciones de texto…</string>
+    <string name="text_actions_editor_title_create">Nueva acción de texto</string>
+    <string name="text_actions_editor_description">El texto seleccionado se adjunta como cita antes de tu prompt antes de enviarse al modelo.</string>
+    <string name="text_actions_delete_dialog_title">Eliminar acción de texto</string>
+    <string name="text_actions_delete_dialog_text">¿Eliminar «%1$s»? Esta acción no se puede deshacer.</string>
+    <string name="text_actions_field_name">Nombre de la acción</string>
+    <string name="text_actions_field_name_hint">p. ej. Explicar esto</string>
+    <string name="text_actions_field_prompt">Prompt</string>
+    <string name="text_actions_field_prompt_hint">p. ej. Explica el siguiente texto en términos sencillos</string>
+    <string name="text_actions_field_prompt_description">La instrucción enviada al modelo; el texto seleccionado se añade después.</string>
+    <string name="text_actions_error_name_required">Introduce un nombre de acción</string>
+    <string name="text_actions_error_prompt_required">Introduce un prompt</string>
+    <string name="text_actions_save_action">Guardar acción</string>
+    <string name="text_actions_silent">Ejecutar en segundo plano</string>
+    <string name="text_actions_silent_summary">Inicia la conversación sin abrir la app principal. Requiere el balón flotante o la notificación residente; en caso contrario se abrirá la app principal.</string>
+    <string name="text_actions_silent_needs_carrier">Activa el balón flotante o la notificación residente antes de habilitar la ejecución en segundo plano</string>
+    <string name="error_text_actions_load_failed">Error al cargar las acciones de texto</string>
+    <string name="error_text_actions_save_failed">Error al guardar la acción de texto</string>
+    <string name="error_text_actions_delete_failed">Error al eliminar la acción de texto</string>
+    <string name="text_actions_sheet_title">Elige una acción</string>
 </resources>

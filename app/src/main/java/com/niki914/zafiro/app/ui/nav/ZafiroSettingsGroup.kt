@@ -33,6 +33,11 @@ enum class ZafiroSettingsGroup(
         summaryRes = R.string.ui_settings_mcp_summary,
         routeSuffix = "mcp",
     ),
+    TextActions(
+        titleRes = R.string.ui_settings_text_actions,
+        summaryRes = R.string.ui_settings_text_actions_summary,
+        routeSuffix = "text-actions",
+    ),
     Takeover(
         titleRes = R.string.ui_settings_takeover,
         summaryRes = R.string.ui_settings_takeover_summary,

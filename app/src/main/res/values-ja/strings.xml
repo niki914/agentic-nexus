@@ -145,6 +145,8 @@
     <string name="ui_settings_takeover_summary">入力に応じてネイティブアシスタントと Zafiro のどちらが応答するかを設定</string>
     <string name="ui_settings_execution_rules">実行ルール</string>
     <string name="ui_settings_execution_rules_summary">Shell のセキュリティポリシーを設定</string>
+    <string name="ui_settings_text_actions">テキストアクション</string>
+    <string name="ui_settings_text_actions_summary">テキスト選択メニューからプリセットのプロンプトで Zafiro に質問</string>
     <string name="ui_settings_storage">ストレージ</string>
     <string name="ui_settings_storage_summary">キャッシュとダウンロード済みファイルを削除</string>
     <string name="ui_settings_about">アプリについて</string>
@@ -475,4 +477,27 @@
     <string name="agent_resident_action_stop">停止</string>
     <string name="agent_resident_action_approve">許可</string>
     <string name="agent_resident_action_decline">拒否</string>
+    <!-- 文本处理动作 -->
+    <string name="text_actions_page_description">他のアプリでテキストを長押し選択し、メニューから Zafiro に質問できます。選択したテキストはプロンプトの前に引用として付加されます。</string>
+    <string name="text_actions_empty_action_hint">右上をタップして最初のテキストアクションを追加してください。</string>
+    <string name="text_actions_loading">テキストアクションを読み込み中…</string>
+    <string name="text_actions_editor_title_create">テキストアクションを追加</string>
+    <string name="text_actions_editor_description">選択したテキストは引用としてプロンプトの前に付加され、モデルに送信されます。</string>
+    <string name="text_actions_delete_dialog_title">テキストアクションを削除</string>
+    <string name="text_actions_delete_dialog_text">「%1$s」を削除しますか？この操作は元に戻せません。</string>
+    <string name="text_actions_field_name">アクション名</string>
+    <string name="text_actions_field_name_hint">例：この文章を説明</string>
+    <string name="text_actions_field_prompt">プロンプト</string>
+    <string name="text_actions_field_prompt_hint">例：次のテキストをわかりやすく説明して</string>
+    <string name="text_actions_field_prompt_description">モデルに送る指示です。選択したテキストはその後ろに付加されます。</string>
+    <string name="text_actions_error_name_required">アクション名を入力してください</string>
+    <string name="text_actions_error_prompt_required">プロンプトを入力してください</string>
+    <string name="text_actions_save_action">保存</string>
+    <string name="text_actions_silent">バックグラウンドで実行</string>
+    <string name="text_actions_silent_summary">メインアプリを開かずに会話を開始します。悬浮球または常駐通知のいずれかの有効化が必要です。ない場合はメインアプリが開きます。</string>
+    <string name="text_actions_silent_needs_carrier">バックグラウンド実行を有効にする前に、悬浮球または常駐通知を有効にしてください</string>
+    <string name="error_text_actions_load_failed">テキストアクションの読み込みに失敗しました</string>
+    <string name="error_text_actions_save_failed">テキストアクションの保存に失敗しました</string>
+    <string name="error_text_actions_delete_failed">テキストアクションの削除に失敗しました</string>
+    <string name="text_actions_sheet_title">アクションを選択</string>
 </resources>

@@ -12,6 +12,7 @@ object StoreDescriptorRegistry {
     const val TOOLS_MCP_SERVERS_ID = "tools.mcp.servers"
     const val RULES_EXECUTION_ID = "rules.execution"
     const val RULES_TAKEOVER_ID = "rules.takeover"
+    const val TEXT_ACTIONS_ID = "actions.text"
     const val APP_STATE_ID = "app.state"
     const val AGENT_CONFIG_PREFIX = "agent.config."
     const val MAIN_AGENT_ID = "main"
@@ -48,6 +49,11 @@ object StoreDescriptorRegistry {
             RULES_TAKEOVER_ID,
             "settings/rules/takeover_rules.json",
             """{"rules":[]}"""
+        ),
+        StoreDescriptor(
+            TEXT_ACTIONS_ID,
+            "settings/actions/text_actions.json",
+            """{"actions":[]}"""
         ),
         StoreDescriptor(APP_STATE_ID, "settings/app_state.json")
     )

@@ -146,6 +146,8 @@
     <string name="ui_settings_takeover_summary">Route matched requests to the native assistant or Zafiro</string>
     <string name="ui_settings_execution_rules">Execution Rules</string>
     <string name="ui_settings_execution_rules_summary">Set safety rules for Shell execution</string>
+    <string name="ui_settings_text_actions">Text Actions</string>
+    <string name="ui_settings_text_actions_summary">Ask Zafiro with preset prompts from the text-selection menu</string>
     <string name="ui_settings_storage">Storage</string>
     <string name="ui_settings_storage_summary">Clear caches and downloaded files</string>
     <string name="ui_settings_about">About</string>
@@ -476,4 +478,27 @@
     <string name="agent_resident_action_stop">Stop</string>
     <string name="agent_resident_action_approve">Allow</string>
     <string name="agent_resident_action_decline">Deny</string>
+    <!-- 文本处理动作 -->
+    <string name="text_actions_page_description">Long-press selected text in other apps to ask Zafiro from the menu. The selected text is attached as a quote before your prompt.</string>
+    <string name="text_actions_empty_action_hint">Tap the top-right corner to add your first text action.</string>
+    <string name="text_actions_loading">Loading text actions…</string>
+    <string name="text_actions_editor_title_create">New Text Action</string>
+    <string name="text_actions_editor_description">The selected text is attached as a quote before your prompt before being sent to the model.</string>
+    <string name="text_actions_delete_dialog_title">Delete text action</string>
+    <string name="text_actions_delete_dialog_text">Delete "%1$s"? This cannot be undone.</string>
+    <string name="text_actions_field_name">Action name</string>
+    <string name="text_actions_field_name_hint">e.g. Explain this</string>
+    <string name="text_actions_field_prompt">Prompt</string>
+    <string name="text_actions_field_prompt_hint">e.g. Explain the following text in simple terms</string>
+    <string name="text_actions_field_prompt_description">The instruction sent to the model; the selected text is appended after it.</string>
+    <string name="text_actions_error_name_required">Enter an action name</string>
+    <string name="text_actions_error_prompt_required">Enter a prompt</string>
+    <string name="text_actions_save_action">Save action</string>
+    <string name="text_actions_silent">Run in background</string>
+    <string name="text_actions_silent_summary">Start the conversation without opening the main app. Requires the floating ball or resident notification to be enabled; otherwise the main app will open.</string>
+    <string name="text_actions_silent_needs_carrier">Enable the floating ball or resident notification before turning on background execution</string>
+    <string name="error_text_actions_load_failed">Failed to load text actions</string>
+    <string name="error_text_actions_save_failed">Failed to save text action</string>
+    <string name="error_text_actions_delete_failed">Failed to delete text action</string>
+    <string name="text_actions_sheet_title">Choose an action</string>
 </resources>

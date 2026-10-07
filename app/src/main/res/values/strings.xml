@@ -145,6 +145,8 @@
     <string name="ui_settings_takeover_summary">设置哪些输入交给原生助手或 Zafiro</string>
     <string name="ui_settings_execution_rules">执行规则</string>
     <string name="ui_settings_execution_rules_summary">设置 Shell 的安全策略</string>
+    <string name="ui_settings_text_actions">文本处理动作</string>
+    <string name="ui_settings_text_actions_summary">长按选中文字后用预设提示词快速提问</string>
     <string name="ui_settings_storage">存储空间</string>
     <string name="ui_settings_storage_summary">清理缓存与下载文件</string>
     <string name="ui_settings_about">关于</string>
@@ -475,4 +477,28 @@
     <string name="agent_resident_action_stop">停止</string>
     <string name="agent_resident_action_approve">允许</string>
     <string name="agent_resident_action_decline">拒绝</string>
+
+    <!-- 文本处理动作 -->
+    <string name="text_actions_page_description">在其他应用中长按选中文字，即可从菜单发起 Zafiro 提问。选中文本会作为引用附在提示词前。</string>
+    <string name="text_actions_empty_action_hint">点击右上方，添加第一条文本处理动作。</string>
+    <string name="text_actions_loading">正在读取文本处理动作…</string>
+    <string name="text_actions_editor_title_create">新增文本处理动作</string>
+    <string name="text_actions_editor_description">选中文本会作为引用附在提示词前，发送给模型。</string>
+    <string name="text_actions_delete_dialog_title">删除文本处理动作</string>
+    <string name="text_actions_delete_dialog_text">确定要删除「%1$s」吗？此操作不可撤销。</string>
+    <string name="text_actions_field_name">动作名称</string>
+    <string name="text_actions_field_name_hint">例如：解释这段文字</string>
+    <string name="text_actions_field_prompt">提示词</string>
+    <string name="text_actions_field_prompt_hint">例如：用简单的语言解释下面的文字</string>
+    <string name="text_actions_field_prompt_description">发送给模型的指令；选中文本会附在其后。</string>
+    <string name="text_actions_error_name_required">请输入动作名称</string>
+    <string name="text_actions_error_prompt_required">请输入提示词</string>
+    <string name="text_actions_save_action">保存动作</string>
+    <string name="text_actions_silent">后台运行</string>
+    <string name="text_actions_silent_summary">不打开主应用，在后台发起对话。需要悬浮球或常驻通知任一启用，否则将打开主应用。</string>
+    <string name="text_actions_silent_needs_carrier">请先启用悬浮球或常驻通知，再开启后台运行</string>
+    <string name="error_text_actions_load_failed">读取文本处理动作失败</string>
+    <string name="error_text_actions_save_failed">保存文本处理动作失败</string>
+    <string name="error_text_actions_delete_failed">删除文本处理动作失败</string>
+    <string name="text_actions_sheet_title">选择动作</string>
 </resources>

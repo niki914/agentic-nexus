@@ -62,6 +62,9 @@ class App : Application() {
             XRepo.seedPyTools()
         }
         applicationScope.launch {
+            XRepo.seedTextActions()
+        }
+        applicationScope.launch {
             PyRuntime.warmUp()
         }
 

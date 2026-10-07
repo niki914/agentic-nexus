@@ -46,6 +46,7 @@ object XRepo {
     val web: WebSettingsApi = WebSettingsApi()
     val executionRules: ExecutionRulesApi = ExecutionRulesApi(this)
     val takeoverRules: TakeoverRulesApi = TakeoverRulesApi(this)
+    val textActions: TextActionsApi = TextActionsApi(this)
     val agents: AgentApi = AgentApi(this)
     val skills: SkillApi = SkillApi(this)
     val storage: StorageApi = StorageApi(this)
@@ -84,6 +85,7 @@ object XRepo {
         floatingBallEnabledField.flow.value = false
         residentNotificationEnabledField.flow.value = false
         floatingBallAutoExpandField.flow.value = true
+        textActionSilentField.flow.value = false
     }
 
     internal suspend fun context(): Context {
@@ -407,6 +409,39 @@ object XRepo {
 
     suspend fun setFloatingBallAutoExpand(value: Boolean) =
         floatingBallAutoExpandField.set(value)
+
+    /** 文本处理动作「后台静默」开关的进程内热更新通道 */
+    private val textActionSilentField = ReactiveAppStateField(
+        default = false,
+        select = { textActionSilent },
+        update = { copy(textActionSilent = it) },
+    )
+    val textActionSilentSetting: MutableStateFlow<Boolean>
+        get() = textActionSilentField.flow
+
+    suspend fun textActionSilent(): Boolean = textActionSilentField.get()
+
+    suspend fun setTextActionSilent(value: Boolean) = textActionSilentField.set(value)
+
+    /**
+     * 启动时补齐缺失的 seed 文本处理动作（按 id 判缺）。
+     *
+     * 只追加用户列表里没有的动作，不覆盖用户对同名动作的修改；
+     * 用户已删除的 seed 会被复活（无删除墓碑，无法区分“未装过”与“删过”，
+     * 与 seedPyTools 同样的取舍）。
+     */
+    suspend fun seedTextActions() {
+        updateJsonOrFalse(StoreDescriptorRegistry.TEXT_ACTIONS_ID) { json ->
+            val existing = TextActionsCodec.parse(json)
+            val existingIds = existing.map { it.id }.toSet()
+            val missing = defaultTextActions.filter { it.id !in existingIds }
+            if (missing.isEmpty()) {
+                null
+            } else {
+                TextActionsCodec.encode(existing + missing)
+            }
+        }
+    }
 
     /**
      * 回填型设置 flow 的统一冷启动回填：flow 初值是猜的默认值，必须有人调一次
@@ -1045,6 +1080,58 @@ class TakeoverRulesApi internal constructor(
             )
         }
         return errors
+    }
+}
+
+class TextActionsApi internal constructor(
+    private val repo: XRepo,
+) {
+    suspend fun list(): List<TextAction> {
+        return TextActionsCodec.parse(
+            repo.readJson(StoreDescriptorRegistry.TEXT_ACTIONS_ID)
+        )
+    }
+
+    suspend fun get(id: String): TextAction? {
+        return list().firstOrNull { it.id == id }
+    }
+
+    /** 仅启用的动作，供触发入口列出。 */
+    suspend fun listEnabled(): List<TextAction> {
+        return list().filter { it.enabled }
+    }
+
+    suspend fun replace(previousId: String?, action: TextAction) {
+        repo.updateJson(StoreDescriptorRegistry.TEXT_ACTIONS_ID) { json ->
+            val existing = TextActionsCodec.parse(json)
+            val withoutPrevious = if (previousId != null && previousId != action.id) {
+                existing.filterNot { it.id == previousId }
+            } else {
+                existing
+            }
+            val updated = if (withoutPrevious.any { it.id == action.id }) {
+                withoutPrevious.map { if (it.id == action.id) action else it }
+            } else {
+                withoutPrevious + action
+            }
+            TextActionsCodec.encode(updated)
+        }
+    }
+
+    suspend fun delete(id: String) {
+        repo.updateJson(StoreDescriptorRegistry.TEXT_ACTIONS_ID) { json ->
+            TextActionsCodec.encode(TextActionsCodec.parse(json).filterNot { it.id == id })
+        }
+    }
+
+    suspend fun setEnabled(id: String, enabled: Boolean) {
+        repo.updateJson(StoreDescriptorRegistry.TEXT_ACTIONS_ID) { json ->
+            TextActionsCodec.encode(
+                TextActionsCodec.parse(json).map { action ->
+                    if (action.id == id) action.copy(enabled = enabled) else action
+                }
+            )
+        }
     }
 }
 

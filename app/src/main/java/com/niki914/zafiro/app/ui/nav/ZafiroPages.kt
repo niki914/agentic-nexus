@@ -188,6 +188,20 @@ data class ExecutionRuleDetailPage(
     override val rightAction: TopBarActionSpec? = null
 }
 
+data class TextActionDetailPage(
+    val actionId: String,
+    val actionName: String,
+    val actionIndex: Int,
+    val isCreating: Boolean = false,
+) : ZafiroPage {
+    override val routeKey: String =
+        "text-action-detail:${actionId.ifBlank { "new" }}:$actionIndex:$actionName"
+    override val titleSpec: PageTitleSpec = TextTitle(actionName)
+    override val leftAction: TopBarActionSpec =
+        TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
+    override val rightAction: TopBarActionSpec? = null
+}
+
 data class TakeoverRuleDetailPage(
     val ruleId: String?,
     val ruleName: String,

@@ -50,6 +50,9 @@ internal data class AppStateSettings(
     /** 悬浮球在回合结束/审批到达时是否自动展开。 */
     @SerialName("floating_ball_auto_expand")
     val floatingBallAutoExpand: Boolean = true,
+    /** 文本处理动作是否后台静默执行（依赖悬浮球或常驻通知保活）。 */
+    @SerialName("text_action_silent")
+    val textActionSilent: Boolean = false,
 )
 
 internal object AppStateSettingsCodec {

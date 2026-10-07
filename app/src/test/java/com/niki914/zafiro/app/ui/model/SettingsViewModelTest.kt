@@ -35,6 +35,7 @@ class SettingsViewModelTest {
             listOf(
                 ZafiroSettingsGroup.Tools,
                 ZafiroSettingsGroup.Skills,
+                ZafiroSettingsGroup.TextActions,
             ),
             state.sections[2].groups,
         )
@@ -61,6 +62,7 @@ class SettingsViewModelTest {
         assertTrue(state.isGroupVisible(ZafiroSettingsGroup.Tools))
         assertTrue(state.isGroupVisible(ZafiroSettingsGroup.Skills))
         assertTrue(state.isGroupVisible(ZafiroSettingsGroup.Mcp))
+        assertTrue(state.isGroupVisible(ZafiroSettingsGroup.TextActions))
         assertTrue(state.isGroupVisible(ZafiroSettingsGroup.Takeover))
         assertTrue(state.isGroupVisible(ZafiroSettingsGroup.ExecutionRules))
         assertTrue(state.isGroupVisible(ZafiroSettingsGroup.Storage))
