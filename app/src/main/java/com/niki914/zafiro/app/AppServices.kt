@@ -1,10 +1,10 @@
 package com.niki914.zafiro.app
 
 import android.app.Application
-import com.niki914.zafiro.api.Agent
 import com.niki914.zafiro.api.AgentControl
+import com.niki914.zafiro.api.AgentManager
 import com.niki914.zafiro.app.conversation.RoomConversationStore_Tmp
-import com.niki914.zafiro.business.agent.AgentImpl
+import com.niki914.zafiro.business.agent.AgentManagerImpl
 import com.niki914.zafiro.business.agent.ConversationStore_Tmp
 import com.niki914.zafiro.business.application.ApplicationService
 import com.niki914.zafiro.business.application.ApplicationServiceImpl
@@ -14,6 +14,9 @@ import com.niki914.zafiro.business.notification.NotificationChannelManager
 import com.niki914.zafiro.business.notification.NotificationChannelManagerImpl
 import com.niki914.zafiro.business.permission.PermissionManager
 import com.niki914.zafiro.business.permission.PermissionManagerImpl
+import com.niki914.zafiro.api.McpHostService
+import com.niki914.zafiro.mcp.host.McpHostServiceImpl
+import com.niki914.zafiro.repo.XRepo
 import com.niki914.zafiro.repo.XSettingsImpl
 import com.niki914.zafiro.service.installService
 import com.niki914.xsettings.XSettings
@@ -37,9 +40,9 @@ object AppServices {
     fun install(application: Application) {
         // 会话持久化端口：Room 在 app 侧，实现侧经它读写会话记录
         installService<ConversationStore_Tmp>(RoomConversationStore_Tmp())
-        // 会话门面：宽接口与窄接口指向同一实例
-        installService<Agent>(AgentImpl)
-        installService<AgentControl>(AgentImpl)
+        val agentManager = AgentManagerImpl()
+        installService<AgentManager>(agentManager)
+        installService<AgentControl>(agentManager.control)
 
         // 前台能力：必须在 PermissionManager 之前装（它经注册表取 ApplicationService）
         val appService = ApplicationServiceImpl(application)
@@ -53,5 +56,8 @@ object AppServices {
 
         // 本地配置读取口：给 app 以外的模块按需取用
         installService<XSettings>(XSettingsImpl)
+
+        // MCP Server 宿主服务：对外提供标准 MCP Streamable HTTP 协议端点
+        installService<McpHostService>(McpHostServiceImpl { XRepo.mcpHost.get() })
     }
 }

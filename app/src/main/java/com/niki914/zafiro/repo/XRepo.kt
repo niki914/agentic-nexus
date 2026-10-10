@@ -14,7 +14,11 @@ import com.niki914.zafiro.settings.model.RuntimeTakeoverTarget
 import com.niki914.zafiro.settings.model.TAKEOVER_FIELD_NAME
 import com.niki914.zafiro.settings.model.TAKEOVER_FIELD_PATTERNS
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
@@ -31,15 +35,18 @@ import com.niki914.zafiro.settings.model.RuntimeBuiltinToolSetting as BuiltinToo
 import com.niki914.zafiro.settings.model.RuntimeCustomPyTool as CustomPyTool
 import com.niki914.zafiro.settings.model.RuntimeExecutionRule as ExecutionRule
 import com.niki914.zafiro.settings.model.RuntimeExecutionRuleEnabledMode as ExecutionRuleEnabledMode
+import com.niki914.zafiro.settings.model.RuntimeMcpHostConfig
 import com.niki914.zafiro.settings.model.RuntimeMcpServer as McpServer
 import com.niki914.zafiro.settings.model.RuntimeTakeoverRule as TakeoverRule
 import com.niki914.zafiro.settings.model.RuntimeTakeoverRuleValidation as TakeoverRuleValidation
 import com.niki914.zafiro.settings.model.RuntimeToolValidation as ToolValidation
+import com.niki914.zafiro.settings.model.RuntimeToolValidationOrigin as ToolValidationOrigin
 
 object XRepo {
     private const val LOG_TAG = "niki914_zafiro_XRepo"
 
     val mcp: McpApi = McpApi(this)
+    val mcpHost: McpHostApi = McpHostApi(this)
     val customPyTools: CustomPyToolApi = CustomPyToolApi(this)
     val builtinTools: BuiltinToolApi = BuiltinToolApi(this)
     val memory: MemoryApi = MemoryApi(this)
@@ -82,10 +89,13 @@ object XRepo {
         // 响应式 flow 是进程内单例状态：重置回声明默认值，测试互不污染。
         keepScreenOnField.flow.value = true
         alwaysShowMessageActionsField.flow.value = true
+        voiceAssistantIsolatedSessionField.flow.value = true
         floatingBallEnabledField.flow.value = false
         residentNotificationEnabledField.flow.value = false
         floatingBallAutoExpandField.flow.value = true
         textActionSilentField.flow.value = false
+        mcpHost.resetForTest()
+        llmConfigs.resetForTest()
     }
 
     internal suspend fun context(): Context {
@@ -316,6 +326,10 @@ object XRepo {
         select = { llmRetryMaxAttempts },
         update = { copy(llmRetryMaxAttempts = it) },
     )
+    private val lastNotifiedUpdateVersionField = PlainAppStateField(
+        select = { lastNotifiedUpdateVersion },
+        update = { copy(lastNotifiedUpdateVersion = it) },
+    )
 
     suspend fun onboardingCompleted(): Boolean = onboardingCompletedField.get()
 
@@ -339,6 +353,11 @@ object XRepo {
     suspend fun llmRetryMaxAttempts(): Int = llmRetryMaxAttemptsField.get()
 
     suspend fun setLlmRetryMaxAttempts(value: Int) = llmRetryMaxAttemptsField.set(value)
+
+    suspend fun lastNotifiedUpdateVersion(): String = lastNotifiedUpdateVersionField.get()
+
+    suspend fun setLastNotifiedUpdateVersion(version: String) =
+        lastNotifiedUpdateVersionField.set(version)
 
     suspend fun setLoadLastConversationOnStartup(value: Boolean) =
         loadLastConversationOnStartupField.set(value)
@@ -368,6 +387,20 @@ object XRepo {
 
     suspend fun setAlwaysShowMessageActions(value: Boolean) =
         alwaysShowMessageActionsField.set(value)
+
+    /** 语音助手独享会话开关的进程内热更新通道：读时回填初值，写时同步。默认开启。 */
+    private val voiceAssistantIsolatedSessionField = ReactiveAppStateField(
+        default = true,
+        select = { voiceAssistantIsolatedSession },
+        update = { copy(voiceAssistantIsolatedSession = it) },
+    )
+    val voiceAssistantIsolatedSessionSetting: MutableStateFlow<Boolean>
+        get() = voiceAssistantIsolatedSessionField.flow
+
+    suspend fun voiceAssistantIsolatedSession(): Boolean = voiceAssistantIsolatedSessionField.get()
+
+    suspend fun setVoiceAssistantIsolatedSession(value: Boolean) =
+        voiceAssistantIsolatedSessionField.set(value)
 
     /** 悬浮球开关的进程内热更新通道：读时回填初值，写时同步。 */
     private val floatingBallEnabledField = ReactiveAppStateField(
@@ -468,6 +501,33 @@ object XRepo {
     suspend fun themeSeedColor(): String = themeSeedColorField.get()
 
     suspend fun setThemeSeedColor(hex: String) = themeSeedColorField.set(hex)
+
+    private val pinnedConversationsField = PlainAppStateField(
+        select = { pinnedConversations },
+        update = { copy(pinnedConversations = it) },
+    )
+
+    internal suspend fun pinnedConversations(): List<PinnedConversation> =
+        pinnedConversationsField.get()
+
+    /**
+     * 置顶/取消置顶一条会话。整个文档 read-modify-write 在 writeMutex 内串行，
+     * 同会话重复置顶只保留最新时刻。
+     */
+    internal suspend fun setConversationPinned(
+        conversationId: String,
+        pinned: Boolean,
+        now: Long = System.currentTimeMillis(),
+    ) {
+        val id = conversationId.trim()
+        if (id.isEmpty()) return
+        updateJson(StoreDescriptorRegistry.APP_STATE_ID) { json ->
+            val state = AppStateSettingsCodec.parse(json)
+            val remaining = state.pinnedConversations.filterNot { it.id == id }
+            val updated = if (pinned) remaining + PinnedConversation(id, now) else remaining
+            AppStateSettingsCodec.encode(state.copy(pinnedConversations = updated))
+        }
+    }
 
     private val SCHEMA_WEB_SEARCH =
         """{"type":"object","properties":{"query":{"type":"string"},"engine":{"type":"string","enum":["all","baidu","sogou","ddg"],"description":"search engine; \"all\" (default) merges Baidu + Sogou + DuckDuckGo"},"max_results":{"type":"integer","description":"default: 8"}},"required":["query"]}"""
@@ -667,6 +727,17 @@ class AgentApi internal constructor(
 class LlmConfigsApi internal constructor(
     private val repo: XRepo,
 ) {
+    private val _revision = MutableStateFlow(0L)
+    val revision: StateFlow<Long> = _revision.asStateFlow()
+
+    private fun bumpRevision() {
+        _revision.value += 1L
+    }
+
+    internal fun resetForTest() {
+        _revision.value = 0L
+    }
+
     suspend fun document(): LlmConfigsDocument {
         return LlmConfigsSettingsCodec.parse(repo.readJson(StoreDescriptorRegistry.LLM_CONFIGS_ID))
     }
@@ -685,14 +756,18 @@ class LlmConfigsApi internal constructor(
             if (doc.prompt == normalizedPrompt) return@updateJson json
             LlmConfigsSettingsCodec.encode(doc.copy(prompt = normalizedPrompt))
         }
+        bumpRevision()
     }
 
     suspend fun setActive(id: String) {
-        repo.updateJsonOrFalse(StoreDescriptorRegistry.LLM_CONFIGS_ID) { json ->
+        val updated = repo.updateJsonOrFalse(StoreDescriptorRegistry.LLM_CONFIGS_ID) { json ->
             val doc = LlmConfigsSettingsCodec.parse(json)
             if (doc.configs.none { it.id == id.trim() }) return@updateJsonOrFalse null
             if (doc.activeId == id.trim()) return@updateJsonOrFalse null
             LlmConfigsSettingsCodec.encode(doc.copy(activeId = id.trim()))
+        }
+        if (updated) {
+            bumpRevision()
         }
     }
 
@@ -736,6 +811,7 @@ class LlmConfigsApi internal constructor(
                 )
             )
         }
+        bumpRevision()
         return null
     }
 
@@ -755,6 +831,7 @@ class LlmConfigsApi internal constructor(
             LlmConfigsSettingsCodec.encode(doc.copy(configs = remaining, activeId = nextActiveId))
         }
         if (!deleted) return
+        bumpRevision()
         // 删除后若无任何配置：回 onboarding 态（下次冷启动重新引导）
         if (list().isEmpty()) {
             repo.setOnboardingCompleted(false)
@@ -1193,6 +1270,50 @@ class McpApi internal constructor(
     }
 }
 
+class McpHostApi internal constructor(
+    private val repo: XRepo,
+) {
+    private val _configFlow = MutableStateFlow<RuntimeMcpHostConfig?>(null)
+    val configFlow: Flow<RuntimeMcpHostConfig> = _configFlow.filterNotNull()
+
+    suspend fun get(): RuntimeMcpHostConfig {
+        _configFlow.value?.let { return it }
+        val parsed = McpHostSettingsCodec.parse(repo.readJson(StoreDescriptorRegistry.TOOLS_MCP_HOST_ID))
+        _configFlow.value = parsed
+        return parsed
+    }
+
+    suspend fun update(transform: (RuntimeMcpHostConfig) -> RuntimeMcpHostConfig): RuntimeMcpHostConfig {
+        var updated = RuntimeMcpHostConfig()
+        repo.updateJson(StoreDescriptorRegistry.TOOLS_MCP_HOST_ID) { json ->
+            val current = McpHostSettingsCodec.parse(json)
+            updated = transform(current)
+            McpHostSettingsCodec.encode(updated)
+        }
+        _configFlow.value = updated
+        return updated
+    }
+
+    suspend fun setEnabled(enabled: Boolean): RuntimeMcpHostConfig =
+        update { it.copy(enabled = enabled) }
+
+    suspend fun setPort(port: Int): RuntimeMcpHostConfig =
+        update { it.copy(port = port) }
+
+    suspend fun setHost(host: String): RuntimeMcpHostConfig =
+        update { it.copy(host = host) }
+
+    suspend fun setBearerToken(token: String): RuntimeMcpHostConfig =
+        update { it.copy(bearerToken = token) }
+
+    suspend fun setExposedTools(tools: Set<String>): RuntimeMcpHostConfig =
+        update { it.copy(exposedTools = tools) }
+
+    internal fun resetForTest() {
+        _configFlow.value = null
+    }
+}
+
 class CustomPyToolApi internal constructor(
     private val repo: XRepo,
     private val preflight: ToolExecutionPreflight = ToolExecutionPreflight(
@@ -1241,41 +1362,51 @@ class CustomPyToolApi internal constructor(
     }
 
     /**
-     * UI 保存入口：与 py_meta_tools write 同管线，先对 code 做签名反射，
-     * 用结果回填 description/schemaJson 缓存，再走 validate/save。
-     * 反射失败（语法错误、缺 main、注解缺失等）返回 field="code" 的 validation。
+     * 签名反射（纯读，不写盘）：提取 main 的基本类型标注与 docstring。
+     * 供上游自由编排顺序与取消——反射与写盘之间没有任何副作用，
+     * 因此取消掉这次调用等于这次保存从未发生。
+     *
+     * 失败时区分来源：脚本结构化报错与"代码没跑完"算代码问题，
+     * worker 不可用、客户端超时、返回不是 JSON 算应用内部问题。
      */
-    suspend fun saveIntrospected(tool: CustomPyTool): ToolValidation? {
-        val introspection = introspectMain(tool.code)
-        introspection.error?.let { error -> return ToolValidation("code", error) }
-        return save(
-            tool.copy(
-                description = introspection.description.orEmpty(),
-                schemaJson = introspection.schemaJson.orEmpty(),
-            ),
-        )
-    }
-
-    private suspend fun introspectMain(code: String): PyIntrospection {
-        val output = try {
+    suspend fun introspect(code: String): CustomPyToolIntrospection {
+        val executed = try {
             PyRuntime.exec(CustomPyToolHarness.buildIntrospection(code), INTROSPECTION_TIMEOUT_MS)
-                .output
         } catch (e: CancellationException) {
             throw e
         } catch (t: Throwable) {
-            return PyIntrospection(error = t.message ?: "Python signature check failed.")
+            // worker 不可用 / 客户端超时 / Binder 异常：应用侧问题，非用户代码问题
+            return CustomPyToolIntrospection(
+                error = t.message ?: "Python signature check failed.",
+                origin = ToolValidationOrigin.Internal,
+            )
         }
+        if (executed.timedOut) {
+            // worker 侧 join 超时（解释器还活着，是这段代码自己没有返回）：代码侧问题
+            return CustomPyToolIntrospection(
+                error = "Signature check timed out. The tool code must return promptly.",
+                origin = ToolValidationOrigin.Code,
+            )
+        }
+        val output = executed.output
         val json = try {
             Json.parseToJsonElement(output.trim()).jsonObject
         } catch (_: Exception) {
-            return PyIntrospection(error = "Unexpected signature check output: ${output.take(200)}")
+            return CustomPyToolIntrospection(
+                error = "Unexpected signature check output: ${output.take(200)}",
+                origin = ToolValidationOrigin.Internal,
+            )
         }
         json["error"]?.jsonPrimitive?.contentOrNull?.let { type ->
             val line = json["line"]?.jsonPrimitive?.longOrNull
             val message = json["message"]?.jsonPrimitive?.contentOrNull ?: "Invalid tool code."
-            return PyIntrospection(error = if (line != null) "$message (line $line)" else message)
+            // 脚本结构化报错：语法错误、缺 main、注解缺失、顶层代码抛异常 —— 代码侧问题
+            return CustomPyToolIntrospection(
+                error = if (line != null) "$message (line $line)" else message,
+                origin = ToolValidationOrigin.Code,
+            )
         }
-        return PyIntrospection(
+        return CustomPyToolIntrospection(
             description = json["description"]?.jsonPrimitive?.contentOrNull.orEmpty(),
             schemaJson = json["schema"]?.jsonObject?.toString().orEmpty(),
         )
@@ -1318,18 +1449,22 @@ class CustomPyToolApi internal constructor(
         )
     }
 
-    private data class PyIntrospection(
-        val description: String? = null,
-        val schemaJson: String? = null,
-        val error: String? = null,
-    )
-
     companion object {
         private const val PY_PREFIX = "py_"
         private const val INTROSPECTION_TIMEOUT_MS = 30_000L
         private val NAME_PATTERN = Regex("^py_[a-z][a-z0-9_]{0,63}$")
     }
 }
+
+/**
+ * 签名反射结果：成功时带 description/schemaJson，失败时带 [error] 与 [origin]。
+ */
+data class CustomPyToolIntrospection(
+    val description: String? = null,
+    val schemaJson: String? = null,
+    val error: String? = null,
+    val origin: ToolValidationOrigin = ToolValidationOrigin.Code,
+)
 
 class BuiltinToolApi internal constructor(
     private val repo: XRepo,

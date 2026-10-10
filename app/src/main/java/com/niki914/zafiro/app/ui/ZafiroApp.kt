@@ -62,9 +62,14 @@ import com.niki914.zafiro.app.ui.nav.NoTitle
 import com.niki914.zafiro.app.ui.nav.PageTitleSpec
 import com.niki914.zafiro.app.ui.nav.ResTitle
 import com.niki914.zafiro.app.ui.nav.TextTitle
+import com.niki914.zafiro.app.crash.CrashRecorder
+import com.niki914.zafiro.app.crash.CrashReport
+import com.niki914.zafiro.app.crash.CrashReportDialog
 import com.niki914.zafiro.app.ui.nav.TitleBarMode
 import com.niki914.zafiro.app.ui.nav.TopBarActionSpec
 import com.niki914.zafiro.app.ui.nav.ZafiroPage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun ZafiroApp(
@@ -84,9 +89,16 @@ fun ZafiroApp(
     var chromeMenuExpanded by remember { mutableStateOf(false) }
     var lastRootBackPressedAt by remember { mutableStateOf(0L) }
     var isPageTransitioning by remember { mutableStateOf(false) }
+    var pendingCrashReport by remember { mutableStateOf<CrashReport?>(null) }
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            CrashRecorder.peekPendingCrash(context)
+        }?.let { report ->
+            pendingCrashReport = report
+        }
+    }
     var selectedConversationId by remember { mutableStateOf<String?>(null) }
     var activeConversationId by remember { mutableStateOf<String?>(null) }
-    var activeConversationTitle by remember { mutableStateOf<String?>(null) }
     val initialPage = launchDecision.initialPage
     val controller = rememberNavigationController<ZafiroPage>(initialPage = initialPage)
     val navigator = controller.navigator
@@ -182,7 +194,6 @@ fun ZafiroApp(
         homeViewModel.deleteConversationNow(id)
         if (activeConversationId == id) {
             activeConversationId = null
-            activeConversationTitle = null
         }
     }
 
@@ -346,10 +357,8 @@ fun ZafiroApp(
                                         }
                                     },
                                     activeConversationId = activeConversationId,
-                                    activeConversationTitle = activeConversationTitle,
-                                    onActiveConversationChanged = { id, title ->
+                                    onActiveConversationChanged = { id ->
                                         activeConversationId = id
-                                        activeConversationTitle = title
                                     },
                                     onCurrentConversationDeleted = { id ->
                                         deleteActiveConversation(id)
@@ -378,6 +387,13 @@ fun ZafiroApp(
                                 )
                             }
                         }
+                    }
+
+                    pendingCrashReport?.let { report ->
+                        CrashReportDialog(
+                            report = report,
+                            onDismiss = { pendingCrashReport = null },
+                        )
                     }
                 }
             }

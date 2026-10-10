@@ -17,7 +17,7 @@ import com.niki914.zafiro.app.getInstalledPackageVersion
 import com.niki914.zafiro.mod.HookLocalSettings
 import com.niki914.zafiro.mod.feat.BaseConfigProvider
 import com.niki914.zafiro.mod.feat.hyper.XiaoaiChatHook
-import com.niki914.zafiro.mod.feat.oppo.BreenoChatHook
+import com.niki914.zafiro.mod.feat.oppo.BreenoHook
 import com.niki914.zafiro.repo.XIpcDomainSettingsStore
 import com.niki914.zafiro.repo.XRepo
 import com.niki914.zafiro.runtime.client.AgentRuntimeClient
@@ -121,6 +121,7 @@ class Entrance : IXposed() {
             120803L -> R.raw.com_heytap_speechassist_120803_config
             120906L -> R.raw.com_heytap_speechassist_120906_config
             120909L -> R.raw.com_heytap_speechassist_120909_config
+            130302L -> R.raw.com_heytap_speechassist_130302_config
             else -> null
         }
         "com.miui.voiceassist" -> when (versionCode) {
@@ -163,7 +164,7 @@ class Entrance : IXposed() {
         // 根据 targetPkg 进行映射和 Hook 路由
         val hostApp = HostApp.fromPackageName(params.packageName)
         val hookInstance: Hook? = when (hostApp) {
-            HostApp.Breeno -> BreenoChatHook(scope, client)
+            HostApp.Breeno -> BreenoHook(scope, client)
             HostApp.XiaoAi -> XiaoaiChatHook(scope, client)
             else -> null
         }

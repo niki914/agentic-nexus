@@ -23,8 +23,8 @@ android {
         applicationId = "com.niki914.zafiro"
         minSdk = 26
         targetSdk = 34
-        versionName = "1.5.0"
-        versionCode = 11
+        versionName = "1.6.0"
+        versionCode = 12
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
@@ -53,6 +53,7 @@ android {
             )
         }
         debug {
+            applicationIdSuffix = ".debug"
             ndk {
                 abiFilters += "x86_64"   // 模拟器调试
             }

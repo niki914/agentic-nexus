@@ -53,6 +53,24 @@ internal data class AppStateSettings(
     /** 文本处理动作是否后台静默执行（依赖悬浮球或常驻通知保活）。 */
     @SerialName("text_action_silent")
     val textActionSilent: Boolean = false,
+    /** 已经向用户弹过更新提示的远端版本号；空串 = 从未弹过。同一版本只提示一次。 */
+    @SerialName("last_notified_update_version")
+    val lastNotifiedUpdateVersion: String = "",
+    /** 语音助手独享一个会话；true = 独立会话，false = 绑定主界面会话。默认开启。 */
+    @SerialName("voice_assistant_isolated_session")
+    val voiceAssistantIsolatedSession: Boolean = true,
+    /** 置顶会话：id + 置顶时刻。数量级 ≤ 20，读取方按会话存在性自行剪枝。 */
+    @SerialName("pinned_conversations")
+    val pinnedConversations: List<PinnedConversation> = emptyList(),
+)
+
+/** 一条置顶记录：置顶时刻用于与最后交互时间取 max 排序（越晚置顶/越晚交互越靠前）。 */
+@Serializable
+data class PinnedConversation(
+    @SerialName("id")
+    val id: String = "",
+    @SerialName("pinned_at")
+    val pinnedAt: Long = 0L,
 )
 
 internal object AppStateSettingsCodec {

@@ -9,6 +9,8 @@ import com.niki914.zafiro.api.model.TurnId
 import com.niki914.zafiro.chat.ToolStatusLabels
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import com.niki914.zafiro.runtime.ipc.ToolItem
+import com.niki914.zafiro.runtime.ipc.ToolStatus
 
 class HostConversationProjectorTest {
 
@@ -143,5 +145,69 @@ class HostConversationProjectorTest {
         )
 
         assertEquals("`[retrying] 2/3`", HostConversationProjector.render(turn, labels))
+    }
+
+    @Test
+    fun project_separatesThinkingAndToolsFromContent() {
+        val turn = ConversationTurn(
+            id = TurnId("t0"),
+            userText = "Weather query",
+            blocks = listOf(
+                TurnBlock.Thinking(
+                    id = "b0",
+                    text = "First check Beijing weather.",
+                    isComplete = true,
+                ),
+                TurnBlock.Tool(
+                    id = "b1",
+                    invocation = ToolInvocation(id = "c1", name = "weather", label = "weather", argumentsJson = "{}"),
+                    outcome = ToolOutcome.Succeeded("Sunny 25C"),
+                ),
+                TurnBlock.Tool(
+                    id = "b2",
+                    invocation = ToolInvocation(id = "c2", name = "air_quality", label = "air_quality", argumentsJson = "{}"),
+                    outcome = null, // running
+                ),
+                TurnBlock.Text(
+                    id = "b3",
+                    text = "Today is sunny.",
+                ),
+            ),
+        )
+
+        val projected = HostConversationProjector.project(turn)
+
+        assertEquals("First check Beijing weather.", projected.thinking)
+        assertEquals(true, projected.isThinkingComplete)
+        assertEquals(
+            listOf(
+                ToolItem("weather", ToolStatus.SUCCESS),
+                ToolItem("air_quality", ToolStatus.RUNNING),
+            ),
+            projected.tools
+        )
+        assertEquals("Today is sunny.", projected.content)
+    }
+
+    @Test
+    fun project_thinkingInProgress() {
+        val turn = ConversationTurn(
+            id = TurnId("t0"),
+            userText = "Deep question",
+            blocks = listOf(
+                TurnBlock.Thinking(
+                    id = "b0",
+                    text = "Thinking deeply...",
+                    isComplete = false,
+                ),
+            ),
+        )
+
+        val projected = HostConversationProjector.project(turn)
+
+        assertEquals("Thinking deeply...", projected.thinking)
+        assertEquals(false, projected.isThinkingComplete)
+        assertEquals(emptyList<ToolItem>(), projected.tools)
+        assertEquals("", projected.content)
     }
 }

@@ -42,6 +42,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import com.niki914.okia.error.LLMError
+import com.niki914.okia.error.LLMErrorCode
+import com.niki914.okia.protocol.RequestSnapshot
+import com.niki914.okia.tooling.ToolKind
 
 class LLMControllerOkiaTest {
 
@@ -170,7 +174,7 @@ class LLMControllerOkiaTest {
         assertNotNull(terminal)
         // 内置工具携带 inputSchemaJson（D25 描述合法性）；kind = Local
         assertNotNull(terminal!!.descriptor.inputSchemaJson)
-        assertEquals(com.niki914.okia.tooling.ToolKind.Local, terminal.descriptor.kind)
+        assertEquals(ToolKind.Local, terminal.descriptor.kind)
     }
 
     // ── stream：文本流与终态 ─────────────────────────────────────────────────
@@ -208,15 +212,15 @@ class LLMControllerOkiaTest {
                 TurnEvent.TurnStarted("q"),
                 TurnEvent.TurnFailed(
                     AssistantMessage(emptyList()),
-                    com.niki914.okia.error.LLMError(
-                        com.niki914.okia.error.LLMErrorCode.Transport,
+                    LLMError(
+                        LLMErrorCode.Transport,
                         "boom"
                     )
                 ),
             ),
             result = TurnResult.Failed(
-                com.niki914.okia.error.LLMError(
-                    com.niki914.okia.error.LLMErrorCode.Transport,
+                LLMError(
+                    LLMErrorCode.Transport,
                     "boom"
                 )
             ),
@@ -235,7 +239,7 @@ class LLMControllerOkiaTest {
         installRuntimeSettingsGatewayForTest(
             FakeRuntimeSettingsGateway(llmConfig = validLlmConfig(prompt = "Base"))
         )
-        val capturedSnapshots = mutableListOf<com.niki914.okia.protocol.RequestSnapshot>()
+        val capturedSnapshots = mutableListOf<RequestSnapshot>()
         val loop = object : AgentLoop {
             override suspend fun run(
                 request: LoopRequest,
@@ -262,7 +266,7 @@ class LLMControllerOkiaTest {
         installRuntimeSettingsGatewayForTest(
             FakeRuntimeSettingsGateway(llmConfig = validLlmConfig(maxTokens = 64_000))
         )
-        val capturedSnapshots = mutableListOf<com.niki914.okia.protocol.RequestSnapshot>()
+        val capturedSnapshots = mutableListOf<RequestSnapshot>()
         val loop = object : AgentLoop {
             override suspend fun run(
                 request: LoopRequest,
@@ -286,7 +290,7 @@ class LLMControllerOkiaTest {
         val gateway = installRuntimeSettingsGatewayForTest(
             FakeRuntimeSettingsGateway(llmConfig = validLlmConfig(maxTokens = 64_000))
         )
-        val capturedSnapshots = mutableListOf<com.niki914.okia.protocol.RequestSnapshot>()
+        val capturedSnapshots = mutableListOf<RequestSnapshot>()
         val loop = object : AgentLoop {
             override suspend fun run(
                 request: LoopRequest,
@@ -492,6 +496,44 @@ class LLMControllerOkiaTest {
         assertTrue(LLMController.currentConversation.value == null)
     }
 
+    @Test
+    fun openSession_afterConfigChanged_usesUpdatedConfig() = runTest {
+        val gateway = FakeRuntimeSettingsGateway(
+            llmConfig = validLlmConfig().copy(model = "model-v1")
+        )
+        installRuntimeSettingsGatewayForTest(gateway)
+        var lastCreatedConfig: ResolvedLlmConfig? = null
+        LLMController.okiaFactory = LLMController.OkiaFactory { _, restore, config ->
+            lastCreatedConfig = config
+            openOkiaWithStubLoop(
+                stubLoop(emptyList(), TurnResult.Completed(CompletionReason.Stop)),
+                restore
+            )
+        }
+        LLMController.refresh()
+        assertEquals("model-v1", lastCreatedConfig?.model)
+
+        // 外部新配置为 model-v2
+        gateway.llmConfig = validLlmConfig().copy(model = "model-v2")
+
+        val snapshot = SessionSnapshot(
+            id = "session-restored",
+            leafId = "e0",
+            version = 1,
+            entries = listOf(
+                ConversationEntry(
+                    id = "e0",
+                    parentId = null,
+                    timestamp = 1L,
+                    message = Message.User(listOf(ContentBlock.Text("a"))),
+                ),
+            ),
+        )
+        LLMController.openSession(snapshot)
+
+        assertEquals("model-v2", lastCreatedConfig?.model)
+    }
+
     // ── helpers ─────────────────────────────────────────────────────────────
 
     private fun validLlmConfig(
@@ -548,7 +590,7 @@ class LLMControllerOkiaTest {
         override val compat = DeepSeekCompat()
 
         override suspend fun buildRequest(
-            snapshot: com.niki914.okia.protocol.RequestSnapshot,
+            snapshot: RequestSnapshot,
             history: List<Message>,
         ): HttpRequest = HttpRequest(
             url = snapshot.endpoint,

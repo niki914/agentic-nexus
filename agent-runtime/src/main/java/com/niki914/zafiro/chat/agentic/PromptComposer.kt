@@ -1,6 +1,7 @@
 package com.niki914.zafiro.chat.agentic
 
 import com.niki914.zafiro.chat.ResolvedTools
+import com.niki914.zafiro.settings.model.RuntimeLlmConfig
 import com.niki914.zafiro.settings.model.RuntimeSkillMetadata
 
 data class PromptComposeResult(
@@ -151,6 +152,14 @@ class PromptComposer {
     // --- Guidance constants ---
 
     companion object {
+        fun buildMemoryItems(config: RuntimeLlmConfig): List<String> {
+            val memories = config.memories.map(String::trim).filter(String::isNotBlank)
+            if (memories.isNotEmpty()) {
+                return memories
+            }
+            return listOfNotNull(config.memoryPrompt.trim().takeIf { it.isNotBlank() })
+        }
+
         internal const val DEFAULT_AGENT_IDENTITY =
             "You are Zafiro, an intelligent AI assistant. " +
                     "You are helpful, knowledgeable, and direct. " +
@@ -203,7 +212,8 @@ class PromptComposer {
                     "'submitted PR Y', 'Phase N done', file counts, or any artifact that will be stale " +
                     "in 7 days. If a fact will be stale in a week, it does not belong in memory. " +
                     "If you've discovered a new way to do something, solved a problem that could be " +
-                    "necessary later, save it as a skill with the skill tool.\n" +
+                    "necessary later, save it as a skill with python — write a SKILL.md under " +
+                    "the skills directory (see the skill-creator skill).\n" +
                     "Write memories as declarative facts, not instructions to yourself. " +
                     "'User prefers concise responses' ✓ — 'Always respond concisely' ✗. " +
                     "'Project uses pytest with xdist' ✓ — 'Run tests with pytest -n 4' ✗. " +

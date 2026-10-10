@@ -21,8 +21,10 @@ import com.niki914.logging.Logger
 import com.niki914.store.HostApp
 import com.niki914.store.StoreDescriptorRegistry
 import com.niki914.store.XIpcStoreRepository
+import com.niki914.zafiro.repo.XRepo
 
 import com.niki914.zafiro.api.Agent
+import com.niki914.zafiro.api.AgentManager
 import com.niki914.zafiro.api.TurnStart
 import com.niki914.zafiro.api.model.AgentState
 import com.niki914.zafiro.api.model.TurnFailureCode
@@ -120,12 +122,13 @@ class AgentRuntimeService : Service() {
         super.onDestroy()
     }
 
-    private val agent: Agent get() = requireService()
+    private val agentManager: AgentManager get() = requireService()
     private val agentControl: AgentControl get() = requireService()
     private val notificationChannelManager: NotificationChannelManager get() = requireService()
     private val permissionManager: PermissionManager get() = requireService()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val activeTurn = AtomicReference<ActiveTurn?>(null)
+    private var currentHostAgent: Agent? = null
     private var statusJob: Job? = null
     private var boundClientsCount = 0
     private var isResidentRequested = false
@@ -133,6 +136,7 @@ class AgentRuntimeService : Service() {
     private data class ActiveTurn(
         val callback: IRenderFrameCallback,
         val job: Job,
+        val agent: Agent,
     )
 
     companion object {
@@ -201,8 +205,18 @@ class AgentRuntimeService : Service() {
                 return
             }
 
-            agent.updateDraft { it.copy(text = q, images = emptyList(), files = emptyList()) }
-            when (val startResult = agent.stream()) {
+            val isIsolated = runBlocking { XRepo.voiceAssistantIsolatedSession() }
+            val targetAgent = if (isIsolated) {
+                currentHostAgent ?: agentManager.createTaskAgent("host").also {
+                    currentHostAgent = it
+                }
+            } else {
+                currentHostAgent?.discard()
+                currentHostAgent = null
+                agentManager.main
+            }
+            targetAgent.updateDraft { it.copy(text = q, images = emptyList(), files = emptyList()) }
+            when (val startResult = targetAgent.stream()) {
                 TurnStart.Busy -> {
                     try {
                         cb.asBinder().unlinkToDeath(deathRecipient, 0)
@@ -221,14 +235,14 @@ class AgentRuntimeService : Service() {
                     return
                 }
                 TurnStart.Started -> {
-                    Logger.i(LOG_TAG, "agent.stream started successfully")
+                    Logger.i(LOG_TAG, "targetAgent.stream started successfully isolated=$isIsolated")
                 }
             }
 
-            val job = scope.launch { executeTurn(cb) }
-            val turn = ActiveTurn(cb, job)
+            val job = scope.launch { executeTurn(cb, targetAgent) }
+            val turn = ActiveTurn(cb, job, targetAgent)
             activeTurn.set(turn)
-            Logger.i(LOG_TAG, "turn registered callbackLinked=true")
+            Logger.i(LOG_TAG, "turn registered callbackLinked=true isolated=$isIsolated")
         }
 
         override fun cancel() {
@@ -241,7 +255,7 @@ class AgentRuntimeService : Service() {
             Logger.i(LOG_TAG, "cancel requested")
             scope.launch {
                 try {
-                    agent.stop()
+                    turn.agent.stop()
                     Logger.i(LOG_TAG, "cancel done agent.stop completed")
                 } catch (_: Exception) {
                 }
@@ -249,7 +263,14 @@ class AgentRuntimeService : Service() {
         }
 
         override fun resetConversation() {
-            Logger.i(LOG_TAG, "reset conversation requested by host (ignored to protect shared conversation)")
+            val isIsolated = runBlocking { XRepo.voiceAssistantIsolatedSession() }
+            if (isIsolated) {
+                Logger.i(LOG_TAG, "reset conversation requested by host (isolated mode)")
+                currentHostAgent?.discard()
+                currentHostAgent = null
+            } else {
+                Logger.i(LOG_TAG, "reset conversation requested by host (ignored to protect shared conversation)")
+            }
         }
     }
 
@@ -389,11 +410,11 @@ class AgentRuntimeService : Service() {
         }
     }
 
-    private suspend fun executeTurn(callback: IRenderFrameCallback) {
+    private suspend fun executeTurn(callback: IRenderFrameCallback, turnAgent: Agent) {
         val startedAtMs = System.currentTimeMillis()
         Logger.i(LOG_TAG, "turn started")
         var firstFrameSent = false
-        var lastRenderedText: String? = null
+        var lastProjected: HostConversationProjector.ProjectedFrame? = null
         var frameIndex = 0
 
         val labels = ToolStatusLabels(
@@ -411,31 +432,34 @@ class AgentRuntimeService : Service() {
             else -> getString(AppR.string.runtime_error_internal)
         }
 
-        val targetTurnId = agent.conversation.value.turns.lastOrNull()?.id
+        val targetTurnId = turnAgent.conversation.value.turns.lastOrNull()?.id
         Logger.i(LOG_TAG, "executeTurn targetTurnId=$targetTurnId")
 
         try {
             coroutineScope {
                 val conversationJob = launch {
-                    agent.conversation.collect { conv ->
+                    turnAgent.conversation.collect { conv ->
                         val turn = conv.turns.find { it.id == targetTurnId } ?: conv.turns.lastOrNull()
                         if (turn != null) {
-                            val text = HostConversationProjector.render(turn, labels, ::resolveErrorMessage)
-                            if (text != lastRenderedText || !firstFrameSent) {
+                            val projected = HostConversationProjector.project(turn, ::resolveErrorMessage)
+                            if (projected != lastProjected || !firstFrameSent) {
                                 frameIndex++
-                                lastRenderedText = text
+                                lastProjected = projected
                                 val isFirst = !firstFrameSent
                                 firstFrameSent = true
                                 if (isFirst) {
                                     Logger.i(
                                         LOG_TAG,
-                                        "first render frame elapsedMs=${System.currentTimeMillis() - startedAtMs} textLength=${text.length}"
+                                        "first render frame elapsedMs=${System.currentTimeMillis() - startedAtMs} contentLength=${projected.content.length} thinkingLength=${projected.thinking?.length ?: 0} toolsCount=${projected.tools.size}"
                                     )
                                 }
                                 sendFrame(
                                     callback,
                                     RenderFrame(
-                                        text = text,
+                                        content = projected.content,
+                                        thinking = projected.thinking,
+                                        isThinkingComplete = projected.isThinkingComplete,
+                                        tools = projected.tools,
                                         isFirst = isFirst,
                                         isFinal = false,
                                     ),
@@ -445,25 +469,30 @@ class AgentRuntimeService : Service() {
                     }
                 }
 
-                agent.status.first { it is AgentState.Idle }
+                turnAgent.status.first { state ->
+                    state is AgentState.Idle
+                }
                 conversationJob.cancel()
             }
 
-            val finalTurn = agent.conversation.value.turns.find { it.id == targetTurnId }
-                ?: agent.conversation.value.turns.lastOrNull()
-            val finalText = if (finalTurn != null) {
-                HostConversationProjector.render(finalTurn, labels, ::resolveErrorMessage)
+            val finalTurn = turnAgent.conversation.value.turns.find { it.id == targetTurnId }
+                ?: turnAgent.conversation.value.turns.lastOrNull()
+            val finalProjected = if (finalTurn != null) {
+                HostConversationProjector.project(finalTurn, ::resolveErrorMessage)
             } else {
-                lastRenderedText.orEmpty()
+                lastProjected ?: HostConversationProjector.ProjectedFrame("")
             }
             Logger.i(
                 LOG_TAG,
-                "final render frame elapsedMs=${System.currentTimeMillis() - startedAtMs} textLength=${finalText.length}"
+                "final render frame elapsedMs=${System.currentTimeMillis() - startedAtMs} contentLength=${finalProjected.content.length}"
             )
             sendFrame(
                 callback,
                 RenderFrame(
-                    text = finalText,
+                    content = finalProjected.content,
+                    thinking = finalProjected.thinking,
+                    isThinkingComplete = true,
+                    tools = finalProjected.tools,
                     isFirst = !firstFrameSent,
                     isFinal = true,
                 ),
@@ -487,7 +516,7 @@ class AgentRuntimeService : Service() {
             sendFrame(
                 callback,
                 RenderFrame(
-                    text = e.message ?: getString(AppR.string.runtime_error_internal),
+                    content = e.message ?: getString(AppR.string.runtime_error_internal),
                     isFirst = !firstFrameSent,
                     isFinal = true,
                 ),
@@ -513,7 +542,7 @@ class AgentRuntimeService : Service() {
 
     private fun sendError(callback: IRenderFrameCallback, message: String) {
         try {
-            callback.onFrame(RenderFrame(text = message, isFirst = true, isFinal = true))
+            callback.onFrame(RenderFrame(content = message, isFirst = true, isFinal = true))
         } catch (_: DeadObjectException) {
         }
     }

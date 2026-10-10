@@ -84,13 +84,17 @@
     <string name="ui_home_error_retry_exhausted_title">Automatic retries exhausted</string>
     <string name="ui_home_error_internal_title">Internal error</string>
     <string name="ui_home_retrying_title">Network hiccup, retrying…</string>
+    <string name="ui_home_thinking_title">Thinking</string>
     <string name="ui_home_retrying_attempt">Retrying %1$d/%2$d</string>
     <string name="runtime_error_internal">Internal error</string>
     <string name="ui_home_history_content_description">Conversation history</string>
+    <string name="ui_conversation_history_title">History</string>
+    <string name="ui_conversation_selection_count">%1$d selected</string>
     <string name="ui_conversation_history_today">Today</string>
     <string name="ui_conversation_history_this_week">This week</string>
     <string name="ui_conversation_history_this_month">This month</string>
     <string name="ui_conversation_history_older">Earlier</string>
+    <string name="ui_conversation_history_pinned_section">Pinned</string>
     <string name="ui_conversation_history_back_content_description">Back</string>
     <string name="ui_conversation_history_loading">Loading conversation history...</string>
     <string name="ui_conversation_history_empty_title">No conversation history yet</string>
@@ -99,9 +103,24 @@
     <string name="ui_conversation_history_untitled">Untitled conversation</string>
     <string name="ui_conversation_history_delete_dialog_title">Delete conversation</string>
     <string name="ui_conversation_history_delete_dialog_text">Delete this conversation? This cannot be undone.\n\n%1$s</string>
+    <string name="ui_conversation_history_batch_delete_dialog_text">Delete %1$d selected conversations? This cannot be undone.</string>
     <string name="ui_conversation_history_delete_dialog_confirm">Delete</string>
     <string name="ui_conversation_history_delete_dialog_cancel">Cancel</string>
     <string name="ui_conversation_history_delete_error">Failed to delete conversation: %1$s</string>
+    <string name="ui_conversation_action_load">Load</string>
+    <string name="ui_conversation_action_fork">Fork from here</string>
+    <string name="ui_conversation_action_pin">Pin to top</string>
+    <string name="ui_conversation_action_unpin">Unpin</string>
+    <string name="ui_conversation_action_rename">Rename</string>
+    <string name="ui_conversation_action_delete">Delete</string>
+    <string name="ui_conversation_rename_dialog_title">Rename conversation</string>
+    <string name="ui_conversation_rename_dialog_hint">Conversation title</string>
+    <string name="ui_conversation_rename_dialog_confirm">Save</string>
+    <string name="ui_conversation_rename_dialog_cancel">Cancel</string>
+    <string name="ui_time_just_now">Just now</string>
+    <string name="ui_time_minutes_ago">%1$dm ago</string>
+    <string name="ui_time_hours_ago">%1$dh ago</string>
+    <string name="ui_time_yesterday">Yesterday</string>
     <string name="ui_root_back_to_home_hint">Press back again to go to the Home screen</string>
 
     <!-- Settings Shell -->
@@ -299,7 +318,7 @@
     <string name="custom_py_tool_page_empty_description">Let your Agent create one, or tap the top right to add a new tool.</string>
     <string name="custom_py_tool_loading">Loading saved Custom Python tools...</string>
     <string name="custom_py_tool_editor_title_create">New Python Tool</string>
-    <string name="custom_py_tool_editor_description">Configure your Python tool. The description and parameter schema are derived from the main() docstring and type annotations. After saving, the Agent can call it when needed.</string>
+    <string name="custom_py_tool_editor_description">Define a main() entry function.\n\nParameter type annotations decide what the agent can pass in, and the docstring becomes the tool description.</string>
     <string name="custom_py_tool_field_name">Tool Name</string>
     <string name="custom_py_tool_field_name_hint">For example: py_web_search</string>
     <string name="custom_py_tool_field_enabled">Enable Tool</string>
@@ -316,6 +335,17 @@
     <string name="custom_py_tool_error_delete_failed">Failed to delete Python tool: %1$s</string>
     <string name="custom_py_tool_delete_dialog_title">Delete Python Tool</string>
     <string name="custom_py_tool_delete_dialog_text">Are you sure you want to delete the tool \"%1$s\"? This action cannot be undone.</string>
+    <string name="custom_py_tool_save_dialog_checking_title">Checking Tool Code</string>
+    <string name="custom_py_tool_save_dialog_checking_text">The check extracts the main() parameter signature and may take a few seconds.\n\nYou can cancel; nothing is saved if you do.</string>
+    <string name="custom_py_tool_save_dialog_success_title">Tool Saved</string>
+    <string name="custom_py_tool_save_dialog_success_text">Saved to the custom Python tool list.\n\nThe agent can now call it when needed.</string>
+    <string name="custom_py_tool_save_dialog_code_failed_title">Code Check Failed</string>
+    <string name="custom_py_tool_save_dialog_code_failed_text">The error comes from the tool code itself.\n\nFix the code and save again.</string>
+    <string name="custom_py_tool_save_dialog_internal_failed_title">Save Failed</string>
+    <string name="custom_py_tool_save_dialog_internal_failed_text">The error comes from inside the app, not from the tool code.\n\nPlease retry, and report this message if it keeps happening.</string>
+    <string name="custom_py_tool_save_dialog_action_cancel">Cancel</string>
+    <string name="custom_py_tool_save_dialog_action_done">Done</string>
+    <string name="custom_py_tool_save_dialog_action_close">Close</string>
     <string name="custom_py_tool_save_failed">Failed to save: %1$s</string>
 
     <string name="mcp_page_description">Configure connection and authentication for MCP services. After saving, Zafiro will automatically discover available tools at runtime.</string>
@@ -425,6 +455,8 @@
     <string name="ui_settings_general_keep_screen_on">Keep screen on while answering</string>
     <string name="ui_settings_general_keep_screen_on_summary">Keep the screen on while the agent is responding and running tools</string>
     <string name="ui_settings_general_always_show_message_actions">Always show message actions</string>
+    <string name="ui_settings_general_voice_assistant_isolated_session">Dedicated voice assistant session</string>
+    <string name="ui_settings_general_voice_assistant_isolated_session_summary">Keep voice assistant conversations isolated from main chat history</string>
     <string name="ui_settings_saved_configuration_title">Saved configurations</string>
     <string name="ui_settings_saved_configuration_delete_title">Delete configuration</string>
     <string name="ui_settings_saved_configuration_delete_text">This configuration will be deleted and cannot be recovered.</string>
@@ -501,4 +533,59 @@
     <string name="error_text_actions_save_failed">Failed to save text action</string>
     <string name="error_text_actions_delete_failed">Failed to delete text action</string>
     <string name="text_actions_sheet_title">Choose an action</string>
+
+    <!-- Onboarding Preferences -->
+    <string name="ui_onboard_done_advanced_entry">Permissions &amp; execution rules</string>
+    <string name="ui_onboard_preferences_title">Permissions &amp; execution rules</string>
+    <string name="ui_onboard_preferences_permissions_group">Permissions</string>
+    <string name="ui_onboard_preferences_phone_use_title">Phone Use</string>
+    <string name="ui_onboard_preferences_phone_use_desc">Let the Agent control your phone; requires accessibility and overlay permissions</string>
+    <string name="ui_onboard_preferences_floating_ball_title">Floating Ball</string>
+    <string name="ui_onboard_preferences_floating_ball_desc">Show the floating ball in background to follow agent status</string>
+    <string name="ui_onboard_preferences_notification_title">Resident Notification</string>
+    <string name="ui_onboard_preferences_notification_desc">Show live agent status in the notification drawer</string>
+    <string name="ui_onboard_preferences_file_title">File access</string>
+    <string name="ui_onboard_preferences_file_desc">Allow the Agent to read and write files outside the sandbox</string>
+    <string name="ui_onboard_preferences_granted">Granted</string>
+    <string name="ui_onboard_preferences_grant_action">Tap to grant</string>
+    <string name="ui_onboard_preferences_security_group">Execution rules</string>
+    <string name="ui_onboard_preferences_security_hint">Commands that need confirmation before running</string>
+    <string name="ui_onboard_preferences_rule_add_action">Add rule</string>
+    <string name="ui_onboard_preferences_rule_add_title">Add execution rule</string>
+    <string name="ui_onboard_preferences_rule_add_hint">Accepts a keyword or regex, one line only</string>
+    <string name="ui_onboard_preferences_rule_placeholder">Enter a keyword or regex</string>
+    <string name="ui_onboard_preferences_rule_add_confirm">Add</string>
+    <string name="ui_onboard_preferences_rule_delete">Delete %1$s</string>
+    <string name="ui_onboard_preferences_action_grant_all">Grant all</string>
+    <string name="ui_onboard_preferences_action_skip">Skip</string>
+    <string name="ui_onboard_preferences_toast_denied">Permission not granted</string>
+
+    <!-- MCP Host Settings -->
+    <string name="ui_settings_mcp_host">Host as MCP Server</string>
+    <string name="ui_settings_mcp_host_summary">Expose Zafiro tools to external agents via MCP</string>
+    <string name="mcp_host_section_service">Service</string>
+    <string name="mcp_host_section_connection">Connection &amp; Security</string>
+    <string name="mcp_host_section_tools">Exposed Tools</string>
+    <string name="mcp_host_enable_title">Enable MCP Server</string>
+    <string name="mcp_host_enable_summary">Allow external clients to control this device via MCP protocol</string>
+    <string name="mcp_host_status_title">Status</string>
+    <string name="mcp_host_status_running">Running</string>
+    <string name="mcp_host_status_stopped">Stopped</string>
+    <string name="mcp_host_status_starting">Starting…</string>
+    <string name="mcp_host_status_error">Error: %1$s</string>
+    <string name="mcp_host_port_title">Port</string>
+    <string name="mcp_host_port_placeholder">8791</string>
+    <string name="mcp_host_port_error_invalid">Port must be between 1024 and 65535</string>
+    <string name="mcp_host_token_title">Bearer Token</string>
+    <string name="mcp_host_token_placeholder">Leave empty to allow all</string>
+    <string name="mcp_host_token_description_empty">No authentication required</string>
+    <string name="mcp_host_token_description_configured">Authorization: Bearer &lt;token&gt; required</string>
+    <string name="mcp_host_token_show">Show Bearer Token</string>
+    <string name="mcp_host_token_hide">Hide Bearer Token</string>
+
+    <!-- Crash Protection -->
+    <string name="crash_dialog_title">App Crashed Last Time</string>
+    <string name="crash_dialog_copy">Copy Log</string>
+    <string name="crash_dialog_close">Close</string>
+    <string name="crash_copied_toast">Crash report copied to clipboard</string>
 </resources>

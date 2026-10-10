@@ -9,8 +9,11 @@ import com.niki914.logging.Logger
 import com.niki914.xposed.api.util.ContextProvider
 import com.niki914.zafiro.app.conversation.ConversationPersister
 import com.niki914.zafiro.app.conversation.ConversationRepo
+import com.niki914.zafiro.app.crash.CrashRecorder
+import com.niki914.zafiro.app.debug.DebugLogFile
 import com.niki914.zafiro.app.notification.ResidentNotificationManager
 import com.niki914.zafiro.app.overlay.FloatingBallOverlayManager
+import com.niki914.zafiro.api.McpHostService
 import com.niki914.zafiro.business.permission.Permission
 import com.niki914.zafiro.business.permission.PermissionManager
 import com.niki914.zafiro.business.permission.PermissionState
@@ -33,8 +36,11 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        CrashRecorder.install(this)
         // 日志 debug 门控：release 构建 DEBUG/VERBOSE 全停，仅 INFO+ 输出
         Logger.setDebugProvider { BuildConfig.DEBUG }
+        // 调试构建额外把日志落到 filesDir/logs/（release 不装文件后端）
+        DebugLogFile.install(this)
         // 非主进程（目前只有 `:python`）不初始化主进程状态：上下文与持久化只属于主进程
         //（否则 ContextProvider 从未 provide，PyRuntime.warmUp 会永远挂起）
         if (!isMainProcess()) return
@@ -70,6 +76,28 @@ class App : Application() {
 
         observeFloatingBall()
         observeResidentNotification()
+        observeMcpHost()
+    }
+
+    private fun observeMcpHost() {
+        applicationScope.launch {
+            val service = requireService<McpHostService>()
+            val initialConfig = XRepo.mcpHost.get()
+            if (initialConfig.enabled) {
+                service.start()
+            }
+            var lastConfig = initialConfig
+            XRepo.mcpHost.configFlow.collect { config ->
+                if (config != lastConfig) {
+                    lastConfig = config
+                    if (config.enabled) {
+                        service.restart()
+                    } else {
+                        service.stop()
+                    }
+                }
+            }
+        }
     }
 
     private fun observeResidentNotification() = launchFeatureFlagObserver(

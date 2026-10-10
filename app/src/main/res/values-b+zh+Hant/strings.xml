@@ -83,13 +83,17 @@
     <string name="ui_home_error_retry_exhausted_title">多次自動重試後仍失敗</string>
     <string name="ui_home_error_internal_title">內部錯誤</string>
     <string name="ui_home_retrying_title">網路波動，正在重試…</string>
+    <string name="ui_home_thinking_title">思考</string>
     <string name="ui_home_retrying_attempt">重試 %1$d/%2$d</string>
     <string name="runtime_error_internal">內部錯誤</string>
     <string name="ui_home_history_content_description">對話歷史</string>
+    <string name="ui_conversation_history_title">歷史對話</string>
+    <string name="ui_conversation_selection_count">已選取 %1$d 項</string>
     <string name="ui_conversation_history_today">今天</string>
     <string name="ui_conversation_history_this_week">本週</string>
     <string name="ui_conversation_history_this_month">本月</string>
     <string name="ui_conversation_history_older">更早</string>
+    <string name="ui_conversation_history_pinned_section">置頂對話</string>
     <string name="ui_conversation_history_back_content_description">返回</string>
     <string name="ui_conversation_history_loading">正在讀取對話歷史...</string>
     <string name="ui_conversation_history_empty_title">暫無對話歷史</string>
@@ -98,9 +102,24 @@
     <string name="ui_conversation_history_untitled">未命名對話</string>
     <string name="ui_conversation_history_delete_dialog_title">刪除對話</string>
     <string name="ui_conversation_history_delete_dialog_text">確定要刪除這個對話嗎？此操作無法復原。\n\n%1$s</string>
+    <string name="ui_conversation_history_batch_delete_dialog_text">確定要刪除選取的 %1$d 個對話嗎？此操作無法復原。</string>
     <string name="ui_conversation_history_delete_dialog_confirm">刪除</string>
     <string name="ui_conversation_history_delete_dialog_cancel">取消</string>
     <string name="ui_conversation_history_delete_error">刪除對話失敗：%1$s</string>
+    <string name="ui_conversation_action_load">載入</string>
+    <string name="ui_conversation_action_fork">從此處分叉</string>
+    <string name="ui_conversation_action_pin">置頂</string>
+    <string name="ui_conversation_action_unpin">取消置頂</string>
+    <string name="ui_conversation_action_rename">重新命名</string>
+    <string name="ui_conversation_action_delete">刪除</string>
+    <string name="ui_conversation_rename_dialog_title">重新命名對話</string>
+    <string name="ui_conversation_rename_dialog_hint">對話標題</string>
+    <string name="ui_conversation_rename_dialog_confirm">確定</string>
+    <string name="ui_conversation_rename_dialog_cancel">取消</string>
+    <string name="ui_time_just_now">剛剛</string>
+    <string name="ui_time_minutes_ago">%1$d 分鐘前</string>
+    <string name="ui_time_hours_ago">%1$d 小時前</string>
+    <string name="ui_time_yesterday">昨天</string>
     <string name="ui_root_back_to_home_hint">再按一次返回主畫面</string>
 
     <!-- Settings Shell -->
@@ -298,7 +317,7 @@
     <string name="custom_py_tool_page_empty_description">讓你的 Agent 幫你建立，或點擊右上角新增。</string>
     <string name="custom_py_tool_loading">正在讀取已儲存的 自定义 Python 工具…</string>
     <string name="custom_py_tool_editor_title_create">新增 自定义 Python 工具</string>
-    <string name="custom_py_tool_editor_description">設定你的 自定义 Python 工具。工具說明與參數簽名由程式碼中 main() 函式的 docstring 與型別標註自動擷取。儲存後，Agent 可在需要時呼叫此工具。</string>
+    <string name="custom_py_tool_editor_description">寫一個 main() 入口函式。\n\n參數的型別標註決定 Agent 能傳什麼，docstring 會成為工具說明。</string>
     <string name="custom_py_tool_field_name">工具名稱</string>
     <string name="custom_py_tool_field_name_hint">例如：py_web_search</string>
     <string name="custom_py_tool_field_enabled">啟用工具</string>
@@ -315,6 +334,17 @@
     <string name="custom_py_tool_error_delete_failed">刪除 自定义 Python 工具失敗：%1$s</string>
     <string name="custom_py_tool_delete_dialog_title">刪除 自定义 Python 工具</string>
     <string name="custom_py_tool_delete_dialog_text">確定要刪除工具「%1$s」嗎？此操作不可撤銷。</string>
+    <string name="custom_py_tool_save_dialog_checking_title">正在驗證工具程式碼</string>
+    <string name="custom_py_tool_save_dialog_checking_text">驗證會擷取 main() 的參數簽名，可能需要數秒。\n\n可以取消，取消後本次儲存不會生效。</string>
+    <string name="custom_py_tool_save_dialog_success_title">工具已儲存</string>
+    <string name="custom_py_tool_save_dialog_success_text">已儲存到工具清單。\n\nAgent 現在可以依需要呼叫這個工具。</string>
+    <string name="custom_py_tool_save_dialog_code_failed_title">程式碼驗證未通過</string>
+    <string name="custom_py_tool_save_dialog_code_failed_text">報錯來自工具程式碼本身。\n\n修正程式碼後重新儲存即可。</string>
+    <string name="custom_py_tool_save_dialog_internal_failed_title">儲存失敗</string>
+    <string name="custom_py_tool_save_dialog_internal_failed_text">報錯來自應用程式內部，與工具程式碼無關。\n\n請重試；若持續發生，請把這個彈窗裡的報錯回報給我們。</string>
+    <string name="custom_py_tool_save_dialog_action_cancel">取消</string>
+    <string name="custom_py_tool_save_dialog_action_done">完成</string>
+    <string name="custom_py_tool_save_dialog_action_close">關閉</string>
     <string name="custom_py_tool_save_failed">儲存失敗：%1$s</string>
 
     <string name="mcp_page_description">設定 MCP 服務的連線方式與驗證資訊。儲存後，Zafiro 會在執行時自動發現可用工具。</string>
@@ -387,6 +417,8 @@
     <string name="ui_settings_general_keep_screen_on">回應期間保持螢幕常亮</string>
     <string name="ui_settings_general_keep_screen_on_summary">回應與工具執行期間保持螢幕常亮</string>
     <string name="ui_settings_general_always_show_message_actions">總是顯示訊息操作</string>
+    <string name="ui_settings_general_voice_assistant_isolated_session">語音助理獨享一個對話</string>
+    <string name="ui_settings_general_voice_assistant_isolated_session_summary">開啟後語音助理對話不影響主畫面歷史；關閉則與主畫面共用當前對話</string>
     <string name="ui_settings_saved_configuration_title">已儲存配置</string>
     <string name="ui_settings_saved_configuration_delete_title">刪除配置</string>
     <string name="ui_settings_saved_configuration_delete_text">該配置將被刪除，此操作無法復原。</string>
@@ -485,4 +517,59 @@
     <string name="error_text_actions_save_failed">儲存文字處理動作失敗</string>
     <string name="error_text_actions_delete_failed">刪除文字處理動作失敗</string>
     <string name="text_actions_sheet_title">選擇動作</string>
+
+    <!-- Onboarding Preferences -->
+    <string name="ui_onboard_done_advanced_entry">權限與執行規則</string>
+    <string name="ui_onboard_preferences_title">權限與執行規則</string>
+    <string name="ui_onboard_preferences_permissions_group">權限</string>
+    <string name="ui_onboard_preferences_phone_use_title">Phone Use</string>
+    <string name="ui_onboard_preferences_phone_use_desc">允許 Agent 操控手機，需要無障礙與懸浮窗權限</string>
+    <string name="ui_onboard_preferences_floating_ball_title">懸浮球</string>
+    <string name="ui_onboard_preferences_floating_ball_desc">後台運行時顯示懸浮球，隨時查看 Agent 狀態</string>
+    <string name="ui_onboard_preferences_notification_title">常駐通知</string>
+    <string name="ui_onboard_preferences_notification_desc">在通知欄顯示 Agent 的即時狀態</string>
+    <string name="ui_onboard_preferences_file_title">檔案權限</string>
+    <string name="ui_onboard_preferences_file_desc">允許 Agent 讀寫沙箱外的檔案</string>
+    <string name="ui_onboard_preferences_granted">已授權</string>
+    <string name="ui_onboard_preferences_grant_action">點擊授權</string>
+    <string name="ui_onboard_preferences_security_group">執行規則</string>
+    <string name="ui_onboard_preferences_security_hint">執行前需要二次確認的命令</string>
+    <string name="ui_onboard_preferences_rule_add_action">新增規則</string>
+    <string name="ui_onboard_preferences_rule_add_title">新增執行規則</string>
+    <string name="ui_onboard_preferences_rule_add_hint">支援關鍵字或正規表達式，僅限一行</string>
+    <string name="ui_onboard_preferences_rule_placeholder">輸入關鍵字或正規表達式</string>
+    <string name="ui_onboard_preferences_rule_add_confirm">新增</string>
+    <string name="ui_onboard_preferences_rule_delete">刪除 %1$s</string>
+    <string name="ui_onboard_preferences_action_grant_all">一鍵授權</string>
+    <string name="ui_onboard_preferences_action_skip">跳過</string>
+    <string name="ui_onboard_preferences_toast_denied">權限未授予</string>
+
+    <!-- MCP Host Settings -->
+    <string name="ui_settings_mcp_host">MCP 服務</string>
+    <string name="ui_settings_mcp_host_summary">將 Zafiro 裝置能力作為 MCP 服務暴露給外部 Agent</string>
+    <string name="mcp_host_section_service">服務</string>
+    <string name="mcp_host_section_connection">連線與認證</string>
+    <string name="mcp_host_section_tools">暴露的工具</string>
+    <string name="mcp_host_enable_title">啟用 MCP 服務</string>
+    <string name="mcp_host_enable_summary">允許外部客戶端透過 MCP 協定控制此裝置</string>
+    <string name="mcp_host_status_title">執行狀態</string>
+    <string name="mcp_host_status_running">執行中</string>
+    <string name="mcp_host_status_stopped">已停止</string>
+    <string name="mcp_host_status_starting">啟動中…</string>
+    <string name="mcp_host_status_error">錯誤：%1$s</string>
+    <string name="mcp_host_port_title">連接埠</string>
+    <string name="mcp_host_port_placeholder">8791</string>
+    <string name="mcp_host_port_error_invalid">連接埠必須在 1024 到 65535 之間</string>
+    <string name="mcp_host_token_title">Bearer Token</string>
+    <string name="mcp_host_token_placeholder">留空表示不驗證</string>
+    <string name="mcp_host_token_description_empty">無需身分驗證</string>
+    <string name="mcp_host_token_description_configured">請求需攜帶 Authorization: Bearer &lt;token&gt;</string>
+    <string name="mcp_host_token_show">顯示 Bearer Token</string>
+    <string name="mcp_host_token_hide">隱藏 Bearer Token</string>
+
+    <!-- Crash Protection -->
+    <string name="crash_dialog_title">上次執行異常結束</string>
+    <string name="crash_dialog_copy">複製日誌</string>
+    <string name="crash_dialog_close">關閉</string>
+    <string name="crash_copied_toast">已複製崩潰日誌</string>
 </resources>

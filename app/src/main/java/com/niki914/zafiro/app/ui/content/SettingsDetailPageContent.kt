@@ -17,6 +17,7 @@ import com.niki914.zafiro.app.ui.nav.TakeoverRuleDetailPage
 import com.niki914.zafiro.app.ui.nav.TextActionDetailPage
 import com.niki914.zafiro.app.ui.nav.ZafiroPage
 import com.niki914.zafiro.app.ui.nav.ZafiroSettingsGroup
+import com.niki914.zafiro.app.ui.content.mcp.McpHostSettingsContent
 
 @Composable
 fun SettingsDetailPageContent(
@@ -80,6 +81,11 @@ fun SettingsDetailPageContent(
                 onPush(TextActionDetailPage(actionId, actionName, index, isCreating))
             },
         )
+        return
+    }
+
+    if (group == ZafiroSettingsGroup.McpHost) {
+        McpHostSettingsContent()
         return
     }
 
