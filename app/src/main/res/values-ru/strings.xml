@@ -516,4 +516,30 @@
     <string name="crash_dialog_copy">Копировать отчет</string>
     <string name="crash_dialog_close">Закрыть</string>
     <string name="crash_copied_toast">Отчет о сбое скопирован в буфер обмена</string>
+
+    <!-- Действия с текстом -->
+    <string name="ui_settings_text_actions">Действия с текстом</string>
+    <string name="ui_settings_text_actions_summary">Обрабатывайте выделенный текст через Zafiro из меню выделения</string>
+    <string name="text_actions_page_description">Удерживайте выделенный текст в других приложениях, чтобы спросить Zafiro из меню. Выделенный текст добавляется как цитата перед запросом.</string>
+    <string name="text_actions_empty_action_hint">Нажмите в правом верхнем углу, чтобы добавить первое действие с текстом.</string>
+    <string name="text_actions_loading">Загрузка действий с текстом…</string>
+    <string name="text_actions_editor_title_create">Новое действие с текстом</string>
+    <string name="text_actions_editor_description">Выделенный текст добавляется как цитата перед запросом, отправляемым модели.</string>
+    <string name="text_actions_delete_dialog_title">Удалить действие с текстом</string>
+    <string name="text_actions_delete_dialog_text">Удалить «%1$s»? Это действие необратимо.</string>
+    <string name="text_actions_field_name">Название действия</string>
+    <string name="text_actions_field_name_hint">Например: объяснить этот текст</string>
+    <string name="text_actions_field_prompt">Запрос</string>
+    <string name="text_actions_field_prompt_hint">Например: объясни следующий текст простыми словами</string>
+    <string name="text_actions_field_prompt_description">Инструкция, отправляемая модели; выделенный текст добавляется после неё.</string>
+    <string name="text_actions_error_name_required">Введите название действия</string>
+    <string name="text_actions_error_prompt_required">Введите запрос</string>
+    <string name="text_actions_save_action">Сохранить действие</string>
+    <string name="text_actions_silent">Выполнять в фоне</string>
+    <string name="text_actions_silent_summary">Начинать разговор, не открывая основное приложение. Требуется включённый плавающий шар или постоянное уведомление; иначе откроется основное приложение.</string>
+    <string name="text_actions_silent_needs_carrier">Включите плавающий шар или постоянное уведомление перед включением фонового выполнения</string>
+    <string name="error_text_actions_load_failed">Не удалось загрузить действия с текстом</string>
+    <string name="error_text_actions_save_failed">Не удалось сохранить действие с текстом</string>
+    <string name="error_text_actions_delete_failed">Не удалось удалить действие с текстом</string>
+    <string name="text_actions_sheet_title">Выберите действие</string>
 </resources>
